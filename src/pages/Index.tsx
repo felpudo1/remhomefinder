@@ -184,7 +184,7 @@ const Index = () => {
               Tus Propiedades
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Seguí, comparí y colaborá en tu búsqueda inmobiliaria
+              Seguí, compará y colaborá en tu búsqueda inmobiliaria
             </p>
           </div>
 
