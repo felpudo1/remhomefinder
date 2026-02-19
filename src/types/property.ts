@@ -28,25 +28,25 @@ export interface Property {
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {
   contacted: {
-    label: "Contacted",
+    label: "Contactado",
     color: "text-status-contacted",
     bg: "bg-status-contacted-bg",
     dot: "bg-status-contacted",
   },
   coordinated: {
-    label: "Visit Coordinated",
+    label: "Visita Coordinada",
     color: "text-status-coordinated",
     bg: "bg-status-coordinated-bg",
     dot: "bg-status-coordinated",
   },
   visited: {
-    label: "Visited",
+    label: "Visitado",
     color: "text-status-visited",
     bg: "bg-status-visited-bg",
     dot: "bg-status-visited",
   },
   discarded: {
-    label: "Discarded",
+    label: "Descartado",
     color: "text-status-discarded",
     bg: "bg-status-discarded-bg",
     dot: "bg-status-discarded",

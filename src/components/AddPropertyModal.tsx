@@ -43,7 +43,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
 
     // Mock extracted data based on URL
     setForm({
-      title: "Beautiful apartment found from listing",
+      title: "Hermoso departamento encontrado en el aviso",
       priceRent: "750",
       priceExpenses: "100",
       currency: "USD",
@@ -51,7 +51,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       sqMeters: "55",
       rooms: "2",
       aiSummary:
-        "AI extracted: Bright and spacious apartment with modern finishes. Open kitchen, large windows, and hardwood floors throughout. Building with elevator and security. Close to public transport.",
+        "IA extrajo: Departamento luminoso y amplio con terminaciones modernas. Cocina abierta, ventanas grandes y pisos de parquet. Edificio con ascensor y seguridad. Cerca del transporte público.",
     });
 
     setIsLoading(false);
@@ -99,7 +99,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
-            {step === "url" ? "Add New Property" : "Property Details"}
+            {step === "url" ? "Agregar Propiedad" : "Detalles de la Propiedad"}
           </DialogTitle>
         </DialogHeader>
 
@@ -107,7 +107,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
           <div className="space-y-5 py-2">
             {/* Smart Capture */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Paste a listing URL</Label>
+              <Label className="text-sm font-medium">Pegá la URL del aviso</Label>
               <div className="relative">
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -120,7 +120,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Paste any real estate listing URL and our AI will extract all property details automatically.
+                Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
               </p>
             </div>
 
@@ -132,12 +132,12 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Extracting details...
+                  Extrayendo detalles...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Extract with AI
+                  Extraer con IA
                 </>
               )}
             </Button>
@@ -156,7 +156,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
               onClick={() => setStep("manual")}
               className="w-full rounded-xl"
             >
-              Add manually
+              Agregar manualmente
             </Button>
           </div>
         )}
@@ -171,28 +171,28 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
             )}
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Title *</Label>
+              <Label className="text-xs font-medium">Título *</Label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="e.g. 2-bedroom in Palermo"
+                placeholder="ej. 2 ambientes en Palermo"
                 className="rounded-xl text-sm"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Neighborhood *</Label>
+              <Label className="text-xs font-medium">Barrio *</Label>
               <Input
                 value={form.neighborhood}
                 onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
-                placeholder="e.g. Palermo, Recoleta..."
+                placeholder="ej. Palermo, Recoleta..."
                 className="rounded-xl text-sm"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Rent *</Label>
+                <Label className="text-xs font-medium">Alquiler *</Label>
                 <Input
                   type="number"
                   value={form.priceRent}
@@ -202,7 +202,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Expenses</Label>
+                <Label className="text-xs font-medium">Expensas</Label>
                 <Input
                   type="number"
                   value={form.priceExpenses}
@@ -215,7 +215,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Currency</Label>
+                <Label className="text-xs font-medium">Moneda</Label>
                 <Input
                   value={form.currency}
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -234,7 +234,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Rooms</Label>
+                <Label className="text-xs font-medium">Ambientes</Label>
                 <Input
                   type="number"
                   value={form.rooms}
@@ -251,14 +251,14 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 onClick={() => setStep("url")}
                 className="flex-1 rounded-xl"
               >
-                Back
+                Volver
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={!isFormValid}
                 className="flex-1 rounded-xl"
               >
-                Add Property
+                Agregar Propiedad
               </Button>
             </div>
           </div>

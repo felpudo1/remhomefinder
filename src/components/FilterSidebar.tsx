@@ -15,10 +15,10 @@ interface FilterSidebarProps {
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "newest", label: "Newest first" },
-  { value: "oldest", label: "Oldest first" },
-  { value: "total-asc", label: "Price: Low to High" },
-  { value: "total-desc", label: "Price: High to Low" },
+  { value: "newest", label: "Más recientes" },
+  { value: "oldest", label: "Más antiguos" },
+  { value: "total-asc", label: "Precio: menor a mayor" },
+  { value: "total-desc", label: "Precio: mayor a menor" },
 ];
 
 export function FilterSidebar({
@@ -39,7 +39,7 @@ export function FilterSidebar({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
-            <span className="font-semibold text-sm text-foreground">Filters</span>
+            <span className="font-semibold text-sm text-foreground">Filtros</span>
           </div>
           {hasActiveFilters && (
             <button
@@ -54,15 +54,15 @@ export function FilterSidebar({
 
         {/* Results count */}
         <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-          Showing{" "}
-          <span className="font-semibold text-foreground">{filteredCount}</span> of{" "}
-          <span className="font-semibold text-foreground">{totalCount}</span> properties
+          Mostrando{" "}
+          <span className="font-semibold text-foreground">{filteredCount}</span> de{" "}
+          <span className="font-semibold text-foreground">{totalCount}</span> propiedades
         </div>
 
         {/* Status Filter */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Status
+            Estado
           </p>
           <div className="space-y-1.5">
             {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
@@ -90,7 +90,7 @@ export function FilterSidebar({
         {/* Sort */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Sort by
+            Ordenar por
           </p>
           <div className="space-y-1.5">
             {SORT_OPTIONS.map((opt) => (
