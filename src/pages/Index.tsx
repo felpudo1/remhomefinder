@@ -127,8 +127,7 @@ const Index = () => {
               <Home className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <span className="font-bold text-foreground text-base tracking-tight">BuscaCasa</span>
-              <span className="text-primary font-bold text-base"> IA</span>
+              <span className="font-bold text-foreground text-base tracking-tight">BuscandoMiCasaPerfecta</span>
             </div>
           </div>
 
