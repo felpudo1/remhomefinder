@@ -21,7 +21,7 @@ const Index = () => {
 
   const handleStatusChange = (id: string, status: PropertyStatus) => {
     setProperties((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status } : p))
+    prev.map((p) => p.id === id ? { ...p, status } : p)
     );
     if (selectedProperty?.id === id) {
       setSelectedProperty((prev) => prev ? { ...prev, status } : null);
@@ -32,16 +32,16 @@ const Index = () => {
     const newComment: PropertyComment = {
       ...comment,
       id: Date.now().toString(),
-      createdAt: new Date(),
+      createdAt: new Date()
     };
     setProperties((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, comments: [...p.comments, newComment] } : p
-      )
+    prev.map((p) =>
+    p.id === id ? { ...p, comments: [...p.comments, newComment] } : p
+    )
     );
     if (selectedProperty?.id === id) {
       setSelectedProperty((prev) =>
-        prev ? { ...prev, comments: [...prev.comments, newComment] } : null
+      prev ? { ...prev, comments: [...prev.comments, newComment] } : null
       );
     }
   };
@@ -52,7 +52,7 @@ const Index = () => {
 
   const handleStatusToggle = (status: PropertyStatus) => {
     setSelectedStatuses((prev) =>
-      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
     );
   };
 
@@ -75,9 +75,9 @@ const Index = () => {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.neighborhood.toLowerCase().includes(q) ||
-          p.aiSummary.toLowerCase().includes(q)
+        p.title.toLowerCase().includes(q) ||
+        p.neighborhood.toLowerCase().includes(q) ||
+        p.aiSummary.toLowerCase().includes(q)
       );
     }
 
@@ -111,7 +111,7 @@ const Index = () => {
       contacted: 0,
       coordinated: 0,
       visited: 0,
-      discarded: 0,
+      discarded: 0
     };
     properties.forEach((p) => counts[p.status]++);
     return counts;
@@ -138,27 +138,27 @@ const Index = () => {
               placeholder="Buscar por título, barrio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
-            />
+              className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm" />
+
           </div>
 
           {/* Status pills */}
           <div className="hidden md:flex items-center gap-2">
             {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-              ([key, cfg]) => (
-                <button
-                  key={key}
-                  onClick={() => handleStatusToggle(key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    selectedStatuses.includes(key)
-                      ? `${cfg.bg} ${cfg.color}`
-                      : "bg-muted text-muted-foreground hover:bg-accent"
-                  }`}
-                >
+              ([key, cfg]) =>
+              <button
+                key={key}
+                onClick={() => handleStatusToggle(key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                selectedStatuses.includes(key) ?
+                `${cfg.bg} ${cfg.color}` :
+                "bg-muted text-muted-foreground hover:bg-accent"}`
+                }>
+
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                   {statusCounts[key]}
                 </button>
-              )
+
             )}
           </div>
         </div>
@@ -174,8 +174,8 @@ const Index = () => {
           onSortChange={setSortBy}
           onClearFilters={handleClearFilters}
           totalCount={properties.length}
-          filteredCount={filteredAndSorted.length}
-        />
+          filteredCount={filteredAndSorted.length} />
+
 
         {/* Dashboard */}
         <main className="flex-1 min-w-0">
@@ -183,29 +183,29 @@ const Index = () => {
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Tus Propiedades
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Seguí, compará y colaborá en tu búsqueda inmobiliaria
+            <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda inmobiliaria
+
             </p>
           </div>
 
-          {filteredAndSorted.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
+          {filteredAndSorted.length === 0 ?
+          <div className="text-center py-20 text-muted-foreground">
               <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p className="font-medium">No se encontraron propiedades</p>
               <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
+            </div> :
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filteredAndSorted.map((property) =>
+            <PropertyCard
+              key={property.id}
+              property={property}
+              onStatusChange={handleStatusChange}
+              onClick={() => handleCardClick(property)} />
+
+            )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filteredAndSorted.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  onStatusChange={handleStatusChange}
-                  onClick={() => handleCardClick(property)}
-                />
-              ))}
-            </div>
-          )}
+          }
         </main>
       </div>
 
@@ -213,8 +213,8 @@ const Index = () => {
       <button
         onClick={() => setIsAddOpen(true)}
         className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-        aria-label="Add property"
-      >
+        aria-label="Add property">
+
         <Plus className="w-6 h-6" />
       </button>
 
@@ -224,16 +224,16 @@ const Index = () => {
         open={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onStatusChange={handleStatusChange}
-        onAddComment={handleAddComment}
-      />
+        onAddComment={handleAddComment} />
+
 
       <AddPropertyModal
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        onAdd={handleAddProperty}
-      />
-    </div>
-  );
+        onAdd={handleAddProperty} />
+
+    </div>);
+
 };
 
 export default Index;
