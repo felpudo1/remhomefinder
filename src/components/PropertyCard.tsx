@@ -83,7 +83,7 @@ export function PropertyCard({ property, onStatusChange, onClick }: PropertyCard
           </span>
           <span className="flex items-center gap-1">
             <BedDouble className="w-3.5 h-3.5" />
-            {property.rooms} {property.rooms === 1 ? "room" : "rooms"}
+            {property.rooms} {property.rooms === 1 ? "ambiente" : "ambientes"}
           </span>
         </div>
 
@@ -97,11 +97,11 @@ export function PropertyCard({ property, onStatusChange, onClick }: PropertyCard
               <span className="text-xl font-bold text-foreground">
                 {property.currency} {property.totalCost.toLocaleString()}
               </span>
-              <span className="text-xs text-muted-foreground">/mo</span>
+              <span className="text-xs text-muted-foreground">/mes</span>
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Rent {property.currency} {property.priceRent.toLocaleString()} +{" "}
-              Exp {property.currency} {property.priceExpenses.toLocaleString()}
+              Alquiler {property.currency} {property.priceRent.toLocaleString()} +{" "}
+              Expensas {property.currency} {property.priceExpenses.toLocaleString()}
             </div>
           </div>
 

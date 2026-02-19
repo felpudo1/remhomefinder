@@ -62,7 +62,7 @@ export function PropertyDetailModal({
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
+    return new Date(date).toLocaleDateString("es-AR", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -138,26 +138,26 @@ export function PropertyDetailModal({
             </div>
             <div className="bg-muted rounded-xl p-3 text-center">
               <div className="text-lg font-bold text-foreground">{property.rooms}</div>
-              <div className="text-xs text-muted-foreground">{property.rooms === 1 ? "Room" : "Rooms"}</div>
+              <div className="text-xs text-muted-foreground">{property.rooms === 1 ? "Ambiente" : "Ambientes"}</div>
             </div>
             <div className="bg-muted rounded-xl p-3 text-center">
               <div className="text-lg font-bold text-foreground">{property.currency}</div>
-              <div className="text-xs text-muted-foreground">Currency</div>
+              <div className="text-xs text-muted-foreground">Moneda</div>
             </div>
           </div>
 
           {/* Price Breakdown */}
           <div className="bg-muted rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Monthly rent</span>
+              <span className="text-muted-foreground">Alquiler mensual</span>
               <span className="font-medium">{property.currency} {property.priceRent.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Expenses (expensas)</span>
+              <span className="text-muted-foreground">Expensas</span>
               <span className="font-medium">{property.currency} {property.priceExpenses.toLocaleString()}</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">
-              <span className="font-semibold text-foreground">Total monthly cost</span>
+              <span className="font-semibold text-foreground">Costo mensual total</span>
               <span className="font-bold text-foreground text-lg">
                 {property.currency} {property.totalCost.toLocaleString()}
               </span>
@@ -168,7 +168,7 @@ export function PropertyDetailModal({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Sparkles className="w-4 h-4 text-primary" />
-              AI Summary
+              Resumen IA
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-xl p-4">
               {property.aiSummary}
@@ -177,7 +177,7 @@ export function PropertyDetailModal({
 
           {/* Status Selector */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Status</span>
+            <span className="text-sm font-semibold text-foreground">Estado</span>
             <Select
               value={property.status}
               onValueChange={(val) => onStatusChange(property.id, val as PropertyStatus)}
@@ -210,13 +210,13 @@ export function PropertyDetailModal({
             <div className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-semibold text-foreground">
-                Comments ({property.comments.length})
+                Comentarios ({property.comments.length})
               </span>
             </div>
 
             {property.comments.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No comments yet. Be the first to share your opinion!
+                Sin comentarios aún. ¡Sé el primero en compartir tu opinión!
               </p>
             )}
 
@@ -240,7 +240,7 @@ export function PropertyDetailModal({
             {/* Add comment */}
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Commenting as:</span>
+                <span className="text-xs text-muted-foreground">Comentar como:</span>
                 <Select value={commentAuthor} onValueChange={setCommentAuthor}>
                   <SelectTrigger className="h-7 text-xs w-auto border-border">
                     <SelectValue />
@@ -253,7 +253,7 @@ export function PropertyDetailModal({
                 </Select>
               </div>
               <Textarea
-                placeholder="Share your thoughts on this property..."
+                placeholder="Compartí tu opinión sobre esta propiedad..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 className="resize-none text-sm min-h-[80px] rounded-xl"
@@ -262,14 +262,14 @@ export function PropertyDetailModal({
                 }}
               />
               <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">⌘+Enter to submit</span>
+                <span className="text-xs text-muted-foreground">⌘+Enter para enviar</span>
                 <Button
                   size="sm"
                   onClick={handleAddComment}
                   disabled={!commentText.trim()}
                   className="rounded-lg"
                 >
-                  Add Comment
+                  Agregar comentario
                 </Button>
               </div>
             </div>

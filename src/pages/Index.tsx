@@ -127,16 +127,16 @@ const Index = () => {
               <Home className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <span className="font-bold text-foreground text-base tracking-tight">HomeFinder</span>
-              <span className="text-primary font-bold text-base"> AI</span>
+              <span className="font-bold text-foreground text-base tracking-tight">BuscaCasa</span>
+              <span className="text-primary font-bold text-base"> IA</span>
             </div>
           </div>
 
-          {/* Search bar */}
+          {/* Barra de búsqueda */}
           <div className="flex-1 max-w-md relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by title, neighborhood..."
+              placeholder="Buscar por título, barrio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
@@ -182,18 +182,18 @@ const Index = () => {
         <main className="flex-1 min-w-0">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Your Properties
+              Tus Propiedades
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Track, compare and collaborate on your real estate search
+              Seguí, comparí y colaborá en tu búsqueda inmobiliaria
             </p>
           </div>
 
           {filteredAndSorted.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">No properties found</p>
-              <p className="text-sm mt-1">Try adjusting your filters or add a new property.</p>
+              <p className="font-medium">No se encontraron propiedades</p>
+              <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
