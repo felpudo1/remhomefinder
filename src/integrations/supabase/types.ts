@@ -115,6 +115,7 @@ export type Database = {
           id: string
           owner_id: string
           permission: string
+          shared_email: string | null
           shared_with_id: string
         }
         Insert: {
@@ -122,6 +123,7 @@ export type Database = {
           id?: string
           owner_id: string
           permission?: string
+          shared_email?: string | null
           shared_with_id: string
         }
         Update: {
@@ -129,6 +131,7 @@ export type Database = {
           id?: string
           owner_id?: string
           permission?: string
+          shared_email?: string | null
           shared_with_id?: string
         }
         Relationships: []
