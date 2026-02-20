@@ -203,11 +203,15 @@ export function useProperties() {
         updateData.deleted_reason = deletedReason || "";
         updateData.deleted_by_email = user?.email || "";
       }
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("properties")
         .update(updateData)
-        .eq("id", id);
+        .eq("id", id)
+        .select();
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("permission denied");
+      }
       return { id, status };
     },
     onMutate: async ({ id, status }) => {
@@ -243,15 +247,18 @@ export function useProperties() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
-      const { error } = await supabase.from("property_comments").insert({
+      const { data, error } = await supabase.from("property_comments").insert({
         property_id: propertyId,
         user_id: user.id,
         author: comment.author,
         avatar: comment.avatar,
         text: comment.text,
-      });
+      }).select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("permission denied");
+      }
     },
     onMutate: async ({ propertyId, comment }) => {
       await queryClient.cancelQueries({ queryKey: ["properties"] });
