@@ -140,7 +140,7 @@ const Index = () => {
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
-      contacted: 0, coordinated: 0, visited: 0, discarded: 0
+      ingresado: 0, contacted: 0, coordinated: 0, discarded: 0, a_analizar: 0
     };
     properties.forEach((p) => counts[p.status]++);
     return counts;
