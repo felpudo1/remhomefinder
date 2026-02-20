@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 
@@ -58,112 +58,146 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
 }
 
 export function useProperties() {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchProperties = useCallback(async () => {
-    setLoading(true);
-    const { data: props, error: propsError } = await supabase
-      .from("properties")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (propsError || !props) {
-      console.error("Error fetching properties:", propsError);
-      setLoading(false);
-      return;
-    }
-
-    const propertyIds = props.map((p: any) => p.id);
-    let comments: DbComment[] = [];
-    if (propertyIds.length > 0) {
-      const { data: commentsData } = await supabase
-        .from("property_comments")
+  const { data: properties = [], isLoading: loading, error } = useQuery({
+    queryKey: ["properties"],
+    queryFn: async () => {
+      const { data: props, error: propsError } = await supabase
+        .from("properties")
         .select("*")
-        .in("property_id", propertyIds)
-        .order("created_at", { ascending: true });
-      comments = (commentsData as DbComment[]) || [];
-    }
+        .order("created_at", { ascending: false });
 
-    const mapped = props.map((p: any) =>
-      mapDbToProperty(p as DbProperty, comments.filter((c) => c.property_id === p.id))
-    );
-    setProperties(mapped);
-    setLoading(false);
-  }, []);
+      if (propsError) throw propsError;
+      if (!props) return [];
 
-  useEffect(() => {
-    fetchProperties();
-  }, [fetchProperties]);
+      const propertyIds = props.map((p) => p.id);
+      let comments: DbComment[] = [];
 
-  const addProperty = async (form: {
-    url: string;
-    title: string;
-    priceRent: number;
-    priceExpenses: number;
-    currency: string;
-    neighborhood: string;
-    sqMeters: number;
-    rooms: number;
-    aiSummary: string;
-  }) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
+      if (propertyIds.length > 0) {
+        const { data: commentsData, error: commentsError } = await supabase
+          .from("property_comments")
+          .select("*")
+          .in("property_id", propertyIds)
+          .order("created_at", { ascending: true });
 
-    const { data, error } = await supabase
-      .from("properties")
-      .insert({
+        if (commentsError) throw commentsError;
+        comments = (commentsData as DbComment[]) || [];
+      }
+
+      return props.map((p) =>
+        mapDbToProperty(p as DbProperty, comments.filter((c) => c.property_id === p.id))
+      );
+    },
+  });
+
+  const addPropertyMutation = useMutation({
+    mutationFn: async (form: {
+      url: string;
+      title: string;
+      priceRent: number;
+      priceExpenses: number;
+      currency: string;
+      neighborhood: string;
+      sqMeters: number;
+      rooms: number;
+      aiSummary: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No autenticado");
+
+      const { data, error } = await supabase
+        .from("properties")
+        .insert({
+          user_id: user.id,
+          url: form.url || "",
+          title: form.title,
+          price_rent: form.priceRent,
+          price_expenses: form.priceExpenses,
+          total_cost: form.priceRent + form.priceExpenses,
+          currency: form.currency,
+          neighborhood: form.neighborhood,
+          sq_meters: form.sqMeters,
+          rooms: form.rooms,
+          ai_summary: form.aiSummary,
+          images: [],
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: PropertyStatus }) => {
+      const { error } = await supabase
+        .from("properties")
+        .update({ status })
+        .eq("id", id);
+      if (error) throw error;
+      return { id, status };
+    },
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ["properties"] });
+      const previousProperties = queryClient.getQueryData<Property[]>(["properties"]);
+
+      if (previousProperties) {
+        queryClient.setQueryData<Property[]>(
+          ["properties"],
+          previousProperties.map((p) => (p.id === id ? { ...p, status } : p))
+        );
+      }
+      return { previousProperties };
+    },
+    onError: (err, newTodo, context) => {
+      if (context?.previousProperties) {
+        queryClient.setQueryData(["properties"], context.previousProperties);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+    },
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async ({
+      propertyId,
+      comment,
+    }: {
+      propertyId: string;
+      comment: Omit<PropertyComment, "id" | "createdAt">;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No autenticado");
+
+      const { error } = await supabase.from("property_comments").insert({
+        property_id: propertyId,
         user_id: user.id,
-        url: form.url || "",
-        title: form.title,
-        price_rent: form.priceRent,
-        price_expenses: form.priceExpenses,
-        total_cost: form.priceRent + form.priceExpenses,
-        currency: form.currency,
-        neighborhood: form.neighborhood,
-        sq_meters: form.sqMeters,
-        rooms: form.rooms,
-        ai_summary: form.aiSummary,
-        images: [],
-      })
-      .select()
-      .single();
+        author: comment.author,
+        avatar: comment.avatar,
+        text: comment.text,
+      });
 
-    if (error) throw error;
-    await fetchProperties();
-    return data;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+    },
+  });
+
+  return {
+    properties,
+    loading,
+    error,
+    addProperty: addPropertyMutation.mutateAsync,
+    updateStatus: (id: string, status: PropertyStatus) => updateStatusMutation.mutateAsync({ id, status }),
+    addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
+      addCommentMutation.mutateAsync({ propertyId: id, comment }),
+    refetch: () => queryClient.invalidateQueries({ queryKey: ["properties"] }),
   };
-
-  const updateStatus = async (id: string, status: PropertyStatus) => {
-    const { error } = await supabase
-      .from("properties")
-      .update({ status })
-      .eq("id", id);
-
-    if (error) throw error;
-    setProperties((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status } : p))
-    );
-  };
-
-  const addComment = async (
-    propertyId: string,
-    comment: Omit<PropertyComment, "id" | "createdAt">
-  ) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No autenticado");
-
-    const { error } = await supabase.from("property_comments").insert({
-      property_id: propertyId,
-      user_id: user.id,
-      author: comment.author,
-      avatar: comment.avatar,
-      text: comment.text,
-    });
-
-    if (error) throw error;
-    await fetchProperties();
-  };
-
-  return { properties, loading, addProperty, updateStatus, addComment, refetch: fetchProperties };
 }

@@ -1,8 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
 import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
@@ -15,8 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
 const Index = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const { userEmail, handleLogout } = useAuthRedirect();
   const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -24,31 +23,11 @@ const Index = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/auth");
-      else setUserEmail(session.user.email ?? null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) navigate("/auth");
-      else setUserEmail(session.user.email ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
 
   const handleStatusChange = async (id: string, status: PropertyStatus) => {
     try {
       await updateStatus(id, status);
+      // No need to manually update local state, TanStack Query handles it via invalidation/optimistic updates
       if (selectedProperty?.id === id) {
         setSelectedProperty((prev) => prev ? { ...prev, status } : null);
       }
@@ -60,9 +39,7 @@ const Index = () => {
   const handleAddComment = async (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => {
     try {
       await addComment(id, comment);
-      // Refresh selected property comments
-      const updated = properties.find((p) => p.id === id);
-      if (updated) setSelectedProperty(updated);
+      // Close modal or update selected property if needed, though invalidation handles data refresh
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -81,6 +58,8 @@ const Index = () => {
   }) => {
     try {
       await addProperty(form);
+      setIsAddOpen(false);
+      toast({ title: "Éxito", description: "Propiedad agregada correctamente" });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -142,7 +121,11 @@ const Index = () => {
     const counts: Record<PropertyStatus, number> = {
       ingresado: 0, contacted: 0, coordinated: 0, discarded: 0, a_analizar: 0
     };
-    properties.forEach((p) => counts[p.status]++);
+    properties.forEach((p) => {
+      if (counts[p.status] !== undefined) {
+        counts[p.status]++;
+      }
+    });
     return counts;
   }, [properties]);
 
@@ -174,14 +157,13 @@ const Index = () => {
                 <button
                   key={key}
                   onClick={() => handleStatusToggle(key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    selectedStatuses.includes(key)
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedStatuses.includes(key)
                       ? `${cfg.bg} ${cfg.color}`
                       : "bg-muted text-muted-foreground hover:bg-accent"
-                  }`}
+                    }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                  {statusCounts[key]}
+                  {statusCounts[key] || 0}
                 </button>
               )
             )}
