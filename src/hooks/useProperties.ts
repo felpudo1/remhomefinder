@@ -39,6 +39,20 @@ interface DbComment {
   created_at: string;
 }
 
+function resolveImages(dbImages: string[]): string[] {
+  if (!dbImages || dbImages.length === 0) {
+    return [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]];
+  }
+  return dbImages.map((img) => {
+    const match = img.match(/default-house-(\d+)\.jpg/);
+    if (match) {
+      const idx = parseInt(match[1], 10) - 1;
+      if (idx >= 0 && idx < DEFAULT_HOUSE_IMAGES.length) return DEFAULT_HOUSE_IMAGES[idx];
+    }
+    return img;
+  });
+}
+
 function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
   return {
     id: db.id,
@@ -52,7 +66,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     sqMeters: Number(db.sq_meters),
     rooms: db.rooms,
     status: db.status as PropertyStatus,
-    images: db.images || [],
+    images: resolveImages(db.images),
     aiSummary: db.ai_summary,
     comments: comments.map((c) => ({
       id: c.id,

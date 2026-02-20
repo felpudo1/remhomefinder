@@ -144,6 +144,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_property: {
+        Args: { _property_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_property_access: {
         Args: { _accessing_user_id: string; _property_user_id: string }
         Returns: boolean
