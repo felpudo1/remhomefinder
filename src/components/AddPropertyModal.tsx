@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, Sparkles, Loader2 } from "lucide-react";
+import { Link, Sparkles, Loader2, Plus, X, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -34,7 +34,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"url" | "manual">("url");
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
-
+  const [manualImageUrl, setManualImageUrl] = useState("");
   const [form, setForm] = useState({
     title: "",
     priceRent: "",
@@ -104,6 +104,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
     setUrl("");
     setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "" });
     setScrapedImages([]);
+    setManualImageUrl("");
     setStep("url");
     setIsLoading(false);
     onClose();
@@ -219,6 +220,54 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 <Label className="text-xs font-medium">Ambientes</Label>
                 <Input type="number" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} placeholder="2" className="rounded-xl text-sm" />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1">
+                <ImageIcon className="w-3 h-3" /> Fotos
+              </Label>
+              {scrapedImages.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {scrapedImages.map((img, i) => (
+                    <div key={i} className="relative shrink-0">
+                      <img src={img} alt={`Foto ${i + 1}`} className="w-16 h-12 rounded-lg object-cover border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      <button type="button" onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://... URL de la foto"
+                  value={manualImageUrl}
+                  onChange={(e) => setManualImageUrl(e.target.value)}
+                  className="rounded-xl text-sm flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && manualImageUrl.trim()) {
+                      e.preventDefault();
+                      setScrapedImages(prev => [...prev, manualImageUrl.trim()]);
+                      setManualImageUrl("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="rounded-xl shrink-0"
+                  disabled={!manualImageUrl.trim()}
+                  onClick={() => {
+                    setScrapedImages(prev => [...prev, manualImageUrl.trim()]);
+                    setManualImageUrl("");
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Pegá URLs de fotos y presioná Enter o +</p>
             </div>
 
             <div className="flex gap-2 pt-2">
