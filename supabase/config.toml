@@ -2,3 +2,6 @@ project_id = "urzoecuaknwlxzhpuyrg"
 
 [functions.find-user-by-email]
 verify_jwt = false
+
+[functions.scrape-property]
+verify_jwt = false
