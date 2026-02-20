@@ -7,7 +7,8 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2 } from "lucide-react";
+import { Home, Plus, Search, Loader2, LogOut, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,13 +24,27 @@ const Index = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Redirect to auth if not logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate("/auth");
+      else setUserEmail(session.user.email ?? null);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) navigate("/auth");
+      else setUserEmail(session.user.email ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   const handleStatusChange = async (id: string, status: PropertyStatus) => {
     try {
@@ -170,6 +185,23 @@ const Index = () => {
                 </button>
               )
             )}
+          </div>
+
+          {/* User info & logout */}
+          <div className="hidden md:flex items-center gap-2 ml-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <User className="w-3.5 h-3.5" />
+              <span className="max-w-[120px] truncate">{userEmail}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleLogout}
+              title="Cerrar sesión"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
