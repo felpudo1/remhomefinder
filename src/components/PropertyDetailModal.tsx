@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Property, PropertyStatus, STATUS_CONFIG, PropertyComment } from "@/types/property";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   MapPin,
@@ -32,9 +33,10 @@ interface PropertyDetailModalProps {
   onClose: () => void;
   onStatusChange: (id: string, status: PropertyStatus) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
+  currentUserEmail?: string | null;
 }
 
-const AUTHORS = ["María", "Carlos", "Me"];
+
 
 export function PropertyDetailModal({
   property,
@@ -42,10 +44,17 @@ export function PropertyDetailModal({
   onClose,
   onStatusChange,
   onAddComment,
+  currentUserEmail,
 }: PropertyDetailModalProps) {
   const [activeImg, setActiveImg] = useState(0);
   const [commentText, setCommentText] = useState("");
-  const [commentAuthor, setCommentAuthor] = useState("Me");
+  const [commentAuthor, setCommentAuthor] = useState(currentUserEmail || "Me");
+
+  useEffect(() => {
+    if (open && currentUserEmail) {
+      setCommentAuthor(currentUserEmail);
+    }
+  }, [open, currentUserEmail]);
 
   if (!property) return null;
 
@@ -99,9 +108,8 @@ export function PropertyDetailModal({
                   <button
                     key={i}
                     onClick={() => setActiveImg(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      i === activeImg ? "bg-card scale-125" : "bg-card/50"
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-all ${i === activeImg ? "bg-card scale-125" : "bg-card/50"
+                      }`}
                   />
                 ))}
               </div>
@@ -241,16 +249,12 @@ export function PropertyDetailModal({
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex gap-2 items-center">
                 <span className="text-xs text-muted-foreground">Comentar como:</span>
-                <Select value={commentAuthor} onValueChange={setCommentAuthor}>
-                  <SelectTrigger className="h-7 text-xs w-auto border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AUTHORS.map((a) => (
-                      <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  className="h-7 text-xs w-[180px] border-border bg-muted text-muted-foreground"
+                  value={commentAuthor}
+                  readOnly
+                  placeholder="Tu email"
+                />
               </div>
               <Textarea
                 placeholder="Compartí tu opinión sobre esta propiedad..."

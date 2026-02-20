@@ -195,7 +195,44 @@ export function useProperties() {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async ({ propertyId, comment }) => {
+      await queryClient.cancelQueries({ queryKey: ["properties"] });
+      const previousProperties = queryClient.getQueryData<Property[]>(["properties"]);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (previousProperties && user) {
+        queryClient.setQueryData<Property[]>(
+          ["properties"],
+          previousProperties.map((p) => {
+            if (p.id === propertyId) {
+              return {
+                ...p,
+                comments: [
+                  ...p.comments,
+                  {
+                    id: crypto.randomUUID(), // Temp ID
+                    author: comment.author,
+                    avatar: comment.avatar,
+                    text: comment.text,
+                    createdAt: new Date(),
+                  },
+                ],
+              };
+            }
+            return p;
+          })
+        );
+      }
+
+      return { previousProperties };
+    },
+    onError: (err, newComment, context) => {
+      if (context?.previousProperties) {
+        queryClient.setQueryData(["properties"], context.previousProperties);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
     },
   });

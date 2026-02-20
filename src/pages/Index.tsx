@@ -291,6 +291,7 @@ const Index = () => {
         onClose={() => setIsDetailOpen(false)}
         onStatusChange={handleStatusChange}
         onAddComment={handleAddComment}
+        currentUserEmail={userEmail}
       />
 
       <AddPropertyModal
