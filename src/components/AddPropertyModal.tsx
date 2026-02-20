@@ -172,13 +172,16 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
               <p className="text-xs text-muted-foreground">
                 Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
               </p>
+              <p className="text-xs text-amber-600 font-medium">
+                Las publicaciones de MarketPlace hay que ingresarlas manualmente.
+              </p>
             </div>
 
             <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
               {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo detalles...</>
+                <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
               ) : (
-                <><Sparkles className="w-4 h-4" />Extraer con IA</>
+                <><Sparkles className="w-4 h-4" />Extraer datos de la publicación</>
               )}
             </Button>
 
