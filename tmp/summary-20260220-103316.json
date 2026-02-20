@@ -1,0 +1,4 @@
+{
+    "summary": "Se corrigió el error de actualización en tiempo real cuando se elimina una propiedad. Se añadió una suscripción de Supabase Realtime a la tabla 'properties' en el hook 'useProperties.ts' para que los cambios de estado (como 'eliminado') se reflejen instantáneamente en todos los usuarios compartidos.",
+    "current_status": "Suscripciones en tiempo real configuradas para comentarios y propiedades. Validando con el usuario."
+}

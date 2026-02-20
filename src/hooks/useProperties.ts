@@ -88,13 +88,20 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
 export function useProperties() {
   const queryClient = useQueryClient();
 
-  // Real-time subscription for comments
+  // Real-time subscription for comments and properties
   useEffect(() => {
     const channel = supabase
-      .channel("property_comments_realtime")
+      .channel("db_realtime_changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "property_comments" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["properties"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "properties" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["properties"] });
         }
