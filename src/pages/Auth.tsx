@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Home, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import authHouseImg from "@/assets/auth-house.jpg";
+import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -77,9 +77,10 @@ const Auth = () => {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${authHouseImg})` }}
+      style={{ backgroundImage: `url(${authBgImg})` }}
     >
-      <div className="w-full max-w-sm space-y-8 bg-background/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+      <div className="w-full max-w-sm space-y-8 relative rounded-2xl p-[3px] bg-gradient-to-br from-primary via-primary/50 to-transparent shadow-2xl">
+        <div className="bg-background/90 backdrop-blur-md rounded-2xl p-8 space-y-8">
         {/* Logo */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto">
@@ -169,6 +170,7 @@ const Auth = () => {
             {isLogin ? "Registrate" : "Iniciá sesión"}
           </button>
         </p>
+        </div>
       </div>
     </div>
   );
