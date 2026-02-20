@@ -6,7 +6,8 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal } from "lucide-react";
+import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Share2 } from "lucide-react";
+import { ShareSettingsModal } from "@/components/ShareSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +26,7 @@ const Index = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const handleStatusChange = async (id: string, status: PropertyStatus) => {
     try {
@@ -190,7 +192,15 @@ const Index = () => {
               <User className="w-3.5 h-3.5" />
               <span className="max-w-[120px] truncate">{userEmail}</span>
             </div>
-            {/* Botón logout SIEMPRE visible (mobile y desktop) */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsShareOpen(true)}
+              title="Compartir propiedades"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -287,6 +297,11 @@ const Index = () => {
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onAdd={handleAddProperty}
+      />
+
+      <ShareSettingsModal
+        open={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
       />
     </div>
   );

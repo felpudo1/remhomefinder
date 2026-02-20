@@ -109,12 +109,47 @@ export type Database = {
           },
         ]
       }
+      property_shares: {
+        Row: {
+          created_at: string | null
+          id: string
+          owner_id: string
+          permission: string
+          shared_with_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          owner_id: string
+          permission?: string
+          shared_with_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          owner_id?: string
+          permission?: string
+          shared_with_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_property_access: {
+        Args: { _accessing_user_id: string; _property_user_id: string }
+        Returns: boolean
+      }
+      has_property_permission: {
+        Args: {
+          _accessing_user_id: string
+          _permissions: string[]
+          _property_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       property_status:
