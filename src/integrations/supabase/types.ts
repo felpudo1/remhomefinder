@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           ai_summary: string
           created_at: string
+          created_by_email: string
           currency: string
           id: string
           images: string[]
@@ -37,6 +38,7 @@ export type Database = {
         Insert: {
           ai_summary?: string
           created_at?: string
+          created_by_email?: string
           currency?: string
           id?: string
           images?: string[]
@@ -56,6 +58,7 @@ export type Database = {
         Update: {
           ai_summary?: string
           created_at?: string
+          created_by_email?: string
           currency?: string
           id?: string
           images?: string[]
