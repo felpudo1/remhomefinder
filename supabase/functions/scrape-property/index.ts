@@ -73,6 +73,7 @@ serve(async (req) => {
     
     // Extract image URLs from multiple sources
     const imageExtensions = /\.(jpg|jpeg|png|webp|avif)(\?|$)/i;
+    const excludeExtensions = /\.(svg|gif|ico)(\?|$)/i;
     const imageSet = new Set<string>();
 
     // Source 1: links array
@@ -102,7 +103,10 @@ serve(async (req) => {
     // Filter out icons, logos, tiny images
     const imageUrls = Array.from(imageSet)
       .filter((url) => {
-        const isIcon = /(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron|pixel|tracking|analytics)/i.test(url);
+        // Must be a real image format (no SVGs, GIFs, ICOs)
+        if (excludeExtensions.test(url)) return false;
+        if (!imageExtensions.test(url)) return false;
+        const isIcon = /(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron|pixel|tracking|analytics|agency|assets\/vectorial)/i.test(url);
         const isTiny = /(16x|32x|48x|64x|1x1|2x2|1\.gif|blank\.)/i.test(url);
         return !isIcon && !isTiny;
       })
@@ -131,9 +135,9 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Sos un asistente que extrae datos de avisos inmobiliarios argentinos. 
+            content: `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina. 
 Analizá el contenido del aviso y extraé los datos de la propiedad.
-- Para moneda: usá "ARS" para pesos argentinos, "USD" para dólares.
+- Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares. Detectá la moneda según el sitio y el país (ej: mercadolibre.com.uy → UYU, infocasas.com.uy → UYU).
 - Para el barrio: extraé el barrio o zona mencionada.
 - Para el resumen: hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
 - Si un dato no está disponible, dejalo vacío o en 0.`,
@@ -155,7 +159,7 @@ Analizá el contenido del aviso y extraé los datos de la propiedad.
                   title: { type: "string", description: "Título descriptivo de la propiedad" },
                   priceRent: { type: "number", description: "Precio de alquiler mensual" },
                   priceExpenses: { type: "number", description: "Expensas mensuales" },
-                  currency: { type: "string", description: "Moneda: USD o ARS" },
+                  currency: { type: "string", description: "Moneda: USD, UYU o ARS" },
                   neighborhood: { type: "string", description: "Barrio o zona" },
                   sqMeters: { type: "number", description: "Superficie en metros cuadrados" },
                   rooms: { type: "number", description: "Cantidad de ambientes" },
