@@ -8,9 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, Sparkles, Loader2, Plus, X, ImageIcon } from "lucide-react";
+import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRef } from "react";
 
 interface AddPropertyModalProps {
   open: boolean;
@@ -35,6 +36,8 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
   const [step, setStep] = useState<"url" | "manual">("url");
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [manualImageUrl, setManualImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "",
     priceRent: "",
@@ -81,6 +84,36 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       toast.error("Error al conectar con el servicio de scraping");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Debés estar logueado"); return; }
+
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("property-images").upload(path, file);
+        if (error) { console.error("Upload error:", error); continue; }
+        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+        uploaded.push(urlData.publicUrl);
+      }
+      if (uploaded.length > 0) {
+        setScrapedImages(prev => [...prev, ...uploaded]);
+        toast.success(`${uploaded.length} foto(s) subida(s)`);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Error al subir fotos");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -267,7 +300,28 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground">Pegá URLs de fotos y presioná Enter o +</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl gap-1.5 text-xs"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                  {isUploading ? "Subiendo..." : "Subir desde dispositivo"}
+                </Button>
+                <p className="text-[10px] text-muted-foreground">o pegá URLs arriba</p>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
