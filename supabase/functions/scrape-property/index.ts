@@ -52,7 +52,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: formattedUrl,
-        formats: ["markdown", "links"],
+        formats: ["markdown", "html", "links"],
         onlyMainContent: false,
       }),
     });
@@ -68,21 +68,47 @@ serve(async (req) => {
     }
 
     const markdown = scrapeData?.data?.markdown || scrapeData?.markdown || "";
+    const html = scrapeData?.data?.html || scrapeData?.html || "";
     const allLinks: string[] = scrapeData?.data?.links || scrapeData?.links || [];
     
-    // Extract image URLs from links - filter for common image extensions and property image patterns
+    // Extract image URLs from multiple sources
     const imageExtensions = /\.(jpg|jpeg|png|webp|avif)(\?|$)/i;
-    const imageUrls = allLinks
+    const imageSet = new Set<string>();
+
+    // Source 1: links array
+    allLinks
       .filter((link: string) => imageExtensions.test(link))
-      .filter((link: string) => {
-        // Filter out tiny icons, logos, avatars
-        const isIcon = /(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron)/i.test(link);
-        const isTiny = /(16x|32x|48x|64x|1x1|2x2)/i.test(link);
+      .forEach((link: string) => imageSet.add(link));
+
+    // Source 2: markdown ![alt](url) patterns
+    const mdImageRegex = /!\[.*?\]\((https?:\/\/[^\s)]+)\)/g;
+    let match;
+    while ((match = mdImageRegex.exec(markdown)) !== null) {
+      imageSet.add(match[1]);
+    }
+
+    // Source 3: HTML <img src="..."> and data-src patterns
+    const imgSrcRegex = /(?:src|data-src|data-lazy-src)=["'](https?:\/\/[^"']+)/gi;
+    while ((match = imgSrcRegex.exec(html)) !== null) {
+      imageSet.add(match[1]);
+    }
+
+    // Source 4: og:image and meta image tags
+    const ogImageRegex = /(?:property|name)=["']og:image["']\s+content=["'](https?:\/\/[^"']+)/gi;
+    while ((match = ogImageRegex.exec(html)) !== null) {
+      imageSet.add(match[1]);
+    }
+
+    // Filter out icons, logos, tiny images
+    const imageUrls = Array.from(imageSet)
+      .filter((url) => {
+        const isIcon = /(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron|pixel|tracking|analytics)/i.test(url);
+        const isTiny = /(16x|32x|48x|64x|1x1|2x2|1\.gif|blank\.)/i.test(url);
         return !isIcon && !isTiny;
       })
-      .slice(0, 15); // Max 15 images
+      .slice(0, 15);
 
-    console.log(`Found ${imageUrls.length} property images`);
+    console.log(`Found ${imageUrls.length} property images from ${imageSet.size} candidates`);
 
     if (!markdown) {
       return new Response(
