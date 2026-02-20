@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 
@@ -81,6 +82,24 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
 
 export function useProperties() {
   const queryClient = useQueryClient();
+
+  // Real-time subscription for comments
+  useEffect(() => {
+    const channel = supabase
+      .channel("property_comments_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "property_comments" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["properties"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: properties = [], isLoading: loading, error } = useQuery({
     queryKey: ["properties"],
