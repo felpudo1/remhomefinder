@@ -34,20 +34,34 @@ const Index = () => {
     [properties, selectedPropertyId]
   );
 
+  const permissionDeniedMsg = "No puede realizar este cambio. Póngase en contacto con el usuario que ingresó la publicación.";
+
+  const isPermissionError = (e: any) => {
+    const msg = e?.message?.toLowerCase() || "";
+    return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
+  };
+
   const handleStatusChange = async (id: string, status: PropertyStatus) => {
     try {
       await updateStatus(id, status);
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({
+        title: isPermissionError(e) ? "Sin permisos" : "Error",
+        description: isPermissionError(e) ? permissionDeniedMsg : e.message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleAddComment = async (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => {
     try {
       await addComment(id, comment);
-      // Close modal or update selected property if needed, though invalidation handles data refresh
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({
+        title: isPermissionError(e) ? "Sin permisos" : "Error",
+        description: isPermissionError(e) ? permissionDeniedMsg : e.message,
+        variant: "destructive",
+      });
     }
   };
 
