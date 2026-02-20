@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Home, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import authHouseImg from "@/assets/auth-house.jpg";
 import { useToast } from "@/hooks/use-toast";
 
@@ -75,11 +75,16 @@ const Auth = () => {
 
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${authHouseImg})` }}
+    >
+      <div className="w-full max-w-sm space-y-8 bg-background/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
         {/* Logo */}
         <div className="text-center space-y-2">
-          <img src={authHouseImg} alt="Casa en alquiler" className="w-24 h-24 object-contain mx-auto" />
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto">
+            <Home className="w-6 h-6 text-primary-foreground" />
+          </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
             BuscandoMiCasaPerfecta
           </h1>
