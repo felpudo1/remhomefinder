@@ -26,6 +26,7 @@ interface DbProperty {
   status: string;
   images: string[];
   ai_summary: string;
+  created_by_email: string;
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +70,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     status: db.status as PropertyStatus,
     images: resolveImages(db.images),
     aiSummary: db.ai_summary,
+    createdByEmail: db.created_by_email,
     comments: comments.map((c) => ({
       id: c.id,
       author: c.author,
@@ -162,6 +164,7 @@ export function useProperties() {
           sq_meters: form.sqMeters,
           rooms: form.rooms,
           ai_summary: form.aiSummary,
+          created_by_email: user.email || "",
           images: [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]],
         })
         .select()

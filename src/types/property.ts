@@ -22,6 +22,7 @@ export interface Property {
   status: PropertyStatus;
   images: string[];
   aiSummary: string;
+  createdByEmail: string;
   comments: PropertyComment[];
   createdAt: Date;
 }

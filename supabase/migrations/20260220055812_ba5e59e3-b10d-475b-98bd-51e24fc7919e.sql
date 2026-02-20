@@ -1,0 +1,1 @@
+ALTER TABLE public.properties ADD COLUMN created_by_email text NOT NULL DEFAULT '';
