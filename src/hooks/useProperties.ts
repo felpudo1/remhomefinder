@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 
+import defaultHouse1 from "@/assets/default-house-1.jpg";
+import defaultHouse2 from "@/assets/default-house-2.jpg";
+import defaultHouse3 from "@/assets/default-house-3.jpg";
+import defaultHouse4 from "@/assets/default-house-4.jpg";
+import defaultHouse5 from "@/assets/default-house-5.jpg";
+
+const DEFAULT_HOUSE_IMAGES = [defaultHouse1, defaultHouse2, defaultHouse3, defaultHouse4, defaultHouse5];
+
 interface DbProperty {
   id: string;
   user_id: string;
@@ -121,7 +129,7 @@ export function useProperties() {
           sq_meters: form.sqMeters,
           rooms: form.rooms,
           ai_summary: form.aiSummary,
-          images: [],
+          images: [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]],
         })
         .select()
         .single();
