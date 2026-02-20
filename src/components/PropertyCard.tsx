@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MapPin, Maximize2, BedDouble, DollarSign } from "lucide-react";
+import { currencySymbol } from "@/lib/currency";
 
 interface PropertyCardProps {
   property: Property;
@@ -122,13 +123,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           <div>
             <div className="flex items-baseline gap-1">
               <span className="text-xl font-bold text-foreground">
-                {property.currency} {property.totalCost.toLocaleString()}
+                {currencySymbol(property.currency)} {property.totalCost.toLocaleString()}
               </span>
               <span className="text-xs text-muted-foreground">/mes</span>
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Alquiler {property.currency} {property.priceRent.toLocaleString()} +{" "}
-              Expensas {property.currency} {property.priceExpenses.toLocaleString()}
+              Alquiler {currencySymbol(property.currency)} {property.priceRent.toLocaleString()} +{" "}
+              Expensas {currencySymbol(property.currency)} {property.priceExpenses.toLocaleString()}
             </div>
           </div>
 
