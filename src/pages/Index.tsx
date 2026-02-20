@@ -109,9 +109,6 @@ const Index = () => {
     if (!selectedStatuses.includes("eliminado")) {
       result = result.filter((p) => p.status !== "eliminado");
     }
-    if (!selectedStatuses.includes("discarded")) {
-      result = result.filter((p) => p.status !== "discarded");
-    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -141,6 +138,13 @@ const Index = () => {
         result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         break;
     }
+
+    // Las descartadas siempre van al final, manteniendo el orden entre ellas
+    result.sort((a, b) => {
+      const aDisc = a.status === "discarded" ? 1 : 0;
+      const bDisc = b.status === "discarded" ? 1 : 0;
+      return aDisc - bDisc;
+    });
 
     return result;
   }, [properties, selectedStatuses, sortBy, searchQuery]);
