@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react";
+import { currencySymbol } from "@/lib/currency";
 
 interface PropertyDetailModalProps {
   property: Property | null;
@@ -149,7 +150,7 @@ export function PropertyDetailModal({
               <div className="text-xs text-muted-foreground">{property.rooms === 1 ? "Ambiente" : "Ambientes"}</div>
             </div>
             <div className="bg-muted rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-foreground">{property.currency}</div>
+              <div className="text-lg font-bold text-foreground">{currencySymbol(property.currency)}</div>
               <div className="text-xs text-muted-foreground">Moneda</div>
             </div>
           </div>
@@ -158,16 +159,16 @@ export function PropertyDetailModal({
           <div className="bg-muted rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Alquiler mensual</span>
-              <span className="font-medium">{property.currency} {property.priceRent.toLocaleString()}</span>
+              <span className="font-medium">{currencySymbol(property.currency)} {property.priceRent.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Expensas</span>
-              <span className="font-medium">{property.currency} {property.priceExpenses.toLocaleString()}</span>
+              <span className="font-medium">{currencySymbol(property.currency)} {property.priceExpenses.toLocaleString()}</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">
               <span className="font-semibold text-foreground">Costo mensual total</span>
               <span className="font-bold text-foreground text-lg">
-                {property.currency} {property.totalCost.toLocaleString()}
+                {currencySymbol(property.currency)} {property.totalCost.toLocaleString()}
               </span>
             </div>
           </div>
