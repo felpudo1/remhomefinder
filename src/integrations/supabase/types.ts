@@ -14,7 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      properties: {
+        Row: {
+          ai_summary: string
+          created_at: string
+          currency: string
+          id: string
+          images: string[]
+          neighborhood: string
+          price_expenses: number
+          price_rent: number
+          rooms: number
+          sq_meters: number
+          status: Database["public"]["Enums"]["property_status"]
+          title: string
+          total_cost: number
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          images?: string[]
+          neighborhood?: string
+          price_expenses?: number
+          price_rent?: number
+          rooms?: number
+          sq_meters?: number
+          status?: Database["public"]["Enums"]["property_status"]
+          title: string
+          total_cost?: number
+          updated_at?: string
+          url?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          images?: string[]
+          neighborhood?: string
+          price_expenses?: number
+          price_rent?: number
+          rooms?: number
+          sq_meters?: number
+          status?: Database["public"]["Enums"]["property_status"]
+          title?: string
+          total_cost?: number
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      property_comments: {
+        Row: {
+          author: string
+          avatar: string
+          created_at: string
+          id: string
+          property_id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          author: string
+          avatar?: string
+          created_at?: string
+          id?: string
+          property_id: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          author?: string
+          avatar?: string
+          created_at?: string
+          id?: string
+          property_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_comments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +117,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      property_status: "contacted" | "coordinated" | "visited" | "discarded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +244,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      property_status: ["contacted", "coordinated", "visited", "discarded"],
+    },
   },
 } as const
