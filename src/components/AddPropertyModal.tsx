@@ -55,7 +55,9 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       });
 
       if (error || !data?.success) {
-        toast.error(data?.error || error?.message || "Error al extraer datos del aviso");
+        // Scraping failed — go to manual form so user can fill in details
+        toast.info("No pudimos extraer datos automáticamente. Completá los datos manualmente.", { duration: 5000 });
+        setStep("manual");
         setIsLoading(false);
         return;
       }
