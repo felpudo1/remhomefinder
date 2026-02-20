@@ -12,6 +12,9 @@ interface FilterSidebarProps {
   onClearFilters: () => void;
   totalCount: number;
   filteredCount: number;
+  // Props para mobile: controlan apertura/cierre del drawer
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -29,18 +32,21 @@ export function FilterSidebar({
   onClearFilters,
   totalCount,
   filteredCount,
+  mobileOpen = false,
+  onMobileClose,
 }: FilterSidebarProps) {
   const hasActiveFilters = selectedStatuses.length > 0 || sortBy !== "newest";
 
-  return (
-    <aside className="w-64 shrink-0">
-      <div className="bg-card rounded-2xl p-5 card-shadow sticky top-24 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
-            <span className="font-semibold text-sm text-foreground">Filtros</span>
-          </div>
+  // Contenido del panel de filtros (reutilizado en desktop y mobile)
+  const panelContent = (
+    <div className="bg-card rounded-2xl p-5 card-shadow sticky top-24 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+          <span className="font-semibold text-sm text-foreground">Filtros</span>
+        </div>
+        <div className="flex items-center gap-2">
           {hasActiveFilters && (
             <button
               onClick={onClearFilters}
@@ -50,65 +56,95 @@ export function FilterSidebar({
               Clear
             </button>
           )}
-        </div>
-
-        {/* Results count */}
-        <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-          Mostrando{" "}
-          <span className="font-semibold text-foreground">{filteredCount}</span> de{" "}
-          <span className="font-semibold text-foreground">{totalCount}</span> propiedades
-        </div>
-
-        {/* Status Filter */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Estado
-          </p>
-          <div className="space-y-1.5">
-            {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-              ([key, cfg]) => {
-                const isSelected = selectedStatuses.includes(key);
-                return (
-                  <button
-                    key={key}
-                    onClick={() => onStatusToggle(key)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
-                      isSelected
-                        ? `${cfg.bg} ${cfg.color} font-medium`
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                    {cfg.label}
-                  </button>
-                );
-              }
-            )}
-          </div>
-        </div>
-
-        {/* Sort */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Ordenar por
-          </p>
-          <div className="space-y-1.5">
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => onSortChange(opt.value)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                  sortBy === opt.value
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {/* Botón X solo visible en mobile para cerrar el drawer */}
+          {onMobileClose && (
+            <button
+              onClick={onMobileClose}
+              className="md:hidden text-muted-foreground hover:text-foreground transition-colors p-1"
+              aria-label="Cerrar filtros"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
-    </aside>
+
+      {/* Contador de resultados */}
+      <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+        Mostrando{" "}
+        <span className="font-semibold text-foreground">{filteredCount}</span> de{" "}
+        <span className="font-semibold text-foreground">{totalCount}</span> propiedades
+      </div>
+
+      {/* Filtro por estado */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Estado
+        </p>
+        <div className="space-y-1.5">
+          {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
+            ([key, cfg]) => {
+              const isSelected = selectedStatuses.includes(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => onStatusToggle(key)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${isSelected
+                    ? `${cfg.bg} ${cfg.color} font-medium`
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                  {cfg.label}
+                </button>
+              );
+            }
+          )}
+        </div>
+      </div>
+
+      {/* Ordenamiento */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Ordenar por
+        </p>
+        <div className="space-y-1.5">
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onSortChange(opt.value)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortBy === opt.value
+                ? "bg-primary text-primary-foreground font-medium"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* ── DESKTOP: sidebar fijo visible siempre ── */}
+      <aside className="hidden md:block w-64 shrink-0">{panelContent}</aside>
+
+      {/* ── MOBILE: overlay drawer que se abre sobre el contenido ── */}
+      {mobileOpen && (
+        <>
+          {/* Fondo oscuro detrás del drawer */}
+          <div
+            className="fixed inset-0 bg-black/40 z-40 md:hidden"
+            onClick={onMobileClose}
+          />
+          {/* Panel del drawer deslizando desde la izquierda */}
+          <div className="fixed inset-y-0 left-0 w-72 z-50 md:hidden overflow-y-auto bg-background p-4 shadow-2xl animate-slide-in-from-left">
+            {panelContent}
+          </div>
+        </>
+      )}
+    </>
   );
 }

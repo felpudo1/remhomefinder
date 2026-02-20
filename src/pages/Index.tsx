@@ -6,7 +6,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2, LogOut, User } from "lucide-react";
+import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,8 @@ const Index = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  // Controla si el drawer de filtros está abierto en mobile
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const handleStatusChange = async (id: string, status: PropertyStatus) => {
     try {
@@ -133,24 +135,36 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Navbar */}
       <header className="bg-card border-b border-border sticky top-0 z-40 card-shadow">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-3">
+
+          {/* Logo + email en mobile debajo del nombre */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center shrink-0">
               <Home className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-foreground text-base tracking-tight">BuscandoMiCasaPerfecta</span>
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-foreground text-sm tracking-tight leading-tight">BuscandoMiCasaPerfecta</span>
+              {/* Email del usuario visible solo en mobile, como subtexto bajo el nombre */}
+              {userEmail && (
+                <span className="text-xs text-muted-foreground truncate max-w-[140px] md:hidden leading-tight">
+                  {userEmail}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="flex-1 max-w-md relative">
+          {/* Buscador — se achica en mobile */}
+          <div className="flex-1 max-w-xs md:max-w-md relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por título, barrio..."
+              placeholder="Buscar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
             />
           </div>
 
+          {/* Filtros de estado rápidos — solo desktop */}
           <div className="hidden md:flex items-center gap-2">
             {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
               ([key, cfg]) => (
@@ -158,8 +172,8 @@ const Index = () => {
                   key={key}
                   onClick={() => handleStatusToggle(key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedStatuses.includes(key)
-                      ? `${cfg.bg} ${cfg.color}`
-                      : "bg-muted text-muted-foreground hover:bg-accent"
+                    ? `${cfg.bg} ${cfg.color}`
+                    : "bg-muted text-muted-foreground hover:bg-accent"
                     }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -170,11 +184,13 @@ const Index = () => {
           </div>
 
           {/* User info & logout */}
-          <div className="hidden md:flex items-center gap-2 ml-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 md:gap-2 shrink-0">
+            {/* Email visible solo en desktop */}
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
               <User className="w-3.5 h-3.5" />
               <span className="max-w-[120px] truncate">{userEmail}</span>
             </div>
+            {/* Botón logout SIEMPRE visible (mobile y desktop) */}
             <Button
               variant="ghost"
               size="icon"
@@ -185,6 +201,7 @@ const Index = () => {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
+
         </div>
       </header>
 
@@ -198,6 +215,8 @@ const Index = () => {
           onClearFilters={handleClearFilters}
           totalCount={properties.length}
           filteredCount={filteredAndSorted.length}
+          mobileOpen={isMobileFiltersOpen}
+          onMobileClose={() => setIsMobileFiltersOpen(false)}
         />
 
         <main className="flex-1 min-w-0">
@@ -231,6 +250,23 @@ const Index = () => {
         </main>
       </div>
 
+      {/* Botón flotante "Filtros" solo en mobile (abajo a la izquierda) */}
+      <button
+        onClick={() => setIsMobileFiltersOpen(true)}
+        className="fixed bottom-8 left-8 md:hidden flex items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow hover:card-shadow-hover transition-all duration-200 z-30 text-sm font-medium"
+        aria-label="Abrir filtros"
+      >
+        <SlidersHorizontal className="w-4 h-4" />
+        Filtros
+        {selectedStatuses.length > 0 && (
+          // Badge indicando cuántos filtros activos hay
+          <span className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold">
+            {selectedStatuses.length}
+          </span>
+        )}
+      </button>
+
+      {/* Botón flotante "+" para agregar propiedad */}
       <button
         onClick={() => setIsAddOpen(true)}
         className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
