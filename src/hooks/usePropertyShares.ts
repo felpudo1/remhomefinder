@@ -51,14 +51,10 @@ export function usePropertyShares() {
       body: { email },
     });
 
-    if (res.error) {
-      throw new Error(res.error.message || "Error buscando usuario");
-    }
+    const responseData = res.data as { user_id?: string; email?: string; error?: string } | null;
     
-    const responseData = res.data as { user_id?: string; email?: string; error?: string };
-    
-    if (responseData.error) {
-      throw new Error(responseData.error);
+    if (res.error || !responseData || responseData.error) {
+      throw new Error(responseData?.error || res.error?.message || "Error buscando usuario");
     }
 
     if (!responseData.user_id) {
