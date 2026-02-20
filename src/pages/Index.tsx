@@ -255,6 +255,7 @@ const Index = () => {
                   property={property}
                   onStatusChange={handleStatusChange}
                   onClick={() => handleCardClick(property)}
+                  ownerEmail={userEmail}
                 />
               ))}
             </div>

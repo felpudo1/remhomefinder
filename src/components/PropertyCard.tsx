@@ -24,9 +24,10 @@ interface PropertyCardProps {
   property: Property;
   onStatusChange: (id: string, status: PropertyStatus) => void;
   onClick: () => void;
+  ownerEmail?: string | null;
 }
 
-export function PropertyCard({ property, onStatusChange, onClick }: PropertyCardProps) {
+export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: PropertyCardProps) {
   const [currentImg, setCurrentImg] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const config = STATUS_CONFIG[property.status];
@@ -61,9 +62,8 @@ export function PropertyCard({ property, onStatusChange, onClick }: PropertyCard
               <button
                 key={i}
                 onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
-                className={`w-7 h-7 rounded-md overflow-hidden border-2 transition-all ${
-                  i === currentImg ? "border-card opacity-100" : "border-transparent opacity-60 hover:opacity-90"
-                }`}
+                className={`w-7 h-7 rounded-md overflow-hidden border-2 transition-all ${i === currentImg ? "border-card opacity-100" : "border-transparent opacity-60 hover:opacity-90"
+                  }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
               </button>
@@ -79,6 +79,14 @@ export function PropertyCard({ property, onStatusChange, onClick }: PropertyCard
             {config.label}
           </span>
         </div>
+        {/* Owner Email Badge */}
+        {ownerEmail && (
+          <div className="absolute top-3 right-3">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-black/60 text-white backdrop-blur-md">
+              {ownerEmail}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
