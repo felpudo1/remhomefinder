@@ -66,6 +66,7 @@ export function useProperties() {
       const { data: props, error: propsError } = await supabase
         .from("properties")
         .select("*")
+        .neq("status", "eliminado")
         .order("created_at", { ascending: false });
 
       if (propsError) throw propsError;
@@ -135,9 +136,10 @@ export function useProperties() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: PropertyStatus }) => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("properties")
-        .update({ status })
+        .update({ status, status_changed_by: user?.id || null })
         .eq("id", id);
       if (error) throw error;
       return { id, status };

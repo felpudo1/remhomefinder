@@ -8,6 +8,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MapPin, Maximize2, BedDouble, DollarSign } from "lucide-react";
 
 interface PropertyCardProps {
@@ -18,7 +28,16 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property, onStatusChange, onClick }: PropertyCardProps) {
   const [currentImg, setCurrentImg] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const config = STATUS_CONFIG[property.status];
+
+  const handleStatusChange = (val: string) => {
+    if (val === "eliminado") {
+      setShowDeleteConfirm(true);
+    } else {
+      onStatusChange(property.id, val as PropertyStatus);
+    }
+  };
 
   return (
     <div
@@ -109,24 +128,50 @@ export function PropertyCard({ property, onStatusChange, onClick }: PropertyCard
           <div onClick={(e) => e.stopPropagation()}>
             <Select
               value={property.status}
-              onValueChange={(val) => onStatusChange(property.id, val as PropertyStatus)}
+              onValueChange={handleStatusChange}
             >
               <SelectTrigger className="h-8 text-xs w-auto border-border bg-background px-2 gap-1 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-                  ([key, cfg]) => (
+                {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][])
+                  .filter(([key]) => key !== "eliminado")
+                  .map(([key, cfg]) => (
                     <SelectItem key={key} value={key} className="text-xs">
                       <span className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                         {cfg.label}
                       </span>
                     </SelectItem>
-                  )
-                )}
+                  ))}
+                <SelectItem value="eliminado" className="text-xs text-destructive">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-gray-500" />
+                    Eliminar
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
+
+            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar esta propiedad?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    La propiedad "{property.title}" será marcada como eliminada y no se mostrará más en la lista. Esta acción se puede revertir desde la base de datos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onStatusChange(property.id, "eliminado")}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>
