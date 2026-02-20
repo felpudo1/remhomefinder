@@ -25,6 +25,8 @@ export interface Property {
   createdByEmail: string;
   comments: PropertyComment[];
   createdAt: Date;
+  deletedReason: string;
+  deletedByEmail: string;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {

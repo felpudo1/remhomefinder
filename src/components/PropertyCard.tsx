@@ -18,12 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Maximize2, BedDouble, DollarSign } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, DollarSign, Trash2 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PropertyCardProps {
   property: Property;
-  onStatusChange: (id: string, status: PropertyStatus) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string) => void;
   onClick: () => void;
   ownerEmail?: string | null;
 }
@@ -31,6 +32,7 @@ interface PropertyCardProps {
 export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: PropertyCardProps) {
   const [currentImg, setCurrentImg] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
   const config = STATUS_CONFIG[property.status];
 
   const handleStatusChange = (val: string) => {
@@ -41,9 +43,11 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
     }
   };
 
+  const isEliminated = property.status === "eliminado";
+
   return (
     <div
-      className="bg-card rounded-2xl overflow-hidden card-shadow hover:card-shadow-hover transition-all duration-300 cursor-pointer group animate-fade-in"
+      className={`bg-card rounded-2xl overflow-hidden card-shadow hover:card-shadow-hover transition-all duration-300 cursor-pointer group animate-fade-in ${isEliminated ? "opacity-60" : ""}`}
       onClick={onClick}
     >
       {/* Image Section */}
@@ -115,6 +119,21 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           </span>
         </div>
 
+        {/* Eliminated info */}
+        {isEliminated && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-2.5 space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+              <Trash2 className="w-3.5 h-3.5" />
+              Eliminado por {property.deletedByEmail || "desconocido"}
+            </div>
+            {property.deletedReason && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Motivo: {property.deletedReason}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Divider */}
         <div className="border-t border-border" />
 
@@ -162,18 +181,24 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </SelectContent>
             </Select>
 
-            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialog open={showDeleteConfirm} onOpenChange={(open) => { setShowDeleteConfirm(open); if (!open) setDeleteReason(""); }}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>¿Eliminar esta propiedad?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    La propiedad "{property.title}" será marcada como eliminada y no se mostrará más en la lista. Esta acción se puede revertir desde la base de datos.
+                    La propiedad "{property.title}" será marcada como eliminada. Indicá el motivo de la eliminación.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <Textarea
+                  placeholder="Motivo de la eliminación..."
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  className="resize-none text-sm min-h-[80px] rounded-xl"
+                />
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => onStatusChange(property.id, "eliminado")}
+                    onClick={() => onStatusChange(property.id, "eliminado", deleteReason)}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Eliminar
