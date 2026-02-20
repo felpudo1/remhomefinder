@@ -65,6 +65,7 @@ export function usePropertyShares() {
       owner_id: session.user.id,
       shared_with_id: responseData.user_id,
       permission,
+      shared_email: responseData.email || email,
     });
 
     if (error) {
