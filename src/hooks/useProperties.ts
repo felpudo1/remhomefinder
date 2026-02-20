@@ -82,6 +82,8 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
       createdAt: new Date(c.created_at),
     })),
     createdAt: new Date(db.created_at),
+    deletedReason: (db as any).deleted_reason || "",
+    deletedByEmail: (db as any).deleted_by_email || "",
   };
 }
 
@@ -119,7 +121,6 @@ export function useProperties() {
       const { data: props, error: propsError } = await supabase
         .from("properties")
         .select("*")
-        .neq("status", "eliminado")
         .order("created_at", { ascending: false });
 
       if (propsError) throw propsError;
@@ -195,11 +196,16 @@ export function useProperties() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: PropertyStatus }) => {
+    mutationFn: async ({ id, status, deletedReason }: { id: string; status: PropertyStatus; deletedReason?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
+      const updateData: any = { status, status_changed_by: user?.id || null };
+      if (status === "eliminado") {
+        updateData.deleted_reason = deletedReason || "";
+        updateData.deleted_by_email = user?.email || "";
+      }
       const { error } = await supabase
         .from("properties")
-        .update({ status, status_changed_by: user?.id || null })
+        .update(updateData)
         .eq("id", id);
       if (error) throw error;
       return { id, status };
@@ -294,7 +300,7 @@ export function useProperties() {
     loading,
     error,
     addProperty: addPropertyMutation.mutateAsync,
-    updateStatus: (id: string, status: PropertyStatus) => updateStatusMutation.mutateAsync({ id, status }),
+    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string) => updateStatusMutation.mutateAsync({ id, status, deletedReason }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addCommentMutation.mutateAsync({ propertyId: id, comment }),
     refetch: () => queryClient.invalidateQueries({ queryKey: ["properties"] }),
