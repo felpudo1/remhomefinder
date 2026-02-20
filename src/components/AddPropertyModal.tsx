@@ -25,6 +25,7 @@ interface AddPropertyModalProps {
     sqMeters: number;
     rooms: number;
     aiSummary: string;
+    images: string[];
   }) => void;
 }
 
@@ -32,6 +33,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"url" | "manual">("url");
+  const [scrapedImages, setScrapedImages] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -59,6 +61,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       }
 
       const d = data.data;
+      setScrapedImages(d.images || []);
       setForm({
         title: d.title || "",
         priceRent: String(d.priceRent || ""),
@@ -90,6 +93,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       sqMeters: Number(form.sqMeters) || 0,
       rooms: Number(form.rooms) || 1,
       aiSummary: form.aiSummary,
+      images: scrapedImages,
     });
     handleClose();
   };
@@ -97,6 +101,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
   const handleClose = () => {
     setUrl("");
     setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "" });
+    setScrapedImages([]);
     setStep("url");
     setIsLoading(false);
     onClose();
@@ -153,7 +158,24 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
         )}
 
         {step === "manual" && (
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
+            {scrapedImages.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Fotos extraídas ({scrapedImages.length})</Label>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {scrapedImages.slice(0, 6).map((img, i) => (
+                    <img
+                      key={i}
+                      src={img}
+                      alt={`Foto ${i + 1}`}
+                      className="w-20 h-16 rounded-lg object-cover shrink-0 border border-border"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {form.aiSummary && (
               <div className="bg-muted rounded-xl p-3 text-xs text-muted-foreground flex gap-2">
                 <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
