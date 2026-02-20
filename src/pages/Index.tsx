@@ -105,9 +105,12 @@ const Index = () => {
   const filteredAndSorted = useMemo(() => {
     let result = [...properties];
 
-    // Hide eliminated unless explicitly filtered
+    // Ocultar eliminados y descartados a menos que se filtren explícitamente
     if (!selectedStatuses.includes("eliminado")) {
       result = result.filter((p) => p.status !== "eliminado");
+    }
+    if (!selectedStatuses.includes("discarded")) {
+      result = result.filter((p) => p.status !== "discarded");
     }
 
     if (searchQuery.trim()) {

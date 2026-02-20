@@ -1,0 +1,4 @@
+{
+  "summary": "Implementado flujo de descarte similar al de eliminados: diálogo de confirmación con motivo, tracking de usuario que descartó, y ocultamiento por defecto en la lista principal.",
+  "current_status": "Propiedades descartadas ahora requieren confirmación y motivo, muestran quién descartó, y se ocultan por defecto."
+}

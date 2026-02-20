@@ -22,6 +22,8 @@ export type Database = {
           currency: string
           deleted_by_email: string | null
           deleted_reason: string | null
+          discarded_by_email: string | null
+          discarded_reason: string | null
           id: string
           images: string[]
           neighborhood: string
@@ -44,6 +46,8 @@ export type Database = {
           currency?: string
           deleted_by_email?: string | null
           deleted_reason?: string | null
+          discarded_by_email?: string | null
+          discarded_reason?: string | null
           id?: string
           images?: string[]
           neighborhood?: string
@@ -66,6 +70,8 @@ export type Database = {
           currency?: string
           deleted_by_email?: string | null
           deleted_reason?: string | null
+          discarded_by_email?: string | null
+          discarded_reason?: string | null
           id?: string
           images?: string[]
           neighborhood?: string
