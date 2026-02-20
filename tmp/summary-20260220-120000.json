@@ -1,0 +1,4 @@
+{
+  "summary": "Agregado campo de link arriba del título en modo manual del AddPropertyModal, y cambiado label 'Expensas' a 'G/C'",
+  "current_status": "Modal de agregar propiedad actualizado con campo de URL y label G/C"
+}

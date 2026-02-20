@@ -222,6 +222,21 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
               </div>
             )}
 
+            {/* Campo para pegar el link de la publicación (visible en modo manual) */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Link de la publicación</Label>
+              <div className="relative">
+                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://zonaprop.com.ar/..."
+                  className="pl-9 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Título *</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="ej. 2 ambientes en Palermo" className="rounded-xl text-sm" />
@@ -238,7 +253,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 <Input type="number" value={form.priceRent} onChange={(e) => setForm({ ...form, priceRent: e.target.value })} placeholder="850" className="rounded-xl text-sm" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Expensas</Label>
+                <Label className="text-xs font-medium">G/C</Label>
                 <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="120" className="rounded-xl text-sm" />
               </div>
             </div>
