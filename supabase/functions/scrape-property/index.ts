@@ -52,8 +52,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: formattedUrl,
-        formats: ["markdown"],
-        onlyMainContent: true,
+        formats: ["markdown", "links"],
+        onlyMainContent: false,
       }),
     });
 
@@ -68,6 +68,22 @@ serve(async (req) => {
     }
 
     const markdown = scrapeData?.data?.markdown || scrapeData?.markdown || "";
+    const allLinks: string[] = scrapeData?.data?.links || scrapeData?.links || [];
+    
+    // Extract image URLs from links - filter for common image extensions and property image patterns
+    const imageExtensions = /\.(jpg|jpeg|png|webp|avif)(\?|$)/i;
+    const imageUrls = allLinks
+      .filter((link: string) => imageExtensions.test(link))
+      .filter((link: string) => {
+        // Filter out tiny icons, logos, avatars
+        const isIcon = /(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron)/i.test(link);
+        const isTiny = /(16x|32x|48x|64x|1x1|2x2)/i.test(link);
+        return !isIcon && !isTiny;
+      })
+      .slice(0, 15); // Max 15 images
+
+    console.log(`Found ${imageUrls.length} property images`);
+
     if (!markdown) {
       return new Response(
         JSON.stringify({ success: false, error: "No se encontró contenido en la página" }),
@@ -178,6 +194,7 @@ Analizá el contenido del aviso y extraé los datos de la propiedad.
           sqMeters: extracted.sqMeters || 0,
           rooms: extracted.rooms || 1,
           aiSummary: extracted.aiSummary || "",
+          images: imageUrls,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

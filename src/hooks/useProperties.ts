@@ -46,6 +46,9 @@ function resolveImages(dbImages: string[]): string[] {
     return [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]];
   }
   return dbImages.map((img) => {
+    // External URLs (scraped images) - use as-is
+    if (img.startsWith("http://") || img.startsWith("https://")) return img;
+    // Default house image references
     const match = img.match(/default-house-(\d+)\.jpg/);
     if (match) {
       const idx = parseInt(match[1], 10) - 1;
@@ -146,9 +149,15 @@ export function useProperties() {
       sqMeters: number;
       rooms: number;
       aiSummary: string;
+      images?: string[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
+
+      // Use scraped images if available, otherwise random default
+      const propertyImages = form.images && form.images.length > 0
+        ? form.images
+        : [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]];
 
       const { data, error } = await supabase
         .from("properties")
@@ -165,7 +174,7 @@ export function useProperties() {
           rooms: form.rooms,
           ai_summary: form.aiSummary,
           created_by_email: user.email || "",
-          images: [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]],
+          images: propertyImages,
         })
         .select()
         .single();
