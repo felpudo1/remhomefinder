@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AddPropertyModalProps {
   open: boolean;
@@ -45,19 +47,36 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
   const handleScrape = async () => {
     if (!url.trim()) return;
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setForm({
-      title: "Hermoso departamento encontrado en el aviso",
-      priceRent: "750",
-      priceExpenses: "100",
-      currency: "USD",
-      neighborhood: "Palermo Soho",
-      sqMeters: "55",
-      rooms: "2",
-      aiSummary: "IA extrajo: Departamento luminoso y amplio con terminaciones modernas.",
-    });
-    setIsLoading(false);
-    setStep("manual");
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-property", {
+        body: { url: url.trim() },
+      });
+
+      if (error || !data?.success) {
+        toast.error(data?.error || error?.message || "Error al extraer datos del aviso");
+        setIsLoading(false);
+        return;
+      }
+
+      const d = data.data;
+      setForm({
+        title: d.title || "",
+        priceRent: String(d.priceRent || ""),
+        priceExpenses: String(d.priceExpenses || ""),
+        currency: d.currency || "ARS",
+        neighborhood: d.neighborhood || "",
+        sqMeters: String(d.sqMeters || ""),
+        rooms: String(d.rooms || ""),
+        aiSummary: d.aiSummary || "",
+      });
+      setStep("manual");
+      toast.success("¡Datos extraídos con IA!");
+    } catch (err) {
+      console.error("Scrape error:", err);
+      toast.error("Error al conectar con el servicio de scraping");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = () => {
