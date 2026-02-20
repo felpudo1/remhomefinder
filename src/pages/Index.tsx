@@ -1,17 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG } from "@/types/property";
-import { MOCK_PROPERTIES } from "@/data/mockProperties";
+import { useProperties } from "@/hooks/useProperties";
+import { supabase } from "@/integrations/supabase/client";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search } from "lucide-react";
+import { Home, Plus, Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
 const Index = () => {
-  const [properties, setProperties] = useState<Property[]>(MOCK_PROPERTIES);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,40 +24,56 @@ const Index = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const handleStatusChange = (id: string, status: PropertyStatus) => {
-    setProperties((prev) =>
-    prev.map((p) => p.id === id ? { ...p, status } : p)
-    );
-    if (selectedProperty?.id === id) {
-      setSelectedProperty((prev) => prev ? { ...prev, status } : null);
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) navigate("/auth");
+    });
+  }, [navigate]);
+
+  const handleStatusChange = async (id: string, status: PropertyStatus) => {
+    try {
+      await updateStatus(id, status);
+      if (selectedProperty?.id === id) {
+        setSelectedProperty((prev) => prev ? { ...prev, status } : null);
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
-  const handleAddComment = (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => {
-    const newComment: PropertyComment = {
-      ...comment,
-      id: Date.now().toString(),
-      createdAt: new Date()
-    };
-    setProperties((prev) =>
-    prev.map((p) =>
-    p.id === id ? { ...p, comments: [...p.comments, newComment] } : p
-    )
-    );
-    if (selectedProperty?.id === id) {
-      setSelectedProperty((prev) =>
-      prev ? { ...prev, comments: [...prev.comments, newComment] } : null
-      );
+  const handleAddComment = async (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => {
+    try {
+      await addComment(id, comment);
+      // Refresh selected property comments
+      const updated = properties.find((p) => p.id === id);
+      if (updated) setSelectedProperty(updated);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
-  const handleAddProperty = (property: Property) => {
-    setProperties((prev) => [property, ...prev]);
+  const handleAddProperty = async (form: {
+    url: string;
+    title: string;
+    priceRent: number;
+    priceExpenses: number;
+    currency: string;
+    neighborhood: string;
+    sqMeters: number;
+    rooms: number;
+    aiSummary: string;
+  }) => {
+    try {
+      await addProperty(form);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
   };
 
   const handleStatusToggle = (status: PropertyStatus) => {
     setSelectedStatuses((prev) =>
-    prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
     );
   };
 
@@ -70,23 +91,20 @@ const Index = () => {
   const filteredAndSorted = useMemo(() => {
     let result = [...properties];
 
-    // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.neighborhood.toLowerCase().includes(q) ||
-        p.aiSummary.toLowerCase().includes(q)
+          p.title.toLowerCase().includes(q) ||
+          p.neighborhood.toLowerCase().includes(q) ||
+          p.aiSummary.toLowerCase().includes(q)
       );
     }
 
-    // Status filter
     if (selectedStatuses.length > 0) {
       result = result.filter((p) => selectedStatuses.includes(p.status));
     }
 
-    // Sort
     switch (sortBy) {
       case "total-asc":
         result.sort((a, b) => a.totalCost - b.totalCost);
@@ -105,13 +123,9 @@ const Index = () => {
     return result;
   }, [properties, selectedStatuses, sortBy, searchQuery]);
 
-  // Status counts for header pills
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
-      contacted: 0,
-      coordinated: 0,
-      visited: 0,
-      discarded: 0
+      contacted: 0, coordinated: 0, visited: 0, discarded: 0
     };
     properties.forEach((p) => counts[p.status]++);
     return counts;
@@ -126,39 +140,35 @@ const Index = () => {
             <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
               <Home className="w-4 h-4 text-primary-foreground" />
             </div>
-            <div>
-              <span className="font-bold text-foreground text-base tracking-tight">BuscandoMiCasaPerfecta</span>
-            </div>
+            <span className="font-bold text-foreground text-base tracking-tight">BuscandoMiCasaPerfecta</span>
           </div>
 
-          {/* Barra de búsqueda */}
           <div className="flex-1 max-w-md relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por título, barrio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm" />
-
+              className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
+            />
           </div>
 
-          {/* Status pills */}
           <div className="hidden md:flex items-center gap-2">
             {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-              ([key, cfg]) =>
-              <button
-                key={key}
-                onClick={() => handleStatusToggle(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                selectedStatuses.includes(key) ?
-                `${cfg.bg} ${cfg.color}` :
-                "bg-muted text-muted-foreground hover:bg-accent"}`
-                }>
-
+              ([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => handleStatusToggle(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    selectedStatuses.includes(key)
+                      ? `${cfg.bg} ${cfg.color}`
+                      : "bg-muted text-muted-foreground hover:bg-accent"
+                  }`}
+                >
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                   {statusCounts[key]}
                 </button>
-
+              )
             )}
           </div>
         </div>
@@ -166,7 +176,6 @@ const Index = () => {
 
       {/* Main layout */}
       <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8">
-        {/* Filter sidebar */}
         <FilterSidebar
           selectedStatuses={selectedStatuses}
           onStatusToggle={handleStatusToggle}
@@ -174,66 +183,63 @@ const Index = () => {
           onSortChange={setSortBy}
           onClearFilters={handleClearFilters}
           totalCount={properties.length}
-          filteredCount={filteredAndSorted.length} />
+          filteredCount={filteredAndSorted.length}
+        />
 
-
-        {/* Dashboard */}
         <main className="flex-1 min-w-0">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Tus Propiedades
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda inmobiliaria
-
-            </p>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
+            <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda inmobiliaria</p>
           </div>
 
-          {filteredAndSorted.length === 0 ?
-          <div className="text-center py-20 text-muted-foreground">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredAndSorted.length === 0 ? (
+            <div className="text-center py-20 text-muted-foreground">
               <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p className="font-medium">No se encontraron propiedades</p>
               <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
-            </div> :
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filteredAndSorted.map((property) =>
-            <PropertyCard
-              key={property.id}
-              property={property}
-              onStatusChange={handleStatusChange}
-              onClick={() => handleCardClick(property)} />
-
-            )}
             </div>
-          }
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filteredAndSorted.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  onStatusChange={handleStatusChange}
+                  onClick={() => handleCardClick(property)}
+                />
+              ))}
+            </div>
+          )}
         </main>
       </div>
 
-      {/* Floating Action Button */}
       <button
         onClick={() => setIsAddOpen(true)}
         className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-        aria-label="Add property">
-
+        aria-label="Add property"
+      >
         <Plus className="w-6 h-6" />
       </button>
 
-      {/* Modals */}
       <PropertyDetailModal
         property={selectedProperty}
         open={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onStatusChange={handleStatusChange}
-        onAddComment={handleAddComment} />
-
+        onAddComment={handleAddComment}
+      />
 
       <AddPropertyModal
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        onAdd={handleAddProperty} />
-
-    </div>);
-
+        onAdd={handleAddProperty}
+      />
+    </div>
+  );
 };
 
 export default Index;
