@@ -27,6 +27,7 @@ export type Database = {
           rooms: number
           sq_meters: number
           status: Database["public"]["Enums"]["property_status"]
+          status_changed_by: string | null
           title: string
           total_cost: number
           updated_at: string
@@ -45,6 +46,7 @@ export type Database = {
           rooms?: number
           sq_meters?: number
           status?: Database["public"]["Enums"]["property_status"]
+          status_changed_by?: string | null
           title: string
           total_cost?: number
           updated_at?: string
@@ -63,6 +65,7 @@ export type Database = {
           rooms?: number
           sq_meters?: number
           status?: Database["public"]["Enums"]["property_status"]
+          status_changed_by?: string | null
           title?: string
           total_cost?: number
           updated_at?: string
@@ -162,6 +165,7 @@ export type Database = {
         | "discarded"
         | "ingresado"
         | "a_analizar"
+        | "eliminado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -296,6 +300,7 @@ export const Constants = {
         "discarded",
         "ingresado",
         "a_analizar",
+        "eliminado",
       ],
     },
   },
