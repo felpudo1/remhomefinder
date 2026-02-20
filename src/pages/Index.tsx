@@ -21,20 +21,22 @@ const Index = () => {
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
 
+  // Derive selectedProperty from query data so it updates automatically
+  const selectedProperty = useMemo(
+    () => properties.find((p) => p.id === selectedPropertyId) || null,
+    [properties, selectedPropertyId]
+  );
+
   const handleStatusChange = async (id: string, status: PropertyStatus) => {
     try {
       await updateStatus(id, status);
-      // No need to manually update local state, TanStack Query handles it via invalidation/optimistic updates
-      if (selectedProperty?.id === id) {
-        setSelectedProperty((prev) => prev ? { ...prev, status } : null);
-      }
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -82,7 +84,7 @@ const Index = () => {
   };
 
   const handleCardClick = (property: Property) => {
-    setSelectedProperty(property);
+    setSelectedPropertyId(property.id);
     setIsDetailOpen(true);
   };
 
