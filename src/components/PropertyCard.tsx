@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Maximize2, BedDouble, DollarSign, Trash2 } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, DollarSign, Trash2, XCircle } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -31,23 +31,34 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: PropertyCardProps) {
   const [currentImg, setCurrentImg] = useState(0);
+  // Estado para mostrar diálogo de confirmación de eliminación
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  // Estado para mostrar diálogo de confirmación de descarte
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discardReason, setDiscardReason] = useState("");
   const config = STATUS_CONFIG[property.status];
 
+  /**
+   * Maneja el cambio de estado: si es "eliminado" o "discarded",
+   * muestra un diálogo de confirmación pidiendo motivo.
+   */
   const handleStatusChange = (val: string) => {
     if (val === "eliminado") {
       setShowDeleteConfirm(true);
+    } else if (val === "discarded") {
+      setShowDiscardConfirm(true);
     } else {
       onStatusChange(property.id, val as PropertyStatus);
     }
   };
 
   const isEliminated = property.status === "eliminado";
+  const isDiscarded = property.status === "discarded";
 
   return (
     <div
-      className={`bg-card rounded-2xl overflow-hidden card-shadow hover:card-shadow-hover transition-all duration-300 cursor-pointer group animate-fade-in ${isEliminated ? "opacity-60" : ""}`}
+      className={`bg-card rounded-2xl overflow-hidden card-shadow hover:card-shadow-hover transition-all duration-300 cursor-pointer group animate-fade-in ${isEliminated || isDiscarded ? "opacity-60" : ""}`}
       onClick={onClick}
     >
       {/* Image Section */}
@@ -134,6 +145,21 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           </div>
         )}
 
+        {/* Discarded info - muestra motivo y usuario que descartó */}
+        {isDiscarded && (
+          <div className="bg-status-discarded-bg border border-status-discarded/20 rounded-xl p-2.5 space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-status-discarded">
+              <XCircle className="w-3.5 h-3.5" />
+              Descartado por {property.discardedByEmail || "desconocido"}
+            </div>
+            {property.discardedReason && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Motivo: {property.discardedReason}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Divider */}
         <div className="border-t border-border" />
 
@@ -202,6 +228,33 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Diálogo de confirmación para descartar */}
+            <AlertDialog open={showDiscardConfirm} onOpenChange={(open) => { setShowDiscardConfirm(open); if (!open) setDiscardReason(""); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Descartar esta propiedad?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    La propiedad "{property.title}" será marcada como descartada. Indicá el motivo del descarte.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Textarea
+                  placeholder="Motivo del descarte..."
+                  value={discardReason}
+                  onChange={(e) => setDiscardReason(e.target.value)}
+                  className="resize-none text-sm min-h-[80px] rounded-xl"
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onStatusChange(property.id, "discarded", discardReason)}
+                    className="bg-status-discarded text-white hover:bg-status-discarded/90"
+                  >
+                    Descartar
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

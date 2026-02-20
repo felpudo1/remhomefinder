@@ -27,6 +27,8 @@ export interface Property {
   createdAt: Date;
   deletedReason: string;
   deletedByEmail: string;
+  discardedReason: string;
+  discardedByEmail: string;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {
