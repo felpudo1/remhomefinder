@@ -81,7 +81,13 @@ const Index = () => {
       setIsAddOpen(false);
       toast({ title: "Éxito", description: "Propiedad agregada correctamente" });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      // Detectar error de URL duplicada desde Supabase (violación de unique constraint)
+      const msg = e?.message || "";
+      if (msg.includes("idx_properties_unique_url") || msg.includes("duplicate") || msg.includes("unique")) {
+        toast({ title: "URL duplicada", description: "Esta publicación ya fue agregada anteriormente.", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: msg, variant: "destructive" });
+      }
     }
   };
 

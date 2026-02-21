@@ -37,6 +37,9 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  // Estado para indicar si la URL ya existe en la base de datos
+  const [urlDuplicated, setUrlDuplicated] = useState(false);
+  const [isCheckingUrl, setIsCheckingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "",
@@ -117,6 +120,30 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
     }
   };
 
+  /**
+   * Verifica si la URL ya existe en la base de datos
+   * Se ejecuta cuando el usuario termina de escribir la URL en modo manual
+   */
+  const checkDuplicateUrl = async (urlToCheck: string) => {
+    if (!urlToCheck.trim()) {
+      setUrlDuplicated(false);
+      return;
+    }
+    setIsCheckingUrl(true);
+    try {
+      const { data } = await supabase
+        .from("properties")
+        .select("id")
+        .eq("url", urlToCheck.trim())
+        .limit(1);
+      setUrlDuplicated(!!(data && data.length > 0));
+    } catch {
+      setUrlDuplicated(false);
+    } finally {
+      setIsCheckingUrl(false);
+    }
+  };
+
   const handleSubmit = () => {
     onAdd({
       url: url || "",
@@ -138,12 +165,14 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
     setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "" });
     setScrapedImages([]);
     setManualImageUrl("");
+    setUrlDuplicated(false);
     setStep("url");
     setIsLoading(false);
     onClose();
   };
 
-  const isFormValid = form.title && form.neighborhood && form.priceRent;
+  // Validación: formulario válido solo si no hay URL duplicada
+  const isFormValid = form.title && form.neighborhood && form.priceRent && !urlDuplicated;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -230,11 +259,20 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 <Input
                   type="url"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setUrlDuplicated(false);
+                  }}
+                  onBlur={() => checkDuplicateUrl(url)}
                   placeholder="https://zonaprop.com.ar/..."
-                  className="pl-9 rounded-xl text-sm"
+                  className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`}
                 />
               </div>
+              {urlDuplicated && (
+                <p className="text-xs text-destructive font-medium">
+                  ⚠️ Esta URL ya fue ingresada. Revisá tus propiedades existentes.
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
