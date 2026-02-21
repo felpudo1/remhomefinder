@@ -1,0 +1,4 @@
+{
+  "summary": "Implementada vista pública de propiedades: RLS policy para anon SELECT, ruta /p/:id con PublicPropertyView (galería, barrio, ambientes, m², precios), y botón Share2 en PropertyDetailModal para copiar link público.",
+  "current_status": "Vista pública funcional, botón de compartir agregado en modal de detalle."
+}
