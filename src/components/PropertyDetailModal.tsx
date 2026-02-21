@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -25,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Share2,
 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 
@@ -123,15 +125,30 @@ export function PropertyDetailModal({
           <div>
             <div className="flex items-start justify-between gap-4 mb-2">
               <h2 className="text-xl font-bold leading-tight text-foreground">{property.title}</h2>
-              <a
-                href={property.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Botón para copiar link público al portapapeles */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const publicUrl = `${window.location.origin}/p/${property.id}`;
+                    navigator.clipboard.writeText(publicUrl);
+                    toast({ title: "Link copiado", description: "El link público fue copiado al portapapeles." });
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Copiar link público"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+                <a
+                  href={property.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <MapPin className="w-4 h-4" />
