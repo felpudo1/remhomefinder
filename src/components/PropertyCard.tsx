@@ -18,9 +18,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Maximize2, BedDouble, DollarSign, Trash2, XCircle } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, DollarSign, Trash2, XCircle, ExternalLink } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 interface PropertyCardProps {
   property: Property;
@@ -107,10 +108,29 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {/* Neighborhood */}
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <MapPin className="w-3.5 h-3.5" />
-          <span className="text-xs font-medium">{property.neighborhood}</span>
+        {/* Sección del barrio y link original */}
+        <div className="flex items-center justify-between gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">{property.neighborhood}</span>
+          </div>
+
+          {/* Botón para ir a la publicación original (Regla 2: Reutilización) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 gap-1.5 hover:bg-muted text-[10px] font-normal"
+            onClick={(e) => {
+              // Detenemos el clic para que no se abra el detalle de la propiedad
+              e.stopPropagation();
+              // Abrimos la URL en una nueva pestaña (window.open es estándar)
+              window.open(property.url, "_blank");
+            }}
+            title="Ver publicación original"
+          >
+            <span className="text-muted-foreground uppercase tracking-wider">link de la publicación</span>
+            <ExternalLink className="h-3 w-3" />
+          </Button>
         </div>
 
         {/* Title */}
