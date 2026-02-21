@@ -1,0 +1,4 @@
+{
+    "summary": "Se agregó restricción UNIQUE parcial en columna url de properties (excluye URLs vacías). Se añadió validación client-side en AddPropertyModal que verifica duplicados al perder foco del campo URL, y manejo de error server-side en Index.tsx para mostrar toast amigable si Supabase rechaza el insert.",
+    "current_status": "Restricción UNIQUE activa. Validación de duplicados implementada en frontend y backend."
+}
