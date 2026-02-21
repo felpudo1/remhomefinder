@@ -56,6 +56,18 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
     if (!url.trim()) return;
     setIsLoading(true);
     try {
+      // Primero verificar si la URL ya existe en la base de datos antes de gastar créditos de scraping
+      const { data: existing } = await supabase
+        .from("properties")
+        .select("id")
+        .eq("url", url.trim())
+        .limit(1);
+      if (existing && existing.length > 0) {
+        toast.error("Esta publicación ya fue ingresada anteriormente.");
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("scrape-property", {
         body: { url: url.trim() },
       });
