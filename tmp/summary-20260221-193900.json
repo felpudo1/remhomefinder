@@ -1,0 +1,4 @@
+{
+    "summary": "Se agregó el botón de link original en PropertyCard.tsx junto al barrio. Se utilizó el componente Button base y se implementó stopPropagation.",
+    "current_status": "Tarea completada. Aplicación corriendo."
+}
