@@ -33,10 +33,10 @@ function DbStatusBadge() {
       try {
         // Head request liviano — solo verifica si la tabla existe, no trae datos
         // Si hay error de red la promesa rechaza; si hay error de auth la BD está OK
-        const { error } = await supabase
-          .from("properties")
-          .select("id", { count: "exact", head: true })
-          .limit(1);
+        const { error } = await supabase.
+        from("properties").
+        select("id", { count: "exact", head: true }).
+        limit(1);
 
         const ms = Math.round(performance.now() - start);
         setLatency(ms);
@@ -65,24 +65,24 @@ function DbStatusBadge() {
     checking: {
       label: "Verificando BD...",
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      classes: "bg-muted/80 text-muted-foreground border-border",
+      classes: "bg-muted/80 text-muted-foreground border-border"
     },
     connected: {
       label: "Base de datos conectada",
       icon: <Wifi className="w-3 h-3" />,
-      classes: "bg-green-500/10 text-green-600 border-green-500/30",
+      classes: "bg-green-500/10 text-green-600 border-green-500/30"
     },
     error: {
       label: "Sin conexión a BD",
       icon: <WifiOff className="w-3 h-3" />,
-      classes: "bg-red-500/10 text-red-600 border-red-500/30",
-    },
+      classes: "bg-red-500/10 text-red-600 border-red-500/30"
+    }
   }[status];
 
   return (
     <div
-      className={`fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium backdrop-blur-sm shadow-sm transition-all duration-500 ${config.classes}`}
-    >
+      className={`fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium backdrop-blur-sm shadow-sm transition-all duration-500 ${config.classes}`}>
+
       {/* Ícono de base de datos */}
       <Database className="w-3 h-3 opacity-70" />
       {/* Ícono de estado: spinner / wifi / wifi-off */}
@@ -90,11 +90,11 @@ function DbStatusBadge() {
       {/* Texto descriptivo del estado */}
       <span>{config.label}</span>
       {/* Latencia en ms, solo visible cuando está conectado */}
-      {status === "connected" && latency !== null && (
-        <span className="opacity-60">{latency}ms</span>
-      )}
-    </div>
-  );
+      {status === "connected" && latency !== null &&
+      <span className="opacity-60">{latency}ms</span>
+      }
+    </div>);
+
 }
 
 const Auth = () => {
@@ -128,7 +128,7 @@ const Auth = () => {
       toast({
         title: "Error",
         description: "Las contraseñas no coinciden.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -143,19 +143,19 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin }
         });
         if (error) throw error;
         toast({
           title: "¡Cuenta creada!",
-          description: "Revisá tu email para confirmar tu cuenta.",
+          description: "Revisá tu email para confirmar tu cuenta."
         });
       }
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -167,8 +167,8 @@ const Auth = () => {
       {/* Pantalla principal de auth con fondo de imagen */}
       <div
         className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${authBgImg})` }}
-      >
+        style={{ backgroundImage: `url(${authBgImg})` }}>
+
         <div className="w-full max-w-sm space-y-8 relative rounded-2xl p-[3px] bg-gradient-to-br from-primary via-primary/50 to-transparent shadow-2xl">
           <div className="bg-background/90 backdrop-blur-md rounded-2xl p-8 space-y-8">
 
@@ -177,8 +177,8 @@ const Auth = () => {
               <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto">
                 <Home className="w-6 h-6 text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                BuscandoMiCasaPerfecta
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">RemHomeFinder
+
               </h1>
               <p className="text-muted-foreground text-sm">
                 {isLogin ? "Iniciá sesión para continuar" : "Creá tu cuenta"}
@@ -198,8 +198,8 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-9 h-11 rounded-xl"
-                    required
-                  />
+                    required />
+
                 </div>
               </div>
 
@@ -215,37 +215,37 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9 pr-10 h-11 rounded-xl"
                     required
-                    minLength={6}
-                  />
+                    minLength={6} />
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               {/* Campo de confirmación de contraseña (solo en registro) */}
-              {!isLogin && (
-                <div className="space-y-2">
+              {!isLogin &&
+              <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Repetir contraseña</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="confirmPassword"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-9 h-11 rounded-xl"
-                      required
-                      minLength={6}
-                    />
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-9 h-11 rounded-xl"
+                    required
+                    minLength={6} />
+
                   </div>
                 </div>
-              )}
+              }
 
               <Button type="submit" className="w-full h-11 rounded-xl" disabled={loading}>
                 {loading ? "Cargando..." : isLogin ? "Iniciar sesión" : "Crear cuenta"}
@@ -257,8 +257,8 @@ const Auth = () => {
               {isLogin ? "¿No tenés cuenta?" : "¿Ya tenés cuenta?"}{" "}
               <button
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-primary font-medium hover:underline"
-              >
+                className="text-primary font-medium hover:underline">
+
                 {isLogin ? "Registrate" : "Iniciá sesión"}
               </button>
             </p>
@@ -269,8 +269,8 @@ const Auth = () => {
 
       {/* Badge de estado de la BD — fijo en esquina inferior izquierda */}
       <DbStatusBadge />
-    </>
-  );
+    </>);
+
 };
 
 export default Auth;
