@@ -247,20 +247,22 @@ export function PropertyDetailModal({
             )}
 
             <div className="space-y-3">
-              {property.comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
-                    {comment.avatar}
-                  </div>
-                  <div className="flex-1 bg-muted rounded-xl px-3 py-2.5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold text-foreground">{comment.author}</span>
-                      <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+              {[...property.comments]
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
+                      {comment.avatar}
                     </div>
-                    <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
+                    <div className="flex-1 bg-muted rounded-xl px-3 py-2.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-foreground">{comment.author}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             {/* Add comment */}
