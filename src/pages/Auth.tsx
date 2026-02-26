@@ -20,10 +20,20 @@ function DbStatusBadge() {
       setStatus("checking");
       const start = performance.now();
       try {
+<<<<<<< Updated upstream
         const { error } = await supabase
           .from("properties")
           .select("id", { count: "exact", head: true })
           .limit(1);
+=======
+        // Head request liviano — solo verifica si la tabla existe, no trae datos
+        // Si hay error de red la promesa rechaza; si hay error de auth la BD está OK
+        const { error } = await supabase.
+          from("properties").
+          select("id", { count: "exact", head: true }).
+          limit(1);
+
+>>>>>>> Stashed changes
         const ms = Math.round(performance.now() - start);
         setLatency(ms);
         if (error && error.message.toLowerCase().includes("fetch")) {
@@ -65,11 +75,20 @@ function DbStatusBadge() {
       <Database className="w-3 h-3 opacity-70" />
       {config.icon}
       <span>{config.label}</span>
+<<<<<<< Updated upstream
       {status === "connected" && latency !== null && (
         <span className="opacity-60">{latency}ms</span>
       )}
     </div>
   );
+=======
+      {/* Latencia en ms, solo visible cuando está conectado */}
+      {status === "connected" && latency !== null &&
+        <span className="opacity-60">{latency}ms</span>
+      }
+    </div>);
+
+>>>>>>> Stashed changes
 }
 
 const Auth = () => {
@@ -190,12 +209,29 @@ const Auth = () => {
 
   return (
     <>
+<<<<<<< Updated upstream
       <div
         className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${authBgImg})` }}
       >
         <div className="w-full max-w-sm space-y-8 relative rounded-2xl p-[3px] bg-gradient-to-br from-primary via-primary/50 to-transparent shadow-2xl">
           <div className="bg-background/90 backdrop-blur-md rounded-2xl p-8 space-y-8">
+=======
+      {/* Pantalla principal de auth con fondo de imagen */}
+      <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+        {/* Contenedor de la imagen de fondo con efectos y filtros */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] scale-100 animate-slow-zoom"
+          style={{ backgroundImage: `url(${authBgImg})` }}
+        />
+
+        {/* Overlay oscuro y blur para mejorar legibilidad */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+
+        <div className="w-full max-w-sm space-y-8 relative z-10">
+          <div className="bg-background/40 backdrop-blur-2xl border border-white/20 rounded-2xl p-8 space-y-8 shadow-2xl">
+
+>>>>>>> Stashed changes
             {/* Logo */}
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto">
@@ -326,7 +362,12 @@ const Auth = () => {
                 </div>
               </div>
 
+<<<<<<< Updated upstream
               {!isLogin && (
+=======
+              {/* Campo de confirmación de contraseña (solo en registro) */}
+              {!isLogin &&
+>>>>>>> Stashed changes
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Repetir contraseña</Label>
                   <div className="relative">
@@ -339,8 +380,13 @@ const Auth = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="pl-9 h-11 rounded-xl"
                       required
+<<<<<<< Updated upstream
                       minLength={6}
                     />
+=======
+                      minLength={6} />
+
+>>>>>>> Stashed changes
                   </div>
                 </div>
               )}
