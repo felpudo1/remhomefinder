@@ -8,9 +8,13 @@ import { Home, Mail, Lock, Eye, EyeOff, Database, Wifi, WifiOff, Loader2, Buildi
 import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
 
+// Tipos posibles del estado de la base de datos
 type DbStatus = "checking" | "connected" | "error";
 type AccountType = "user" | "agency";
 
+/**
+ * Badge que muestra el estado de conexión con la base de datos Supabase.
+ */
 function DbStatusBadge() {
   const [status, setStatus] = useState<DbStatus>("checking");
   const [latency, setLatency] = useState<number | null>(null);
@@ -20,22 +24,15 @@ function DbStatusBadge() {
       setStatus("checking");
       const start = performance.now();
       try {
-<<<<<<< Updated upstream
+        // Head request liviano — solo verifica si existe respuesta
         const { error } = await supabase
           .from("properties")
           .select("id", { count: "exact", head: true })
           .limit(1);
-=======
-        // Head request liviano — solo verifica si la tabla existe, no trae datos
-        // Si hay error de red la promesa rechaza; si hay error de auth la BD está OK
-        const { error } = await supabase.
-          from("properties").
-          select("id", { count: "exact", head: true }).
-          limit(1);
 
->>>>>>> Stashed changes
         const ms = Math.round(performance.now() - start);
         setLatency(ms);
+
         if (error && error.message.toLowerCase().includes("fetch")) {
           setStatus("error");
         } else {
@@ -45,6 +42,7 @@ function DbStatusBadge() {
         setStatus("error");
       }
     };
+
     checkConnection();
     const interval = setInterval(checkConnection, 30_000);
     return () => clearInterval(interval);
@@ -75,20 +73,11 @@ function DbStatusBadge() {
       <Database className="w-3 h-3 opacity-70" />
       {config.icon}
       <span>{config.label}</span>
-<<<<<<< Updated upstream
       {status === "connected" && latency !== null && (
         <span className="opacity-60">{latency}ms</span>
       )}
     </div>
   );
-=======
-      {/* Latencia en ms, solo visible cuando está conectado */}
-      {status === "connected" && latency !== null &&
-        <span className="opacity-60">{latency}ms</span>
-      }
-    </div>);
-
->>>>>>> Stashed changes
 }
 
 const Auth = () => {
@@ -106,16 +95,30 @@ const Auth = () => {
 
   useEffect(() => {
     const redirectByRole = async (userId: string) => {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-      const roleSet = new Set(roles?.map((r) => r.role) ?? []);
-      if (roleSet.has("admin")) {
-        navigate("/admin");
-      } else if (roleSet.has("agency")) {
-        navigate("/inmobiliaria");
-      } else {
+      // Intentamos obtener el rol del usuario. 
+      // Si la tabla no existe o falla, por defecto va a /
+      try {
+        const { data: roles, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
+
+        if (error) {
+          console.warn("Error fetching roles:", error);
+          navigate("/");
+          return;
+        }
+
+        const roleSet = new Set(roles?.map((r) => r.role) ?? []);
+
+        if (roleSet.has("admin")) {
+          navigate("/admin");
+        } else if (roleSet.has("agency")) {
+          navigate("/inmobiliaria");
+        } else {
+          navigate("/");
+        }
+      } catch (e) {
         navigate("/");
       }
     };
@@ -173,19 +176,24 @@ const Auth = () => {
 
         // Si es inmobiliaria, crear la agencia y asignar rol
         if (accountType === "agency" && data.user) {
-          // Asignar rol agency
-          await supabase.from("user_roles").insert({
-            user_id: data.user.id,
-            role: "agency",
-          });
+          // Nota: Esto fallará si las tablas no existen en la BD todavía
+          try {
+            // Asignar rol agency
+            await supabase.from("user_roles").insert({
+              user_id: data.user.id,
+              role: "agency",
+            });
 
-          // Crear la agencia
-          await supabase.from("agencies").insert({
-            name: agencyName.trim(),
-            contact_email: email,
-            contact_phone: agencyPhone.trim(),
-            created_by: data.user.id,
-          });
+            // Crear la agencia
+            await supabase.from("agencies").insert({
+              name: agencyName.trim(),
+              contact_email: email,
+              contact_phone: agencyPhone.trim(),
+              created_by: data.user.id,
+            });
+          } catch (dbError) {
+            console.error("DB Error:", dbError);
+          }
         }
 
         toast({
@@ -209,15 +217,6 @@ const Auth = () => {
 
   return (
     <>
-<<<<<<< Updated upstream
-      <div
-        className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${authBgImg})` }}
-      >
-        <div className="w-full max-w-sm space-y-8 relative rounded-2xl p-[3px] bg-gradient-to-br from-primary via-primary/50 to-transparent shadow-2xl">
-          <div className="bg-background/90 backdrop-blur-md rounded-2xl p-8 space-y-8">
-=======
-      {/* Pantalla principal de auth con fondo de imagen */}
       <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
         {/* Contenedor de la imagen de fondo con efectos y filtros */}
         <div
@@ -230,8 +229,6 @@ const Auth = () => {
 
         <div className="w-full max-w-sm space-y-8 relative z-10">
           <div className="bg-background/40 backdrop-blur-2xl border border-white/20 rounded-2xl p-8 space-y-8 shadow-2xl">
-
->>>>>>> Stashed changes
             {/* Logo */}
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto">
@@ -253,11 +250,10 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setAccountType("user")}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${
-                      accountType === "user"
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "user"
                         ? "border-primary bg-primary/5 text-primary"
                         : "border-border text-muted-foreground hover:border-primary/30"
-                    }`}
+                      }`}
                   >
                     <Users className="w-5 h-5" />
                     <span className="font-medium">Familia</span>
@@ -268,11 +264,10 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setAccountType("agency")}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${
-                      accountType === "agency"
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "agency"
                         ? "border-primary bg-primary/5 text-primary"
                         : "border-border text-muted-foreground hover:border-primary/30"
-                    }`}
+                      }`}
                   >
                     <Building2 className="w-5 h-5" />
                     <span className="font-medium">Inmobiliaria</span>
@@ -362,12 +357,8 @@ const Auth = () => {
                 </div>
               </div>
 
-<<<<<<< Updated upstream
-              {!isLogin && (
-=======
               {/* Campo de confirmación de contraseña (solo en registro) */}
-              {!isLogin &&
->>>>>>> Stashed changes
+              {!isLogin && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Repetir contraseña</Label>
                   <div className="relative">
@@ -380,13 +371,8 @@ const Auth = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="pl-9 h-11 rounded-xl"
                       required
-<<<<<<< Updated upstream
                       minLength={6}
                     />
-=======
-                      minLength={6} />
-
->>>>>>> Stashed changes
                   </div>
                 </div>
               )}
@@ -399,10 +385,10 @@ const Auth = () => {
                 {loading
                   ? "Cargando..."
                   : isLogin
-                  ? "Iniciar sesión"
-                  : accountType === "agency"
-                  ? "Solicitar registro"
-                  : "Crear cuenta"}
+                    ? "Iniciar sesión"
+                    : accountType === "agency"
+                      ? "Solicitar registro"
+                      : "Crear cuenta"}
               </Button>
             </form>
 
