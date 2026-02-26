@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      agencies: {
+        Row: {
+          contact_email: string
+          contact_phone: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          logo_url: string
+          name: string
+          status: Database["public"]["Enums"]["agency_status"]
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          created_by: string
+          description?: string
+          id?: string
+          logo_url?: string
+          name: string
+          status?: Database["public"]["Enums"]["agency_status"]
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          logo_url?: string
+          name?: string
+          status?: Database["public"]["Enums"]["agency_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agency_members: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_members_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       properties: {
         Row: {
           ai_summary: string
@@ -154,6 +225,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -175,8 +267,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      agency_status: "pending" | "approved" | "rejected"
+      app_role: "user" | "agency" | "admin"
       property_status:
         | "contacted"
         | "coordinated"
@@ -312,6 +413,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agency_status: ["pending", "approved", "rejected"],
+      app_role: ["user", "agency", "admin"],
       property_status: [
         "contacted",
         "coordinated",
