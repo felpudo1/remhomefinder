@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import AdminInmobiliaria from "./pages/AdminInmobiliaria";
 import NotFound from "./pages/NotFound";
 import PublicPropertyView from "./pages/PublicPropertyView";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/inmobiliaria" element={<AdminInmobiliaria />} />
           <Route path="/p/:id" element={<PublicPropertyView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
