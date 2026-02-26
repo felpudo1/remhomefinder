@@ -90,10 +90,12 @@ const Auth = () => {
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin");
-      if (roles && roles.length > 0) {
+        .eq("user_id", userId);
+      const roleSet = new Set(roles?.map((r) => r.role) ?? []);
+      if (roleSet.has("admin")) {
         navigate("/admin");
+      } else if (roleSet.has("agency")) {
+        navigate("/inmobiliaria");
       } else {
         navigate("/");
       }
