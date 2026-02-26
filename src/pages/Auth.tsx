@@ -86,16 +86,27 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+    const redirectByRole = async (userId: string) => {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      if (roles && roles.length > 0) {
+        navigate("/admin");
+      } else {
         navigate("/");
       }
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) redirectByRole(session.user.id);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/");
+      if (session) redirectByRole(session.user.id);
     });
 
     return () => subscription.unsubscribe();
