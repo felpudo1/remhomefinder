@@ -14,177 +14,16 @@ export type Database = {
   }
   public: {
     Tables: {
-      properties: {
-        Row: {
-          ai_summary: string
-          created_at: string
-          created_by_email: string
-          currency: string
-          deleted_by_email: string | null
-          deleted_reason: string | null
-          discarded_by_email: string | null
-          discarded_reason: string | null
-          id: string
-          images: string[]
-          neighborhood: string
-          price_expenses: number
-          price_rent: number
-          rooms: number
-          sq_meters: number
-          status: Database["public"]["Enums"]["property_status"]
-          status_changed_by: string | null
-          title: string
-          total_cost: number
-          updated_at: string
-          url: string
-          user_id: string
-        }
-        Insert: {
-          ai_summary?: string
-          created_at?: string
-          created_by_email?: string
-          currency?: string
-          deleted_by_email?: string | null
-          deleted_reason?: string | null
-          discarded_by_email?: string | null
-          discarded_reason?: string | null
-          id?: string
-          images?: string[]
-          neighborhood?: string
-          price_expenses?: number
-          price_rent?: number
-          rooms?: number
-          sq_meters?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          status_changed_by?: string | null
-          title: string
-          total_cost?: number
-          updated_at?: string
-          url?: string
-          user_id: string
-        }
-        Update: {
-          ai_summary?: string
-          created_at?: string
-          created_by_email?: string
-          currency?: string
-          deleted_by_email?: string | null
-          deleted_reason?: string | null
-          discarded_by_email?: string | null
-          discarded_reason?: string | null
-          id?: string
-          images?: string[]
-          neighborhood?: string
-          price_expenses?: number
-          price_rent?: number
-          rooms?: number
-          sq_meters?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          status_changed_by?: string | null
-          title?: string
-          total_cost?: number
-          updated_at?: string
-          url?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      property_comments: {
-        Row: {
-          author: string
-          avatar: string
-          created_at: string
-          id: string
-          property_id: string
-          text: string
-          user_id: string
-        }
-        Insert: {
-          author: string
-          avatar?: string
-          created_at?: string
-          id?: string
-          property_id: string
-          text: string
-          user_id: string
-        }
-        Update: {
-          author?: string
-          avatar?: string
-          created_at?: string
-          id?: string
-          property_id?: string
-          text?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "property_comments_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      property_shares: {
-        Row: {
-          created_at: string | null
-          id: string
-          owner_id: string
-          permission: string
-          shared_email: string | null
-          shared_with_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          owner_id: string
-          permission?: string
-          shared_email?: string | null
-          shared_with_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          owner_id?: string
-          permission?: string
-          shared_email?: string | null
-          shared_with_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      can_view_property: {
-        Args: { _property_id: string; _user_id: string }
-        Returns: boolean
-      }
-      has_property_access: {
-        Args: { _accessing_user_id: string; _property_user_id: string }
-        Returns: boolean
-      }
-      has_property_permission: {
-        Args: {
-          _accessing_user_id: string
-          _permissions: string[]
-          _property_user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      property_status:
-        | "contacted"
-        | "coordinated"
-        | "visited"
-        | "discarded"
-        | "ingresado"
-        | "a_analizar"
-        | "eliminado"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -311,16 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      property_status: [
-        "contacted",
-        "coordinated",
-        "visited",
-        "discarded",
-        "ingresado",
-        "a_analizar",
-        "eliminado",
-      ],
-    },
+    Enums: {},
   },
 } as const
