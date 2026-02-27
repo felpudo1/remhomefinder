@@ -7,8 +7,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Share2, Mail, CheckCircle2, Users } from "lucide-react";
-import { ShareSettingsModal } from "@/components/ShareSettingsModal";
+import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, CheckCircle2, Users } from "lucide-react";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +29,7 @@ const Index = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [isShareOpen, setIsShareOpen] = useState(false);
+  
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
@@ -289,15 +288,6 @@ const Index = () => {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setIsShareOpen(true)}
-              title="Compartir propiedades"
-            >
-              <Share2 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
               onClick={handleLogout}
               title="Cerrar sesión"
             >
@@ -395,10 +385,6 @@ const Index = () => {
         activeGroupId={activeGroupId}
       />
 
-      <ShareSettingsModal
-        open={isShareOpen}
-        onClose={() => setIsShareOpen(false)}
-      />
 
       <GroupsModal
         open={isGroupsOpen}
