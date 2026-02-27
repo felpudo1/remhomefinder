@@ -87,6 +87,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     discardedReason: (db as any).discarded_reason || "",
     discardedByEmail: (db as any).discarded_by_email || "",
     statusChangedByEmail: (db as any).status_changed_by_email || "",
+    coordinatedDate: (db as any).coordinated_date ? new Date((db as any).coordinated_date) : null,
     groupId: (db as any).group_id || null,
   };
 }
@@ -207,9 +208,12 @@ export function useProperties() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status, deletedReason }: { id: string; status: PropertyStatus; deletedReason?: string }) => {
+    mutationFn: async ({ id, status, deletedReason, coordinatedDate }: { id: string; status: PropertyStatus; deletedReason?: string; coordinatedDate?: string | null }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const updateData: any = { status, status_changed_by: user?.id || null, status_changed_by_email: user?.email || '' };
+      if (status === "coordinated" && coordinatedDate) {
+        updateData.coordinated_date = coordinatedDate;
+      }
       // Guardar motivo y usuario para eliminados
       if (status === "eliminado") {
         updateData.deleted_reason = deletedReason || "";
@@ -324,7 +328,7 @@ export function useProperties() {
     loading,
     error,
     addProperty: addPropertyMutation.mutateAsync,
-    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string) => updateStatusMutation.mutateAsync({ id, status, deletedReason }),
+    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null) => updateStatusMutation.mutateAsync({ id, status, deletedReason, coordinatedDate }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addCommentMutation.mutateAsync({ propertyId: id, comment }),
     refetch: () => queryClient.invalidateQueries({ queryKey: ["properties"] }),

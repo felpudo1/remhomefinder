@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Property, PropertyStatus, STATUS_CONFIG } from "@/types/property";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -18,37 +17,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Maximize2, BedDouble, DollarSign, Trash2, XCircle, ExternalLink } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, Trash2, XCircle, ExternalLink, CalendarIcon } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
 
 interface PropertyCardProps {
   property: Property;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null) => void;
   onClick: () => void;
   ownerEmail?: string | null;
 }
 
+function formatDateTime(date: Date): string {
+  return format(date, "dd/MM/yyyy HH:mm");
+}
+
 export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: PropertyCardProps) {
   const [currentImg, setCurrentImg] = useState(0);
-  // Estado para mostrar diálogo de confirmación de eliminación
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
-  // Estado para mostrar diálogo de confirmación de descarte
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [discardReason, setDiscardReason] = useState("");
+  const [showCoordinatedConfirm, setShowCoordinatedConfirm] = useState(false);
+  const [coordinatedDateTime, setCoordinatedDateTime] = useState("");
   const config = STATUS_CONFIG[property.status];
 
-  /**
-   * Maneja el cambio de estado: si es "eliminado" o "discarded",
-   * muestra un diálogo de confirmación pidiendo motivo.
-   */
   const handleStatusChange = (val: string) => {
     if (val === "eliminado") {
       setShowDeleteConfirm(true);
     } else if (val === "discarded") {
       setShowDiscardConfirm(true);
+    } else if (val === "coordinated") {
+      setShowCoordinatedConfirm(true);
     } else {
       onStatusChange(property.id, val as PropertyStatus);
     }
@@ -69,7 +72,6 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           alt={property.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {/* Image thumbnails */}
         {property.images.length > 1 && (
           <div
             className="absolute bottom-3 right-3 flex gap-1.5"
@@ -79,15 +81,14 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               <button
                 key={i}
                 onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
-                className={`w-7 h-7 rounded-md overflow-hidden border-2 transition-all ${i === currentImg ? "border-card opacity-100" : "border-transparent opacity-60 hover:opacity-90"
-                  }`}
+                className={`w-7 h-7 rounded-md overflow-hidden border-2 transition-all ${i === currentImg ? "border-card opacity-100" : "border-transparent opacity-60 hover:opacity-90"}`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
         )}
-        {/* Status Badge + who changed it */}
+        {/* Status Badge + who changed it + date */}
         <div className="absolute top-3 left-3 flex flex-col gap-1">
           <span
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}
@@ -95,10 +96,25 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
             <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
             {config.label}
           </span>
-          {property.statusChangedByEmail && property.status !== "ingresado" && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[180px] truncate">
-              por {property.statusChangedByEmail}
+          {/* Who changed status + date */}
+          {property.status === "ingresado" ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[220px] truncate">
+              por {ownerEmail || property.createdByEmail} · {formatDateTime(property.createdAt)}
             </span>
+          ) : (
+            <>
+              {property.statusChangedByEmail && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[220px] truncate">
+                  por {property.statusChangedByEmail}
+                </span>
+              )}
+              {property.status === "coordinated" && property.coordinatedDate && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
+                  <CalendarIcon className="w-3 h-3" />
+                  {formatDateTime(property.coordinatedDate)}
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -114,24 +130,17 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {/* Sección del barrio y link original */}
+        {/* Barrio y link */}
         <div className="flex items-center justify-between gap-1 text-muted-foreground">
           <div className="flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">{property.neighborhood}</span>
           </div>
-
-          {/* Botón para ir a la publicación original (Regla 2: Reutilización) */}
           <Button
             variant="ghost"
             size="sm"
             className="h-7 px-2 gap-1.5 hover:bg-muted text-[10px] font-normal"
-            onClick={(e) => {
-              // Detenemos el clic para que no se abra el detalle de la propiedad
-              e.stopPropagation();
-              // Abrimos la URL en una nueva pestaña (window.open es estándar)
-              window.open(property.url, "_blank");
-            }}
+            onClick={(e) => { e.stopPropagation(); window.open(property.url, "_blank"); }}
             title="Ver publicación original"
           >
             <span className="text-muted-foreground uppercase tracking-wider">link de la publicación</span>
@@ -171,7 +180,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           </div>
         )}
 
-        {/* Discarded info - muestra motivo y usuario que descartó */}
+        {/* Discarded info */}
         {isDiscarded && (
           <div className="bg-status-discarded-bg border border-status-discarded/20 rounded-xl p-2.5 space-y-1">
             <div className="flex items-center gap-1.5 text-xs font-medium text-status-discarded">
@@ -186,7 +195,6 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           </div>
         )}
 
-        {/* Divider */}
         <div className="border-t border-border" />
 
         {/* Price Section */}
@@ -206,10 +214,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
 
           {/* Status Selector */}
           <div onClick={(e) => e.stopPropagation()}>
-            <Select
-              value={property.status}
-              onValueChange={handleStatusChange}
-            >
+            <Select value={property.status} onValueChange={handleStatusChange}>
               <SelectTrigger className="h-8 text-xs w-auto border-border bg-background px-2 gap-1 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
@@ -233,6 +238,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </SelectContent>
             </Select>
 
+            {/* Delete dialog */}
             <AlertDialog open={showDeleteConfirm} onOpenChange={(open) => { setShowDeleteConfirm(open); if (!open) setDeleteReason(""); }}>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -259,7 +265,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </AlertDialogContent>
             </AlertDialog>
 
-            {/* Diálogo de confirmación para descartar */}
+            {/* Discard dialog */}
             <AlertDialog open={showDiscardConfirm} onOpenChange={(open) => { setShowDiscardConfirm(open); if (!open) setDiscardReason(""); }}>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -281,6 +287,39 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                     className="bg-status-discarded text-white hover:bg-status-discarded/90"
                   >
                     Descartar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Coordinated date dialog */}
+            <AlertDialog open={showCoordinatedConfirm} onOpenChange={(open) => { setShowCoordinatedConfirm(open); if (!open) setCoordinatedDateTime(""); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Coordinar visita</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Seleccioná la fecha y hora de la visita coordinada para "{property.title}".
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Fecha y hora de la visita</label>
+                  <Input
+                    type="datetime-local"
+                    value={coordinatedDateTime}
+                    onChange={(e) => setCoordinatedDateTime(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      const isoDate = coordinatedDateTime ? new Date(coordinatedDateTime).toISOString() : null;
+                      onStatusChange(property.id, "coordinated", undefined, isoDate);
+                    }}
+                    className="bg-status-coordinated text-white hover:bg-status-coordinated/90"
+                  >
+                    Confirmar visita
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

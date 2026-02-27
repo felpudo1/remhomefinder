@@ -180,6 +180,7 @@ export type Database = {
       properties: {
         Row: {
           ai_summary: string
+          coordinated_date: string | null
           created_at: string
           created_by_email: string
           currency: string
@@ -206,6 +207,7 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string
+          coordinated_date?: string | null
           created_at?: string
           created_by_email?: string
           currency?: string
@@ -232,6 +234,7 @@ export type Database = {
         }
         Update: {
           ai_summary?: string
+          coordinated_date?: string | null
           created_at?: string
           created_by_email?: string
           currency?: string
