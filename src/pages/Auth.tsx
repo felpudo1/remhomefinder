@@ -176,15 +176,8 @@ const Auth = () => {
 
         // Si es inmobiliaria, crear la agencia y asignar rol
         if (accountType === "agency" && data.user) {
-          // Nota: Esto fallará si las tablas no existen en la BD todavía
+          // Crear la agencia — el trigger asigna el rol 'agency' automáticamente
           try {
-            // Asignar rol inmobiliaria
-            await supabase.from("user_roles").insert([{
-              user_id: data.user.id,
-              role: "agency" as const,
-            }]);
-
-            // Crear la agencia
             await supabase.from("agencies").insert([{
               name: agencyName.trim(),
               contact_email: email,
