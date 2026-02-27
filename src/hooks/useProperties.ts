@@ -86,6 +86,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     deletedByEmail: (db as any).deleted_by_email || "",
     discardedReason: (db as any).discarded_reason || "",
     discardedByEmail: (db as any).discarded_by_email || "",
+    groupId: (db as any).group_id || null,
   };
 }
 
@@ -160,6 +161,7 @@ export function useProperties() {
       rooms: number;
       aiSummary: string;
       images?: string[];
+      groupId?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
@@ -169,23 +171,29 @@ export function useProperties() {
         ? form.images
         : [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]];
 
+      const insertData: any = {
+        user_id: user.id,
+        url: form.url || "",
+        title: form.title,
+        price_rent: form.priceRent,
+        price_expenses: form.priceExpenses,
+        total_cost: form.priceRent + form.priceExpenses,
+        currency: form.currency,
+        neighborhood: form.neighborhood,
+        sq_meters: form.sqMeters,
+        rooms: form.rooms,
+        ai_summary: form.aiSummary,
+        created_by_email: user.email || "",
+        images: propertyImages,
+      };
+
+      if (form.groupId) {
+        insertData.group_id = form.groupId;
+      }
+
       const { data, error } = await supabase
         .from("properties")
-        .insert({
-          user_id: user.id,
-          url: form.url || "",
-          title: form.title,
-          price_rent: form.priceRent,
-          price_expenses: form.priceExpenses,
-          total_cost: form.priceRent + form.priceExpenses,
-          currency: form.currency,
-          neighborhood: form.neighborhood,
-          sq_meters: form.sqMeters,
-          rooms: form.rooms,
-          ai_summary: form.aiSummary,
-          created_by_email: user.email || "",
-          images: propertyImages,
-        })
+        .insert(insertData)
         .select()
         .single();
 

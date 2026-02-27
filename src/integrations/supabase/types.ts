@@ -85,6 +85,68 @@ export type Database = {
           },
         ]
       }
+      group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          invite_code: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string
+          id?: string
+          invite_code?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          invite_code?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string
@@ -125,6 +187,7 @@ export type Database = {
           deleted_reason: string | null
           discarded_by_email: string | null
           discarded_reason: string | null
+          group_id: string | null
           id: string
           images: string[]
           neighborhood: string
@@ -149,6 +212,7 @@ export type Database = {
           deleted_reason?: string | null
           discarded_by_email?: string | null
           discarded_reason?: string | null
+          group_id?: string | null
           id?: string
           images?: string[]
           neighborhood?: string
@@ -173,6 +237,7 @@ export type Database = {
           deleted_reason?: string | null
           discarded_by_email?: string | null
           discarded_reason?: string | null
+          group_id?: string | null
           id?: string
           images?: string[]
           neighborhood?: string
@@ -188,7 +253,15 @@ export type Database = {
           url?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_comments: {
         Row: {
@@ -285,6 +358,14 @@ export type Database = {
         Args: { _property_id: string; _user_id: string }
         Returns: boolean
       }
+      find_group_by_invite_code: {
+        Args: { _code: string }
+        Returns: {
+          description: string
+          id: string
+          name: string
+        }[]
+      }
       has_property_access: {
         Args: { _accessing_user_id: string; _property_user_id: string }
         Returns: boolean
@@ -302,6 +383,14 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_group_owner: {
+        Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
     }
