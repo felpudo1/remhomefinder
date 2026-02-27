@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Mail, Lock, Eye, EyeOff, Database, Wifi, WifiOff, Loader2, Building2, Users } from "lucide-react";
+import { Home, Mail, Lock, Eye, EyeOff, Database, Wifi, WifiOff, Loader2, Building2, Users, Phone } from "lucide-react";
 import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
 
@@ -90,6 +90,7 @@ const Auth = () => {
   const [accountType, setAccountType] = useState<AccountType>("user");
   const [agencyName, setAgencyName] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
+  const [userPhone, setUserPhone] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -174,9 +175,19 @@ const Auth = () => {
         });
         if (error) throw error;
 
-        // Si es inmobiliaria, crear la agencia y asignar rol
+        // Guardar teléfono en profiles
+        if (data.user) {
+          try {
+            await supabase.from("profiles").update({
+              phone: userPhone.trim(),
+            }).eq("user_id", data.user.id);
+          } catch (e) {
+            console.error("Profile update error:", e);
+          }
+        }
+
+        // Si es agente, crear la agencia — el trigger asigna el rol 'agency' automáticamente
         if (accountType === "agency" && data.user) {
-          // Crear la agencia — el trigger asigna el rol 'agency' automáticamente
           try {
             await supabase.from("agencies").insert([{
               name: agencyName.trim(),
@@ -306,6 +317,25 @@ const Auth = () => {
                 </>
               )}
 
+              {/* Teléfono (todos los usuarios en registro) */}
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="userPhone">Teléfono</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="userPhone"
+                      type="tel"
+                      placeholder="+598 99 123 456"
+                      value={userPhone}
+                      onChange={(e) => setUserPhone(e.target.value)}
+                      className="pl-9 h-11 rounded-xl"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
