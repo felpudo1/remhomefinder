@@ -301,33 +301,6 @@ export type Database = {
           },
         ]
       }
-      property_shares: {
-        Row: {
-          created_at: string | null
-          id: string
-          owner_id: string
-          permission: string
-          shared_email: string | null
-          shared_with_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          owner_id: string
-          permission?: string
-          shared_email?: string | null
-          shared_with_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          owner_id?: string
-          permission?: string
-          shared_email?: string | null
-          shared_with_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -354,10 +327,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_view_property: {
-        Args: { _property_id: string; _user_id: string }
-        Returns: boolean
-      }
       find_group_by_invite_code: {
         Args: { _code: string }
         Returns: {
@@ -365,18 +334,6 @@ export type Database = {
           id: string
           name: string
         }[]
-      }
-      has_property_access: {
-        Args: { _accessing_user_id: string; _property_user_id: string }
-        Returns: boolean
-      }
-      has_property_permission: {
-        Args: {
-          _accessing_user_id: string
-          _permissions: string[]
-          _property_user_id: string
-        }
-        Returns: boolean
       }
       has_role: {
         Args: {
