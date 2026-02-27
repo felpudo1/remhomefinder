@@ -10,12 +10,22 @@ export function useAuthRedirect() {
     useEffect(() => {
         const checkUserAndRole = async (session: any) => {
             if (!session) {
+                // Si acabamos de registrar y estamos en la home, no redirigir a /auth para mostrar el msj
+                const isRegistered = new URLSearchParams(location.search).get("registered");
+                if (location.pathname === "/" && isRegistered === "true") return;
+
                 if (location.pathname !== "/auth") navigate("/auth");
                 return;
             }
 
             const user = session.user;
             setUserEmail(user.email ?? null);
+
+            // Si estamos en la home con el flag de registrado pero ya tenemos sesión, limpiar la URL
+            const searchParams = new URLSearchParams(location.search);
+            if (searchParams.get("registered") === "true" && location.pathname === "/") {
+                navigate("/", { replace: true });
+            }
 
             // Verificar rol para redirección forzada
             try {

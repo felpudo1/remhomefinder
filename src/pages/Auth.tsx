@@ -26,9 +26,9 @@ function DbStatusBadge() {
       try {
         // Head request liviano — solo verifica si existe respuesta
         const { error } = await supabase.
-        from("properties").
-        select("id", { count: "exact", head: true }).
-        limit(1);
+          from("properties").
+          select("id", { count: "exact", head: true }).
+          limit(1);
 
         const ms = Math.round(performance.now() - start);
         setLatency(ms);
@@ -74,7 +74,7 @@ function DbStatusBadge() {
       {config.icon}
       <span>{config.label}</span>
       {status === "connected" && latency !== null &&
-      <span className="opacity-60">{latency}ms</span>
+        <span className="opacity-60">{latency}ms</span>
       }
     </div>);
 
@@ -101,9 +101,9 @@ const Auth = () => {
       // Si la tabla no existe o falla, por defecto va a /
       try {
         const { data: roles, error } = await supabase.
-        from("user_roles").
-        select("role").
-        eq("user_id", userId);
+          from("user_roles").
+          select("role").
+          eq("user_id", userId);
 
         if (error) {
           console.warn("Error fetching roles:", error);
@@ -205,10 +205,13 @@ const Auth = () => {
         toast({
           title: "¡Cuenta creada!",
           description:
-          accountType === "agency" ?
-          "Tu solicitud de agente está pendiente de aprobación. Revisá tu email para confirmar tu cuenta." :
-          "Revisá tu email para confirmar tu cuenta."
+            accountType === "agency" ?
+              "Tu solicitud de agente está pendiente de aprobación. Revisá tu email para confirmar tu cuenta." :
+              "Revisá tu email para confirmar tu cuenta."
         });
+
+        // Redirigir a la home para mostrar el mensaje de confirmación amigable
+        setTimeout(() => navigate("/?registered=true"), 1500);
       }
     } catch (error: any) {
       toast({
@@ -250,16 +253,16 @@ const Auth = () => {
 
             {/* Selector de tipo de cuenta (solo en registro) */}
             {!isLogin &&
-            <div className="space-y-2">
+              <div className="space-y-2">
                 <Label>Tipo de cuenta</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                  type="button"
-                  onClick={() => setAccountType("user")}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "user" ?
-                  "border-primary bg-primary/5 text-primary" :
-                  "border-border text-muted-foreground hover:border-primary/30"}`
-                  }>
+                    type="button"
+                    onClick={() => setAccountType("user")}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "user" ?
+                      "border-primary bg-primary/5 text-primary" :
+                      "border-border text-muted-foreground hover:border-primary/30"}`
+                    }>
 
                     <Users className="w-5 h-5" />
                     <span className="font-medium">Familia</span>
@@ -268,12 +271,12 @@ const Auth = () => {
                     </span>
                   </button>
                   <button
-                  type="button"
-                  onClick={() => setAccountType("agency")}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "agency" ?
-                  "border-primary bg-primary/5 text-primary" :
-                  "border-border text-muted-foreground hover:border-primary/30"}`
-                  }>
+                    type="button"
+                    onClick={() => setAccountType("agency")}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "agency" ?
+                      "border-primary bg-primary/5 text-primary" :
+                      "border-border text-muted-foreground hover:border-primary/30"}`
+                    }>
 
                     <Building2 className="w-5 h-5" />
                     <span className="font-medium">Agente</span>
@@ -289,19 +292,19 @@ const Auth = () => {
             <form onSubmit={handleEmailAuth} className="space-y-4">
               {/* Campos de agente (solo en registro como agency) */}
               {!isLogin && accountType === "agency" &&
-              <>
+                <>
                   <div className="space-y-2">
                     <Label htmlFor="agencyName">Nombre de la agencia</Label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
-                      id="agencyName"
-                      type="text"
-                      placeholder="Agencia Ejemplo S.A."
-                      value={agencyName}
-                      onChange={(e) => setAgencyName(e.target.value)}
-                      className="pl-9 h-11 rounded-xl"
-                      required />
+                        id="agencyName"
+                        type="text"
+                        placeholder="Agencia Ejemplo S.A."
+                        value={agencyName}
+                        onChange={(e) => setAgencyName(e.target.value)}
+                        className="pl-9 h-11 rounded-xl"
+                        required />
 
                     </div>
                   </div>
@@ -310,35 +313,36 @@ const Auth = () => {
 
               {/* Nombre de contacto (todos en registro) */}
               {!isLogin &&
-              <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="familyName">Nombre de contacto</Label>
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                    id="familyName"
-                    type="text"
-                    placeholder={accountType === "user" ? "Familia García" : "Juan Pérez"}
-                    value={familyName}
-                    onChange={(e) => setFamilyName(e.target.value)}
-                    className="pl-9 h-11 rounded-xl"
-                    required />
+                      id="familyName"
+                      type="text"
+                      // Nombre del usuario o familia para el perfil
+                      placeholder="Nombre"
+                      value={familyName}
+                      onChange={(e) => setFamilyName(e.target.value)}
+                      className="pl-9 h-11 rounded-xl"
+                      required />
                   </div>
                 </div>
               }
 
               {/* Teléfono de contacto (todos en registro) */}
               {!isLogin &&
-              <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="userPhone">Teléfono de contacto</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                    id="userPhone"
-                    type="tel"
-                    placeholder="+598 99 123 456"
-                    value={userPhone}
-                    onChange={(e) => setUserPhone(e.target.value)}
-                    className="pl-9 h-11 rounded-xl" />
+                      id="userPhone"
+                      type="tel"
+                      placeholder="+598 99 123 456"
+                      value={userPhone}
+                      onChange={(e) => setUserPhone(e.target.value)}
+                      className="pl-9 h-11 rounded-xl" />
                   </div>
                 </div>
               }
@@ -380,9 +384,9 @@ const Auth = () => {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
 
                     {showPassword ?
-                    <EyeOff className="w-4 h-4" /> :
+                      <EyeOff className="w-4 h-4" /> :
 
-                    <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                     }
                   </button>
                 </div>
@@ -390,19 +394,19 @@ const Auth = () => {
 
               {/* Campo de confirmación de contraseña (solo en registro) */}
               {!isLogin &&
-              <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Repetir contraseña</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                    id="confirmPassword"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-9 h-11 rounded-xl"
-                    required
-                    minLength={6} />
+                      id="confirmPassword"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-9 h-11 rounded-xl"
+                      required
+                      minLength={6} />
 
                   </div>
                 </div>
@@ -414,18 +418,18 @@ const Auth = () => {
                 disabled={loading}>
 
                 {loading ?
-                "Cargando..." :
-                isLogin ?
-                "Iniciar sesión" :
-                accountType === "agency" ?
-                "Solicitar registro" :
-                "Crear cuenta"}
+                  "Cargando..." :
+                  isLogin ?
+                    "Iniciar sesión" :
+                    accountType === "agency" ?
+                      "Solicitar registro" :
+                      "Crear cuenta"}
               </Button>
             </form>
 
             {/* Info para agentes */}
             {!isLogin && accountType === "agency" &&
-            <p className="text-[11px] text-center text-muted-foreground leading-tight">
+              <p className="text-[11px] text-center text-muted-foreground leading-tight">
                 Tu cuenta será revisada y aprobada por un administrador antes de poder publicar propiedades.
               </p>
             }

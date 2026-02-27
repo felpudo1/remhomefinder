@@ -52,8 +52,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: formattedUrl,
-        formats: ["markdown", "html", "links"],
-        onlyMainContent: false,
+        formats: ["markdown", "html"],
+        onlyMainContent: true,
+        waitFor: 2000, // Dar tiempo a Gallito para renderizar los precios y datos dinámicos
       }),
     });
 
@@ -61,8 +62,9 @@ serve(async (req) => {
 
     if (!scrapeResponse.ok) {
       console.error("Firecrawl error:", scrapeData);
+      const firecrawlError = scrapeData?.error || "No se pudo acceder a la página";
       return new Response(
-        JSON.stringify({ success: false, error: "No se pudo acceder a la página" }),
+        JSON.stringify({ success: false, error: `Firecrawl: ${firecrawlError}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -70,7 +72,7 @@ serve(async (req) => {
     const markdown = scrapeData?.data?.markdown || scrapeData?.markdown || "";
     const html = scrapeData?.data?.html || scrapeData?.html || "";
     const allLinks: string[] = scrapeData?.data?.links || scrapeData?.links || [];
-    
+
     // Extract image URLs from multiple sources
     const imageExtensions = /\.(jpg|jpeg|png|webp|avif)(\?|$)/i;
     const excludeExtensions = /\.(svg|gif|ico)(\?|$)/i;
@@ -131,7 +133,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-1.5-flash",
         messages: [
           {
             role: "system",

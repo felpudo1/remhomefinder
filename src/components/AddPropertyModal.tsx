@@ -73,8 +73,9 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       });
 
       if (error || !data?.success) {
+        const errorMsg = data?.error || error?.message || "No pudimos extraer datos automáticamente.";
         // Scraping failed — go to manual form so user can fill in details
-        toast.info("No pudimos extraer datos automáticamente. Completá los datos manualmente.", { duration: 5000 });
+        toast.info(errorMsg + " Completá los datos manualmente.", { duration: 6000 });
         setStep("manual");
         setIsLoading(false);
         return;

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
@@ -6,7 +7,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Share2 } from "lucide-react";
+import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Share2, Mail, CheckCircle2 } from "lucide-react";
 import { ShareSettingsModal } from "@/components/ShareSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,8 @@ type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
 const Index = () => {
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { userEmail, handleLogout } = useAuthRedirect();
   const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
@@ -167,8 +170,51 @@ const Index = () => {
     return counts;
   }, [properties]);
 
+  const isRegistered = new URLSearchParams(location.search).get("registered") === "true";
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Overlay de Verificación de Email (Bloqueo Amigable) - Solo si NO hay sesión activa */}
+      {isRegistered && !userEmail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Fondo desenfocado y oscuro */}
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-xl" />
+
+          {/* Tarjeta de mensaje */}
+          <div className="relative bg-card border border-border rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <Mail className="w-10 h-10 text-primary animate-pulse" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground tracking-tight">¡Casi listo! 🚀</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Gracias por sumarte a <strong>HomeFinder</strong>. Para empezar a buscar tu casa perfecta, primero necesitamos que confirmes tu cuenta.
+              </p>
+            </div>
+
+            <div className="bg-muted/50 rounded-2xl p-4 flex items-start gap-3 text-left">
+              <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground/80">
+                Enviamos un enlace de confirmación a tu correo. Por favor, <strong>revisá tu bandeja de entrada</strong> (y la carpeta de spam por las dudas).
+              </p>
+            </div>
+
+            <div className="pt-4 space-y-3">
+              <Button
+                className="w-full h-12 rounded-xl text-md font-medium"
+                onClick={() => navigate("/auth")}
+              >
+                Volver al inicio de sesión
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Una vez confirmado, ya podrás operar sin restricciones.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <header className="bg-card border-b border-border sticky top-0 z-40 card-shadow">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-3">
