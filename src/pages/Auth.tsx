@@ -194,7 +194,7 @@ const Auth = () => {
             await supabase.from("agencies").insert([{
               name: agencyName.trim(),
               contact_email: email,
-              contact_phone: agencyPhone.trim(),
+              contact_phone: userPhone.trim(),
               created_by: data.user.id
             }]);
           } catch (dbError) {
@@ -305,30 +305,19 @@ const Auth = () => {
 
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="agencyPhone">Teléfono de contacto</Label>
-                    <Input
-                    id="agencyPhone"
-                    type="tel"
-                    placeholder="+54 11 1234-5678"
-                    value={agencyPhone}
-                    onChange={(e) => setAgencyPhone(e.target.value)}
-                    className="h-11 rounded-xl" />
-
-                  </div>
                 </>
               }
 
-              {/* Nombre de familia (solo registro como usuario) */}
-              {!isLogin && accountType === "user" &&
+              {/* Nombre de contacto (todos en registro) */}
+              {!isLogin &&
               <div className="space-y-2">
-                  <Label htmlFor="familyName">Nombre de la familia</Label>
+                  <Label htmlFor="familyName">Nombre de contacto</Label>
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                     id="familyName"
                     type="text"
-                    placeholder="Familia García"
+                    placeholder={accountType === "user" ? "Familia García" : "Juan Pérez"}
                     value={familyName}
                     onChange={(e) => setFamilyName(e.target.value)}
                     className="pl-9 h-11 rounded-xl"
@@ -337,10 +326,10 @@ const Auth = () => {
                 </div>
               }
 
-              {/* Teléfono (todos los usuarios en registro) */}
+              {/* Teléfono de contacto (todos en registro) */}
               {!isLogin &&
               <div className="space-y-2">
-                  <Label htmlFor="userPhone">Teléfono</Label>
+                  <Label htmlFor="userPhone">Teléfono de contacto</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
