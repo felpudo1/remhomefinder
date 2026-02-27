@@ -113,8 +113,8 @@ const Auth = () => {
 
         if (roleSet.has("admin")) {
           navigate("/admin");
-        } else if (roleSet.has("agency")) {
-          navigate("/inmobiliaria");
+        } else if (roleSet.has("agency") || roleSet.has("inmobiliaria")) {
+          navigate("/admininmobiliaria");
         } else {
           navigate("/");
         }
@@ -178,10 +178,10 @@ const Auth = () => {
         if (accountType === "agency" && data.user) {
           // Nota: Esto fallará si las tablas no existen en la BD todavía
           try {
-            // Asignar rol agency
+            // Asignar rol inmobiliaria
             await supabase.from("user_roles").insert({
               user_id: data.user.id,
-              role: "agency",
+              role: "inmobiliaria",
             });
 
             // Crear la agencia
@@ -251,8 +251,8 @@ const Auth = () => {
                     type="button"
                     onClick={() => setAccountType("user")}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "user"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/30"
                       }`}
                   >
                     <Users className="w-5 h-5" />
@@ -265,8 +265,8 @@ const Auth = () => {
                     type="button"
                     onClick={() => setAccountType("agency")}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "agency"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/30"
                       }`}
                   >
                     <Building2 className="w-5 h-5" />

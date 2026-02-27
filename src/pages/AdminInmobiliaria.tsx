@@ -67,14 +67,15 @@ const AdminInmobiliaria = () => {
 
       setUserEmail(user.email ?? null);
 
-      // Check agency role
+      // Check agency role (flexible with naming)
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "agency");
+        .eq("user_id", user.id);
 
-      if (!roles || roles.length === 0) {
+      const hasAgencyRole = roles?.some(r => r.role === "agency" || (r.role as string) === "inmobiliaria");
+
+      if (!hasAgencyRole) {
         navigate("/");
         return;
       }
