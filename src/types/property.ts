@@ -29,6 +29,7 @@ export interface Property {
   deletedByEmail: string;
   discardedReason: string;
   discardedByEmail: string;
+  groupId?: string | null;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {

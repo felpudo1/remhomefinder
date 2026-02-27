@@ -7,8 +7,9 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Share2, Mail, CheckCircle2 } from "lucide-react";
+import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Share2, Mail, CheckCircle2, Users } from "lucide-react";
 import { ShareSettingsModal } from "@/components/ShareSettingsModal";
+import { GroupsModal } from "@/components/GroupsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,8 @@ const Index = () => {
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isGroupsOpen, setIsGroupsOpen] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
   // Derive selectedProperty from query data so it updates automatically
   const selectedProperty = useMemo(
@@ -78,6 +81,7 @@ const Index = () => {
     sqMeters: number;
     rooms: number;
     aiSummary: string;
+    groupId?: string | null;
   }) => {
     try {
       await addProperty(form);
@@ -113,6 +117,11 @@ const Index = () => {
 
   const filteredAndSorted = useMemo(() => {
     let result = [...properties];
+
+    // Filtrar por grupo activo
+    if (activeGroupId) {
+      result = result.filter((p) => p.groupId === activeGroupId);
+    }
 
     // Ocultar eliminados y descartados a menos que se filtren explícitamente
     if (!selectedStatuses.includes("eliminado")) {
@@ -275,6 +284,15 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
+              className={`h-8 w-8 ${activeGroupId ? "text-primary" : ""}`}
+              onClick={() => setIsGroupsOpen(true)}
+              title="Grupos familiares"
+            >
+              <Users className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-8 w-8"
               onClick={() => setIsShareOpen(true)}
               title="Compartir propiedades"
@@ -379,12 +397,34 @@ const Index = () => {
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onAdd={handleAddProperty}
+        activeGroupId={activeGroupId}
       />
 
       <ShareSettingsModal
         open={isShareOpen}
         onClose={() => setIsShareOpen(false)}
       />
+
+      <GroupsModal
+        open={isGroupsOpen}
+        onClose={() => setIsGroupsOpen(false)}
+        activeGroupId={activeGroupId}
+        onSelectGroup={setActiveGroupId}
+      />
+
+      {/* Banner de grupo activo */}
+      {activeGroupId && (
+        <div className="fixed top-16 left-0 right-0 z-30 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-center gap-2 text-sm">
+          <Users className="w-4 h-4 text-primary" />
+          <span className="text-primary font-medium">Viendo propiedades del grupo</span>
+          <button
+            onClick={() => setActiveGroupId(null)}
+            className="text-xs text-primary/70 hover:text-primary underline ml-2"
+          >
+            Ver todas
+          </button>
+        </div>
+      )}
     </div>
   );
 };

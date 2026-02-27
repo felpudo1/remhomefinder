@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload } from "lucide-react";
+import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useRef } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useGroups } from "@/hooks/useGroups";
 
 interface AddPropertyModalProps {
   open: boolean;
@@ -27,10 +28,14 @@ interface AddPropertyModalProps {
     rooms: number;
     aiSummary: string;
     images: string[];
+    groupId?: string | null;
   }) => void;
+  activeGroupId?: string | null;
 }
 
-export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps) {
+export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPropertyModalProps) {
+  const { groups } = useGroups();
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"url" | "manual">("url");
@@ -169,6 +174,7 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
       rooms: Number(form.rooms) || 1,
       aiSummary: form.aiSummary,
       images: scrapedImages,
+      groupId: selectedGroupId,
     });
     handleClose();
   };
@@ -392,6 +398,26 @@ export function AddPropertyModal({ open, onClose, onAdd }: AddPropertyModalProps
                 <p className="text-[10px] text-muted-foreground">o pegá URLs arriba</p>
               </div>
             </div>
+
+            {/* Group selector */}
+            {groups.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium flex items-center gap-1">
+                  <Users className="w-3 h-3" /> Agregar al grupo
+                </Label>
+                <Select value={selectedGroupId || "none"} onValueChange={(v) => setSelectedGroupId(v === "none" ? null : v)}>
+                  <SelectTrigger className="rounded-xl text-sm">
+                    <SelectValue placeholder="Sin grupo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin grupo (solo mío)</SelectItem>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={() => setStep("url")} className="flex-1 rounded-xl">Volver</Button>
