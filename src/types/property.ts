@@ -29,6 +29,7 @@ export interface Property {
   deletedByEmail: string;
   discardedReason: string;
   discardedByEmail: string;
+  statusChangedByEmail: string;
   groupId?: string | null;
 }
 

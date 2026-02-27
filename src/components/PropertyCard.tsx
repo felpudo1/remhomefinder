@@ -87,24 +87,30 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
             ))}
           </div>
         )}
-        {/* Status Badge */}
-        <div className="absolute top-3 left-3">
+        {/* Status Badge + who changed it */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
           <span
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
             {config.label}
           </span>
-        </div>
-        {/* Owner Email Badge */}
-        {ownerEmail && (
-          <div className="absolute top-3 right-3">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-black/60 text-white backdrop-blur-md">
-              {ownerEmail}
+          {property.statusChangedByEmail && property.status !== "ingresado" && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[180px] truncate">
+              por {property.statusChangedByEmail}
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Owner email below image */}
+      {ownerEmail && (
+        <div className="px-4 pt-2">
+          <span className="text-[11px] text-muted-foreground">
+            Ingresado por {ownerEmail}
+          </span>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-4 space-y-3">

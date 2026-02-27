@@ -197,6 +197,7 @@ export type Database = {
           sq_meters: number
           status: Database["public"]["Enums"]["property_status"]
           status_changed_by: string | null
+          status_changed_by_email: string | null
           title: string
           total_cost: number
           updated_at: string
@@ -222,6 +223,7 @@ export type Database = {
           sq_meters?: number
           status?: Database["public"]["Enums"]["property_status"]
           status_changed_by?: string | null
+          status_changed_by_email?: string | null
           title: string
           total_cost?: number
           updated_at?: string
@@ -247,6 +249,7 @@ export type Database = {
           sq_meters?: number
           status?: Database["public"]["Enums"]["property_status"]
           status_changed_by?: string | null
+          status_changed_by_email?: string | null
           title?: string
           total_cost?: number
           updated_at?: string
