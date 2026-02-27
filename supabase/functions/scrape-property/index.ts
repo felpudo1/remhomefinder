@@ -20,7 +20,7 @@ serve(async (req) => {
       );
     }
 
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY") || Deno.env.get("FIRECRAWL_API_KEY_1");
     if (!FIRECRAWL_API_KEY) {
       return new Response(
         JSON.stringify({ success: false, error: "FIRECRAWL_API_KEY not configured" }),
