@@ -91,6 +91,7 @@ const Auth = () => {
   const [agencyName, setAgencyName] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
   const [userPhone, setUserPhone] = useState("");
+  const [familyName, setFamilyName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -179,7 +180,8 @@ const Auth = () => {
         if (data.user) {
           try {
             await supabase.from("profiles").update({
-              phone: userPhone.trim()
+              phone: userPhone.trim(),
+              display_name: accountType === "user" ? familyName.trim() : agencyName.trim()
             }).eq("user_id", data.user.id);
           } catch (e) {
             console.error("Profile update error:", e);
@@ -317,6 +319,24 @@ const Auth = () => {
                 </>
               }
 
+              {/* Nombre de familia (solo registro como usuario) */}
+              {!isLogin && accountType === "user" &&
+              <div className="space-y-2">
+                  <Label htmlFor="familyName">Nombre de la familia</Label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                    id="familyName"
+                    type="text"
+                    placeholder="Familia García"
+                    value={familyName}
+                    onChange={(e) => setFamilyName(e.target.value)}
+                    className="pl-9 h-11 rounded-xl"
+                    required />
+                  </div>
+                </div>
+              }
+
               {/* Teléfono (todos los usuarios en registro) */}
               {!isLogin &&
               <div className="space-y-2">
@@ -330,7 +350,6 @@ const Auth = () => {
                     value={userPhone}
                     onChange={(e) => setUserPhone(e.target.value)}
                     className="pl-9 h-11 rounded-xl" />
-
                   </div>
                 </div>
               }
