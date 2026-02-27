@@ -106,12 +106,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               {property.statusChangedByEmail && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[220px] truncate">
                   por {property.statusChangedByEmail}
+                  {property.statusChangedAt && ` · ${formatDateTime(property.statusChangedAt)}`}
                 </span>
               )}
               {property.status === "coordinated" && property.coordinatedDate && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
                   <CalendarIcon className="w-3 h-3" />
-                  {formatDateTime(property.coordinatedDate)}
+                  Visita: {formatDateTime(property.coordinatedDate)}
                 </span>
               )}
             </>
