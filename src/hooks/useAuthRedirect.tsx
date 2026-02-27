@@ -28,10 +28,9 @@ export function useAuthRedirect() {
 
                 if (roleSet.has("admin") && location.pathname !== "/admin") {
                     navigate("/admin");
-                } else if ((roleSet.has("agency") || roleSet.has("inmobiliaria")) && location.pathname !== "/admininmobiliaria") {
-                    navigate("/admininmobiliaria");
-                } else if (!roleSet.has("admin") && !roleSet.has("agency") && !roleSet.has("inmobiliaria") && location.pathname !== "/") {
-                    // Si es un usuario normal (familia) pero no está en la raíz
+                } else if (roleSet.has("agency") && location.pathname !== "/inmobiliaria") {
+                    navigate("/inmobiliaria");
+                } else if (!roleSet.has("admin") && !roleSet.has("agency") && location.pathname !== "/") {
                     if (["/admin", "/admininmobiliaria", "/inmobiliaria"].includes(location.pathname)) {
                         navigate("/");
                     }

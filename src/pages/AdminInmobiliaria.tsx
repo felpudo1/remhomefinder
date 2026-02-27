@@ -73,7 +73,7 @@ const AdminInmobiliaria = () => {
         .select("role")
         .eq("user_id", user.id);
 
-      const hasAgencyRole = roles?.some(r => r.role === "agency" || (r.role as string) === "inmobiliaria");
+      const hasAgencyRole = roles?.some(r => r.role === "agency");
 
       if (!hasAgencyRole) {
         navigate("/");

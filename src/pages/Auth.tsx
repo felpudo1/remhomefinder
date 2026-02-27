@@ -113,8 +113,8 @@ const Auth = () => {
 
         if (roleSet.has("admin")) {
           navigate("/admin");
-        } else if (roleSet.has("agency") || roleSet.has("inmobiliaria")) {
-          navigate("/admininmobiliaria");
+        } else if (roleSet.has("agency")) {
+          navigate("/inmobiliaria");
         } else {
           navigate("/");
         }
@@ -179,18 +179,18 @@ const Auth = () => {
           // Nota: Esto fallará si las tablas no existen en la BD todavía
           try {
             // Asignar rol inmobiliaria
-            await supabase.from("user_roles").insert({
+            await supabase.from("user_roles").insert([{
               user_id: data.user.id,
-              role: "inmobiliaria",
-            });
+              role: "agency" as const,
+            }]);
 
             // Crear la agencia
-            await supabase.from("agencies").insert({
+            await supabase.from("agencies").insert([{
               name: agencyName.trim(),
               contact_email: email,
               contact_phone: agencyPhone.trim(),
               created_by: data.user.id,
-            });
+            }]);
           } catch (dbError) {
             console.error("DB Error:", dbError);
           }
