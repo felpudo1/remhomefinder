@@ -30,6 +30,7 @@ export interface Property {
   discardedReason: string;
   discardedByEmail: string;
   statusChangedByEmail: string;
+  statusChangedAt?: Date | null;
   coordinatedDate?: Date | null;
   groupId?: string | null;
 }

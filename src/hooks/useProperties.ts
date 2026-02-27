@@ -87,6 +87,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     discardedReason: (db as any).discarded_reason || "",
     discardedByEmail: (db as any).discarded_by_email || "",
     statusChangedByEmail: (db as any).status_changed_by_email || "",
+    statusChangedAt: db.updated_at ? new Date(db.updated_at) : null,
     coordinatedDate: (db as any).coordinated_date ? new Date((db as any).coordinated_date) : null,
     groupId: (db as any).group_id || null,
   };
