@@ -75,7 +75,7 @@ const Admin = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({
-        title: status === "approved" ? "Inmobiliaria aprobada" : "Inmobiliaria rechazada",
+        title: status === "approved" ? "Agente aprobado" : "Agente rechazado",
         description: `El estado fue actualizado correctamente.`,
       });
       fetchAgencies();
@@ -114,10 +114,10 @@ const Admin = () => {
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Building2 className="w-5 h-5" />
-            Solicitudes de Inmobiliarias
+            Solicitudes de Agentes
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Aprobá o rechazá las inmobiliarias que quieren publicar en la plataforma.
+            Aprobá o rechazá los agentes que quieren publicar en la plataforma.
           </p>
         </div>
 
@@ -127,7 +127,7 @@ const Admin = () => {
           </div>
         ) : agencies.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            No hay solicitudes de inmobiliarias.
+            No hay solicitudes de agentes.
           </div>
         ) : (
           <div className="space-y-3">

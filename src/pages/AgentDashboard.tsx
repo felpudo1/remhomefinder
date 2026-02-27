@@ -48,7 +48,7 @@ const statusConfig = {
   },
 };
 
-const AdminInmobiliaria = () => {
+const AgentDashboard = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -130,7 +130,7 @@ const AdminInmobiliaria = () => {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-foreground">
-                Panel Inmobiliaria
+                Panel Agente
               </h1>
               {userEmail && (
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
@@ -178,7 +178,7 @@ const AdminInmobiliaria = () => {
 
             {agency.status === "pending" && (
               <div className="rounded-xl bg-yellow-500/5 border border-yellow-500/20 p-4 text-sm text-yellow-800">
-                Tu inmobiliaria está pendiente de aprobación por un administrador.
+                Tu cuenta de agente está pendiente de aprobación por un administrador.
                 Una vez aprobada, podrás publicar propiedades en la plataforma.
               </div>
             )}
@@ -194,7 +194,7 @@ const AdminInmobiliaria = () => {
           <div className="border border-border rounded-2xl bg-card p-8 text-center space-y-3">
             <Building2 className="w-10 h-10 text-muted-foreground mx-auto" />
             <p className="text-muted-foreground">
-              No se encontró una inmobiliaria asociada a tu cuenta.
+              No se encontró una agencia asociada a tu cuenta.
             </p>
           </div>
         )}
@@ -225,4 +225,4 @@ const AdminInmobiliaria = () => {
   );
 };
 
-export default AdminInmobiliaria;
+export default AgentDashboard;

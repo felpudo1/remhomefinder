@@ -28,10 +28,10 @@ export function useAuthRedirect() {
 
                 if (roleSet.has("admin") && location.pathname !== "/admin") {
                     navigate("/admin");
-                } else if (roleSet.has("agency") && location.pathname !== "/inmobiliaria") {
-                    navigate("/inmobiliaria");
+                } else if (roleSet.has("agency") && location.pathname !== "/agente") {
+                    navigate("/agente");
                 } else if (!roleSet.has("admin") && !roleSet.has("agency") && location.pathname !== "/") {
-                    if (["/admin", "/admininmobiliaria", "/inmobiliaria"].includes(location.pathname)) {
+                    if (["/admin", "/agente"].includes(location.pathname)) {
                         navigate("/");
                     }
                 }
