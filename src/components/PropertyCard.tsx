@@ -98,15 +98,16 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           </span>
           {/* Who changed status + date */}
           {property.status === "ingresado" ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[220px] truncate">
-              por {ownerEmail || property.createdByEmail} · {formatDateTime(property.createdAt)}
+            <span className="inline-flex flex-col items-start px-2 py-1 rounded-lg text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[200px] leading-relaxed">
+              <span className="truncate w-full">por {ownerEmail || property.createdByEmail}</span>
+              <span>{formatDateTime(property.createdAt)}</span>
             </span>
           ) : (
             <>
               {property.statusChangedByEmail && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[220px] truncate">
-                  por {property.statusChangedByEmail}
-                  {property.statusChangedAt && ` · ${formatDateTime(property.statusChangedAt)}`}
+                <span className="inline-flex flex-col items-start px-2 py-1 rounded-lg text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[200px] leading-relaxed">
+                  <span className="truncate w-full">por {property.statusChangedByEmail}</span>
+                  {property.statusChangedAt && <span>{formatDateTime(property.statusChangedAt)}</span>}
                 </span>
               )}
               {property.status === "coordinated" && property.coordinatedDate && (
