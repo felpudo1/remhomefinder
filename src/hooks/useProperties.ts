@@ -86,6 +86,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     deletedByEmail: (db as any).deleted_by_email || "",
     discardedReason: (db as any).discarded_reason || "",
     discardedByEmail: (db as any).discarded_by_email || "",
+    statusChangedByEmail: (db as any).status_changed_by_email || "",
     groupId: (db as any).group_id || null,
   };
 }
@@ -208,7 +209,7 @@ export function useProperties() {
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, deletedReason }: { id: string; status: PropertyStatus; deletedReason?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const updateData: any = { status, status_changed_by: user?.id || null };
+      const updateData: any = { status, status_changed_by: user?.id || null, status_changed_by_email: user?.email || '' };
       // Guardar motivo y usuario para eliminados
       if (status === "eliminado") {
         updateData.deleted_reason = deletedReason || "";
