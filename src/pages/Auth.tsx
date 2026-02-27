@@ -114,7 +114,7 @@ const Auth = () => {
         if (roleSet.has("admin")) {
           navigate("/admin");
         } else if (roleSet.has("agency")) {
-          navigate("/inmobiliaria");
+          navigate("/agente");
         } else {
           navigate("/");
         }
@@ -151,7 +151,7 @@ const Auth = () => {
     if (!isLogin && accountType === "agency" && !agencyName.trim()) {
       toast({
         title: "Error",
-        description: "Ingresá el nombre de la inmobiliaria.",
+        description: "Ingresá el nombre de la agencia.",
         variant: "destructive",
       });
       return;
@@ -193,7 +193,7 @@ const Auth = () => {
           title: "¡Cuenta creada!",
           description:
             accountType === "agency"
-              ? "Tu solicitud de inmobiliaria está pendiente de aprobación. Revisá tu email para confirmar tu cuenta."
+              ? "Tu solicitud de agente está pendiente de aprobación. Revisá tu email para confirmar tu cuenta."
               : "Revisá tu email para confirmar tu cuenta.",
         });
       }
@@ -263,7 +263,7 @@ const Auth = () => {
                       }`}
                   >
                     <Building2 className="w-5 h-5" />
-                    <span className="font-medium">Inmobiliaria</span>
+                    <span className="font-medium">Agente</span>
                     <span className="text-[10px] leading-tight opacity-70">
                       Publico propiedades
                     </span>
@@ -274,17 +274,17 @@ const Auth = () => {
 
             {/* Formulario */}
             <form onSubmit={handleEmailAuth} className="space-y-4">
-              {/* Campos de inmobiliaria (solo en registro como agency) */}
+              {/* Campos de agente (solo en registro como agency) */}
               {!isLogin && accountType === "agency" && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="agencyName">Nombre de la inmobiliaria</Label>
+                    <Label htmlFor="agencyName">Nombre de la agencia</Label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="agencyName"
                         type="text"
-                        placeholder="Inmobiliaria Ejemplo S.A."
+                        placeholder="Agencia Ejemplo S.A."
                         value={agencyName}
                         onChange={(e) => setAgencyName(e.target.value)}
                         className="pl-9 h-11 rounded-xl"
@@ -385,7 +385,7 @@ const Auth = () => {
               </Button>
             </form>
 
-            {/* Info para inmobiliarias */}
+            {/* Info para agentes */}
             {!isLogin && accountType === "agency" && (
               <p className="text-[11px] text-center text-muted-foreground leading-tight">
                 Tu cuenta será revisada y aprobada por un administrador antes de poder publicar propiedades.
