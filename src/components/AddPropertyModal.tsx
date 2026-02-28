@@ -39,6 +39,13 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"url" | "manual">("url");
+
+  // Sync with activeGroupId when it changes or when modal opens
+  useEffect(() => {
+    if (open) {
+      setSelectedGroupId(activeGroupId || null);
+    }
+  }, [open, activeGroupId]);
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);

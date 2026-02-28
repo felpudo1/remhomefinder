@@ -29,7 +29,7 @@ const Index = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  
+
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
@@ -46,9 +46,9 @@ const Index = () => {
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
-  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null) => {
+  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => {
     try {
-      await updateStatus(id, status, deletedReason, coordinatedDate);
+      await updateStatus(id, status, deletedReason, coordinatedDate, groupId);
     } catch (e: any) {
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",
@@ -163,7 +163,7 @@ const Index = () => {
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
-      ingresado: 0, contacted: 0, coordinated: 0, discarded: 0, a_analizar: 0, eliminado: 0
+      ingresado: 0, contacted: 0, coordinated: 0, visited: 0, discarded: 0, a_analizar: 0, eliminado: 0
     };
     properties.forEach((p) => {
       if (counts[p.status] !== undefined) {
@@ -326,7 +326,11 @@ const Index = () => {
             <div className="text-center py-20 text-muted-foreground">
               <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p className="font-medium">No se encontraron propiedades</p>
-              <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
+              {activeGroupId ? (
+                <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas. Podés asignarlas desde los detalles de cada propiedad o agregar una nueva mientras este grupo esté activo.</p>
+              ) : (
+                <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">

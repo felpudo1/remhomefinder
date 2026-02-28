@@ -26,7 +26,7 @@ import { format } from "date-fns";
 
 interface PropertyCardProps {
   property: Property;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => void;
   onClick: () => void;
   ownerEmail?: string | null;
 }

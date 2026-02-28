@@ -27,14 +27,16 @@ import {
   ChevronRight,
   Sparkles,
   Share2,
+  Users,
 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
+import { useGroups } from "@/hooks/useGroups";
 
 interface PropertyDetailModalProps {
   property: Property | null;
   open: boolean;
   onClose: () => void;
-  onStatusChange: (id: string, status: PropertyStatus) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
   currentUserEmail?: string | null;
 }
@@ -49,6 +51,7 @@ export function PropertyDetailModal({
   onAddComment,
   currentUserEmail,
 }: PropertyDetailModalProps) {
+  const { groups } = useGroups();
   const [activeImg, setActiveImg] = useState(0);
   const [commentText, setCommentText] = useState("");
   const [commentAuthor, setCommentAuthor] = useState(currentUserEmail || "Me");
@@ -201,34 +204,60 @@ export function PropertyDetailModal({
             </p>
           </div>
 
-          {/* Status Selector */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Estado</span>
-            <Select
-              value={property.status}
-              onValueChange={(val) => onStatusChange(property.id, val as PropertyStatus)}
-            >
-              <SelectTrigger
-                className={`w-auto h-9 text-sm border-0 ${config.bg} ${config.color} font-medium rounded-lg px-3`}
+          {/* Status and Group Selectors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5 text-left">
+              <span className="text-xs font-semibold text-foreground">Estado</span>
+              <Select
+                value={property.status}
+                onValueChange={(val) => onStatusChange(property.id, val as PropertyStatus)}
               >
-                <span className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-                  <SelectValue />
+                <SelectTrigger
+                  className={`w-full h-9 text-sm border-0 ${config.bg} ${config.color} font-medium rounded-lg px-3`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+                    <SelectValue />
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
+                    ([key, cfg]) => (
+                      <SelectItem key={key} value={key} className="text-sm">
+                        <span className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                          {cfg.label}
+                        </span>
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {groups.length > 0 && (
+              <div className="space-y-1.5 text-left">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <Users className="w-3 h-3" /> Grupo Familiar
                 </span>
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-                  ([key, cfg]) => (
-                    <SelectItem key={key} value={key} className="text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
-                      </span>
-                    </SelectItem>
-                  )
-                )}
-              </SelectContent>
-            </Select>
+                <Select
+                  value={property.groupId || "none"}
+                  onValueChange={(val) =>
+                    onStatusChange(property.id, property.status, undefined, undefined, val === "none" ? null : val)
+                  }
+                >
+                  <SelectTrigger className="w-full h-9 text-sm border-border bg-background rounded-lg px-3">
+                    <SelectValue placeholder="Sin grupo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin grupo</SelectItem>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Comments Section */}

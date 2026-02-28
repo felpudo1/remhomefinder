@@ -1,4 +1,4 @@
-export type PropertyStatus = "ingresado" | "contacted" | "coordinated" | "discarded" | "a_analizar" | "eliminado";
+export type PropertyStatus = "ingresado" | "contacted" | "coordinated" | "visited" | "discarded" | "a_analizar" | "eliminado";
 
 export interface PropertyComment {
   id: string;
@@ -53,6 +53,12 @@ export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: strin
     color: "text-status-coordinated",
     bg: "bg-status-coordinated-bg",
     dot: "bg-status-coordinated",
+  },
+  visited: {
+    label: "Visitado",
+    color: "text-green-700",
+    bg: "bg-green-100",
+    dot: "bg-green-500",
   },
   discarded: {
     label: "Descartado",

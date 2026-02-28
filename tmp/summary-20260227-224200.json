@@ -1,0 +1,4 @@
+﻿{
+    "summary":  "Corrección del crash de pantalla en blanco sincronizando el estado \u0027visited\u0027 entre BD y frontend.",
+    "current_status":  "Error resuelto. La aplicación ahora maneja correctamente el estado \u0027visited\u0027."
+}

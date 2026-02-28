@@ -29,6 +29,7 @@ interface DbProperty {
   created_by_email: string;
   created_at: string;
   updated_at: string;
+  group_id: string | null;
 }
 
 interface DbComment {
@@ -209,9 +210,13 @@ export function useProperties() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status, deletedReason, coordinatedDate }: { id: string; status: PropertyStatus; deletedReason?: string; coordinatedDate?: string | null }) => {
+    mutationFn: async ({ id, status, deletedReason, coordinatedDate, groupId }: { id: string; status: PropertyStatus; deletedReason?: string; coordinatedDate?: string | null; groupId?: string | null }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const updateData: any = { status, status_changed_by: user?.id || null, status_changed_by_email: user?.email || '' };
+      const updateData: any = { status, status_changed_by: user?.id || null, status_changed_by_email: user?.email || "" };
+      
+      if (groupId !== undefined) {
+        updateData.group_id = groupId;
+      }
       if (status === "coordinated" && coordinatedDate) {
         updateData.coordinated_date = coordinatedDate;
       }
@@ -329,7 +334,8 @@ export function useProperties() {
     loading,
     error,
     addProperty: addPropertyMutation.mutateAsync,
-    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null) => updateStatusMutation.mutateAsync({ id, status, deletedReason, coordinatedDate }),
+    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => 
+      updateStatusMutation.mutateAsync({ id, status, deletedReason, coordinatedDate, groupId }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addCommentMutation.mutateAsync({ propertyId: id, comment }),
     refetch: () => queryClient.invalidateQueries({ queryKey: ["properties"] }),
