@@ -17,7 +17,6 @@ import {
   Phone,
   Clock,
   CheckCircle,
-  CheckCircle,
   XCircle,
   MapPin,
   Maximize2,
