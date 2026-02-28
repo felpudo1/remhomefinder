@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Search, CheckCircle2, ArrowRight, Building2, Store } from "lucide-react";
+import { Home, Users, Search, CheckCircle2, ArrowRight, Building2, Store, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import authBg from "@/assets/auth-bg.jpg";
 
 const Landing = () => {
     const navigate = useNavigate();
@@ -16,7 +17,7 @@ const Landing = () => {
 
     return (
         <div className="min-h-screen bg-background selection:bg-primary/20">
-            {/* Navbar Minimalista */}
+            {/* Navbar */}
             <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -40,27 +41,30 @@ const Landing = () => {
                 </div>
             </nav>
 
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden text-center">
-                {/* Gradiantes de fondo decorativos */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[500px] bg-primary/5 blur-[120px] rounded-full -z-10" />
+            {/* Hero Section con imagen de fondo */}
+            <section className="relative pt-32 pb-20 md:pt-48 md:pb-36 overflow-hidden text-center">
+                {/* Imagen de fondo */}
+                <div className="absolute inset-0 -z-20">
+                    <img src={authBg} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/85 via-background/70 to-background" />
 
                 <div className="max-w-4xl mx-auto px-6 space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                         </span>
-                        NUEVA FORMA DE BUSCAR
+                        Organizá tu búsqueda inmobiliaria
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1]">
-                        Buscá en <span className="text-primary italic">equipo</span>,<br />
-                        decidí en <span className="italic">familia</span>.
+                        Tu próximo hogar,<br />
+                        <span className="text-primary">una decisión</span> en equipo.
                     </h1>
 
-                    <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                        El primer organizador grupal inmobiliario para encontrar tu próximo alquiler o compra sin estrés.
+                    <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                        Centralizá propiedades, coordiná visitas y tomá la mejor decisión junto a tu familia — todo desde una sola plataforma.
                     </p>
 
                     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -69,10 +73,14 @@ const Landing = () => {
                             onClick={() => navigate(isLoggedIn ? "/dashboard" : "/auth")}
                             className="h-14 px-8 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1"
                         >
-                            Comenzar gratis
+                            Empezar ahora — es gratis
                             <ArrowRight className="ml-2 w-5 h-5" />
                         </Button>
                     </div>
+
+                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5" /> Sin tarjeta de crédito · Configurá en 2 minutos
+                    </p>
                 </div>
             </section>
 
@@ -80,8 +88,8 @@ const Landing = () => {
             <section className="py-24 bg-muted/30">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-16 space-y-4">
-                        <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Todo lo que necesitás en un solo lugar</h2>
-                        <p className="text-muted-foreground max-w-xl mx-auto">Diseñado para familias y grupos que quieren simplificar el proceso de encontrar un nuevo hogar.</p>
+                        <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Herramientas profesionales para tu búsqueda</h2>
+                        <p className="text-muted-foreground max-w-xl mx-auto">Cada funcionalidad está pensada para que vos y tu grupo tomen decisiones más rápidas y con mejor información.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -113,9 +121,9 @@ const Landing = () => {
                         ))}
                     </div>
                     <p className="text-2xl md:text-3xl font-medium italic text-foreground/90">
-                        "HomeFinder cambió nuestra forma de buscar depto. Antes nos perdíamos entre links de WhatsApp, ahora decidimos todo en la app."
+                        "Pasamos de tener 50 links sueltos en WhatsApp a organizar todo en un solo lugar. La decisión fue mucho más fácil."
                     </p>
-                    <div className="text-sm text-muted-foreground font-medium">— Familia Martínez, usuarios felices.</div>
+                    <div className="text-sm text-muted-foreground font-medium">— Familia Martínez, Buenos Aires</div>
                 </div>
             </section>
 
