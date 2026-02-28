@@ -306,7 +306,7 @@ const Index = () => {
           <TabsList className="mb-6 bg-muted rounded-xl p-1">
             <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
               <Store className="w-4 h-4" />
-              Marketplace
+              Mercado
             </TabsTrigger>
             <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
               <Home className="w-4 h-4" />
