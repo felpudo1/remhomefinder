@@ -170,6 +170,8 @@ const Auth = () => {
         if (error) throw error;
       } else {
         const displayName = accountType === "user" ? familyName.trim() : agencyName.trim();
+        const phoneValue = userPhone.trim();
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -177,25 +179,56 @@ const Auth = () => {
             emailRedirectTo: window.location.origin,
             data: {
               display_name: displayName,
-              phone: userPhone.trim(),
+              full_name: displayName,
+              name: displayName,
+              phone: phoneValue,
             }
           }
         });
         if (error) throw error;
 
-        // Actualizar profile (el trigger lo crea, pero puede demorar)
         if (data.user) {
-          const updateProfile = async (retries = 3) => {
+          // Refuerzo: persistir metadata explícitamente en auth.users
+          const { error: metadataError } = await supabase.auth.updateUser({
+            data: {
+              display_name: displayName,
+              full_name: displayName,
+              name: displayName,
+              phone: phoneValue,
+            },
+          });
+
+          if (metadataError) {
+            console.error("Auth metadata update error:", metadataError);
+          }
+
+          // Guardar perfil (upsert para cubrir tanto fila existente como ausente)
+          const upsertProfile = async (retries = 3) => {
+            let lastError: unknown = null;
+
             for (let i = 0; i < retries; i++) {
-              const { error: profileError } = await supabase.from("profiles").update({
-                phone: userPhone.trim(),
+              const { error: profileError } = await supabase.from("profiles").upsert({
+                user_id: data.user!.id,
+                phone: phoneValue,
                 display_name: displayName
-              }).eq("user_id", data.user!.id);
+              }, {
+                onConflict: "user_id"
+              });
+
               if (!profileError) return;
+
+              lastError = profileError;
               await new Promise(r => setTimeout(r, 500 * (i + 1)));
             }
+
+            if (lastError) throw lastError;
           };
-          updateProfile().catch(e => console.error("Profile update error:", e));
+
+          try {
+            await upsertProfile();
+          } catch (e) {
+            console.error("Profile upsert error:", e);
+          }
         }
 
         // Si es agente, crear la agencia — el trigger asigna el rol 'agency' automáticamente
