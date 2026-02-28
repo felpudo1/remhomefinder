@@ -7,10 +7,12 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
-import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, CheckCircle2, Users } from "lucide-react";
+import { MarketplaceView } from "@/components/MarketplaceView";
+import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, CheckCircle2, Users, Store } from "lucide-react";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
@@ -299,53 +301,74 @@ const Index = () => {
       </header>
 
       {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8">
-        <FilterSidebar
-          selectedStatuses={selectedStatuses}
-          onStatusToggle={handleStatusToggle}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onClearFilters={handleClearFilters}
-          totalCount={properties.length}
-          filteredCount={filteredAndSorted.length}
-          mobileOpen={isMobileFiltersOpen}
-          onMobileClose={() => setIsMobileFiltersOpen(false)}
-        />
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+        <Tabs defaultValue="marketplace" className="w-full">
+          <TabsList className="mb-6 bg-muted rounded-xl p-1">
+            <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
+              <Store className="w-4 h-4" />
+              Marketplace
+            </TabsTrigger>
+            <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
+              <Home className="w-4 h-4" />
+              Mi Listado
+            </TabsTrigger>
+          </TabsList>
 
-        <main className="flex-1 min-w-0">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
-            <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda inmobiliaria</p>
-          </div>
+          <TabsContent value="marketplace">
+            <MarketplaceView />
+          </TabsContent>
 
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <TabsContent value="mi-listado">
+            <div className="flex gap-8">
+              <FilterSidebar
+                selectedStatuses={selectedStatuses}
+                onStatusToggle={handleStatusToggle}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                onClearFilters={handleClearFilters}
+                totalCount={properties.length}
+                filteredCount={filteredAndSorted.length}
+                mobileOpen={isMobileFiltersOpen}
+                onMobileClose={() => setIsMobileFiltersOpen(false)}
+              />
+
+              <main className="flex-1 min-w-0">
+                <div className="mb-6">
+                  <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
+                  <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda inmobiliaria</p>
+                </div>
+
+                {loading ? (
+                  <div className="flex justify-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredAndSorted.length === 0 ? (
+                  <div className="text-center py-20 text-muted-foreground">
+                    <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="font-medium">No se encontraron propiedades</p>
+                    {activeGroupId ? (
+                      <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas.</p>
+                    ) : (
+                      <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {filteredAndSorted.map((property) => (
+                      <PropertyCard
+                        key={property.id}
+                        property={property}
+                        onStatusChange={handleStatusChange}
+                        onClick={() => handleCardClick(property)}
+                        ownerEmail={property.createdByEmail || null}
+                      />
+                    ))}
+                  </div>
+                )}
+              </main>
             </div>
-          ) : filteredAndSorted.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">No se encontraron propiedades</p>
-              {activeGroupId ? (
-                <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas. Podés asignarlas desde los detalles de cada propiedad o agregar una nueva mientras este grupo esté activo.</p>
-              ) : (
-                <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filteredAndSorted.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  onStatusChange={handleStatusChange}
-                  onClick={() => handleCardClick(property)}
-                  ownerEmail={property.createdByEmail || null}
-                />
-              ))}
-            </div>
-          )}
-        </main>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Botón flotante "Filtros" solo en mobile (abajo a la izquierda) */}

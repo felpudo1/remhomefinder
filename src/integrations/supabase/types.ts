@@ -147,6 +147,71 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_properties: {
+        Row: {
+          agency_id: string
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          images: string[]
+          neighborhood: string
+          price_expenses: number
+          price_rent: number
+          rooms: number
+          sq_meters: number
+          status: Database["public"]["Enums"]["marketplace_property_status"]
+          title: string
+          total_cost: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          images?: string[]
+          neighborhood?: string
+          price_expenses?: number
+          price_rent?: number
+          rooms?: number
+          sq_meters?: number
+          status?: Database["public"]["Enums"]["marketplace_property_status"]
+          title: string
+          total_cost?: number
+          updated_at?: string
+          url?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          images?: string[]
+          neighborhood?: string
+          price_expenses?: number
+          price_rent?: number
+          rooms?: number
+          sq_meters?: number
+          status?: Database["public"]["Enums"]["marketplace_property_status"]
+          title?: string
+          total_cost?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_properties_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string
@@ -195,6 +260,7 @@ export type Database = {
           price_expenses: number
           price_rent: number
           rooms: number
+          source_marketplace_id: string | null
           sq_meters: number
           status: Database["public"]["Enums"]["property_status"]
           status_changed_by: string | null
@@ -222,6 +288,7 @@ export type Database = {
           price_expenses?: number
           price_rent?: number
           rooms?: number
+          source_marketplace_id?: string | null
           sq_meters?: number
           status?: Database["public"]["Enums"]["property_status"]
           status_changed_by?: string | null
@@ -249,6 +316,7 @@ export type Database = {
           price_expenses?: number
           price_rent?: number
           rooms?: number
+          source_marketplace_id?: string | null
           sq_meters?: number
           status?: Database["public"]["Enums"]["property_status"]
           status_changed_by?: string | null
@@ -265,6 +333,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_source_marketplace_id_fkey"
+            columns: ["source_marketplace_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_properties"
             referencedColumns: ["id"]
           },
         ]
@@ -360,6 +435,7 @@ export type Database = {
     Enums: {
       agency_status: "pending" | "approved" | "rejected"
       app_role: "user" | "agency" | "admin"
+      marketplace_property_status: "active" | "paused" | "sold"
       property_status:
         | "contacted"
         | "coordinated"
@@ -497,6 +573,7 @@ export const Constants = {
     Enums: {
       agency_status: ["pending", "approved", "rejected"],
       app_role: ["user", "agency", "admin"],
+      marketplace_property_status: ["active", "paused", "sold"],
       property_status: [
         "contacted",
         "coordinated",

@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Maximize2, BedDouble, Trash2, XCircle, ExternalLink, CalendarIcon } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, Trash2, XCircle, ExternalLink, CalendarIcon, Building2 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -121,14 +121,21 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         </div>
       </div>
 
-      {/* Owner email below image */}
-      {ownerEmail && (
+      {/* Source badge or owner email */}
+      {property.sourceMarketplaceId ? (
+        <div className="px-4 pt-2">
+          <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
+            <Building2 className="w-3 h-3" />
+            De agencia
+          </span>
+        </div>
+      ) : ownerEmail ? (
         <div className="px-4 pt-2">
           <span className="text-[11px] text-muted-foreground">
             Ingresado por {ownerEmail}
           </span>
         </div>
-      )}
+      ) : null}
 
       {/* Content */}
       <div className="p-4 space-y-3">
