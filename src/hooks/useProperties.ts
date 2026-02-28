@@ -91,6 +91,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     statusChangedAt: db.updated_at ? new Date(db.updated_at) : null,
     coordinatedDate: (db as any).coordinated_date ? new Date((db as any).coordinated_date) : null,
     groupId: (db as any).group_id || null,
+    sourceMarketplaceId: (db as any).source_marketplace_id || null,
   };
 }
 

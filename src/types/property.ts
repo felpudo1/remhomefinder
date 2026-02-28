@@ -33,6 +33,29 @@ export interface Property {
   statusChangedAt?: Date | null;
   coordinatedDate?: Date | null;
   groupId?: string | null;
+  sourceMarketplaceId?: string | null;
+}
+
+export type MarketplacePropertyStatus = "active" | "paused" | "sold";
+
+export interface MarketplaceProperty {
+  id: string;
+  agencyId: string;
+  agencyName: string;
+  title: string;
+  description: string;
+  url: string;
+  priceRent: number;
+  priceExpenses: number;
+  totalCost: number;
+  currency: string;
+  neighborhood: string;
+  sqMeters: number;
+  rooms: number;
+  images: string[];
+  status: MarketplacePropertyStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {

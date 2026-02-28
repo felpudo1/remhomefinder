@@ -28,6 +28,7 @@ import {
   Sparkles,
   Share2,
   Users,
+  Building2,
 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { useGroups } from "@/hooks/useGroups";
@@ -157,6 +158,14 @@ export function PropertyDetailModal({
               <MapPin className="w-4 h-4" />
               <span className="text-sm">{property.neighborhood}</span>
             </div>
+            {property.sourceMarketplaceId && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  <Building2 className="w-3 h-3" />
+                  Guardada del marketplace
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Stats row */}
