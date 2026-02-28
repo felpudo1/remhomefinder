@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Building2, CheckCircle, XCircle, Clock, ArrowLeft, Loader2, Mail, Phone, Ban, Trash2, Users } from "lucide-react";
+import { Shield, Building2, CheckCircle, XCircle, Clock, ArrowLeft, Loader2, Mail, Phone, Ban, Trash2, Users, LogOut } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Agency {
   id: string;
   name: string;
-  contact_name: string;
+  contact_name?: string;
   contact_email: string;
   contact_phone: string;
   status: "pending" | "approved" | "rejected" | "suspended";
@@ -105,12 +105,17 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-5 h-5" />
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <Shield className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold text-foreground">Panel de Administración</h1>
+          </div>
+          <Button variant="ghost" size="sm" onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }} className="gap-2">
+            <LogOut className="w-4 h-4" /> Salir
           </Button>
-          <Shield className="w-5 h-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Panel de Administración</h1>
         </div>
       </header>
 
