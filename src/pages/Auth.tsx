@@ -169,7 +169,7 @@ const Auth = () => {
         });
         if (error) throw error;
       } else {
-        const displayName = accountType === "user" ? familyName.trim() : agencyName.trim();
+        const displayName = familyName.trim() || agencyName.trim();
         const phoneValue = userPhone.trim();
 
         const { data, error } = await supabase.auth.signUp({
