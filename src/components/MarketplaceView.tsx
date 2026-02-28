@@ -69,7 +69,7 @@ export function MarketplaceView() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <Store className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium">No hay propiedades en el Market</p>
+          <p className="font-medium">No hay propiedades en el HFMarket</p>
           <p className="text-sm mt-1">Las agencias aún no publicaron propiedades.</p>
         </div>
       ) : (
