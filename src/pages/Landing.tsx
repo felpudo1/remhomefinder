@@ -112,20 +112,8 @@ const Landing = () => {
                 </div>
             </section>
 
-            {/* Trust Quote */}
-            <section className="py-24 border-t border-border">
-                <div className="max-w-4xl mx-auto px-6 text-center space-y-6">
-                    <div className="flex justify-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                            <CheckCircle2 key={i} className="w-5 h-5 text-amber-500 fill-amber-500" />
-                        ))}
-                    </div>
-                    <p className="text-2xl md:text-3xl font-medium italic text-foreground/90">
-                        "Pasamos de tener 50 links sueltos en WhatsApp a organizar todo en un solo lugar. La decisión fue mucho más fácil."
-                    </p>
-                    <div className="text-sm text-muted-foreground font-medium">— Familia Martínez, Buenos Aires</div>
-                </div>
-            </section>
+            {/* Testimonios rotativos */}
+            <TestimonialCarousel />
 
             {/* Footer */}
             <footer className="py-12 border-t border-border bg-card">
@@ -157,5 +145,84 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, titl
         <p className="text-muted-foreground leading-relaxed">{description}</p>
     </div>
 );
+
+const testimonials = [
+    {
+        quote: "Pasamos de tener 50 links sueltos en WhatsApp a organizar todo en un solo lugar. La decisión fue mucho más fácil.",
+        author: "Familia Rodríguez",
+        location: "Pocitos, Montevideo",
+    },
+    {
+        quote: "Con mi pareja buscábamos alquiler en Cordón y Parque Rodó. HomeFinder nos salvó de la locura de coordinar todo por chat.",
+        author: "Martín y Lucía",
+        location: "Cordón, Montevideo",
+    },
+    {
+        quote: "Como agente, publicar en HFMarket me conecta directo con familias que realmente están buscando. Sin intermediarios.",
+        author: "Carolina Méndez",
+        location: "Agente inmobiliaria, Punta del Este",
+    },
+    {
+        quote: "Nos mudamos desde el interior y no conocíamos los barrios. Poder comparar todo en una sola app nos dio tranquilidad.",
+        author: "Familia Pereira",
+        location: "Malvín, Montevideo",
+    },
+    {
+        quote: "Antes perdíamos propiedades porque no nos poníamos de acuerdo a tiempo. Ahora todos opinamos en el momento.",
+        author: "Diego y Valentina",
+        location: "Carrasco, Montevideo",
+    },
+];
+
+const TestimonialCarousel = () => {
+    const [current, setCurrent] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrent((prev) => (prev + 1) % testimonials.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const t = testimonials[current];
+
+    return (
+        <section className="py-24 border-t border-border overflow-hidden">
+            <div className="max-w-4xl mx-auto px-6 text-center space-y-6">
+                <div className="flex justify-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                        <CheckCircle2 key={i} className="w-5 h-5 text-primary fill-primary/20" />
+                    ))}
+                </div>
+                <div className="min-h-[140px] flex flex-col items-center justify-center">
+                    <p
+                        key={current}
+                        className="text-2xl md:text-3xl font-medium italic text-foreground/90 animate-in fade-in slide-in-from-right-8 duration-500"
+                    >
+                        "{t.quote}"
+                    </p>
+                </div>
+                <div
+                    key={`author-${current}`}
+                    className="text-sm text-muted-foreground font-medium animate-in fade-in duration-700"
+                >
+                    — {t.author}, {t.location}
+                </div>
+                <div className="flex justify-center gap-2 pt-2">
+                    {testimonials.map((_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setCurrent(i)}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                i === current ? "bg-primary w-6" : "bg-border hover:bg-muted-foreground/40"
+                            }`}
+                            aria-label={`Testimonio ${i + 1}`}
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
 
 export default Landing;
