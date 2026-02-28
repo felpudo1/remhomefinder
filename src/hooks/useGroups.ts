@@ -164,6 +164,22 @@ export function useGroups() {
     },
   });
 
+  const removeMemberMutation = useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: string; userId: string }) => {
+      const { error } = await supabase
+        .from("group_members")
+        .delete()
+        .eq("group_id", groupId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+      toast({ title: "Miembro eliminado" });
+    },
+  });
+
   const fetchMembers = async (groupId: string): Promise<GroupMember[]> => {
     const { data, error } = await supabase
       .from("group_members")
@@ -197,6 +213,7 @@ export function useGroups() {
     joinGroup: joinGroupMutation.mutateAsync,
     leaveGroup: leaveGroupMutation.mutateAsync,
     deleteGroup: deleteGroupMutation.mutateAsync,
+    removeMember: removeMemberMutation.mutateAsync,
     fetchMembers,
   };
 }

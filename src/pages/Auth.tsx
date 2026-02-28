@@ -107,7 +107,7 @@ const Auth = () => {
 
         if (error) {
           console.warn("Error fetching roles:", error);
-          navigate("/");
+          navigate("/dashboard");
           return;
         }
 
@@ -118,10 +118,10 @@ const Auth = () => {
         } else if (roleSet.has("agency")) {
           navigate("/agente");
         } else {
-          navigate("/");
+          navigate("/dashboard");
         }
       } catch (e) {
-        navigate("/");
+        navigate("/dashboard");
       }
     };
 
@@ -255,7 +255,7 @@ const Auth = () => {
         });
 
         // Redirigir a la home para mostrar el mensaje de confirmación amigable
-        setTimeout(() => navigate("/?registered=true"), 1500);
+        setTimeout(() => navigate("/dashboard?registered=true"), 1500);
       }
     } catch (error: any) {
       toast({
@@ -284,12 +284,15 @@ const Auth = () => {
           <div className="bg-background/40 backdrop-blur-2xl border border-white/20 rounded-2xl p-8 space-y-8 shadow-2xl">
             {/* Logo */}
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto">
-                <Home className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">HomeFinder
-
-              </h1>
+              <button
+                onClick={() => navigate("/")}
+                className="group inline-flex flex-col items-center gap-2"
+              >
+                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto transition-transform group-hover:scale-110 shadow-lg shadow-primary/20">
+                  <Home className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">HomeFinder</h1>
+              </button>
               <p className="text-muted-foreground text-sm">
                 {isLogin ? "Iniciá sesión para continuar" : "Creá tu cuenta"}
               </p>

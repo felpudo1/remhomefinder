@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGroups, Group, GroupMember } from "@/hooks/useGroups";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft,
+  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft, X,
 } from "lucide-react";
 
 interface GroupsModalProps {
@@ -18,7 +19,7 @@ interface GroupsModalProps {
 }
 
 export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: GroupsModalProps) {
-  const { groups, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers } = useGroups();
+  const { groups, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<string>("groups");
@@ -27,6 +28,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
   const [inviteCode, setInviteCode] = useState("");
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Detail view
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
@@ -34,7 +36,11 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
   const [loadingMembers, setLoadingMembers] = useState(false);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      supabase.auth.getUser().then(({ data }) => {
+        setCurrentUserId(data.user?.id || null);
+      });
+    } else {
       setDetailGroup(null);
       setTab("groups");
     }
@@ -87,8 +93,21 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
     toast({ title: "Código copiado", description: "Compartilo con tu familia para que se unan." });
   };
 
+  const handleRemoveMember = async (userId: string) => {
+    if (!detailGroup) return;
+    try {
+      await removeMember({ groupId: detailGroup.id, userId });
+      const m = await fetchMembers(detailGroup.id);
+      setMembers(m);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
   // Detail view
   if (detailGroup) {
+    const isOwner = detailGroup.created_by === currentUserId;
+
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className="sm:max-w-md">
@@ -129,12 +148,21 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
               ) : (
                 <div className="space-y-1.5">
                   {members.map((m) => (
-                    <div key={m.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border">
+                    <div key={m.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border group/member">
                       <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
                         {(m.display_name || "U")[0].toUpperCase()}
                       </div>
                       <span className="text-sm flex-1 truncate">{m.display_name || "Usuario"}</span>
                       {m.role === "owner" && <Crown className="w-3.5 h-3.5 text-amber-500" />}
+                      {isOwner && m.user_id !== currentUserId && (
+                        <button
+                          onClick={() => handleRemoveMember(m.user_id)}
+                          className="p-1 hover:bg-destructive/10 rounded text-destructive transition-all"
+                          title="Eliminar miembro"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -142,10 +170,10 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-col gap-2 pt-2">
               <Button
                 variant={activeGroupId === detailGroup.id ? "default" : "outline"}
-                className="flex-1"
+                className="w-full rounded-xl"
                 onClick={() => {
                   onSelectGroup(activeGroupId === detailGroup.id ? null : detailGroup.id);
                   onClose();
@@ -155,8 +183,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
               </Button>
               <Button
                 variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive"
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
                 onClick={async () => {
                   try {
                     await leaveGroup(detailGroup.id);
@@ -165,9 +192,9 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
                     toast({ title: "Error", description: e.message, variant: "destructive" });
                   }
                 }}
-                title="Salir del grupo"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 mr-2" />
+                Abandonar grupo
               </Button>
             </div>
           </div>
@@ -210,11 +237,10 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
                 <button
                   key={g.id}
                   onClick={() => openDetail(g)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
-                    activeGroupId === g.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/30 bg-background"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${activeGroupId === g.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/30 bg-background"
+                    }`}
                 >
                   <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <Users className="w-4 h-4 text-primary" />

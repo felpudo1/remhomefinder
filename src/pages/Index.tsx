@@ -31,7 +31,7 @@ const Index = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("marketplace");
+  const [activeTab, setActiveTab] = useState("mi-listado");
 
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -303,15 +303,15 @@ const Index = () => {
 
       {/* Main layout */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-        <Tabs defaultValue="marketplace" className="w-full" onValueChange={(v) => setActiveTab(v)}>
-          <TabsList className="mb-6 bg-muted rounded-xl p-1">
-            <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
-              <Store className="w-4 h-4" />
-              HFMarket
-            </TabsTrigger>
-            <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
+        <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
+          <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full flex h-12">
+            <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-[2] transition-all">
               <Home className="w-4 h-4" />
               Mi Listado
+            </TabsTrigger>
+            <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-1 transition-all">
+              <Store className="w-4 h-4" />
+              HFMarket
             </TabsTrigger>
           </TabsList>
 

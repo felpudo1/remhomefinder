@@ -1,0 +1,4 @@
+{
+    "summary": "Se cambió la pestaña por defecto a 'Mi Listado' y se ajustó su ancho para que sea el doble de 'Market' en Index.tsx.",
+    "current_status": "Navegación personalizada completada. 'Mi Listado' es ahora la pestaña principal."
+}

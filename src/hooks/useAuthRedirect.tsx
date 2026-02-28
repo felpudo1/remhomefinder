@@ -10,9 +10,12 @@ export function useAuthRedirect() {
     useEffect(() => {
         const checkUserAndRole = async (session: any) => {
             if (!session) {
-                // Si acabamos de registrar y estamos en la home, no redirigir a /auth para mostrar el msj
+                // Si acabamos de registrar y estamos en la app, no redirigir a /auth para mostrar el msj
                 const isRegistered = new URLSearchParams(location.search).get("registered");
-                if (location.pathname === "/" && isRegistered === "true") return;
+                if (location.pathname === "/dashboard" && isRegistered === "true") return;
+
+                // Si estamos en la landing (/), no forzamos auth
+                if (location.pathname === "/") return;
 
                 if (location.pathname !== "/auth") navigate("/auth");
                 return;
@@ -21,10 +24,10 @@ export function useAuthRedirect() {
             const user = session.user;
             setUserEmail(user.email ?? null);
 
-            // Si estamos en la home con el flag de registrado pero ya tenemos sesión, limpiar la URL
+            // Si estamos en el dashboard con el flag de registrado pero ya tenemos sesión, limpiar la URL
             const searchParams = new URLSearchParams(location.search);
-            if (searchParams.get("registered") === "true" && location.pathname === "/") {
-                navigate("/", { replace: true });
+            if (searchParams.get("registered") === "true" && location.pathname === "/dashboard") {
+                navigate("/dashboard", { replace: true });
             }
 
             // Verificar rol para redirección forzada
@@ -40,9 +43,9 @@ export function useAuthRedirect() {
                     navigate("/admin");
                 } else if (roleSet.has("agency") && location.pathname !== "/agente") {
                     navigate("/agente");
-                } else if (!roleSet.has("admin") && !roleSet.has("agency") && location.pathname !== "/") {
-                    if (["/admin", "/agente"].includes(location.pathname)) {
-                        navigate("/");
+                } else if (!roleSet.has("admin") && !roleSet.has("agency") && location.pathname !== "/dashboard") {
+                    if (["/admin", "/agente", "/auth"].includes(location.pathname)) {
+                        navigate("/dashboard");
                     }
                 }
             } catch (error) {

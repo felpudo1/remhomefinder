@@ -1,0 +1,4 @@
+{
+    "summary": "Se implementó la Landing Page profesional en la raíz (/) y se movió la aplicación principal a /dashboard. Se actualizaron todas las rutas y redirecciones de autenticación.",
+    "current_status": "Landing Page desplegada y funcional. La aplicación está lista para ser usada desde el nuevo dashboard."
+}
