@@ -3,14 +3,18 @@ import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList } from "@/hooks/useSaveToList";
 import { useProperties } from "@/hooks/useProperties";
 import { MarketplaceCard } from "@/components/MarketplaceCard";
+import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceProperty } from "@/types/property";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, Store, X } from "lucide-react";
+import { Search, Loader2, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 
-export function MarketplaceView() {
+interface MarketplaceViewProps {
+  mobileFiltersOpen?: boolean;
+  onMobileFiltersClose?: () => void;
+}
+
+export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClose }: MarketplaceViewProps) {
   const { data: marketplaceProperties = [], isLoading } = useMarketplaceProperties();
   const { properties: userProperties } = useProperties();
   const saveToList = useSaveToList();
@@ -21,7 +25,6 @@ export function MarketplaceView() {
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [selectedRooms, setSelectedRooms] = useState<string>("");
 
-  // IDs of marketplace properties already saved by the user
   const savedMarketplaceIds = useMemo(() => {
     return new Set(
       userProperties
@@ -35,7 +38,7 @@ export function MarketplaceView() {
     return Array.from(set).sort();
   }, [marketplaceProperties]);
 
-  const hasFilters = selectedNeighborhood || maxPrice || selectedRooms;
+  const hasFilters = !!(selectedNeighborhood || maxPrice || selectedRooms);
 
   const clearFilters = () => {
     setSelectedNeighborhood("");
@@ -91,87 +94,62 @@ export function MarketplaceView() {
     }
   };
 
+  const activeFilterCount = [selectedNeighborhood, maxPrice, selectedRooms].filter(Boolean).length;
+
   return (
-    <div className="space-y-6">
-      {/* Search */}
-      <div className="max-w-md relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por título, barrio o agencia..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-10 rounded-xl bg-muted border-0 text-sm"
-        />
-      </div>
+    <div className="flex gap-8">
+      <MarketplaceFilterSidebar
+        neighborhoods={neighborhoods}
+        selectedNeighborhood={selectedNeighborhood}
+        onNeighborhoodChange={setSelectedNeighborhood}
+        maxPrice={maxPrice}
+        onMaxPriceChange={setMaxPrice}
+        selectedRooms={selectedRooms}
+        onRoomsChange={setSelectedRooms}
+        onClearFilters={clearFilters}
+        hasFilters={hasFilters}
+        totalCount={marketplaceProperties.length}
+        filteredCount={filtered.length}
+        mobileOpen={mobileFiltersOpen}
+        onMobileClose={onMobileFiltersClose}
+      />
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood}>
-          <SelectTrigger className="w-[180px] h-9 rounded-xl bg-muted border-0 text-sm">
-            <SelectValue placeholder="Barrio" />
-          </SelectTrigger>
-          <SelectContent>
-            {neighborhoods.map((n) => (
-              <SelectItem key={n} value={n}>{n}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="relative w-[160px]">
+      <main className="flex-1 min-w-0 space-y-6">
+        {/* Search */}
+        <div className="max-w-md relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            type="number"
-            placeholder="Precio máx."
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="h-9 rounded-xl bg-muted border-0 text-sm pr-8"
+            placeholder="Buscar por título, barrio o agencia..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-10 rounded-xl bg-muted border-0 text-sm"
           />
         </div>
 
-        <div className="flex gap-1">
-          {["1", "2", "3", "4+"].map((r) => (
-            <Button
-              key={r}
-              variant={selectedRooms === r ? "default" : "outline"}
-              size="sm"
-              className="rounded-xl h-9 min-w-[36px] text-sm"
-              onClick={() => setSelectedRooms(selectedRooms === r ? "" : r)}
-            >
-              {r} amb
-            </Button>
-          ))}
-        </div>
-
-        {hasFilters && (
-          <Button variant="ghost" size="sm" className="h-9 text-sm text-muted-foreground" onClick={clearFilters}>
-            <X className="w-3.5 h-3.5 mr-1" />
-            Limpiar
-          </Button>
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <Store className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            <p className="font-medium">No hay propiedades en el HFMarket</p>
+            <p className="text-sm mt-1">Las agencias aún no publicaron propiedades.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filtered.map((property) => (
+              <MarketplaceCard
+                key={property.id}
+                property={property}
+                onSave={handleSave}
+                isSaving={savingId === property.id}
+                alreadySaved={savedMarketplaceIds.has(property.id)}
+              />
+            ))}
+          </div>
         )}
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <Store className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium">No hay propiedades en el HFMarket</p>
-          <p className="text-sm mt-1">Las agencias aún no publicaron propiedades.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filtered.map((property) => (
-            <MarketplaceCard
-              key={property.id}
-              property={property}
-              onSave={handleSave}
-              isSaving={savingId === property.id}
-              alreadySaved={savedMarketplaceIds.has(property.id)}
-            />
-          ))}
-        </div>
-      )}
+      </main>
     </div>
   );
 }

@@ -31,6 +31,7 @@ const Index = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("marketplace");
 
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -302,7 +303,7 @@ const Index = () => {
 
       {/* Main layout */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-        <Tabs defaultValue="marketplace" className="w-full">
+        <Tabs defaultValue="marketplace" className="w-full" onValueChange={(v) => setActiveTab(v)}>
           <TabsList className="mb-6 bg-muted rounded-xl p-1">
             <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background">
               <Store className="w-4 h-4" />
@@ -315,7 +316,10 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="marketplace">
-            <MarketplaceView />
+            <MarketplaceView
+              mobileFiltersOpen={activeTab === "marketplace" && isMobileFiltersOpen}
+              onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
+            />
           </TabsContent>
 
           <TabsContent value="mi-listado">
