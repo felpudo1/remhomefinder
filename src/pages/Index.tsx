@@ -335,7 +335,7 @@ const Index = () => {
               <main className="flex-1 min-w-0">
                 <div className="mb-6">
                   <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
-                  <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda inmobiliaria</p>
+                  <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                 </div>
 
                 {loading ? (
