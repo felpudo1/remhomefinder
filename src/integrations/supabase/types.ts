@@ -433,7 +433,7 @@ export type Database = {
       }
     }
     Enums: {
-      agency_status: "pending" | "approved" | "rejected"
+      agency_status: "pending" | "approved" | "rejected" | "suspended"
       app_role: "user" | "agency" | "admin"
       marketplace_property_status: "active" | "paused" | "sold"
       property_status:
@@ -571,7 +571,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      agency_status: ["pending", "approved", "rejected"],
+      agency_status: ["pending", "approved", "rejected", "suspended"],
       app_role: ["user", "agency", "admin"],
       marketplace_property_status: ["active", "paused", "sold"],
       property_status: [

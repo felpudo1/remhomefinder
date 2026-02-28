@@ -4,14 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Building2, CheckCircle, XCircle, Clock, ArrowLeft, Loader2, Mail, Phone } from "lucide-react";
+import { Shield, Building2, CheckCircle, XCircle, Clock, ArrowLeft, Loader2, Mail, Phone, Ban, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Agency {
   id: string;
   name: string;
   contact_email: string;
   contact_phone: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "suspended";
   created_at: string;
 }
 
@@ -65,7 +66,7 @@ const Admin = () => {
     setLoading(false);
   };
 
-  const updateAgencyStatus = async (id: string, status: "approved" | "rejected") => {
+  const updateAgencyStatus = async (id: string, status: "pending" | "approved" | "rejected" | "suspended") => {
     const { error } = await supabase
       .from("agencies")
       .update({ status })
@@ -74,9 +75,10 @@ const Admin = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      const labels: Record<string, string> = { pending: "Pendiente", approved: "Aprobada", rejected: "Eliminada", suspended: "Suspendida" };
       toast({
-        title: status === "approved" ? "Agente aprobado" : "Agente rechazado",
-        description: `El estado fue actualizado correctamente.`,
+        title: "Estado actualizado",
+        description: `El estado fue cambiado a "${labels[status]}".`,
       });
       fetchAgencies();
     }
@@ -92,10 +94,11 @@ const Admin = () => {
 
   if (!isAdmin) return null;
 
-  const statusConfig = {
+  const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
     pending: { label: "Pendiente", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
     approved: { label: "Aprobada", icon: CheckCircle, color: "bg-green-100 text-green-800" },
-    rejected: { label: "Rechazada", icon: XCircle, color: "bg-red-100 text-red-800" },
+    suspended: { label: "Suspendida", icon: Ban, color: "bg-orange-100 text-orange-800" },
+    rejected: { label: "Eliminada", icon: Trash2, color: "bg-red-100 text-red-800" },
   };
 
   return (
@@ -172,27 +175,30 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  {agency.status === "pending" && (
-                    <div className="flex gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        onClick={() => updateAgencyStatus(agency.id, "approved")}
-                        className="gap-1"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Aprobar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateAgencyStatus(agency.id, "rejected")}
-                        className="gap-1 text-destructive hover:text-destructive"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Rechazar
-                      </Button>
-                    </div>
-                  )}
+                  <div className="shrink-0 w-[160px]">
+                    <Select
+                      value={agency.status}
+                      onValueChange={(v) => updateAgencyStatus(agency.id, v as any)}
+                    >
+                      <SelectTrigger className="h-9 rounded-xl text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">
+                          <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> Pendiente</span>
+                        </SelectItem>
+                        <SelectItem value="approved">
+                          <span className="flex items-center gap-1.5"><CheckCircle className="w-3 h-3" /> Aprobada</span>
+                        </SelectItem>
+                        <SelectItem value="suspended">
+                          <span className="flex items-center gap-1.5"><Ban className="w-3 h-3" /> Suspendida</span>
+                        </SelectItem>
+                        <SelectItem value="rejected">
+                          <span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" /> Eliminada</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               );
             })}
