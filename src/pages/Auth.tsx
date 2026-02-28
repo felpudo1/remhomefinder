@@ -236,6 +236,7 @@ const Auth = () => {
           try {
             await supabase.from("agencies").insert([{
               name: agencyName.trim(),
+              contact_name: familyName.trim(),
               contact_email: email,
               contact_phone: userPhone.trim(),
               created_by: data.user.id

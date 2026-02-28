@@ -17,6 +17,7 @@ import {
   Phone,
   Clock,
   CheckCircle,
+  CheckCircle,
   XCircle,
   MapPin,
   Maximize2,
@@ -24,6 +25,7 @@ import {
   Pause,
   Play,
   Trash2,
+  Ban,
 } from "lucide-react";
 
 interface Agency {
@@ -31,7 +33,7 @@ interface Agency {
   name: string;
   contact_email: string;
   contact_phone: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "suspended";
   description: string;
   created_at: string;
 }
@@ -39,7 +41,8 @@ interface Agency {
 const statusConfig = {
   pending: { label: "Pendiente de aprobación", icon: Clock, variant: "outline" as const, className: "border-yellow-500/30 text-yellow-700 bg-yellow-500/10" },
   approved: { label: "Aprobada", icon: CheckCircle, variant: "outline" as const, className: "border-green-500/30 text-green-700 bg-green-500/10" },
-  rejected: { label: "Rechazada", icon: XCircle, variant: "destructive" as const, className: "border-red-500/30 text-red-700 bg-red-500/10" },
+  rejected: { label: "Eliminada", icon: Trash2, variant: "destructive" as const, className: "border-red-500/30 text-red-700 bg-red-500/10" },
+  suspended: { label: "Suspendida", icon: Ban, variant: "outline" as const, className: "border-orange-500/30 text-orange-700 bg-orange-500/10" },
 };
 
 const AgentDashboard = () => {
@@ -148,13 +151,21 @@ const AgentDashboard = () => {
               )}
             </div>
             {agency.status === "pending" && (
-              <div className="rounded-xl bg-yellow-500/5 border border-yellow-500/20 p-4 text-sm text-yellow-800">
+              <div className="rounded-xl bg-yellow-500/5 border border-yellow-500/20 p-4 text-sm text-yellow-800 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
                 Tu cuenta de agente está pendiente de aprobación por un administrador.
               </div>
             )}
             {agency.status === "rejected" && (
-              <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-4 text-sm text-destructive">
-                Tu solicitud fue rechazada. Si creés que es un error, contactá al soporte.
+              <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-4 text-sm text-destructive flex items-center gap-2">
+                <Trash2 className="w-4 h-4" />
+                Tu cuenta ha sido eliminada por un administrador. No podrás realizar nuevas publicaciones.
+              </div>
+            )}
+            {agency.status === "suspended" && (
+              <div className="rounded-xl bg-orange-500/5 border border-orange-500/20 p-4 text-sm text-orange-800 flex items-center gap-2">
+                <Ban className="w-4 h-4" />
+                Tu cuenta está suspendida temporalmente. Contactá al soporte para más información.
               </div>
             )}
           </div>

@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Building2, CheckCircle, XCircle, Clock, ArrowLeft, Loader2, Mail, Phone, Ban, Trash2 } from "lucide-react";
+import { Shield, Building2, CheckCircle, XCircle, Clock, ArrowLeft, Loader2, Mail, Phone, Ban, Trash2, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Agency {
   id: string;
   name: string;
+  contact_name: string;
   contact_email: string;
   contact_phone: string;
   status: "pending" | "approved" | "rejected" | "suspended";
@@ -140,11 +141,15 @@ const Admin = () => {
               return (
                 <div
                   key={agency.id}
-                  className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4"
+                  className="border border-border rounded-xl p-5 bg-card flex flex-col sm:flex-row items-start gap-6"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-foreground text-lg">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center border border-primary/20">
+                    <Building2 className="w-6 h-6 text-primary" />
+                  </div>
+
+                  <div className="flex-1 min-w-0 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-foreground text-xl">
                         {agency.name}
                       </h3>
                       <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${sc.color}`}>
@@ -153,22 +158,28 @@ const Admin = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground group">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-foreground/90">
+                        <Users className="w-3.5 h-3.5 text-primary/60" />
+                        <span className="font-medium shrink-0">Contacto:</span>
+                        <span className="truncate">{agency.contact_name || "No especificado"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <Mail className="w-3.5 h-3.5 text-primary/60" />
-                        <span className="font-medium">Email:</span>
-                        <span>{agency.contact_email}</span>
+                        <span className="font-medium shrink-0">Email:</span>
+                        <span className="truncate">{agency.contact_email}</span>
                       </div>
 
                       {agency.contact_phone && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-muted-foreground">
                           <Phone className="w-3.5 h-3.5 text-primary/60" />
-                          <span className="font-medium">Teléfono:</span>
+                          <span className="font-medium shrink-0">Teléfono:</span>
                           <span>{agency.contact_phone}</span>
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 pt-1">
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60 pt-1">
                         <Clock className="w-3 h-3" />
                         <span>Registrada el {new Date(agency.created_at).toLocaleDateString("es-AR")}</span>
                       </div>
