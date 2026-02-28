@@ -169,23 +169,33 @@ const Auth = () => {
         });
         if (error) throw error;
       } else {
+        const displayName = accountType === "user" ? familyName.trim() : agencyName.trim();
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin }
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: {
+              display_name: displayName,
+              phone: userPhone.trim(),
+            }
+          }
         });
         if (error) throw error;
 
-        // Guardar teléfono en profiles
+        // Actualizar profile (el trigger lo crea, pero puede demorar)
         if (data.user) {
-          try {
-            await supabase.from("profiles").update({
-              phone: userPhone.trim(),
-              display_name: accountType === "user" ? familyName.trim() : agencyName.trim()
-            }).eq("user_id", data.user.id);
-          } catch (e) {
-            console.error("Profile update error:", e);
-          }
+          const updateProfile = async (retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+              const { error: profileError } = await supabase.from("profiles").update({
+                phone: userPhone.trim(),
+                display_name: displayName
+              }).eq("user_id", data.user!.id);
+              if (!profileError) return;
+              await new Promise(r => setTimeout(r, 500 * (i + 1)));
+            }
+          };
+          updateProfile().catch(e => console.error("Profile update error:", e));
         }
 
         // Si es agente, crear la agencia — el trigger asigna el rol 'agency' automáticamente
