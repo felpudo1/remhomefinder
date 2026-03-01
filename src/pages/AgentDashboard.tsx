@@ -30,8 +30,10 @@ import {
 interface Agency {
   id: string;
   name: string;
+  contact_name: string;
   contact_email: string;
   contact_phone: string;
+  contact_person_phone: string;
   status: "pending" | "approved" | "rejected" | "suspended";
   description: string;
   created_at: string;
@@ -138,9 +140,11 @@ const AgentDashboard = () => {
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <h2 className="text-xl font-semibold text-foreground">{agency.name}</h2>
+                {agency.contact_name && <p className="text-sm text-foreground/80">Contacto: {agency.contact_name}</p>}
                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   {agency.contact_email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{agency.contact_email}</span>}
-                  {agency.contact_phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{agency.contact_phone}</span>}
+                  {agency.contact_phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />Empresa: {agency.contact_phone}</span>}
+                  {agency.contact_person_phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />Personal: {agency.contact_person_phone}</span>}
                 </div>
               </div>
               {sc && StatusIcon && (

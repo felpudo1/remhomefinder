@@ -17,6 +17,8 @@ export type Database = {
       agencies: {
         Row: {
           contact_email: string
+          contact_name: string
+          contact_person_phone: string
           contact_phone: string
           created_at: string
           created_by: string
@@ -29,6 +31,8 @@ export type Database = {
         }
         Insert: {
           contact_email?: string
+          contact_name?: string
+          contact_person_phone?: string
           contact_phone?: string
           created_at?: string
           created_by: string
@@ -41,6 +45,8 @@ export type Database = {
         }
         Update: {
           contact_email?: string
+          contact_name?: string
+          contact_person_phone?: string
           contact_phone?: string
           created_at?: string
           created_by?: string

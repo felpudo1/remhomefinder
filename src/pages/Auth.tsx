@@ -236,8 +236,10 @@ const Auth = () => {
           try {
           await supabase.from("agencies").insert([{
               name: agencyName.trim(),
+              contact_name: familyName.trim(),
               contact_email: email,
-              contact_phone: userPhone.trim(),
+              contact_phone: agencyPhone.trim(),
+              contact_person_phone: userPhone.trim(),
               created_by: data.user.id
             }]);
           } catch (dbError) {
@@ -376,7 +378,7 @@ const Auth = () => {
                 </div>
               }
 
-              {/* Teléfono de contacto (todos en registro) */}
+              {/* Teléfono de contacto personal (todos en registro) */}
               {!isLogin &&
                 <div className="space-y-2">
                   <Label htmlFor="userPhone">Teléfono de contacto</Label>
@@ -388,6 +390,23 @@ const Auth = () => {
                       placeholder="+598 99 123 456"
                       value={userPhone}
                       onChange={(e) => setUserPhone(e.target.value)}
+                      className="pl-9 h-11 rounded-xl" />
+                  </div>
+                </div>
+              }
+
+              {/* Teléfono empresa (solo agencias) */}
+              {!isLogin && accountType === "agency" &&
+                <div className="space-y-2">
+                  <Label htmlFor="agencyPhone">Teléfono empresa</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="agencyPhone"
+                      type="tel"
+                      placeholder="+598 2 123 4567"
+                      value={agencyPhone}
+                      onChange={(e) => setAgencyPhone(e.target.value)}
                       className="pl-9 h-11 rounded-xl" />
                   </div>
                 </div>
