@@ -13,6 +13,7 @@ interface Agency {
   contact_name?: string;
   contact_email: string;
   contact_phone: string;
+  contact_person_phone?: string;
   status: "pending" | "approved" | "rejected" | "suspended";
   created_at: string;
 }
@@ -179,8 +180,16 @@ const Admin = () => {
                       {agency.contact_phone && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Phone className="w-3.5 h-3.5 text-primary/60" />
-                          <span className="font-medium shrink-0">Teléfono:</span>
+                          <span className="font-medium shrink-0">Tel. empresa:</span>
                           <span>{agency.contact_phone}</span>
+                        </div>
+                      )}
+
+                      {agency.contact_person_phone && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="w-3.5 h-3.5 text-primary/60" />
+                          <span className="font-medium shrink-0">Tel. contacto:</span>
+                          <span>{agency.contact_person_phone}</span>
                         </div>
                       )}
 
