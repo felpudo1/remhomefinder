@@ -22,6 +22,7 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: Ma
       sqMeters={property.sqMeters}
       rooms={property.rooms}
       images={property.images}
+      listingType={property.listingType}
       topOverlay={
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/90 text-primary-foreground backdrop-blur-sm">
           <Building2 className="w-3 h-3" />

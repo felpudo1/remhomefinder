@@ -70,6 +70,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
       sqMeters={property.sqMeters}
       rooms={property.rooms}
       images={property.images}
+      listingType={property.listingType}
       onClick={onClick}
       className={isEliminated || isDiscarded ? "opacity-60" : ""}
       topOverlay={

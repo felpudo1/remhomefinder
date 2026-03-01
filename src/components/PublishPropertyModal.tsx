@@ -39,6 +39,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -138,7 +139,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
     setSaving(true);
     try {
       const priceRent = Number(form.priceRent) || 0;
-      const priceExpenses = Number(form.priceExpenses) || 0;
+      const priceExpenses = listingType === "rent" ? (Number(form.priceExpenses) || 0) : 0;
 
       const { error } = await supabase.from("marketplace_properties").insert({
         agency_id: agencyId,
@@ -153,7 +154,8 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
         sq_meters: Number(form.sqMeters) || 0,
         rooms: Number(form.rooms) || 1,
         images: scrapedImages,
-      });
+        listing_type: listingType,
+      } as any);
 
       if (error) throw error;
 
@@ -171,6 +173,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
     setStep("url");
     setUrl("");
     setScrapedImages([]);
+    setListingType("rent");
     setForm({
       title: "",
       description: "",
@@ -237,6 +240,14 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 py-2">
+            {/* Tipo de operación */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo de operación</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant={listingType === "rent" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("rent")}>Alquiler</Button>
+                <Button type="button" variant={listingType === "sale" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("sale")}>Venta</Button>
+              </div>
+            </div>
             {/* Galería de imágenes extraídas */}
             {scrapedImages.length > 0 && (
               <div className="space-y-2">
@@ -292,15 +303,17 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alquiler</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{listingType === "sale" ? "Precio de venta" : "Alquiler"}</Label>
                 <div className="relative">
                   <Input type="number" value={form.priceRent} onChange={(e) => setForm({ ...form, priceRent: e.target.value })} placeholder="0" className="rounded-xl h-10" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expensas</Label>
-                <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="0" className="rounded-xl h-10" />
-              </div>
+              {listingType === "rent" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expensas</Label>
+                  <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="0" className="rounded-xl h-10" />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

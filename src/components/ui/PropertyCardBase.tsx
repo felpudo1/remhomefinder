@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MapPin, Maximize2, BedDouble } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
+import { ListingType } from "@/types/property";
 
 interface PropertyCardBaseProps {
     title: string;
@@ -12,6 +13,7 @@ interface PropertyCardBaseProps {
     sqMeters: number;
     rooms: number;
     images: string[];
+    listingType?: ListingType;
     onClick?: () => void;
     /** Elementos que aparecen sobre la imagen (badges, overlays) */
     topOverlay?: React.ReactNode;
@@ -39,6 +41,7 @@ export function PropertyCardBase({
     sqMeters,
     rooms,
     images,
+    listingType = "rent",
     onClick,
     topOverlay,
     subImageContent,
@@ -128,12 +131,20 @@ export function PropertyCardBase({
                             <span className="text-xl font-bold text-foreground">
                                 {currencySymbol(currency)} {totalCost.toLocaleString()}
                             </span>
-                            <span className="text-xs text-muted-foreground">/mes</span>
+                            {listingType === "rent" && (
+                                <span className="text-xs text-muted-foreground">/mes</span>
+                            )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                            Alquiler {currencySymbol(currency)} {priceRent.toLocaleString()} +{" "}
-                            Expensas {currencySymbol(currency)} {priceExpenses.toLocaleString()}
-                        </div>
+                        {listingType === "rent" ? (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                                Alquiler {currencySymbol(currency)} {priceRent.toLocaleString()} +{" "}
+                                Expensas {currencySymbol(currency)} {priceExpenses.toLocaleString()}
+                            </div>
+                        ) : (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                                Precio de venta
+                            </div>
+                        )}
                     </div>
 
                     {/* Botones o selectores de acción */}

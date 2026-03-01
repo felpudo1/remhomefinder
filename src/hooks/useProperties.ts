@@ -92,6 +92,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     coordinatedDate: (db as any).coordinated_date ? new Date((db as any).coordinated_date) : null,
     groupId: (db as any).group_id || null,
     sourceMarketplaceId: (db as any).source_marketplace_id || null,
+    listingType: (db as any).listing_type || "rent",
   };
 }
 
@@ -167,6 +168,7 @@ export function useProperties() {
       aiSummary: string;
       images?: string[];
       groupId?: string | null;
+      listingType?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
@@ -190,6 +192,7 @@ export function useProperties() {
         ai_summary: form.aiSummary,
         created_by_email: user.email || "",
         images: propertyImages,
+        listing_type: form.listingType || "rent",
       };
 
       if (form.groupId) {

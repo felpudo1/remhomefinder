@@ -54,6 +54,7 @@ export function useMarketplaceProperties() {
         rooms: p.rooms,
         images: resolveImages(p.images),
         status: p.status,
+        listingType: p.listing_type || "rent",
         createdAt: new Date(p.created_at),
         updatedAt: new Date(p.updated_at),
       }));

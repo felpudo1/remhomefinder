@@ -24,6 +24,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [selectedRooms, setSelectedRooms] = useState<string>("");
+  const [selectedListingType, setSelectedListingType] = useState<string>("");
 
   const savedMarketplaceIds = useMemo(() => {
     return new Set(
@@ -38,12 +39,13 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     return Array.from(set).sort();
   }, [marketplaceProperties]);
 
-  const hasFilters = !!(selectedNeighborhood || maxPrice || selectedRooms);
+  const hasFilters = !!(selectedNeighborhood || maxPrice || selectedRooms || selectedListingType);
 
   const clearFilters = () => {
     setSelectedNeighborhood("");
     setMaxPrice("");
     setSelectedRooms("");
+    setSelectedListingType("");
   };
 
   const filtered = useMemo(() => {
@@ -79,8 +81,12 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       }
     }
 
+    if (selectedListingType) {
+      result = result.filter((p) => p.listingType === selectedListingType);
+    }
+
     return result;
-  }, [marketplaceProperties, searchQuery, selectedNeighborhood, maxPrice, selectedRooms]);
+  }, [marketplaceProperties, searchQuery, selectedNeighborhood, maxPrice, selectedRooms, selectedListingType]);
 
   const handleSave = async (property: MarketplaceProperty) => {
     setSavingId(property.id);
@@ -94,7 +100,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     }
   };
 
-  const activeFilterCount = [selectedNeighborhood, maxPrice, selectedRooms].filter(Boolean).length;
+  const activeFilterCount = [selectedNeighborhood, maxPrice, selectedRooms, selectedListingType].filter(Boolean).length;
 
   return (
     <div className="flex gap-8">
@@ -106,6 +112,8 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         onMaxPriceChange={setMaxPrice}
         selectedRooms={selectedRooms}
         onRoomsChange={setSelectedRooms}
+        selectedListingType={selectedListingType}
+        onListingTypeChange={setSelectedListingType}
         onClearFilters={clearFilters}
         hasFilters={hasFilters}
         totalCount={marketplaceProperties.length}

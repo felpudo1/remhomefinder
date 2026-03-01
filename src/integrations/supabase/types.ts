@@ -155,6 +155,7 @@ export type Database = {
           description: string
           id: string
           images: string[]
+          listing_type: Database["public"]["Enums"]["listing_type"]
           neighborhood: string
           price_expenses: number
           price_rent: number
@@ -173,6 +174,7 @@ export type Database = {
           description?: string
           id?: string
           images?: string[]
+          listing_type?: Database["public"]["Enums"]["listing_type"]
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
@@ -191,6 +193,7 @@ export type Database = {
           description?: string
           id?: string
           images?: string[]
+          listing_type?: Database["public"]["Enums"]["listing_type"]
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
@@ -256,6 +259,7 @@ export type Database = {
           group_id: string | null
           id: string
           images: string[]
+          listing_type: Database["public"]["Enums"]["listing_type"]
           neighborhood: string
           price_expenses: number
           price_rent: number
@@ -284,6 +288,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           images?: string[]
+          listing_type?: Database["public"]["Enums"]["listing_type"]
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
@@ -312,6 +317,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           images?: string[]
+          listing_type?: Database["public"]["Enums"]["listing_type"]
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
@@ -435,6 +441,7 @@ export type Database = {
     Enums: {
       agency_status: "pending" | "approved" | "rejected" | "suspended"
       app_role: "user" | "agency" | "admin"
+      listing_type: "rent" | "sale"
       marketplace_property_status: "active" | "paused" | "sold"
       property_status:
         | "contacted"
@@ -573,6 +580,7 @@ export const Constants = {
     Enums: {
       agency_status: ["pending", "approved", "rejected", "suspended"],
       app_role: ["user", "agency", "admin"],
+      listing_type: ["rent", "sale"],
       marketplace_property_status: ["active", "paused", "sold"],
       property_status: [
         "contacted",
