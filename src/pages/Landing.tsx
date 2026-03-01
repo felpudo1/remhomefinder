@@ -58,12 +58,12 @@ const Landing = () => {
                         Organizá tu búsqueda inmobiliaria
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1]">
-                        Tu próximo hogar,<br />
+                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.1]">Tu próximo hogar se elige en equipo
+Se disfruta en familia.<br />
                         <span className="text-primary">una decisión</span> en equipo.
                     </h1>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">Compartí, comentá y calificá las propiedades para tomar la mejor decisión familiar — todo desde una sola plataforma.</p>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">Compartí, comentá y calificá las propiedades para tomar la mejor decisión familiar, La misma visión, el mismo objetivo— todo desde una sola plataforma.</p>
 
                     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Button
