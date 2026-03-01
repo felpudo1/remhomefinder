@@ -25,6 +25,7 @@ export function useSaveToList() {
         created_by_email: user.email || "",
         images: property.images,
         source_marketplace_id: property.id,
+        listing_type: property.listingType || "rent",
       };
 
       if (groupId) {

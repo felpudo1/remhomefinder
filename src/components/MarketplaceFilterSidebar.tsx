@@ -11,6 +11,8 @@ interface MarketplaceFilterSidebarProps {
   onMaxPriceChange: (v: string) => void;
   selectedRooms: string;
   onRoomsChange: (v: string) => void;
+  selectedListingType: string;
+  onListingTypeChange: (v: string) => void;
   onClearFilters: () => void;
   hasFilters: boolean;
   totalCount: number;
@@ -27,6 +29,8 @@ export function MarketplaceFilterSidebar({
   onMaxPriceChange,
   selectedRooms,
   onRoomsChange,
+  selectedListingType,
+  onListingTypeChange,
   onClearFilters,
   hasFilters,
   totalCount,
@@ -69,6 +73,24 @@ export function MarketplaceFilterSidebar({
         Mostrando{" "}
         <span className="font-semibold text-foreground">{filteredCount}</span> de{" "}
         <span className="font-semibold text-foreground">{totalCount}</span> propiedades
+      </div>
+
+      {/* Tipo de operación */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {[{ value: "", label: "Todos" }, { value: "rent", label: "Alquiler" }, { value: "sale", label: "Venta" }].map((opt) => (
+            <Button
+              key={opt.value}
+              variant={selectedListingType === opt.value ? "default" : "outline"}
+              size="sm"
+              className="rounded-xl h-9 text-sm"
+              onClick={() => onListingTypeChange(selectedListingType === opt.value ? "" : opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Barrio */}

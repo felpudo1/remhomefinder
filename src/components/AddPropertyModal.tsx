@@ -29,6 +29,7 @@ interface AddPropertyModalProps {
     aiSummary: string;
     images: string[];
     groupId?: string | null;
+    listingType?: string;
   }) => void;
   activeGroupId?: string | null;
 }
@@ -36,6 +37,7 @@ interface AddPropertyModalProps {
 export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPropertyModalProps) {
   const { groups } = useGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
+  const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"url" | "manual">("url");
@@ -170,11 +172,12 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
   };
 
   const handleSubmit = () => {
+    const isRent = listingType === "rent";
     onAdd({
       url: url || "",
       title: form.title,
-      priceRent: Number(form.priceRent) || 0,
-      priceExpenses: Number(form.priceExpenses) || 0,
+      priceRent: isRent ? (Number(form.priceRent) || 0) : (Number(form.priceRent) || 0),
+      priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
       currency: form.currency,
       neighborhood: form.neighborhood,
       sqMeters: Number(form.sqMeters) || 0,
@@ -182,6 +185,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
       aiSummary: form.aiSummary,
       images: scrapedImages,
       groupId: selectedGroupId,
+      listingType,
     });
     handleClose();
   };
@@ -192,6 +196,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
     setScrapedImages([]);
     setManualImageUrl("");
     setUrlDuplicated(false);
+    setListingType("rent");
     setStep("url");
     setIsLoading(false);
     onClose();
@@ -253,6 +258,30 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
 
         {step === "manual" && (
           <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
+            {/* Tipo de operación */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Tipo de operación</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={listingType === "rent" ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => setListingType("rent")}
+                >
+                  Alquiler
+                </Button>
+                <Button
+                  type="button"
+                  variant={listingType === "sale" ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => setListingType("sale")}
+                >
+                  Venta
+                </Button>
+              </div>
+            </div>
             {scrapedImages.length > 0 && (
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Fotos extraídas ({scrapedImages.length})</Label>
@@ -313,13 +342,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Alquiler *</Label>
-                <Input type="number" value={form.priceRent} onChange={(e) => setForm({ ...form, priceRent: e.target.value })} placeholder="850" className="rounded-xl text-sm" />
+                <Label className="text-xs font-medium">{listingType === "sale" ? "Precio de venta *" : "Alquiler *"}</Label>
+                <Input type="number" value={form.priceRent} onChange={(e) => setForm({ ...form, priceRent: e.target.value })} placeholder={listingType === "sale" ? "150000" : "850"} className="rounded-xl text-sm" />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">G/C</Label>
-                <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="120" className="rounded-xl text-sm" />
-              </div>
+              {listingType === "rent" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">G/C</Label>
+                  <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="120" className="rounded-xl text-sm" />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-3">

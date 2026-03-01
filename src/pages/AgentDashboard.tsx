@@ -209,7 +209,11 @@ const AgentDashboard = () => {
                       <span className="flex items-center gap-1"><BedDouble className="w-3 h-3" />{p.rooms} amb</span>
                     </div>
                     <div className="text-sm font-semibold text-foreground">
-                      {currencySymbol(p.currency)} {Number(p.total_cost).toLocaleString()}/mes
+                      {currencySymbol(p.currency)} {Number(p.total_cost).toLocaleString()}
+                      {(!p.listing_type || p.listing_type === "rent") ? "/mes" : ""}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {(!p.listing_type || p.listing_type === "rent") ? "Alquiler" : "Venta"}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs" onClick={() => handleToggleStatus(p.id, p.status)}>

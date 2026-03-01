@@ -1,3 +1,5 @@
+export type ListingType = "rent" | "sale";
+
 export type PropertyStatus = "ingresado" | "contacted" | "coordinated" | "visited" | "discarded" | "a_analizar" | "eliminado";
 
 export interface PropertyComment {
@@ -34,6 +36,7 @@ export interface Property {
   coordinatedDate?: Date | null;
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
+  listingType: ListingType;
 }
 
 export type MarketplacePropertyStatus = "active" | "paused" | "sold";
@@ -54,6 +57,7 @@ export interface MarketplaceProperty {
   rooms: number;
   images: string[];
   status: MarketplacePropertyStatus;
+  listingType: ListingType;
   createdAt: Date;
   updatedAt: Date;
 }
