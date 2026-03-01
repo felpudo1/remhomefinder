@@ -60,7 +60,7 @@ const AgentDashboard = () => {
       setUserEmail(user.email ?? null);
 
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-      if (!roles?.some(r => r.role === "agency")) { navigate("/"); return; }
+      if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
 
       const { data: agencies, error } = await supabase.from("agencies").select("*").eq("created_by", user.id).limit(1);
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }

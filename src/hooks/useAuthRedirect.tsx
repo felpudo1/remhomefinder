@@ -44,6 +44,7 @@ export function useAuthRedirect() {
                 } else if (roleSet.has("agency") && location.pathname !== "/agente") {
                     navigate("/agente");
                 } else if (!roleSet.has("admin") && !roleSet.has("agency") && location.pathname !== "/dashboard") {
+                    // Solo para usuarios comunes (sin rol agency ni admin), forzamos /dashboard
                     if (["/admin", "/agente", "/auth"].includes(location.pathname)) {
                         navigate("/dashboard");
                     }

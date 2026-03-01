@@ -1,0 +1,4 @@
+{
+    "summary": "Se blindaron las rutas de /admin y /agente para restringir el acceso solo a usuarios con los roles correspondientes, redirigiendo al resto a /dashboard.",
+    "current_status": "Control de acceso por roles implementado y verificado. Landing Page y Dashboard operando con seguridad."
+}
