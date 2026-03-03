@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -9,16 +9,15 @@ import {
 } from "lucide-react";
 import { ROUTES, ROLES } from "@/lib/constants";
 
-// Sub-secciones importadas por separado (Regla 2)
 import { AdminAgencias } from "@/components/admin/AdminAgencias";
 import { AdminUsuarios } from "@/components/admin/AdminUsuarios";
 import { AdminPrompt } from "@/components/admin/AdminPrompt";
 import { AdminEstadisticas } from "@/components/admin/AdminEstadisticas";
 
-// Tipos de menú disponibles
 type AdminSection = "agentes" | "usuarios" | "prompt" | "estadisticas";
 
-// Definición de los ítems del menú lateral
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "prompt", "estadisticas"];
+
 const MENU_ITEMS: {
   id: AdminSection;
   label: string;
@@ -36,11 +35,22 @@ const MENU_ITEMS: {
  * Utiliza un layout de sidebar + contenido dinámico basado en la sección seleccionada.
  */
 const Admin = () => {
-  const [activeSection, setActiveSection] = useState<AdminSection>("agentes");
+  const { section } = useParams<{ section?: string }>();
+  const activeSection: AdminSection = VALID_SECTIONS.includes(section as AdminSection)
+    ? (section as AdminSection)
+    : "agentes";
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Redirect /admin to /admin/agentes
+    if (!section) {
+      navigate(ROUTES.ADMIN_SECTION("agentes"), { replace: true });
+    }
+  }, [section, navigate]);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -70,7 +80,6 @@ const Admin = () => {
     navigate(ROUTES.AUTH);
   };
 
-  // Pantalla de carga inicial
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -81,7 +90,6 @@ const Admin = () => {
 
   if (!isAdmin) return null;
 
-  // Renderiza la sub-sección activa
   const renderSection = () => {
     switch (activeSection) {
       case "agentes": return <AdminAgencias toast={toast} />;
@@ -125,7 +133,7 @@ const Admin = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={() => navigate(ROUTES.ADMIN_SECTION(item.id))}
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive
                       ? "border-primary text-primary bg-primary/5"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
