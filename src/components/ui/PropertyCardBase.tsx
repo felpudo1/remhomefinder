@@ -19,6 +19,8 @@ interface PropertyCardBaseProps {
     topOverlay?: React.ReactNode;
     /** Badge de estado sobre la imagen, esquina superior derecha (reservada, vendida, alquilada) */
     statusOverlay?: React.ReactNode;
+    /** Badge de estado inline junto al barrio */
+    statusBadge?: React.ReactNode;
     /** Elementos adicionales debajo de la imagen (quien lo cargó, etc) */
     subImageContent?: React.ReactNode;
     /** Contenido extra dentro del cuerpo (motivos de eliminación, descripción corta) */
@@ -47,6 +49,7 @@ export function PropertyCardBase({
     onClick,
     topOverlay,
     statusOverlay,
+    statusBadge,
     subImageContent,
     extraBodyContent,
     actions,
@@ -106,10 +109,13 @@ export function PropertyCardBase({
 
             {/* Cuerpo de la tarjeta */}
             <div className="p-4 space-y-3 text-left">
-                {/* Barrio */}
-                <div className="flex items-center gap-1 text-muted-foreground">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">{neighborhood || "Sin barrio"}</span>
+                {/* Barrio + Estado */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 text-muted-foreground min-w-0">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-xs font-medium truncate">{neighborhood || "Sin barrio"}</span>
+                    </div>
+                    {statusBadge}
                 </div>
 
                 {/* Título */}
