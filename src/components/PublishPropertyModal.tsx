@@ -72,9 +72,24 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
         body: { url: url.trim() },
       });
 
+      // supabase.functions.invoke puts non-2xx response body into error.context
       if (error || !data?.success) {
-        const errorMsg = data?.error || error?.message || "No pudimos extraer datos automáticamente.";
-        sonnerToast.info(errorMsg + " Completá los datos manualmente.");
+        let errorMsg = "No pudimos extraer datos automáticamente. Completá los datos manualmente.";
+        try {
+          const errBody = typeof error?.context === "string" ? JSON.parse(error.context) : error?.context;
+          if (errBody?.error === "MARKETPLACE_MANUAL" || errBody?.message) {
+            errorMsg = errBody.message || errorMsg;
+          } else if (data?.message) {
+            errorMsg = data.message;
+          } else if (data?.error && data.error !== "MARKETPLACE_MANUAL") {
+            errorMsg = data.error;
+          }
+        } catch {
+          if (data?.message) errorMsg = data.message;
+          else if (data?.error && data.error !== "MARKETPLACE_MANUAL") errorMsg = data.error;
+        }
+
+        sonnerToast.info(`📋 ${errorMsg}`);
         setStep("manual");
         setIsLoading(false);
         return;
