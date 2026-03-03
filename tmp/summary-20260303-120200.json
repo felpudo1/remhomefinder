@@ -1,0 +1,4 @@
+{
+    "summary": "Propiedades reservadas, vendidas y alquiladas se ordenan al fondo del Marketplace y se muestran con 50% de opacidad. El botón de guardar queda deshabilitado con pointer-events-none.",
+    "current_status": "Cambio aplicado en MarketplaceView.tsx usando INACTIVE_STATUSES set."
+}

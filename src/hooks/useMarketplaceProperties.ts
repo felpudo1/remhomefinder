@@ -32,7 +32,7 @@ export function useMarketplaceProperties() {
       const { data, error } = await supabase
         .from("marketplace_properties")
         .select("*, agencies(name)")
-        .eq("status", "active")
+        .neq("status", "deleted")   // Traer todo excepto las eliminadas
         .order("created_at", { ascending: false });
 
       if (error) throw error;

@@ -17,6 +17,8 @@ interface PropertyCardBaseProps {
     onClick?: () => void;
     /** Elementos que aparecen sobre la imagen (badges, overlays) */
     topOverlay?: React.ReactNode;
+    /** Badge de estado sobre la imagen, esquina superior derecha (reservada, vendida, alquilada) */
+    statusOverlay?: React.ReactNode;
     /** Elementos adicionales debajo de la imagen (quien lo cargó, etc) */
     subImageContent?: React.ReactNode;
     /** Contenido extra dentro del cuerpo (motivos de eliminación, descripción corta) */
@@ -44,6 +46,7 @@ export function PropertyCardBase({
     listingType = "rent",
     onClick,
     topOverlay,
+    statusOverlay,
     subImageContent,
     extraBodyContent,
     actions,
@@ -83,10 +86,17 @@ export function PropertyCardBase({
                     </div>
                 )}
 
-                {/* Overlay superior (Status badges, Agency name, etc) */}
+                {/* Overlay superior izquierdo (Agency name, type badge) */}
                 {topOverlay && (
                     <div className="absolute top-3 left-3 flex flex-col gap-1">
                         {topOverlay}
+                    </div>
+                )}
+
+                {/* Overlay de estado superior derecho (Reservada, Vendida, Alquilada) */}
+                {statusOverlay && (
+                    <div className="absolute top-3 right-3">
+                        {statusOverlay}
                     </div>
                 )}
             </div>

@@ -1,0 +1,4 @@
+{
+    "summary": "Encontrado y corregido el origen del problema: `useMarketplaceProperties.ts` tenía un `.eq('status', 'active')` que filtraba todo lo que no fuera activo. Cambiado a `.neq('status', 'deleted')` para que traiga todos los estados excepto eliminadas.",
+    "current_status": "El marketplace ahora muestra activas, pausadas, reservadas, vendidas y alquiladas. Las eliminadas no aparecen. Listo para prueba."
+}

@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+/** Estados que van al final del listado con opacidad (siguen visibles pero cerradas) */
+const INACTIVE_STATUSES = new Set(["reserved", "sold", "rented"]);
+
 interface MarketplaceViewProps {
   mobileFiltersOpen?: boolean;
   onMobileFiltersClose?: () => void;
@@ -51,6 +54,9 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const filtered = useMemo(() => {
     let result = marketplaceProperties;
 
+    // Las propiedades eliminadas no aparecen en el marketplace
+    result = result.filter((p) => p.status !== "deleted");
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -84,6 +90,13 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     if (selectedListingType) {
       result = result.filter((p) => p.listingType === selectedListingType);
     }
+
+    // Las propiedades inactivas (reservadas, vendidas, alquiladas) van al final del listado
+    result = [...result].sort((a, b) => {
+      const aInactive = INACTIVE_STATUSES.has(a.status) ? 1 : 0;
+      const bInactive = INACTIVE_STATUSES.has(b.status) ? 1 : 0;
+      return aInactive - bInactive;
+    });
 
     return result;
   }, [marketplaceProperties, searchQuery, selectedNeighborhood, maxPrice, selectedRooms, selectedListingType]);
@@ -146,15 +159,22 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filtered.map((property) => (
-              <MarketplaceCard
-                key={property.id}
-                property={property}
-                onSave={handleSave}
-                isSaving={savingId === property.id}
-                alreadySaved={savedMarketplaceIds.has(property.id)}
-              />
-            ))}
+            {filtered.map((property) => {
+              const isInactive = INACTIVE_STATUSES.has(property.status);
+              return (
+                <div
+                  key={property.id}
+                  className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""}`}
+                >
+                  <MarketplaceCard
+                    property={property}
+                    onSave={handleSave}
+                    isSaving={savingId === property.id}
+                    alreadySaved={savedMarketplaceIds.has(property.id)}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </main>

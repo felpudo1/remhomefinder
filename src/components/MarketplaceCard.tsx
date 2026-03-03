@@ -10,7 +10,19 @@ interface MarketplaceCardProps {
   alreadySaved?: boolean;
 }
 
+/** Configuración visual de los badges de estado sobre la foto */
+const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string } | null> = {
+  reserved: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  sold: { label: "Vendida", className: "bg-slate-800/90 text-white" },
+  rented: { label: "Alquilada", className: "bg-slate-800/90 text-white" },
+  active: null,
+  paused: null,
+  deleted: null,
+};
+
 export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: MarketplaceCardProps) {
+  const overlay = STATUS_OVERLAY_CONFIG[property.status];
+
   return (
     <PropertyCardBase
       title={property.title}
@@ -28,6 +40,13 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: Ma
           <Building2 className="w-3 h-3" />
           {property.agencyName}
         </span>
+      }
+      statusOverlay={
+        overlay ? (
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
+            {overlay.label}
+          </span>
+        ) : undefined
       }
       extraBodyContent={
         property.description && (

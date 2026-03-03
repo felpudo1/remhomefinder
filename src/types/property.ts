@@ -40,7 +40,7 @@ export interface Property {
   listingType: ListingType;
 }
 
-export type MarketplacePropertyStatus = "active" | "paused" | "sold";
+export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";
 
 export interface MarketplaceProperty {
   id: string;
