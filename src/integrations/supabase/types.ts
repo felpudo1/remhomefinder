@@ -254,6 +254,7 @@ export type Database = {
       properties: {
         Row: {
           ai_summary: string
+          contacted_name: string | null
           coordinated_date: string | null
           created_at: string
           created_by_email: string
@@ -283,6 +284,7 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string
+          contacted_name?: string | null
           coordinated_date?: string | null
           created_at?: string
           created_by_email?: string
@@ -312,6 +314,7 @@ export type Database = {
         }
         Update: {
           ai_summary?: string
+          contacted_name?: string | null
           coordinated_date?: string | null
           created_at?: string
           created_by_email?: string

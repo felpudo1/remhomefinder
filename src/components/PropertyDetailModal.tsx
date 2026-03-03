@@ -37,7 +37,7 @@ interface PropertyDetailModalProps {
   property: Property | null;
   open: boolean;
   onClose: () => void;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
   currentUserEmail?: string | null;
 }
