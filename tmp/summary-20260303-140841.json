@@ -1,0 +1,4 @@
+{
+    "summary": "Creada pestaña 'Sistema' en el panel de Admin. El componente AdminSystem.tsx permite elegir qué botón (+) se muestra a los usuarios (azul, blanco, ambos o ninguno). La configuración se persiste en localStorage y se lee en Index.tsx para aplicar el cambio.",
+    "current_status": "Pestaña Sistema funcional. La config se guarda en localStorage con key 'hf_add_button_config'."
+}

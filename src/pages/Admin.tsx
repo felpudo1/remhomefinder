@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
   Shield, Building2, Users, Bot, BarChart3,
-  LogOut, ArrowLeft, Loader2
+  LogOut, ArrowLeft, Loader2, Settings
 } from "lucide-react";
 import { ROUTES, ROLES } from "@/lib/constants";
 
@@ -13,12 +13,13 @@ import { AdminAgencias } from "@/components/admin/AdminAgencias";
 import { AdminUsuarios } from "@/components/admin/AdminUsuarios";
 import { AdminPrompt } from "@/components/admin/AdminPrompt";
 import { AdminEstadisticas } from "@/components/admin/AdminEstadisticas";
+import { AdminSystem } from "@/components/admin/AdminSystem";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 
-type AdminSection = "agentes" | "usuarios" | "prompt" | "estadisticas";
+type AdminSection = "agentes" | "usuarios" | "prompt" | "estadisticas" | "sistema";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "prompt", "estadisticas"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "prompt", "estadisticas", "sistema"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -30,6 +31,7 @@ const MENU_ITEMS: {
     { id: "usuarios", label: "Usuarios", icon: Users, description: "Todos los usuarios registrados" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
+    { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
   ];
 
 /**
@@ -98,6 +100,7 @@ const Admin = () => {
       case "usuarios": return <AdminUsuarios toast={toast} />;
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
+      case "sistema": return <AdminSystem />;
       default: return null;
     }
   };

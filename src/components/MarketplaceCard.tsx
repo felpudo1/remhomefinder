@@ -11,19 +11,22 @@ interface MarketplaceCardProps {
   alreadySaved?: boolean;
 }
 
-/** Configuración visual de los badges de estado */
-const STATUS_COLOR_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
-  active:   { bg: "bg-emerald-500/10", text: "text-emerald-600", dot: "bg-emerald-500" },
-  paused:   { bg: "bg-amber-500/10",   text: "text-amber-600",   dot: "bg-amber-500" },
-  reserved: { bg: "bg-blue-500/10",    text: "text-blue-600",    dot: "bg-blue-500" },
-  sold:     { bg: "bg-slate-500/10",   text: "text-slate-600",   dot: "bg-slate-500" },
-  rented:   { bg: "bg-purple-500/10",  text: "text-purple-600",  dot: "bg-purple-500" },
-  deleted:  { bg: "bg-red-500/10",     text: "text-red-600",     dot: "bg-red-500" },
+/**
+ * Configuración visual de los overlays de estado sobre la foto.
+ * Solo se muestra cuando la propiedad NO está activa.
+ * Active y paused no necesitan badge — se entiende que están disponibles.
+ */
+const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string } | null> = {
+  active: null,
+  paused: null,
+  reserved: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  sold: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  rented: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+  deleted: null,
 };
 
 export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: MarketplaceCardProps) {
-  const colors = STATUS_COLOR_CONFIG[property.status] || STATUS_COLOR_CONFIG.active;
-  const label = PROPERTY_STATUS_LABELS[property.status] || property.status;
+  const overlay = STATUS_OVERLAY_CONFIG[property.status];
 
   return (
     <PropertyCardBase
@@ -43,11 +46,12 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: Ma
           {property.agencyName}
         </span>
       }
-      statusBadge={
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 ${colors.bg} ${colors.text}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-          {label}
-        </span>
+      statusOverlay={
+        overlay ? (
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
+            {overlay.label}
+          </span>
+        ) : undefined
       }
       extraBodyContent={
         property.description && (

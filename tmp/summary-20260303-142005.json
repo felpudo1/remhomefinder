@@ -1,0 +1,4 @@
+{
+    "summary": "Se mantuvo system_config como la tabla correcta (app_settings es para scraper - SRP). Se agregó el tipo de system_config a types.ts manualmente para que TypeScript compile. El hook useSystemConfig y AdminSystem.tsx ya estaban correctamente apuntando a system_config.",
+    "current_status": "Sistema de configuración global completamente funcional. Pestaña Sistema en Admin panel operativa."
+}

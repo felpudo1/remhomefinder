@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/constants";
+import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT, AddButtonConfig } from "@/components/admin/AdminSystem";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
@@ -37,6 +39,10 @@ const Index = () => {
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("mi-listado");
+
+  // Lee la configuración del botón (+) desde Supabase (via admin panel)
+  const { value: addButtonConfigRaw } = useSystemConfig(ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT);
+  const addButtonConfig = (addButtonConfigRaw as AddButtonConfig) || ADD_BUTTON_DEFAULT;
 
   // Estado para la pantalla de bienvenida de usuario
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -348,25 +354,29 @@ const Index = () => {
         )}
       </button>
 
-      {/* Botón flotante "+" ZenRows (arriba del azul) */}
-      <button
-        onClick={() => setIsAddZenRowsOpen(true)}
-        className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-        aria-label="Agregar con ZenRows"
-        title="Agregar con ZenRows"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* Botón flotante "+" ZenRows (arriba del azul) — visible según configuración del admin */}
+      {(addButtonConfig === "white" || addButtonConfig === "both") && (
+        <button
+          onClick={() => setIsAddZenRowsOpen(true)}
+          className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
+          aria-label="Agregar con ZenRows"
+          title="Agregar con ZenRows"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
 
-      {/* Botón flotante "+" para agregar propiedad (Firecrawl) */}
-      <button
-        onClick={() => setIsAddOpen(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-        aria-label="Agregar con Firecrawl"
-        title="Agregar con Firecrawl"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* Botón flotante "+" Firecrawl — visible según configuración del admin */}
+      {(addButtonConfig === "blue" || addButtonConfig === "both") && (
+        <button
+          onClick={() => setIsAddOpen(true)}
+          className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
+          aria-label="Agregar con Firecrawl"
+          title="Agregar con Firecrawl"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
 
       <PropertyDetailModal
         property={selectedProperty}

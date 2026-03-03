@@ -1,0 +1,4 @@
+{
+    "summary": "Se discutió la arquitectura para centralizar el status de usuarios en profiles. Se escribió el script SQL de migración `20260303_profiles_status.sql` con BEGIN/COMMIT, migración de datos de agencies, RLS y el DROP de la columna de agencies comentado para el segundo deploy.",
+    "current_status": "Script listo para que Lovable lo aplique. El front todavía no fue actualizado - es el siguiente paso."
+}
