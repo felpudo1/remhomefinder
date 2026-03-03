@@ -246,7 +246,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
               </p>
               <p className="text-xs text-amber-600 font-medium">
-                Las publicaciones de MarketPlace hay que ingresarlas manualmente.
+                Las publicaciones de MarketPlace, IG y RRSS hay que ingresarlas manualmente.
               </p>
             </div>
 
