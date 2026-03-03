@@ -229,7 +229,7 @@ serve(async (req) => {
           error: "MARKETPLACE_MANUAL",
           message: "Facebook Marketplace y redes sociales no permiten scraping automático. Revisá la publicación y completá los datos manualmente.",
         }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
