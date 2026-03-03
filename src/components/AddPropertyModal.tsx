@@ -87,12 +87,22 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         body: { url: url.trim(), scraper },
       });
 
+      // supabase.functions.invoke puts non-2xx response body into error.context
       if (error || !data?.success) {
-        const isMarketplace = data?.error === "MARKETPLACE_MANUAL";
-        const errorMsg = isMarketplace
-          ? "📋 Facebook Marketplace no permite scraping. Revisá la publicación y completá los datos manualmente."
-          : (data?.message || data?.error || error?.message || "No pudimos extraer datos automáticamente. Completá los datos manualmente.");
-        toast.info(errorMsg, { duration: 8000 });
+        let errorMsg = "No pudimos extraer datos automáticamente. Completá los datos manualmente.";
+        // Try to get message from the error context (non-2xx responses)
+        try {
+          const errBody = typeof error?.context === "string" ? JSON.parse(error.context) : error?.context;
+          if (errBody?.error === "MARKETPLACE_MANUAL" || errBody?.message) {
+            errorMsg = errBody.message || errorMsg;
+          } else if (data?.error === "MARKETPLACE_MANUAL" || data?.message) {
+            errorMsg = data.message || errorMsg;
+          }
+        } catch {
+          if (data?.message) errorMsg = data.message;
+          else if (data?.error && data.error !== "MARKETPLACE_MANUAL") errorMsg = data.error;
+        }
+        toast.info("📋 " + errorMsg, { duration: 8000 });
         setStep("manual");
         setIsLoading(false);
         return;
