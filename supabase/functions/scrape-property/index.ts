@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,10 +126,50 @@ function extractImages(markdown: string, html: string, allLinks: string[]): stri
     .slice(0, 15);
 }
 
+/**
+ * Obtiene el system prompt desde la tabla app_settings de Supabase.
+ * Si no encuentra el setting, retorna el prompt por defecto hardcodeado.
+ */
+async function getSystemPrompt(): Promise<string> {
+  const DEFAULT_PROMPT = `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina. 
+Analizá el contenido del aviso y extraé los datos de la propiedad.
+- Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares. Detectá la moneda según el sitio y el país (ej: mercadolibre.com.uy → UYU, infocasas.com.uy → UYU).
+- Para el barrio: extraé el barrio o zona mencionada.
+- Para el resumen: hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
+- Si un dato no está disponible, dejalo vacío o en 0.`;
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseKey) return DEFAULT_PROMPT;
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data, error } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "scraper_system_prompt")
+      .single();
+
+    if (error || !data?.value) {
+      console.log("No custom prompt found, using default.");
+      return DEFAULT_PROMPT;
+    }
+
+    console.log("Using custom system prompt from app_settings.");
+    return data.value;
+  } catch (e) {
+    console.error("Error fetching system prompt:", e);
+    return DEFAULT_PROMPT;
+  }
+}
+
 /** Extract structured data using AI */
 async function extractWithAI(markdown: string): Promise<Record<string, any>> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  // Cargar el prompt dinámicamente desde Supabase
+  const systemPrompt = await getSystemPrompt();
 
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -141,12 +182,7 @@ async function extractWithAI(markdown: string): Promise<Record<string, any>> {
       messages: [
         {
           role: "system",
-          content: `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina. 
-Analizá el contenido del aviso y extraé los datos de la propiedad.
-- Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares. Detectá la moneda según el sitio y el país (ej: mercadolibre.com.uy → UYU, infocasas.com.uy → UYU).
-- Para el barrio: extraé el barrio o zona mencionada.
-- Para el resumen: hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
-- Si un dato no está disponible, dejalo vacío o en 0.`,
+          content: systemPrompt,
         },
         {
           role: "user",
