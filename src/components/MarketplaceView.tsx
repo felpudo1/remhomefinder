@@ -10,7 +10,7 @@ import { Search, Loader2, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 /** Estados que van al final del listado con opacidad (siguen visibles pero cerradas) */
-const INACTIVE_STATUSES = new Set(["reserved", "sold", "rented"]);
+const INACTIVE_STATUSES = new Set(["reserved", "sold", "rented", "paused"]);
 
 interface MarketplaceViewProps {
   mobileFiltersOpen?: boolean;
