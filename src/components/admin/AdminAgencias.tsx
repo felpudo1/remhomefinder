@@ -16,6 +16,7 @@ interface Agency {
     contact_person_phone?: string;
     status: "pending" | "approved" | "rejected" | "suspended";
     created_at: string;
+    created_by: string;
 }
 
 interface Props {
@@ -57,14 +58,26 @@ export function AdminAgencias({ toast }: Props) {
     };
 
     const updateStatus = async (id: string, status: Agency["status"]) => {
+        // Update agencies table (legacy)
         const { error } = await supabase.from("agencies").update({ status }).eq("id", id);
         if (error) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
-        } else {
-            const labels: Record<string, string> = { pending: "Pendiente", approved: "Aprobada", rejected: "Eliminada", suspended: "Suspendida" };
-            toast({ title: "Estado actualizado", description: `Cambiado a "${labels[status]}".` });
-            fetchAgencies();
+            return;
         }
+
+        // Also update profiles.status (centralized)
+        const agency = agencies.find(a => a.id === id);
+        if (agency) {
+            const profileStatus = status === "approved" ? "active" : status;
+            await supabase.rpc("admin_update_profile_status", {
+                _user_id: (agency as any).created_by,
+                _status: profileStatus,
+            });
+        }
+
+        const labels: Record<string, string> = { pending: "Pendiente", approved: "Aprobada", rejected: "Eliminada", suspended: "Suspendida" };
+        toast({ title: "Estado actualizado", description: `Cambiado a "${labels[status]}".` });
+        fetchAgencies();
     };
 
     if (loading) {
