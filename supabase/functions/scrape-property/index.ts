@@ -227,7 +227,7 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           error: "MARKETPLACE_MANUAL",
-          message: "Facebook Marketplace y redes sociales no permiten scraping automático. Revisá la publicación y completá los datos manualmente.",
+          message: "MarketP, IG y otras RR.SS no permiten extraer sus datos por seguridad. Lamentamos que tenga que completar la publicación manualmente.",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
