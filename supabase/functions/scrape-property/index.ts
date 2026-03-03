@@ -55,7 +55,17 @@ async function scrapeWithZenRows(formattedUrl: string): Promise<{ markdown: stri
   if (!scrapeResponse.ok) {
     const errText = await scrapeResponse.text();
     console.error("ZenRows error:", scrapeResponse.status, errText);
-    throw new Error(`ZenRows: No se pudo acceder a la página (${scrapeResponse.status})`);
+    let detail = "";
+    try {
+      const errJson = JSON.parse(errText);
+      detail = errJson.title || errJson.detail || errText;
+    } catch {
+      detail = errText;
+    }
+    if (scrapeResponse.status === 400) {
+      throw new Error(`ZenRows: Este sitio no es compatible para scraping. Probá con el otro botón (Firecrawl) o ingresá los datos manualmente. (${detail})`);
+    }
+    throw new Error(`ZenRows: No se pudo acceder a la página (${scrapeResponse.status}) - ${detail}`);
   }
 
   const html = await scrapeResponse.text();
