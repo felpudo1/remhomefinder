@@ -218,6 +218,21 @@ serve(async (req) => {
 
     console.log(`Scraping URL with ${scraper}:`, formattedUrl);
 
+    // Detect unsupported sites (Facebook, Marketplace, Instagram, etc.)
+    const unsupportedDomains = ["facebook.com", "fb.com", "instagram.com", "tiktok.com"];
+    const urlLower = formattedUrl.toLowerCase();
+    const isUnsupported = unsupportedDomains.some(d => urlLower.includes(d));
+    if (isUnsupported) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "MARKETPLACE_MANUAL",
+          message: "Facebook Marketplace y redes sociales no permiten scraping automático. Revisá la publicación y completá los datos manualmente.",
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Step 1: Scrape
     let markdown: string;
     let imageUrls: string[];

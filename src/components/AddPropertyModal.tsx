@@ -88,9 +88,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       });
 
       if (error || !data?.success) {
-        const errorMsg = data?.error || error?.message || "No pudimos extraer datos automáticamente.";
-        // Scraping failed — go to manual form so user can fill in details
-        toast.info(errorMsg + " Completá los datos manualmente.", { duration: 6000 });
+        const isMarketplace = data?.error === "MARKETPLACE_MANUAL";
+        const errorMsg = isMarketplace
+          ? "📋 Facebook Marketplace no permite scraping. Revisá la publicación y completá los datos manualmente."
+          : (data?.message || data?.error || error?.message || "No pudimos extraer datos automáticamente. Completá los datos manualmente.");
+        toast.info(errorMsg, { duration: 8000 });
         setStep("manual");
         setIsLoading(false);
         return;
