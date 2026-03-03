@@ -239,7 +239,7 @@ const Index = () => {
       )}
 
       {/* Navbar ahora es un componente modularizado */}
-      <Header
+      <UserHeader
         userEmail={userEmail}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
