@@ -50,9 +50,9 @@ const Index = () => {
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
-  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => {
+  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => {
     try {
-      await updateStatus(id, status, deletedReason, coordinatedDate, groupId);
+      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName);
     } catch (e: any) {
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",

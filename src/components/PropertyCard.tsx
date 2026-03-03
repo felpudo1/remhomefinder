@@ -26,7 +26,7 @@ import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 
 interface PropertyCardProps {
   property: Property;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => void;
   onClick: () => void;
   ownerEmail?: string | null;
 }
@@ -42,6 +42,8 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [discardReason, setDiscardReason] = useState("");
   const [showCoordinatedConfirm, setShowCoordinatedConfirm] = useState(false);
   const [coordinatedDateTime, setCoordinatedDateTime] = useState("");
+  const [showContactedConfirm, setShowContactedConfirm] = useState(false);
+  const [contactedName, setContactedName] = useState("");
   const config = STATUS_CONFIG[property.status];
 
   const handleStatusChange = (val: string) => {
@@ -51,6 +53,8 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
       setShowDiscardConfirm(true);
     } else if (val === "coordinated") {
       setShowCoordinatedConfirm(true);
+    } else if (val === "contacted") {
+      setShowContactedConfirm(true);
     } else {
       onStatusChange(property.id, val as PropertyStatus);
     }
@@ -98,6 +102,11 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
                   <CalendarIcon className="w-3 h-3" />
                   Visita: {formatDateTime(property.coordinatedDate)}
+                </span>
+              )}
+              {property.status === "contacted" && property.contactedName && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
+                  Contacto: {property.contactedName}
                 </span>
               )}
             </>
@@ -270,6 +279,37 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   className="bg-status-coordinated text-white hover:bg-status-coordinated/90"
                 >
                   Confirmar visita
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={showContactedConfirm} onOpenChange={(open) => { setShowContactedConfirm(open); if (!open) setContactedName(""); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Registrar contacto</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ingresá el nombre de la persona con la que te contactaste por "{property.title}".
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground text-left block">Nombre del contacto</label>
+                <Input
+                  placeholder="Ej: Juan Pérez"
+                  value={contactedName}
+                  onChange={(e) => setContactedName(e.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    onStatusChange(property.id, "contacted", undefined, undefined, undefined, contactedName);
+                  }}
+                  className="bg-status-contacted text-white hover:bg-status-contacted/90"
+                >
+                  Confirmar contacto
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -90,6 +90,7 @@ function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property {
     statusChangedByEmail: (db as any).status_changed_by_email || "",
     statusChangedAt: db.updated_at ? new Date(db.updated_at) : null,
     coordinatedDate: (db as any).coordinated_date ? new Date((db as any).coordinated_date) : null,
+    contactedName: (db as any).contacted_name || "",
     groupId: (db as any).group_id || null,
     sourceMarketplaceId: (db as any).source_marketplace_id || null,
     listingType: (db as any).listing_type || "rent",
@@ -214,7 +215,7 @@ export function useProperties() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status, deletedReason, coordinatedDate, groupId }: { id: string; status: PropertyStatus; deletedReason?: string; coordinatedDate?: string | null; groupId?: string | null }) => {
+    mutationFn: async ({ id, status, deletedReason, coordinatedDate, groupId, contactedName }: { id: string; status: PropertyStatus; deletedReason?: string; coordinatedDate?: string | null; groupId?: string | null; contactedName?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const updateData: any = { status, status_changed_by: user?.id || null, status_changed_by_email: user?.email || "" };
       
@@ -223,6 +224,9 @@ export function useProperties() {
       }
       if (status === "coordinated" && coordinatedDate) {
         updateData.coordinated_date = coordinatedDate;
+      }
+      if (status === "contacted" && contactedName !== undefined) {
+        updateData.contacted_name = contactedName;
       }
       // Guardar motivo y usuario para eliminados
       if (status === "eliminado") {
@@ -338,8 +342,8 @@ export function useProperties() {
     loading,
     error,
     addProperty: addPropertyMutation.mutateAsync,
-    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => 
-      updateStatusMutation.mutateAsync({ id, status, deletedReason, coordinatedDate, groupId }),
+    updateStatus: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => 
+      updateStatusMutation.mutateAsync({ id, status, deletedReason, coordinatedDate, groupId, contactedName }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addCommentMutation.mutateAsync({ propertyId: id, comment }),
     refetch: () => queryClient.invalidateQueries({ queryKey: ["properties"] }),
