@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
@@ -10,8 +10,10 @@ import { AddPropertyModal } from "@/components/AddPropertyModal";
 import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
+import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
 import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, CheckCircle2, Users, Store } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,24 @@ const Index = () => {
   const navigate = useNavigate();
   const { userEmail, handleLogout } = useAuthRedirect();
   const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
+
+  // Profile status
+  type UserStatus = "active" | "pending" | "suspended" | "rejected";
+  const [profileStatus, setProfileStatus] = useState<UserStatus>("active");
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("user_id", user.id)
+        .single();
+      if (data?.status) setProfileStatus(data.status as UserStatus);
+    };
+    fetchStatus();
+  }, []);
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
@@ -257,6 +277,11 @@ const Index = () => {
         handleLogout={handleLogout}
       />
 
+      {/* Status banner for non-active users */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
+        <UserStatusBanner status={profileStatus} />
+      </div>
+
       {/* Main layout */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
@@ -355,7 +380,7 @@ const Index = () => {
       </button>
 
       {/* Botón flotante "+" ZenRows (arriba del azul) — visible según configuración del admin */}
-      {(addButtonConfig === "white" || addButtonConfig === "both") && (
+      {profileStatus === "active" && (addButtonConfig === "white" || addButtonConfig === "both") && (
         <button
           onClick={() => setIsAddZenRowsOpen(true)}
           className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
@@ -367,7 +392,7 @@ const Index = () => {
       )}
 
       {/* Botón flotante "+" Firecrawl — visible según configuración del admin */}
-      {(addButtonConfig === "blue" || addButtonConfig === "both") && (
+      {profileStatus === "active" && (addButtonConfig === "blue" || addButtonConfig === "both") && (
         <button
           onClick={() => setIsAddOpen(true)}
           className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
