@@ -32,9 +32,10 @@ interface AddPropertyModalProps {
     listingType?: string;
   }) => void;
   activeGroupId?: string | null;
+  scraper?: "firecrawl" | "zenrows";
 }
 
-export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPropertyModalProps) {
+export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl" }: AddPropertyModalProps) {
   const { groups } = useGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
@@ -83,7 +84,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
       }
 
       const { data, error } = await supabase.functions.invoke("scrape-property", {
-        body: { url: url.trim() },
+        body: { url: url.trim(), scraper },
       });
 
       if (error || !data?.success) {
