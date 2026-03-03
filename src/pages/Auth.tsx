@@ -7,78 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Home, Mail, Lock, Eye, EyeOff, Database, Wifi, WifiOff, Loader2, Building2, Users, Phone } from "lucide-react";
 import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
+import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
+import { useAuth } from "@/hooks/useAuth";
+import { ROLES, ROUTES } from "@/lib/constants";
 
 // Tipos posibles del estado de la base de datos
-type DbStatus = "checking" | "connected" | "error";
 type AccountType = "user" | "agency";
 
 /**
- * Badge que muestra el estado de conexión con la base de datos Supabase.
+ * La lógica de DbStatusBadge se ha movido a /components/ui/DbStatusBadge.tsx
+ * para mejorar la modularidad (Regla 2).
  */
-function DbStatusBadge() {
-  const [status, setStatus] = useState<DbStatus>("checking");
-  const [latency, setLatency] = useState<number | null>(null);
-
-  useEffect(() => {
-    const checkConnection = async () => {
-      setStatus("checking");
-      const start = performance.now();
-      try {
-        // Head request liviano — solo verifica si existe respuesta
-        const { error } = await supabase.
-          from("properties").
-          select("id", { count: "exact", head: true }).
-          limit(1);
-
-        const ms = Math.round(performance.now() - start);
-        setLatency(ms);
-
-        if (error && error.message.toLowerCase().includes("fetch")) {
-          setStatus("error");
-        } else {
-          setStatus("connected");
-        }
-      } catch {
-        setStatus("error");
-      }
-    };
-
-    checkConnection();
-    const interval = setInterval(checkConnection, 30_000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const config = {
-    checking: {
-      label: "Verificando BD...",
-      icon: <Loader2 className="w-3 h-3 animate-spin" />,
-      classes: "bg-muted/80 text-muted-foreground border-border"
-    },
-    connected: {
-      label: "Base de datos conectada",
-      icon: <Wifi className="w-3 h-3" />,
-      classes: "bg-green-500/10 text-green-600 border-green-500/30"
-    },
-    error: {
-      label: "Sin conexión a BD",
-      icon: <WifiOff className="w-3 h-3" />,
-      classes: "bg-red-500/10 text-red-600 border-red-500/30"
-    }
-  }[status];
-
-  return (
-    <div
-      className={`fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium backdrop-blur-sm shadow-sm transition-all duration-500 ${config.classes}`}>
-
-      <Database className="w-3 h-3 opacity-70" />
-      {config.icon}
-      <span>{config.label}</span>
-      {status === "connected" && latency !== null &&
-        <span className="opacity-60">{latency}ms</span>
-      }
-    </div>);
-
-}
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -86,7 +25,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>("user");
   const [agencyName, setAgencyName] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
@@ -94,37 +32,9 @@ const Auth = () => {
   const [familyName, setFamilyName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading, signIn, signUp, redirectByRole } = useAuth();
 
   useEffect(() => {
-    const redirectByRole = async (userId: string) => {
-      // Intentamos obtener el rol del usuario. 
-      // Si la tabla no existe o falla, por defecto va a /
-      try {
-        const { data: roles, error } = await supabase.
-          from("user_roles").
-          select("role").
-          eq("user_id", userId);
-
-        if (error) {
-          console.warn("Error fetching roles:", error);
-          navigate("/dashboard");
-          return;
-        }
-
-        const roleSet = new Set(roles?.map((r) => r.role) ?? []);
-
-        if (roleSet.has("admin")) {
-          navigate("/admin");
-        } else if (roleSet.has("agency")) {
-          navigate("/agente");
-        } else {
-          navigate("/dashboard");
-        }
-      } catch (e) {
-        navigate("/dashboard");
-      }
-    };
-
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -136,136 +46,24 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, redirectByRole]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLogin && password !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Las contraseñas no coinciden.",
-        variant: "destructive"
+    if (isLogin) {
+      await signIn(email, password);
+    } else {
+      await signUp({
+        email,
+        password,
+        confirmPassword, // Pasado para validación Zod
+        accountType,
+        displayName: familyName.trim() || agencyName.trim(),
+        phone: userPhone.trim(),
+        agencyName: agencyName.trim(),
+        agencyPhone: agencyPhone.trim()
       });
-      return;
-    }
-
-    if (!isLogin && accountType === "agency" && !agencyName.trim()) {
-      toast({
-        title: "Error",
-        description: "Ingresá el nombre de la agencia.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        if (error) throw error;
-      } else {
-        const displayName = familyName.trim() || agencyName.trim();
-        const phoneValue = userPhone.trim();
-
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              display_name: displayName,
-              full_name: displayName,
-              name: displayName,
-              phone: phoneValue,
-            }
-          }
-        });
-        if (error) throw error;
-
-        if (data.user) {
-          // Refuerzo: persistir metadata explícitamente en auth.users
-          const { error: metadataError } = await supabase.auth.updateUser({
-            data: {
-              display_name: displayName,
-              full_name: displayName,
-              name: displayName,
-              phone: phoneValue,
-            },
-          });
-
-          if (metadataError) {
-            console.error("Auth metadata update error:", metadataError);
-          }
-
-          // Guardar perfil (upsert para cubrir tanto fila existente como ausente)
-          const upsertProfile = async (retries = 3) => {
-            let lastError: unknown = null;
-
-            for (let i = 0; i < retries; i++) {
-              const { error: profileError } = await supabase.from("profiles").upsert({
-                user_id: data.user!.id,
-                phone: phoneValue,
-                display_name: displayName
-              }, {
-                onConflict: "user_id"
-              });
-
-              if (!profileError) return;
-
-              lastError = profileError;
-              await new Promise(r => setTimeout(r, 500 * (i + 1)));
-            }
-
-            if (lastError) throw lastError;
-          };
-
-          try {
-            await upsertProfile();
-          } catch (e) {
-            console.error("Profile upsert error:", e);
-          }
-        }
-
-        // Si es agente, crear la agencia — el trigger asigna el rol 'agency' automáticamente
-        if (accountType === "agency" && data.user) {
-          try {
-          await supabase.from("agencies").insert([{
-              name: agencyName.trim(),
-              contact_name: familyName.trim(),
-              contact_email: email,
-              contact_phone: agencyPhone.trim(),
-              contact_person_phone: userPhone.trim(),
-              created_by: data.user.id
-            }]);
-          } catch (dbError) {
-            console.error("DB Error:", dbError);
-          }
-        }
-
-        toast({
-          title: "¡Cuenta creada!",
-          description:
-            accountType === "agency" ?
-              "Tu solicitud de agente está pendiente de aprobación. Revisá tu email para confirmar tu cuenta." :
-              "Revisá tu email para confirmar tu cuenta."
-        });
-
-        // Redirigir a la home para mostrar el mensaje de confirmación amigable
-        setTimeout(() => navigate("/dashboard?registered=true"), 1500);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
     }
   };
 

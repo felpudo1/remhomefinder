@@ -1,0 +1,4 @@
+{
+    "summary": "Se completó el Paso 1: Centralización de Constantes y Tipos. Se creó src/lib/constants.ts y se migraron más de 20 referencias harcodeadas en App.tsx, Index.tsx, Landing.tsx, Auth.tsx y hooks. El tipado de roles es ahora estricto y centralizado.",
+    "current_status": "Paso 1 completado. Todos los pasos del 1 al 4 están finalizados. Esperando instrucciones para el Paso 5 (Zod)."
+}

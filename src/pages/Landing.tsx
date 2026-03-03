@@ -4,6 +4,7 @@ import { Home, Users, Search, CheckCircle2, ArrowRight, Building2, Store, Shield
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import authBg from "@/assets/auth-bg.jpg";
+import { ROUTES } from "@/lib/constants";
 
 const Landing = () => {
     const navigate = useNavigate();
@@ -28,12 +29,12 @@ const Landing = () => {
                     </div>
                     <div className="flex gap-4">
                         {isLoggedIn ?
-                            <Button onClick={() => navigate("/dashboard")} className="rounded-xl">
+                            <Button onClick={() => navigate(ROUTES.DASHBOARD)} className="rounded-xl">
                                 Ir al Dashboard
                                 <ArrowRight className="ml-2 w-4 h-4" />
                             </Button> :
 
-                            <Button onClick={() => navigate("/auth")} className="rounded-xl">
+                            <Button onClick={() => navigate(ROUTES.AUTH)} className="rounded-xl">
                                 Iniciar Sesión
                             </Button>
                         }
@@ -68,7 +69,7 @@ const Landing = () => {
                     <div className="pt-8 flex justify-center">
                         <Button
                             size="lg"
-                            onClick={() => navigate(isLoggedIn ? "/dashboard" : "/auth")}
+                            onClick={() => navigate(isLoggedIn ? ROUTES.DASHBOARD : ROUTES.AUTH)}
                             className="h-14 px-10 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 group"
                         >
                             Empezar ahora

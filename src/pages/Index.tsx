@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { ROUTES } from "@/lib/constants";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
@@ -210,7 +211,7 @@ const Index = () => {
             <div className="pt-4 space-y-3">
               <Button
                 className="w-full h-12 rounded-xl text-md font-medium"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate(ROUTES.AUTH)}
               >
                 Volver al inicio de sesión
               </Button>

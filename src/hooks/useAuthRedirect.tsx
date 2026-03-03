@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ROLES, ROUTES } from "@/lib/constants";
 
 export function useAuthRedirect() {
     const navigate = useNavigate();
@@ -12,12 +13,10 @@ export function useAuthRedirect() {
             if (!session) {
                 // Si acabamos de registrar y estamos en la app, no redirigir a /auth para mostrar el msj
                 const isRegistered = new URLSearchParams(location.search).get("registered");
-                if (location.pathname === "/dashboard" && isRegistered === "true") return;
+                // Si estamos en la landing (HOME), no forzamos auth
+                if (location.pathname === ROUTES.HOME) return;
 
-                // Si estamos en la landing (/), no forzamos auth
-                if (location.pathname === "/") return;
-
-                if (location.pathname !== "/auth") navigate("/auth");
+                if (location.pathname !== ROUTES.AUTH) navigate(ROUTES.AUTH);
                 return;
             }
 
@@ -26,8 +25,8 @@ export function useAuthRedirect() {
 
             // Si estamos en el dashboard con el flag de registrado pero ya tenemos sesión, limpiar la URL
             const searchParams = new URLSearchParams(location.search);
-            if (searchParams.get("registered") === "true" && location.pathname === "/dashboard") {
-                navigate("/dashboard", { replace: true });
+            if (searchParams.get("registered") === "true" && location.pathname === ROUTES.DASHBOARD) {
+                navigate(ROUTES.DASHBOARD, { replace: true });
             }
 
             // Verificar rol para redirección forzada
@@ -39,14 +38,14 @@ export function useAuthRedirect() {
 
                 const roleSet = new Set(roles?.map((r) => r.role) ?? []);
 
-                if (roleSet.has("admin") && location.pathname !== "/admin") {
-                    navigate("/admin");
-                } else if (roleSet.has("agency") && location.pathname !== "/agente") {
-                    navigate("/agente");
-                } else if (!roleSet.has("admin") && !roleSet.has("agency") && location.pathname !== "/dashboard") {
+                if (roleSet.has(ROLES.ADMIN) && location.pathname !== ROUTES.ADMIN) {
+                    navigate(ROUTES.ADMIN);
+                } else if (roleSet.has(ROLES.AGENCY) && location.pathname !== ROUTES.AGENCY) {
+                    navigate(ROUTES.AGENCY);
+                } else if (!roleSet.has(ROLES.ADMIN) && !roleSet.has(ROLES.AGENCY) && location.pathname !== ROUTES.DASHBOARD) {
                     // Solo para usuarios comunes (sin rol agency ni admin), forzamos /dashboard
-                    if (["/admin", "/agente", "/auth"].includes(location.pathname)) {
-                        navigate("/dashboard");
+                    if (([ROUTES.ADMIN, ROUTES.AGENCY, ROUTES.AUTH] as string[]).includes(location.pathname)) {
+                        navigate(ROUTES.DASHBOARD);
                     }
                 }
             } catch (error) {
@@ -69,7 +68,7 @@ export function useAuthRedirect() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        navigate("/auth");
+        navigate(ROUTES.AUTH);
     };
 
     return { userEmail, handleLogout };
