@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,10 @@ interface PublishPropertyModalProps {
   onClose: () => void;
   agencyId: string;
   onPublished: () => void;
+  propertyToEdit?: any;
 }
 
-export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: PublishPropertyModalProps) {
+export function PublishPropertyModal({ open, onClose, agencyId, onPublished, propertyToEdit }: PublishPropertyModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +51,42 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
     sqMeters: "",
     rooms: "1",
   });
+
+  useEffect(() => {
+    if (open) {
+      if (propertyToEdit) {
+        setStep("manual");
+        setScrapedImages(propertyToEdit.images || []);
+        setListingType(propertyToEdit.listing_type || "rent");
+        setForm({
+          title: propertyToEdit.title || "",
+          description: propertyToEdit.description || "",
+          priceRent: String(propertyToEdit.price_rent || ""),
+          priceExpenses: String(propertyToEdit.price_expenses || ""),
+          currency: propertyToEdit.currency || "ARS",
+          neighborhood: propertyToEdit.neighborhood || "",
+          sqMeters: String(propertyToEdit.sq_meters || ""),
+          rooms: String(propertyToEdit.rooms || "1"),
+        });
+        setUrl(propertyToEdit.url || "");
+      } else {
+        setStep("url");
+        setUrl("");
+        setScrapedImages([]);
+        setListingType("rent");
+        setForm({
+          title: "",
+          description: "",
+          priceRent: "",
+          priceExpenses: "",
+          currency: "ARS",
+          neighborhood: "",
+          sqMeters: "",
+          rooms: "1",
+        });
+      }
+    }
+  }, [open, propertyToEdit]);
 
   const handleScrape = async () => {
     if (!url.trim()) return;
@@ -156,7 +193,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
       const priceRent = Number(form.priceRent) || 0;
       const priceExpenses = listingType === "rent" ? (Number(form.priceExpenses) || 0) : 0;
 
-      const { error } = await supabase.from("marketplace_properties").insert({
+      const payload = {
         agency_id: agencyId,
         title: form.title.trim(),
         description: form.description.trim(),
@@ -170,35 +207,28 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
         rooms: Number(form.rooms) || 1,
         images: scrapedImages,
         listing_type: listingType,
-      } as any);
+      };
 
-      if (error) throw error;
+      if (propertyToEdit) {
+        const { error } = await supabase.from("marketplace_properties").update(payload).eq("id", propertyToEdit.id);
+        if (error) throw error;
+        toast({ title: "Actualizada", description: "La propiedad fue actualizada correctamente." });
+      } else {
+        const { error } = await supabase.from("marketplace_properties").insert(payload as any);
+        if (error) throw error;
+        toast({ title: "Publicada", description: "La propiedad fue publicada en el marketplace." });
+      }
 
-      toast({ title: "Publicada", description: "La propiedad fue publicada en el marketplace." });
       handleClose();
       onPublished();
     } catch (e: any) {
-      toast({ title: "Error", description: e?.message || "No se pudo publicar", variant: "destructive" });
+      toast({ title: "Error", description: e?.message || "No se pudo guardar la propiedad", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
   const handleClose = () => {
-    setStep("url");
-    setUrl("");
-    setScrapedImages([]);
-    setListingType("rent");
-    setForm({
-      title: "",
-      description: "",
-      priceRent: "",
-      priceExpenses: "",
-      currency: "ARS",
-      neighborhood: "",
-      sqMeters: "",
-      rooms: "1",
-    });
     onClose();
   };
 
@@ -208,7 +238,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            {step === "url" ? "Publicar con IA" : "Confirmar Publicación"}
+            {propertyToEdit ? "Editar Propiedad" : (step === "url" ? "Publicar con IA" : "Confirmar Publicación")}
           </DialogTitle>
         </DialogHeader>
 
@@ -360,10 +390,12 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => setStep("url")} className="flex-1 h-12 rounded-2xl">Atrás</Button>
+              {!propertyToEdit && (
+                <Button type="button" variant="outline" onClick={() => setStep("url")} className="flex-1 h-12 rounded-2xl">Atrás</Button>
+              )}
               <Button type="submit" disabled={saving || !form.title.trim()} className="flex-1 h-12 rounded-2xl gap-2 shadow-lg shadow-primary/20">
                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                Publicar Ahora
+                {propertyToEdit ? "Guardar Cambios" : "Publicar Ahora"}
               </Button>
             </div>
           </form>

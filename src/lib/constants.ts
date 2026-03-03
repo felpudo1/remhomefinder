@@ -37,3 +37,22 @@ export const ERROR_MESSAGES = {
     PERMISSION_DENIED: "No tiene permisos para realizar esta acción.",
     AUTH_REQUIRED: "Debe iniciar sesión para continuar.",
 } as const;
+
+/**
+ * Diccionario de Estados de Agentes (Regla 2 y Regla 5).
+ * Define qué estados están disponibles dependiendo si la propiedad es Venta o Alquiler.
+ * Las keys coinciden con los valores del ENUM 'marketplace_property_status' en la DB.
+ */
+export const AGENT_PROPERTY_STATUSES = {
+    RENT: ["active", "paused", "reserved", "rented", "deleted"],
+    SALE: ["active", "paused", "reserved", "sold", "deleted"],
+} as const;
+
+export const PROPERTY_STATUS_LABELS: Record<string, string> = {
+    active: "Disponible",
+    paused: "Pausada",
+    reserved: "Reservada",
+    rented: "Alquilada",
+    sold: "Vendida",
+    deleted: "Eliminada",
+};

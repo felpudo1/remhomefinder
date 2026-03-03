@@ -8,6 +8,9 @@ import { FilterSidebar } from "@/components/FilterSidebar";
 import { PropertyDetailModal } from "@/components/PropertyDetailModal";
 import { AddPropertyModal } from "@/components/AddPropertyModal";
 import { MarketplaceView } from "@/components/MarketplaceView";
+import { UserWelcome } from "@/components/UserWelcome";
+import { UserHeader } from "@/components/UserHeader";
+import { Footer } from "@/components/Footer";
 import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, CheckCircle2, Users, Store } from "lucide-react";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,11 @@ const Index = () => {
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("mi-listado");
+
+  // Estado para la pantalla de bienvenida de usuario
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return localStorage.getItem("hf_user_welcome_dismissed") !== "true";
+  });
 
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -107,6 +115,13 @@ const Index = () => {
     setSelectedStatuses([]);
     setSortBy("newest");
     setSearchQuery("");
+  };
+
+  const handleDismissWelcome = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem("hf_user_welcome_dismissed", "true");
+    }
+    setShowWelcome(false);
   };
 
   const handleCardClick = (property: Property) => {
@@ -223,85 +238,18 @@ const Index = () => {
         </div>
       )}
 
-      {/* Navbar */}
-      <header className="bg-card border-b border-border sticky top-0 z-40 card-shadow">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between gap-2 md:gap-3">
-
-          {/* Logo + email en mobile debajo del nombre */}
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 md:w-8 md:h-8 bg-primary rounded-xl flex items-center justify-center shrink-0">
-              <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
-              {/* Email del usuario visible solo en mobile, como subtexto bajo el nombre */}
-              {userEmail && (
-                <span className="text-[11px] text-muted-foreground truncate max-w-[120px] md:hidden leading-tight">
-                  {userEmail}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Buscador — se achica en mobile */}
-          <div className="flex-1 max-w-xs md:max-w-md relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
-            />
-          </div>
-
-          {/* Filtros de estado rápidos — solo desktop */}
-          <div className="hidden md:flex items-center gap-2">
-            {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-              ([key, cfg]) => (
-                <button
-                  key={key}
-                  onClick={() => handleStatusToggle(key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedStatuses.includes(key)
-                    ? `${cfg.bg} ${cfg.color}`
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                  {statusCounts[key] || 0}
-                </button>
-              )
-            )}
-          </div>
-
-          {/* User info & logout */}
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            {/* Email visible solo en desktop */}
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
-              <User className="w-3.5 h-3.5" />
-              <span className="max-w-[120px] truncate">{userEmail}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 ${activeGroupId ? "text-primary" : ""}`}
-              onClick={() => setIsGroupsOpen(true)}
-              title="Grupos familiares"
-            >
-              <Users className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleLogout}
-              title="Cerrar sesión"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-
-        </div>
-      </header>
+      {/* Navbar ahora es un componente modularizado */}
+      <Header
+        userEmail={userEmail}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedStatuses={selectedStatuses}
+        handleStatusToggle={handleStatusToggle}
+        statusCounts={statusCounts}
+        activeGroupId={activeGroupId}
+        setIsGroupsOpen={setIsGroupsOpen}
+        handleLogout={handleLogout}
+      />
 
       {/* Main layout */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
@@ -325,54 +273,61 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="mi-listado">
-            <div className="flex gap-8">
-              <FilterSidebar
-                selectedStatuses={selectedStatuses}
-                onStatusToggle={handleStatusToggle}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                onClearFilters={handleClearFilters}
-                totalCount={properties.length}
-                filteredCount={filteredAndSorted.length}
-                mobileOpen={isMobileFiltersOpen}
-                onMobileClose={() => setIsMobileFiltersOpen(false)}
+            {showWelcome ? (
+              <UserWelcome
+                onDismiss={handleDismissWelcome}
+                userName={userEmail?.split('@')[0] || ""}
               />
+            ) : (
+              <div className="flex gap-8">
+                <FilterSidebar
+                  selectedStatuses={selectedStatuses}
+                  onStatusToggle={handleStatusToggle}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  onClearFilters={handleClearFilters}
+                  totalCount={properties.length}
+                  filteredCount={filteredAndSorted.length}
+                  mobileOpen={isMobileFiltersOpen}
+                  onMobileClose={() => setIsMobileFiltersOpen(false)}
+                />
 
-              <main className="flex-1 min-w-0">
-                <div className="mb-6">
-                  <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
-                  <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
-                </div>
+                <main className="flex-1 min-w-0">
+                  <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
+                    <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
+                  </div>
 
-                {loading ? (
-                  <div className="flex justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredAndSorted.length === 0 ? (
-                  <div className="text-center py-20 text-muted-foreground">
-                    <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="font-medium">No se encontraron propiedades</p>
-                    {activeGroupId ? (
-                      <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas.</p>
-                    ) : (
-                      <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                    {filteredAndSorted.map((property) => (
-                      <PropertyCard
-                        key={property.id}
-                        property={property}
-                        onStatusChange={handleStatusChange}
-                        onClick={() => handleCardClick(property)}
-                        ownerEmail={property.createdByEmail || null}
-                      />
-                    ))}
-                  </div>
-                )}
-              </main>
-            </div>
+                  {loading ? (
+                    <div className="flex justify-center py-20">
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : filteredAndSorted.length === 0 ? (
+                    <div className="text-center py-20 text-muted-foreground">
+                      <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                      <p className="font-medium">No se encontraron propiedades</p>
+                      {activeGroupId ? (
+                        <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas.</p>
+                      ) : (
+                        <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                      {filteredAndSorted.map((property) => (
+                        <PropertyCard
+                          key={property.id}
+                          property={property}
+                          onStatusChange={handleStatusChange}
+                          onClick={() => handleCardClick(property)}
+                          ownerEmail={property.createdByEmail || null}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </main>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -458,6 +413,7 @@ const Index = () => {
           </button>
         </div>
       )}
+      <Footer />
     </div>
   );
 };

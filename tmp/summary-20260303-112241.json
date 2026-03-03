@@ -1,0 +1,4 @@
+{
+    "summary": "Creada la pantalla AgentWelcome para cuando el agente está en estado pendiente. Se modificó AgentDashboard para renderizarla condicionalmente y no mostrar el menú de pestañas hasta que el estado sea 'approved'.",
+    "current_status": "La funcionalidad de la pantalla de bienvenida ya está implementada y funcionando. Queda a la espera del testeo por parte del usuario."
+}

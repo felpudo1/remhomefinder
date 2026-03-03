@@ -1,0 +1,4 @@
+{
+    "summary": "Implementé UserWelcome.tsx para nuevos usuarios, enchufándolo en la página principal Index.tsx. Hace uso de localStorage para guardar si decidieron no verla más, cumpliendo con la exigencia de JP y con diseño premium.",
+    "current_status": "Pantalla de bienvenida construida e integrada. Bloque de desarrollo finalizado por mi parte."
+}

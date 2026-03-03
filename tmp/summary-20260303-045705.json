@@ -1,0 +1,4 @@
+{
+    "summary": "Implementé la máquina de estados mixta para las propiedades de los agentes, permitiendo que las propiedades en Venta tengan estados diferentes a las de Alquiler, basándome puramente en diccionarios Frontend usando Regla 2. Todo se gestiona desde el componente AgentProperties mediante un nuevo Dropdown.",
+    "current_status": "Esperando que el usuario corra las migraciones SQL en su base de datos para que los campos reserved, rented y deleted existan y poder probar la UI."
+}
