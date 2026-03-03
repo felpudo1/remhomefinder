@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import {
   Building2,
-  LogOut,
   Loader2,
   Home,
   BarChart3,
@@ -18,6 +16,7 @@ import { AgentHeader } from "@/components/AgentHeader";
 import { Footer } from "@/components/Footer";
 
 type AgentTab = "propiedades" | "estadisticas" | "perfil";
+type UserStatus = "active" | "pending" | "suspended" | "rejected";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
@@ -27,6 +26,7 @@ const TABS = [
 
 const AgentDashboard = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
+  const [profileStatus, setProfileStatus] = useState<UserStatus>("pending");
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
@@ -41,9 +41,17 @@ const AgentDashboard = () => {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
 
-      const { data: agencies, error } = await supabase.from("agencies").select("*").eq("created_by", user.id).limit(1);
-      if (error) { console.error(error.message); }
-      else if (agencies && agencies.length > 0) { setAgency(agencies[0] as Agency); }
+      // Fetch agency and profile status in parallel
+      const [agencyRes, profileRes] = await Promise.all([
+        supabase.from("agencies").select("*").eq("created_by", user.id).limit(1),
+        supabase.from("profiles").select("status").eq("user_id", user.id).single(),
+      ]);
+
+      if (agencyRes.error) console.error(agencyRes.error.message);
+      else if (agencyRes.data && agencyRes.data.length > 0) setAgency(agencyRes.data[0] as Agency);
+
+      if (profileRes.data) setProfileStatus((profileRes.data as any).status || "active");
+
       setLoading(false);
     };
     init();
@@ -59,11 +67,14 @@ const AgentDashboard = () => {
     );
   }
 
+  // Map profile status to the UI status used by AgentHeader
+  const effectiveStatus = profileStatus === "active" ? "approved" : profileStatus;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AgentHeader
         userEmail={userEmail}
-        agencyStatus={agency?.status}
+        agencyStatus={effectiveStatus}
         activeTab={activeTab}
         setActiveTab={(tab) => setActiveTab(tab)}
         tabs={TABS}
@@ -72,16 +83,16 @@ const AgentDashboard = () => {
 
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
         {agency ? (
-          agency.status === "approved" ? (
+          profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {activeTab === "propiedades" && <AgentProperties agency={agency} />}
+              {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
-              {activeTab === "perfil" && <AgentProfile agency={agency} />}
+              {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
-          ) : agency.status === "pending" ? (
+          ) : profileStatus === "pending" ? (
             <AgentWelcome userName={agency.contact_name} />
           ) : (
-            <AgentProfile agency={agency} />
+            <AgentProfile agency={agency} profileStatus={profileStatus} />
           )
         ) : (
           <div className="border border-border rounded-2xl bg-card p-8 text-center space-y-3">

@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Trash2, Edit, ChevronDown, CheckCircle2, PauseCircle, Clock, Check, Ban } from "lucide-react";
+import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Trash2, Edit, ChevronDown, Check } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -13,17 +13,20 @@ import { AGENT_PROPERTY_STATUSES, PROPERTY_STATUS_LABELS } from "@/lib/constants
 
 interface AgentPropertiesProps {
     agency: Agency;
+    profileStatus?: string;
 }
 
-export const AgentProperties = ({ agency }: AgentPropertiesProps) => {
+export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [publishOpen, setPublishOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
 
+    const isActive = profileStatus === "active";
+
     const { data: agencyProperties = [], isLoading: propsLoading } = useQuery({
         queryKey: ["agency-marketplace-properties", agency.id],
-        enabled: agency.status === "approved",
+        enabled: isActive,
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("marketplace_properties")
@@ -50,7 +53,7 @@ export const AgentProperties = ({ agency }: AgentPropertiesProps) => {
         else { queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] }); toast({ title: "Eliminada" }); }
     };
 
-    if (agency.status !== "approved") return null;
+    if (!isActive) return null;
 
     return (
         <div className="space-y-4">
