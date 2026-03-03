@@ -1,85 +1,52 @@
+## Plan: Centralizar status de usuarios en `profiles`
 
-# Soporte para Compra/Venta de Inmuebles
+### Contexto actual
 
-## Resumen
-Agregar un campo `listing_type` ("alquiler" o "venta") en todo el sistema para que tanto usuarios como agencias puedan gestionar propiedades en alquiler y en venta.
+- `agencies` tiene una columna `status` (enum `agency_status`: pending/approved/rejected/suspended) que controla si un agente puede operar.
+- Los usuarios normales no tienen status — no se pueden suspender/bloquear desde el admin.
+- `AdminUsuarios` solo lista user_ids con roles, sin capacidad de gestión.
 
-## Cambios en Base de Datos
+### Enfoque acordado
 
-1. **Crear enum `listing_type`** con valores `rent` y `sale`
-2. **Agregar columna `listing_type`** a la tabla `properties` (default `rent`, not null)
-3. **Agregar columna `listing_type`** a la tabla `marketplace_properties` (default `rent`, not null)
+Agregar una columna `status` a `profiles` que aplique a **todos** los usuarios (users y agencies). Eventualmente eliminar `status` de `agencies`.
 
-## Cambios en el Modelo de Datos
+### Migración DB
 
-**`src/types/property.ts`**:
-- Agregar tipo `ListingType = "rent" | "sale"`
-- Agregar campo `listingType` a `Property` y `MarketplaceProperty`
+1. Crear enum `user_status` con valores: `active`, `pending`, `suspended`, `rejected` (mapeo directo de `agency_status`).
+2. Agregar columna `status` a `profiles` con default `'active' para users y 'pending' para agencias`.
+3. Migrar datos: para cada agencia, copiar su status al profile del `created_by` correspondiente (mapeando approved→active).
+4. **No** eliminar `status` de `agencies` aún (se hace en un segundo deploy para no romper nada).
 
-## Cambios en la UI - Tarjeta Base
+### Cambios Frontend
 
-**`src/components/ui/PropertyCardBase.tsx`**:
-- Recibir prop `listingType`
-- Si es `sale`: mostrar el precio como precio de venta (sin "/mes", sin desglose alquiler+expensas)
-- Si es `rent`: mantener el formato actual (alquiler + expensas /mes)
+`**AdminUsuarios.tsx**` — Reescribir completamente:
 
-## Cambios en Formularios
+- Consultar `profiles` con join a `user_roles` para mostrar nombre, email (del display_name o del profile), rol y status.
+- Agregar un `<Select>` igual al de `AdminAgencias` para cambiar el status del profile.
+- Mostrar badges de color según status.
 
-**`src/components/AddPropertyModal.tsx`** (usuarios):
-- Agregar selector "Alquiler" / "Venta" al inicio del formulario
-- Si es venta: el campo "Alquiler" cambia a "Precio de venta" y se oculta "G/C (Expensas)"
-- Pasar `listingType` al callback `onAdd`
+`**AgentDashboard.tsx**` — Leer status desde profile en lugar de agency:
 
-**`src/components/PublishPropertyModal.tsx`** (agencias):
-- Mismo selector "Alquiler" / "Venta"
-- Misma logica de campos condicionales
-- Insertar `listing_type` en `marketplace_properties`
+- Después de obtener el user, consultar `profiles` para obtener el `status`.
+- Pasar ese status a `AgentHeader` y usarlo para condicionar la UI (en lugar de `agency.status`).
 
-## Cambios en Hooks
+`**AgentHeader.tsx**` — Sin cambios de lógica, solo recibe el status desde otra fuente.
 
-**`src/hooks/useProperties.ts`**:
-- Mapear `listing_type` de la DB al campo `listingType` del modelo
-- Incluir `listing_type` en los inserts
+`**AgentProfile.tsx**` — Leer status del profile en vez de `agency.status` para los banners de pending/suspended/rejected.
 
-**`src/hooks/useMarketplaceProperties.ts`**:
-- Mapear `listing_type` al modelo `MarketplaceProperty`
+`**AgentProperties.tsx**` — Condicionar `enabled` y el render según el status del profile.
 
-**`src/hooks/useSaveToList.ts`**:
-- Propagar `listing_type` del marketplace property al insert en `properties`
+`**AdminAgencias.tsx**` — Actualizar `updateStatus` para escribir en `profiles` en vez de (o además de) `agencies`. Eventualmente solo en `profiles`.
 
-## Cambios en Filtros
+### RLS
 
-**`src/components/MarketplaceFilterSidebar.tsx`**:
-- Agregar filtro "Tipo" con botones "Alquiler" / "Venta" / "Todos"
+- Agregar política para que admins puedan actualizar `profiles.status`.
+- La política existente de "Users can update own profile" no debe permitir que un user cambie su propio status (se puede resolver con una función security definer o restringiendo las columnas actualizables).
 
-**`src/components/MarketplaceView.tsx`**:
-- Agregar estado y logica de filtrado por `listingType`
+### Orden de implementación
 
-**`src/components/FilterSidebar.tsx`** (Mi Listado):
-- Agregar el mismo filtro de tipo
-
-## Cambios en Tarjetas
-
-**`src/components/PropertyCard.tsx`** y **`src/components/MarketplaceCard.tsx`**:
-- Pasar `listingType` a `PropertyCardBase`
-
-## Cambios en el Dashboard de Agencia
-
-**`src/pages/AgentDashboard.tsx`**:
-- Mostrar el tipo (Alquiler/Venta) en cada tarjeta publicada
-
----
-
-### Seccion Tecnica - Migracion SQL
-
-```sql
-CREATE TYPE public.listing_type AS ENUM ('rent', 'sale');
-
-ALTER TABLE public.properties 
-  ADD COLUMN listing_type listing_type NOT NULL DEFAULT 'rent';
-
-ALTER TABLE public.marketplace_properties 
-  ADD COLUMN listing_type listing_type NOT NULL DEFAULT 'rent';
-```
-
-Todas las propiedades existentes quedaran como `rent` por defecto, sin romper nada.
+1. Migración SQL (enum + columna + datos)
+2. RLS para admin update de status
+3. Refactorizar `AdminUsuarios` con gestión de status
+4. Refactorizar agent dashboard para leer status de profiles
+5. (Futuro) DROP column `status` de `agencies`
