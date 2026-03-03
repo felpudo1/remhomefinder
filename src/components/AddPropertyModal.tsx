@@ -84,7 +84,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       }
 
       const { data, error } = await supabase.functions.invoke("scrape-property", {
-        body: { url: url.trim(), scraper },
+        body: { url: url.trim(), scraper, role: "user" },
       });
 
       // supabase.functions.invoke puts non-2xx response body into error.context

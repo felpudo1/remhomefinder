@@ -69,7 +69,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished }: P
       }
 
       const { data, error } = await supabase.functions.invoke("scrape-property", {
-        body: { url: url.trim() },
+        body: { url: url.trim(), role: "agent" },
       });
 
       // supabase.functions.invoke puts non-2xx response body into error.context

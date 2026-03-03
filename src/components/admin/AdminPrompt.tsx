@@ -4,136 +4,182 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Save, RotateCcw, Info, Loader2 } from "lucide-react";
 
-// Prompt base por defecto del sistema (usado como fallback)
-const DEFAULT_PROMPT = `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina. 
-Analizá el contenido del aviso y extraé los datos de la propiedad.
-- Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares. Detectá la moneda según el sitio y el país (ej: mercadolibre.com.uy → UYU, infocasas.com.uy → UYU).
-- Para el barrio: extraé el barrio o zona mencionada.
-- Para el resumen: hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
-- Si un dato no está disponible, dejalo vacío o en 0.`;
+// Prompts base por defecto: uno para usuarios y otro para agentes
+const DEFAULT_PROMPT_USER = `Sos un extractor de avisos inmobiliarios de Uruguay y Argentina. Reglas estrictas:
+- MONEDA: Si la URL contiene ".uy" → UYU. Si contiene ".com.ar" o precio en "$" → ARS. "U$S" o "USD" → USD.
+- PRECIO: En infocasas/gallito, el precio principal es el alquiler. Extraé también expensas si aparecen.
+- BARRIO: Extraé el barrio o zona mencionada. NUNCA pongas la ciudad, solo el barrio.
+- AMBIENTES: "monoambiente" = 1, "1 dormitorio" = 2, "2 dormitorios" = 3. (ambientes = dormitorios + 1)
+- SUPERFICIE: Extraé los metros cuadrados. Diferenciá entre superficie total y cubierta si aparecen.
+- RESUMEN: Hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
+- Si un dato no está disponible, dejá el número en 0 o el texto vacío. Never invent data.`;
+
+const DEFAULT_PROMPT_AGENT = `Sos un extractor de avisos inmobiliarios profesional para agencias de Uruguay y Argentina. Reglas estrictas:
+- MONEDA: Si la URL contiene ".uy" → UYU. Si contiene ".com.ar" o precio en "$" → ARS. "U$S" o "USD" → USD.
+- PRECIO: Extraé precio de alquiler/venta y expensas/gastos comunes por separado.
+- BARRIO: Extraé el barrio o zona mencionada. NUNCA pongas la ciudad, solo el barrio.
+- AMBIENTES: "monoambiente" = 1, "1 dormitorio" = 2, "2 dormitorios" = 3. (ambientes = dormitorios + 1)
+- SUPERFICIE: Extraé los metros cuadrados. Diferenciá entre superficie total y cubierta si aparecen.
+- RESUMEN: Hacé un resumen profesional de 2-3 oraciones orientado a la venta/alquiler del inmueble.
+- Si un dato no está disponible, dejá el número en 0 o el texto vacío. Never invent data.`;
+
+// Claves en la tabla app_settings de Supabase
+const SETTINGS_KEYS = {
+  user: "scraper_prompt_user",
+  agent: "scraper_prompt_agent",
+} as const;
 
 interface Props {
-    toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
+  toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
 
 /**
- * Sección de administración del Prompt del scraper IA.
+ * Sección de administración de Prompts del scraper IA.
+ * Maneja dos prompts independientes: uno para usuarios y otro para agentes.
  * Lee y escribe directamente en la tabla app_settings de Supabase.
- * La Edge Function scrape-property lee este prompt en cada ejecución.
  */
 export function AdminPrompt({ toast }: Props) {
-    const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [isDirty, setIsDirty] = useState(false);
+  const [promptUser, setPromptUser] = useState(DEFAULT_PROMPT_USER);
+  const [promptAgent, setPromptAgent] = useState(DEFAULT_PROMPT_AGENT);
+  const [savedUser, setSavedUser] = useState(true);
+  const [savedAgent, setSavedAgent] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-    // Cargamos el prompt actual desde Supabase al montar el componente
-    useEffect(() => {
-        const loadPrompt = async () => {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from("app_settings")
-                .select("value")
-                .eq("key", "scraper_system_prompt")
-                .single();
+  // Cargar prompts desde Supabase al montar el componente
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", [SETTINGS_KEYS.user, SETTINGS_KEYS.agent]);
 
-            if (!error && data?.value) {
-                setPrompt(data.value);
-            }
-            setLoading(false);
-        };
-
-        loadPrompt();
-    }, []);
-
-    // Guardar el prompt en la tabla app_settings de Supabase
-    const handleSave = async () => {
-        setSaving(true);
-        const { error } = await supabase
-            .from("app_settings")
-            .upsert(
-                {
-                    key: "scraper_system_prompt",
-                    value: prompt,
-                    description: "Instrucción del sistema para la IA del scraper de propiedades.",
-                    updated_at: new Date().toISOString(),
-                },
-                { onConflict: "key" }
-            );
-
-        if (error) {
-            toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
-        } else {
-            toast({ title: "✅ Prompt guardado", description: "La IA usará este prompt en el próximo scraping." });
-            setIsDirty(false);
+      if (data) {
+        for (const row of data) {
+          if (row.key === SETTINGS_KEYS.user) setPromptUser(row.value);
+          if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
         }
-        setSaving(false);
+      }
+      setLoading(false);
     };
+    load();
+  }, []);
 
-    const handleReset = async () => {
-        setPrompt(DEFAULT_PROMPT);
-        setIsDirty(true);
-        toast({ title: "Prompt reseteado", description: "Guardá para aplicar los cambios al scraper." });
-    };
+  // Guardar prompt en Supabase por tipo
+  const handleSave = async (type: "user" | "agent") => {
+    const key = SETTINGS_KEYS[type];
+    const value = type === "user" ? promptUser : promptAgent;
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setPrompt(e.target.value);
-        setIsDirty(true);
-    };
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert({ key, value, description: `Prompt del scraper para ${type}s` }, { onConflict: "key" });
 
-    if (loading) {
-        return (
-            <div className="flex justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-        );
+    if (error) {
+      toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+      return;
     }
 
+    if (type === "user") setSavedUser(true);
+    else setSavedAgent(true);
+    toast({
+      title: "Prompt guardado",
+      description: `El prompt de ${type === "user" ? "usuarios" : "agentes"} se actualizó correctamente.`,
+    });
+  };
+
+  // Resetear prompt al valor por defecto
+  const handleReset = (type: "user" | "agent") => {
+    if (type === "user") { setPromptUser(DEFAULT_PROMPT_USER); setSavedUser(false); }
+    else { setPromptAgent(DEFAULT_PROMPT_AGENT); setSavedAgent(false); }
+    toast({ title: "Prompt reseteado", description: "Volvió a los valores originales. Guardá para confirmar." });
+  };
+
+  if (loading) {
     return (
-        <div className="space-y-5">
-            {/* Info Banner */}
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl text-sm text-muted-foreground">
-                <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <div>
-                    <p className="font-medium text-foreground mb-1">Prompt conectado a la Edge Function</p>
-                    <p>
-                        Lo que guardes aquí se usa directamente cuando la IA extrae datos de un aviso. Los cambios
-                        toman efecto en el próximo scraping, sin necesidad de redesplegar código.
-                    </p>
-                </div>
-            </div>
-
-            {/* Editor de Prompt */}
-            <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Bot className="w-4 h-4 text-primary" />
-                        System Prompt (activo en producción)
-                    </label>
-                    {isDirty && (
-                        <span className="text-xs text-amber-600 font-medium animate-pulse">Sin guardar</span>
-                    )}
-                </div>
-                <Textarea
-                    value={prompt}
-                    onChange={handleChange}
-                    className="min-h-[280px] font-mono text-xs resize-y rounded-xl leading-relaxed"
-                    placeholder="Ingresá el system prompt para la IA del scraper..."
-                />
-                <p className="text-xs text-muted-foreground">{prompt.length} caracteres</p>
-            </div>
-
-            {/* Botones de acción */}
-            <div className="flex items-center gap-3">
-                <Button onClick={handleSave} className="gap-2" disabled={saving || !isDirty}>
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? "Guardando..." : isDirty ? "Guardar en Supabase" : "Guardado ✓"}
-                </Button>
-                <Button variant="outline" onClick={handleReset} className="gap-2" disabled={saving}>
-                    <RotateCcw className="w-4 h-4" />
-                    Resetear al Original
-                </Button>
-            </div>
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
     );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Info Banner */}
+      <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl text-sm text-muted-foreground">
+        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <div>
+          <p className="font-medium text-foreground mb-1">¿Qué son los Prompts del Scraper?</p>
+          <p>
+            Son las instrucciones que le damos a la IA para interpretar avisos inmobiliarios.
+            El prompt de <strong>usuarios</strong> se usa cuando un usuario agrega una propiedad.
+            El de <strong>agentes</strong> cuando una agencia publica desde su panel.
+          </p>
+        </div>
+      </div>
+
+      {/* Editor de Prompt para Usuarios */}
+      <PromptEditor
+        label="Prompt Usuarios"
+        value={promptUser}
+        saved={savedUser}
+        onChange={(v) => { setPromptUser(v); setSavedUser(false); }}
+        onSave={() => handleSave("user")}
+        onReset={() => handleReset("user")}
+      />
+
+      {/* Editor de Prompt para Agentes */}
+      <PromptEditor
+        label="Prompt Agentes"
+        value={promptAgent}
+        saved={savedAgent}
+        onChange={(v) => { setPromptAgent(v); setSavedAgent(false); }}
+        onSave={() => handleSave("agent")}
+        onReset={() => handleReset("agent")}
+      />
+    </div>
+  );
+}
+
+/**
+ * Componente reutilizable para editar un prompt individual.
+ * Siguiendo la Regla 2 (Arquitectura Profesional).
+ */
+function PromptEditor({
+  label, value, saved, onChange, onSave, onReset,
+}: {
+  label: string;
+  value: string;
+  saved: boolean;
+  onChange: (v: string) => void;
+  onSave: () => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-foreground flex items-center gap-2">
+          <Bot className="w-4 h-4 text-primary" />
+          {label}
+        </label>
+        {!saved && (
+          <span className="text-xs text-amber-600 font-medium">Sin guardar</span>
+        )}
+      </div>
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="min-h-[200px] font-mono text-xs resize-y rounded-xl leading-relaxed"
+      />
+      <p className="text-xs text-muted-foreground">{value.length} caracteres</p>
+      <div className="flex items-center gap-3">
+        <Button onClick={onSave} size="sm" className="gap-2" disabled={saved}>
+          <Save className="w-4 h-4" />
+          {saved ? "Guardado" : "Guardar"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
+          <RotateCcw className="w-4 h-4" />
+          Resetear
+        </Button>
+      </div>
+    </div>
+  );
 }
