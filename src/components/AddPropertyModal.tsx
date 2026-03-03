@@ -32,9 +32,10 @@ interface AddPropertyModalProps {
     listingType?: string;
   }) => void;
   activeGroupId?: string | null;
+  scraper?: "firecrawl" | "zenrows";
 }
 
-export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPropertyModalProps) {
+export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl" }: AddPropertyModalProps) {
   const { groups } = useGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
@@ -83,13 +84,25 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
       }
 
       const { data, error } = await supabase.functions.invoke("scrape-property", {
-        body: { url: url.trim() },
+        body: { url: url.trim(), scraper },
       });
 
+      // supabase.functions.invoke puts non-2xx response body into error.context
       if (error || !data?.success) {
-        const errorMsg = data?.error || error?.message || "No pudimos extraer datos automáticamente.";
-        // Scraping failed — go to manual form so user can fill in details
-        toast.info(errorMsg + " Completá los datos manualmente.", { duration: 6000 });
+        let errorMsg = "No pudimos extraer datos automáticamente. Completá los datos manualmente.";
+        // Try to get message from the error context (non-2xx responses)
+        try {
+          const errBody = typeof error?.context === "string" ? JSON.parse(error.context) : error?.context;
+          if (errBody?.error === "MARKETPLACE_MANUAL" || errBody?.message) {
+            errorMsg = errBody.message || errorMsg;
+          } else if (data?.error === "MARKETPLACE_MANUAL" || data?.message) {
+            errorMsg = data.message || errorMsg;
+          }
+        } catch {
+          if (data?.message) errorMsg = data.message;
+          else if (data?.error && data.error !== "MARKETPLACE_MANUAL") errorMsg = data.error;
+        }
+        toast.info("📋 " + errorMsg, { duration: 8000 });
         setStep("manual");
         setIsLoading(false);
         return;
@@ -233,7 +246,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId }: AddPro
                 Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
               </p>
               <p className="text-xs text-amber-600 font-medium">
-                Las publicaciones de MarketPlace hay que ingresarlas manualmente.
+                Las publicaciones de MarketPlace, IG y RRSS hay que ingresarlas manualmente.
               </p>
             </div>
 

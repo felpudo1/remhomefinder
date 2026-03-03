@@ -34,6 +34,7 @@ export interface Property {
   statusChangedByEmail: string;
   statusChangedAt?: Date | null;
   coordinatedDate?: Date | null;
+  contactedName?: string;
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
   listingType: ListingType;

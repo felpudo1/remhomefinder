@@ -29,6 +29,7 @@ const Index = () => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isAddZenRowsOpen, setIsAddZenRowsOpen] = useState(false);
   // Controla si el drawer de filtros está abierto en mobile
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("mi-listado");
@@ -49,9 +50,9 @@ const Index = () => {
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
-  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null) => {
+  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => {
     try {
-      await updateStatus(id, status, deletedReason, coordinatedDate, groupId);
+      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName);
     } catch (e: any) {
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",
@@ -391,11 +392,22 @@ const Index = () => {
         )}
       </button>
 
-      {/* Botón flotante "+" para agregar propiedad */}
+      {/* Botón flotante "+" ZenRows (arriba del azul) */}
+      <button
+        onClick={() => setIsAddZenRowsOpen(true)}
+        className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
+        aria-label="Agregar con ZenRows"
+        title="Agregar con ZenRows"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+
+      {/* Botón flotante "+" para agregar propiedad (Firecrawl) */}
       <button
         onClick={() => setIsAddOpen(true)}
         className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-        aria-label="Add property"
+        aria-label="Agregar con Firecrawl"
+        title="Agregar con Firecrawl"
       >
         <Plus className="w-6 h-6" />
       </button>
@@ -407,6 +419,14 @@ const Index = () => {
         onStatusChange={handleStatusChange}
         onAddComment={handleAddComment}
         currentUserEmail={userEmail}
+      />
+
+      <AddPropertyModal
+        open={isAddZenRowsOpen}
+        onClose={() => setIsAddZenRowsOpen(false)}
+        onAdd={handleAddProperty}
+        activeGroupId={activeGroupId}
+        scraper="zenrows"
       />
 
       <AddPropertyModal
