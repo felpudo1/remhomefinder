@@ -39,6 +39,7 @@ const App = () => (
             <Route path={ROUTES.DASHBOARD} element={<Index />} />
             <Route path={ROUTES.AUTH} element={<Auth />} />
             <Route path={ROUTES.ADMIN} element={<Admin />} />
+            <Route path={ROUTES.ADMIN_SECTION_PATH} element={<Admin />} />
             <Route path={ROUTES.AGENCY} element={<AgentDashboard />} />
             <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

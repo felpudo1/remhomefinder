@@ -23,7 +23,9 @@ export const ROUTES = {
     DASHBOARD: "/dashboard",
     AUTH: "/auth",
     ADMIN: "/admin",
-    AGENCY: "/agente", // Ruta para el Dashboard del Agente
+    ADMIN_SECTION: (section: string) => `/admin/${section}`,
+    ADMIN_SECTION_PATH: "/admin/:section",
+    AGENCY: "/agente",
     PUBLIC_PROPERTY: (id: string) => `/p/${id}`,
     PUBLIC_PROPERTY_PATH: "/p/:id",
 } as const;
