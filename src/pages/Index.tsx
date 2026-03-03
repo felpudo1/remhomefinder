@@ -277,176 +277,178 @@ const Index = () => {
         handleLogout={handleLogout}
       />
 
-      {/* Status banner for non-active users */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
-        <UserStatusBanner status={profileStatus} />
-      </div>
-
-      {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-        <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
-          <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full flex h-12">
-            <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-[2] transition-all">
-              <Home className="w-4 h-4" />
-              Mi Listado
-            </TabsTrigger>
-            <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-1 transition-all">
-              <Store className="w-4 h-4" />
-              HFMarket
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="marketplace">
-            <MarketplaceView
-              mobileFiltersOpen={activeTab === "marketplace" && isMobileFiltersOpen}
-              onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
-            />
-          </TabsContent>
-
-          <TabsContent value="mi-listado">
-            {showWelcome ? (
-              <UserWelcome
-                onDismiss={handleDismissWelcome}
-                userName={userEmail?.split('@')[0] || ""}
-              />
-            ) : (
-              <div className="flex gap-8">
-                <FilterSidebar
-                  selectedStatuses={selectedStatuses}
-                  onStatusToggle={handleStatusToggle}
-                  sortBy={sortBy}
-                  onSortChange={setSortBy}
-                  onClearFilters={handleClearFilters}
-                  totalCount={properties.length}
-                  filteredCount={filteredAndSorted.length}
-                  mobileOpen={isMobileFiltersOpen}
-                  onMobileClose={() => setIsMobileFiltersOpen(false)}
-                />
-
-                <main className="flex-1 min-w-0">
-                  <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
-                    <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
-                  </div>
-
-                  {loading ? (
-                    <div className="flex justify-center py-20">
-                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : filteredAndSorted.length === 0 ? (
-                    <div className="text-center py-20 text-muted-foreground">
-                      <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                      <p className="font-medium">No se encontraron propiedades</p>
-                      {activeGroupId ? (
-                        <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas.</p>
-                      ) : (
-                        <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                      {filteredAndSorted.map((property) => (
-                        <PropertyCard
-                          key={property.id}
-                          property={property}
-                          onStatusChange={handleStatusChange}
-                          onClick={() => handleCardClick(property)}
-                          ownerEmail={property.createdByEmail || null}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </main>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Botón flotante "Filtros" solo en mobile (abajo a la izquierda) */}
-      <button
-        onClick={() => setIsMobileFiltersOpen(true)}
-        className="fixed bottom-8 left-8 md:hidden flex items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow hover:card-shadow-hover transition-all duration-200 z-30 text-sm font-medium"
-        aria-label="Abrir filtros"
-      >
-        <SlidersHorizontal className="w-4 h-4" />
-        Filtros
-        {selectedStatuses.length > 0 && (
-          // Badge indicando cuántos filtros activos hay
-          <span className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold">
-            {selectedStatuses.length}
-          </span>
-        )}
-      </button>
-
-      {/* Botón flotante "+" ZenRows (arriba del azul) — visible según configuración del admin */}
-      {profileStatus === "active" && (addButtonConfig === "white" || addButtonConfig === "both") && (
-        <button
-          onClick={() => setIsAddZenRowsOpen(true)}
-          className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-          aria-label="Agregar con ZenRows"
-          title="Agregar con ZenRows"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
-
-      {/* Botón flotante "+" Firecrawl — visible según configuración del admin */}
-      {profileStatus === "active" && (addButtonConfig === "blue" || addButtonConfig === "both") && (
-        <button
-          onClick={() => setIsAddOpen(true)}
-          className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
-          aria-label="Agregar con Firecrawl"
-          title="Agregar con Firecrawl"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
-
-      <PropertyDetailModal
-        property={selectedProperty}
-        open={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        onStatusChange={handleStatusChange}
-        onAddComment={handleAddComment}
-        currentUserEmail={userEmail}
-      />
-
-      <AddPropertyModal
-        open={isAddZenRowsOpen}
-        onClose={() => setIsAddZenRowsOpen(false)}
-        onAdd={handleAddProperty}
-        activeGroupId={activeGroupId}
-        scraper="zenrows"
-      />
-
-      <AddPropertyModal
-        open={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onAdd={handleAddProperty}
-        activeGroupId={activeGroupId}
-      />
-
-
-      <GroupsModal
-        open={isGroupsOpen}
-        onClose={() => setIsGroupsOpen(false)}
-        activeGroupId={activeGroupId}
-        onSelectGroup={setActiveGroupId}
-      />
-
-      {/* Banner de grupo activo */}
-      {activeGroupId && (
-        <div className="fixed top-16 left-0 right-0 z-30 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-center gap-2 text-sm">
-          <Users className="w-4 h-4 text-primary" />
-          <span className="text-primary font-medium">Viendo propiedades del grupo</span>
-          <button
-            onClick={() => setActiveGroupId(null)}
-            className="text-xs text-primary/70 hover:text-primary underline ml-2"
-          >
-            Ver todas
-          </button>
+      {/* Non-active users: show only the status banner */}
+      {profileStatus !== "active" ? (
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-12 flex-1">
+          <UserStatusBanner status={profileStatus} />
         </div>
+      ) : (
+        <>
+          {/* Main layout */}
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+            <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
+              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full flex h-12">
+                <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-[2] transition-all">
+                  <Home className="w-4 h-4" />
+                  Mi Listado
+                </TabsTrigger>
+                <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-1 transition-all">
+                  <Store className="w-4 h-4" />
+                  HFMarket
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="marketplace">
+                <MarketplaceView
+                  mobileFiltersOpen={activeTab === "marketplace" && isMobileFiltersOpen}
+                  onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
+                />
+              </TabsContent>
+
+              <TabsContent value="mi-listado">
+                {showWelcome ? (
+                  <UserWelcome
+                    onDismiss={handleDismissWelcome}
+                    userName={userEmail?.split('@')[0] || ""}
+                  />
+                ) : (
+                  <div className="flex gap-8">
+                    <FilterSidebar
+                      selectedStatuses={selectedStatuses}
+                      onStatusToggle={handleStatusToggle}
+                      sortBy={sortBy}
+                      onSortChange={setSortBy}
+                      onClearFilters={handleClearFilters}
+                      totalCount={properties.length}
+                      filteredCount={filteredAndSorted.length}
+                      mobileOpen={isMobileFiltersOpen}
+                      onMobileClose={() => setIsMobileFiltersOpen(false)}
+                    />
+
+                    <main className="flex-1 min-w-0">
+                      <div className="mb-6">
+                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades</h1>
+                        <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
+                      </div>
+
+                      {loading ? (
+                        <div className="flex justify-center py-20">
+                          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : filteredAndSorted.length === 0 ? (
+                        <div className="text-center py-20 text-muted-foreground">
+                          <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                          <p className="font-medium">No se encontraron propiedades</p>
+                          {activeGroupId ? (
+                            <p className="text-sm mt-1">Este grupo aún no tiene propiedades asignadas.</p>
+                          ) : (
+                            <p className="text-sm mt-1">Ajustá los filtros o agregá una nueva propiedad.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                          {filteredAndSorted.map((property) => (
+                            <PropertyCard
+                              key={property.id}
+                              property={property}
+                              onStatusChange={handleStatusChange}
+                              onClick={() => handleCardClick(property)}
+                              ownerEmail={property.createdByEmail || null}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </main>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Botón flotante "Filtros" solo en mobile (abajo a la izquierda) */}
+          <button
+            onClick={() => setIsMobileFiltersOpen(true)}
+            className="fixed bottom-8 left-8 md:hidden flex items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow hover:card-shadow-hover transition-all duration-200 z-30 text-sm font-medium"
+            aria-label="Abrir filtros"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filtros
+            {selectedStatuses.length > 0 && (
+              <span className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold">
+                {selectedStatuses.length}
+              </span>
+            )}
+          </button>
+
+          {/* Botón flotante "+" ZenRows */}
+          {(addButtonConfig === "white" || addButtonConfig === "both") && (
+            <button
+              onClick={() => setIsAddZenRowsOpen(true)}
+              className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
+              aria-label="Agregar con ZenRows"
+              title="Agregar con ZenRows"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          )}
+
+          {/* Botón flotante "+" Firecrawl */}
+          {(addButtonConfig === "blue" || addButtonConfig === "both") && (
+            <button
+              onClick={() => setIsAddOpen(true)}
+              className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
+              aria-label="Agregar con Firecrawl"
+              title="Agregar con Firecrawl"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          )}
+
+          <PropertyDetailModal
+            property={selectedProperty}
+            open={isDetailOpen}
+            onClose={() => setIsDetailOpen(false)}
+            onStatusChange={handleStatusChange}
+            onAddComment={handleAddComment}
+            currentUserEmail={userEmail}
+          />
+
+          <AddPropertyModal
+            open={isAddZenRowsOpen}
+            onClose={() => setIsAddZenRowsOpen(false)}
+            onAdd={handleAddProperty}
+            activeGroupId={activeGroupId}
+            scraper="zenrows"
+          />
+
+          <AddPropertyModal
+            open={isAddOpen}
+            onClose={() => setIsAddOpen(false)}
+            onAdd={handleAddProperty}
+            activeGroupId={activeGroupId}
+          />
+
+          <GroupsModal
+            open={isGroupsOpen}
+            onClose={() => setIsGroupsOpen(false)}
+            activeGroupId={activeGroupId}
+            onSelectGroup={setActiveGroupId}
+          />
+
+          {/* Banner de grupo activo */}
+          {activeGroupId && (
+            <div className="fixed top-16 left-0 right-0 z-30 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-center gap-2 text-sm">
+              <Users className="w-4 h-4 text-primary" />
+              <span className="text-primary font-medium">Viendo propiedades del grupo</span>
+              <button
+                onClick={() => setActiveGroupId(null)}
+                className="text-xs text-primary/70 hover:text-primary underline ml-2"
+              >
+                Ver todas
+              </button>
+            </div>
+          )}
+        </>
       )}
       <Footer />
     </div>
