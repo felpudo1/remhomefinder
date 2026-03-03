@@ -6,15 +6,18 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+
+const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
 
 // Importaciones dinámicas para optimización de carga (Lazy Loading)
-const Index = lazy(() => import("./pages/Index"));
-const Landing = lazy(() => import("./pages/Landing"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Admin = lazy(() => import("./pages/Admin"));
-const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const PublicPropertyView = lazy(() => import("./pages/PublicPropertyView"));
+const Index = routeLazy(() => import("./pages/Index"));
+const Landing = routeLazy(() => import("./pages/Landing"));
+const Auth = routeLazy(() => import("./pages/Auth"));
+const Admin = routeLazy(() => import("./pages/Admin"));
+const AgentDashboard = routeLazy(() => import("./pages/AgentDashboard"));
+const NotFound = routeLazy(() => import("./pages/NotFound"));
+const PublicPropertyView = routeLazy(() => import("./pages/PublicPropertyView"));
 
 const queryClient = new QueryClient();
 
