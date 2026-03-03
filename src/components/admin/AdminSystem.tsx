@@ -1,6 +1,10 @@
-import { Settings, Monitor, CheckCircle2, Loader2 } from "lucide-react";
+import { Settings, Monitor, CheckCircle2, Loader2, Mail } from "lucide-react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT } from "@/components/Footer";
 
 /** Posibles valores de configuración del botón de agregar */
 export type AddButtonConfig = "blue" | "white" | "both" | "none";
@@ -11,11 +15,6 @@ export const ADD_BUTTON_CONFIG_KEY = "add_button_config";
 /** Valor por defecto si no hay config en Supabase */
 export const ADD_BUTTON_DEFAULT: AddButtonConfig = "blue";
 
-/**
- * Componente de configuración del sistema para el panel de Admin.
- * Permite al admin controlar qué botón (+) de agregar propiedades ven los usuarios.
- * La configuración se persiste en la tabla `system_config` de Supabase.
- */
 export function AdminSystem() {
     const { toast } = useToast();
     const { value, isLoading, setValue, isSaving } = useSystemConfig(
@@ -24,10 +23,32 @@ export function AdminSystem() {
     );
     const selected = (value as AddButtonConfig) || ADD_BUTTON_DEFAULT;
 
+    // Support email config
+    const {
+        value: supportEmail,
+        isLoading: isLoadingEmail,
+        setValue: setSupportEmail,
+        isSaving: isSavingEmail,
+    } = useSystemConfig(SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT);
+
+    const [emailDraft, setEmailDraft] = useState(supportEmail);
+    useEffect(() => {
+        setEmailDraft(supportEmail);
+    }, [supportEmail]);
+
     const handleSelect = async (newValue: AddButtonConfig) => {
         try {
             await setValue(newValue);
             toast({ title: "Configuración guardada", description: "El cambio se aplicará a todos los usuarios." });
+        } catch {
+            toast({ title: "Error al guardar", variant: "destructive" });
+        }
+    };
+
+    const handleSaveEmail = async () => {
+        try {
+            await setSupportEmail(emailDraft.trim());
+            toast({ title: "Email de soporte guardado", description: "Se mostrará en el footer para todos los usuarios." });
         } catch {
             toast({ title: "Error al guardar", variant: "destructive" });
         }
@@ -72,7 +93,7 @@ export function AdminSystem() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Monitor className="w-4 h-4" />
                 <p>Estos ajustes controlan qué elementos de UI se muestran a los usuarios regulares de la plataforma.</p>
@@ -102,14 +123,10 @@ export function AdminSystem() {
                                         : "border-border bg-card hover:border-border/80"
                                     }`}
                             >
-                                {/* Checkmark de selección */}
                                 {isSelected && (
                                     <CheckCircle2 className="w-4 h-4 text-primary absolute top-3 right-3" />
                                 )}
-
-                                {/* Preview del botón */}
                                 <div className="mb-3">{option.preview}</div>
-
                                 <div>
                                     <p className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}>
                                         {option.label}
@@ -121,6 +138,37 @@ export function AdminSystem() {
                             </button>
                         );
                     })}
+                </div>
+            </div>
+
+            {/* Sección: Email de soporte */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm">Email de soporte</h3>
+                    {(isLoadingEmail || isSavingEmail) && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                </div>
+                <p className="text-xs text-muted-foreground pl-6">
+                    Este email se mostrará como enlace de "Soporte" en el footer de la plataforma. Dejalo vacío para ocultarlo.
+                </p>
+
+                <div className="flex gap-2 pl-6 max-w-md">
+                    <Input
+                        type="email"
+                        placeholder="soporte@ejemplo.com"
+                        value={emailDraft}
+                        onChange={(e) => setEmailDraft(e.target.value)}
+                        disabled={isLoadingEmail || isSavingEmail}
+                        className="rounded-xl"
+                    />
+                    <Button
+                        onClick={handleSaveEmail}
+                        disabled={isLoadingEmail || isSavingEmail || emailDraft === supportEmail}
+                        className="rounded-xl shrink-0"
+                        size="sm"
+                    >
+                        Guardar
+                    </Button>
                 </div>
             </div>
         </div>
