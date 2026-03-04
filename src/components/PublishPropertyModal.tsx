@@ -46,7 +46,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
     description: "",
     priceRent: "",
     priceExpenses: "",
-    currency: "ARS",
+    currency: "UYU",
     neighborhood: "",
     sqMeters: "",
     rooms: "1",
@@ -79,7 +79,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
           description: "",
           priceRent: "",
           priceExpenses: "",
-          currency: "ARS",
+          currency: "UYU",
           neighborhood: "",
           sqMeters: "",
           rooms: "1",
@@ -87,6 +87,16 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       }
     }
   }, [open, propertyToEdit]);
+
+  // Auto-ajustar moneda según tipo de operación (solo en publicaciones nuevas)
+  useEffect(() => {
+    if (!propertyToEdit) {
+      setForm((prev) => ({
+        ...prev,
+        currency: listingType === "sale" ? "USD" : "UYU",
+      }));
+    }
+  }, [listingType, propertyToEdit]);
 
   const handleScrape = async () => {
     if (!url.trim()) return;
@@ -371,8 +381,8 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
                 <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
                   <SelectTrigger className="rounded-xl h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ARS">ARS</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="UYU">$ Pesos</SelectItem>
+                    <SelectItem value="USD">U$S Dólares</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

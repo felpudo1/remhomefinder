@@ -60,6 +60,16 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: Ma
           </p>
         )
       }
+      subImageContent={
+        <div className="px-4 pt-2 flex items-center justify-end">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${property.listingType === "sale"
+              ? "bg-accent/15 text-accent-foreground"
+              : "bg-primary/10 text-primary"
+            }`}>
+            {property.listingType === "sale" ? "Venta" : "Alquiler"}
+          </span>
+        </div>
+      }
       actions={
         <Button
           size="sm"
