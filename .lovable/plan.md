@@ -1,30 +1,29 @@
 
 
-## Plan: Agregar `marketplace_status` a properties
+## Análisis: Eliminación física (DELETE) de propiedades desde el admin
 
-Tu enfoque es el correcto y es la mejor opción. No hay una alternativa más "pro" — separar el estado del marketplace del estado personal del usuario es exactamente el patrón adecuado. El usuario mantiene su flujo (ingresado → contactado → coordinado → visitado) y además ve si el agente marcó la propiedad como vendida/reservada/alquilada.
+**Respuesta corta: No es complicado.** La base de datos ya tiene foreign keys con `ON DELETE CASCADE` en `property_comments` (referencia a `property_id`). Solo hay que manejar un caso especial.
 
-### Paso 1 — Migración SQL
+### Cascada de datos al borrar una property
 
-- Agregar columna `marketplace_status` (tipo `marketplace_property_status`, default `'active'`, nullable) a `properties`.
-- Actualizar el trigger `sync_marketplace_to_properties` para que también sincronice `marketplace_status = NEW.status`.
-- Backfill: actualizar las filas existentes que tengan `source_marketplace_id` con el status actual del marketplace.
+| Tabla | Relación | Solución |
+|-------|----------|----------|
+| `property_comments` | FK `property_id` → `properties.id` | CASCADE automático (ya configurado) |
+| `properties` con `source_marketplace_id` | Referencia lógica, no FK | No afecta — borrar la property del user no toca el marketplace |
 
-### Paso 2 — Tipos TypeScript
+**No hay que tocar `marketplace_properties`**. El admin borra la copia del usuario, no la publicación del agente. El `source_marketplace_id` es solo una referencia lógica (no FK con cascade inverso).
 
-- Agregar `marketplaceStatus` al tipo `Property` en `src/types/property.ts`.
-- Actualizar el mapper `mapDbToProperty` en `src/lib/mappers/propertyMappers.ts` para incluir el nuevo campo.
+### Plan de implementación
 
-### Paso 3 — UI en PropertyCard
+1. **Migración SQL**: Agregar política RLS para que admins puedan hacer `DELETE` en `properties` (actualmente solo el owner puede).
 
-- Reutilizar el mismo `STATUS_OVERLAY_CONFIG` del `MarketplaceCard` (reservada, vendida, alquilada).
-- Pasar un `statusOverlay` al `PropertyCardBase` cuando `marketplaceStatus` sea `reserved`, `sold` o `rented`.
-- El overlay se muestra encima de la foto, idéntico al marketplace.
+2. **UI en `AdminPublicaciones.tsx`**:
+   - Agregar botón de eliminar (ícono Trash2) en cada fila.
+   - Al hacer click, abrir un `AlertDialog` de confirmación.
+   - Al confirmar, ejecutar `supabase.from("properties").delete().eq("id", id)` — los comentarios se borran en cascada automáticamente.
+   - Actualizar la lista local tras el delete.
 
 ### Archivos a modificar
-
-1. Nueva migración SQL (1 archivo)
-2. `src/types/property.ts` — agregar campo
-3. `src/lib/mappers/propertyMappers.ts` — mapear campo
-4. `src/components/PropertyCard.tsx` — mostrar overlay
+- Nueva migración SQL (1 política RLS)
+- `src/components/admin/AdminPublicaciones.tsx` (botón + diálogo + lógica delete)
 
