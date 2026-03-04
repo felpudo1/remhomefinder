@@ -191,7 +191,7 @@ export function PropertyDetailModal({
               <span className="font-medium">{currencySymbol(property.currency)} {property.priceRent.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Expensas</span>
+              <span className="text-muted-foreground">Gastos comunes</span>
               <span className="font-medium">{currencySymbol(property.currency)} {property.priceExpenses.toLocaleString()}</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">

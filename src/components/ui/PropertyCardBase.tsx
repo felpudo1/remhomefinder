@@ -154,7 +154,7 @@ export function PropertyCardBase({
                         {listingType === "rent" ? (
                             <div className="text-xs text-muted-foreground mt-0.5">
                                 Alquiler {currencySymbol(currency)} {priceRent.toLocaleString()} +{" "}
-                                Expensas {currencySymbol(currency)} {priceExpenses.toLocaleString()}
+                                Gastos comunes {currencySymbol(currency)} {priceExpenses.toLocaleString()}
                             </div>
                         ) : (
                             <div className="text-xs text-muted-foreground mt-0.5">

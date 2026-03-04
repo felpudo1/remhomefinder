@@ -6,17 +6,22 @@ import { Bot, Save, RotateCcw, Info, Loader2 } from "lucide-react";
 
 // Prompts base por defecto: uno para usuarios y otro para agentes
 const DEFAULT_PROMPT_USER = `Sos un extractor de avisos inmobiliarios de Uruguay y Argentina. Reglas estrictas:
-- MONEDA: Si la URL contiene ".uy" → UYU. Si contiene ".com.ar" o precio en "$" → ARS. "U$S" o "USD" → USD.
-- PRECIO: En infocasas/gallito, el precio principal es el alquiler. Extraé también expensas si aparecen.
-- BARRIO: Extraé el barrio o zona mencionada. NUNCA pongas la ciudad, solo el barrio.
+- TIPO DE OPERACIÓN (PRIORIDAD MÁXIMA): Determiná si el aviso es alquiler o venta.
+  → Palabras clave de VENTA: "venta", "en venta", "se vende", "precio de venta", "compra". Retorná listingType: "sale"
+  → Palabras clave de ALQUILER: "alquiler", "se alquila", "arriendo", "renta". Retorná listingType: "rent"
+  → Ante duda: las ventas tienen precios altos en USD sin cuota mensual; los alquileres tienen precio mensual + gastos comunes.
+- MONEDA: URL con ".uy" → UYU. "U$S" o "USD" → USD. "$" sin aclaración → ARS.
+- PRECIO: En alquiler extraé precio mensual + gastos comunes/G.C./expensas por separado. En venta, extraé el precio total en priceRent y dejá priceExpenses en 0.
+- BARRIO: Solo el barrio o zona. NUNCA la ciudad.
 - AMBIENTES: "monoambiente" = 1, "1 dormitorio" = 2, "2 dormitorios" = 3. (ambientes = dormitorios + 1)
-- SUPERFICIE: Extraé los metros cuadrados. Diferenciá entre superficie total y cubierta si aparecen.
-- RESUMEN: Hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
-- Si un dato no está disponible, dejá el número en 0 o el texto vacío. Never invent data.`;
+- SUPERFICIE: Priorizá metros cubiertos sobre totales si ambos aparecen.
+- RESUMEN: 1-2 oraciones. Mencioná siempre si es venta o alquiler.
+- Dato no disponible → número 0 o texto vacío. Never invent data.`;
 
 const DEFAULT_PROMPT_AGENT = `Sos un extractor de avisos inmobiliarios profesional para agencias de Uruguay y Argentina. Reglas estrictas:
 - MONEDA: Si la URL contiene ".uy" → UYU. Si contiene ".com.ar" o precio en "$" → ARS. "U$S" o "USD" → USD.
-- PRECIO: Extraé precio de alquiler/venta y expensas/gastos comunes por separado.
+- PRECIO: Extraé precio de alquiler/venta y gastos comunes por separado.
+- TIPO DE OPERACIÓN: Si el aviso es una venta, retorná listingType: "sale". Si es alquiler, retorná listingType: "rent". Buscá palabras como "venta", "en venta", "se vende", "compra", "sale price" para determinar si es venta.
 - BARRIO: Extraé el barrio o zona mencionada. NUNCA pongas la ciudad, solo el barrio.
 - AMBIENTES: "monoambiente" = 1, "1 dormitorio" = 2, "2 dormitorios" = 3. (ambientes = dormitorios + 1)
 - SUPERFICIE: Extraé los metros cuadrados. Diferenciá entre superficie total y cubierta si aparecen.

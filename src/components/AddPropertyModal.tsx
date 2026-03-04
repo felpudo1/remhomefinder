@@ -120,6 +120,10 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
       });
+      // Aplicar el tipo de operación detectado por la IA (sale o rent)
+      if (d.listingType === "sale" || d.listingType === "rent") {
+        setListingType(d.listingType);
+      }
       setStep("manual");
       toast.success("¡Datos extraídos con IA!");
     } catch (err) {

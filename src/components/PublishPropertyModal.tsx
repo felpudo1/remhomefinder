@@ -355,7 +355,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
               </div>
               {listingType === "rent" && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expensas</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gastos comunes</Label>
                   <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="0" className="rounded-xl h-10" />
                 </div>
               )}
