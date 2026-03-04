@@ -239,7 +239,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="url"
-                  placeholder="https://zonaprop.com.ar/..."
+                  placeholder="http://intocasas.com.uy/..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   className="pl-9 rounded-xl"
@@ -349,12 +349,12 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Título *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="ej. 2 ambientes en Palermo" className="rounded-xl text-sm" />
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl text-sm" />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Barrio *</Label>
-              <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="ej. Palermo, Recoleta..." className="rounded-xl text-sm" />
+              <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

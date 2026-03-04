@@ -250,52 +250,56 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            {propertyToEdit ? "Editar Propiedad" : (step === "url" ? "Publicar con IA" : "Confirmar Publicación")}
+          <DialogTitle className="text-lg font-bold">
+            {propertyToEdit ? "Editar Propiedad" : (step === "url" ? "Agregar Propiedad" : "Confirmar Publicación")}
           </DialogTitle>
         </DialogHeader>
 
         {step === "url" ? (
-          <div className="space-y-6 py-4">
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Pegá la URL de la propiedad</Label>
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              {/* Label del input URL */}
+              <Label className="text-sm font-medium">Pegá la URL del aviso</Label>
               <div className="relative">
-                <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="url"
-                  placeholder="https://www.zonaprop.com.ar/propiedades/..."
+                  placeholder="http://intocasas.com.uy/..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="pl-10 h-12 rounded-2xl bg-muted/50 border-0 focus-visible:ring-primary"
+                  className="pl-9 rounded-xl"
                   onKeyDown={(e) => e.key === "Enter" && handleScrape()}
                 />
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Nuestra IA extraerá fotos, precios, barrio y descripción automáticamente para que no tengas que cargar nada a mano.
+              {/* Texto de ayuda */}
+              <p className="text-xs text-muted-foreground">
+                Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
+              </p>
+              {/* Advertencia sobre redes sociales */}
+              <p className="text-xs text-amber-600 font-medium">
+                Las publicaciones de MarketPlace, IG y RRSS hay que ingresarlas manualmente.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleScrape}
-                className="h-12 rounded-2xl gap-2 text-md shadow-lg shadow-primary/20"
-                disabled={!url.trim() || isLoading}
-              >
-                {isLoading ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Procesando...</>
-                ) : (
-                  <><Sparkles className="w-5 h-5" /> Extraer datos del aviso</>
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setStep("manual")}
-                className="h-12 rounded-2xl text-muted-foreground hover:text-foreground"
-              >
-                Omitir e ingresar manualmente
-              </Button>
+            {/* Botón principal de scraping */}
+            <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
+              ) : (
+                <><Sparkles className="w-4 h-4" />Extraer datos de la publicación</>
+              )}
+            </Button>
+
+            {/* Separador */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
             </div>
+
+            {/* Botón manual */}
+            <Button variant="outline" onClick={() => setStep("manual")} className="w-full rounded-xl">
+              Agregar manualmente
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 py-2">
@@ -347,7 +351,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Depto 3 amb en Palermo" className="rounded-xl h-10" />
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl h-10" />
             </div>
 
             <div className="space-y-1.5">
@@ -388,7 +392,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Barrio</Label>
-                <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Palermo" className="rounded-xl h-10" />
+                <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl h-10" />
               </div>
             </div>
 
