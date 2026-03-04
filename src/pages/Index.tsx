@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG } from "@/types/property";
+import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG, UserStatus } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { PropertyCard } from "@/components/PropertyCard";
@@ -14,6 +14,7 @@ import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
 import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, CheckCircle2, Users, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,23 +33,9 @@ const Index = () => {
   const { userEmail, handleLogout } = useAuthRedirect();
   const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
 
-  // Profile status
-  type UserStatus = "active" | "pending" | "suspended" | "rejected";
-  const [profileStatus, setProfileStatus] = useState<UserStatus>("active");
-
-  useEffect(() => {
-    const fetchStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("status")
-        .eq("user_id", user.id)
-        .single();
-      if (data?.status) setProfileStatus(data.status as UserStatus);
-    };
-    fetchStatus();
-  }, []);
+  // Estado del perfil del usuario — centralizado en useProfile
+  const { data: profile } = useProfile();
+  const profileStatus = profile?.status ?? "active";
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");

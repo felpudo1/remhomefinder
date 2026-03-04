@@ -66,15 +66,21 @@ export function AdminUsuarios({ toast }: Props) {
     };
 
     const updateStatus = async (userId: string, newStatus: UserProfile["status"]) => {
+        // Update optimista: actualizar el estado local de inmediato sin esperar al servidor
+        const previousUsers = users;
+        setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, status: newStatus } : u));
+
         const { error } = await supabase.rpc("admin_update_profile_status", {
             _user_id: userId,
             _status: newStatus,
         });
+
         if (error) {
+            // Rollback: revertir al estado anterior si falló
+            setUsers(previousUsers);
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } else {
             toast({ title: "Estado actualizado", description: `Cambiado a "${STATUS_CONFIG[newStatus].label}".` });
-            fetchUsers();
         }
     };
 
@@ -112,13 +118,12 @@ export function AdminUsuarios({ toast }: Props) {
                         </div>
                         <div className="flex items-center gap-2">
                             <Shield className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                                user.roles.includes("admin") ? "bg-red-100 text-red-700" :
-                                user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
-                                "bg-gray-100 text-gray-600"
-                            }`}>
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.roles.includes("admin") ? "bg-red-100 text-red-700" :
+                                    user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
+                                        "bg-gray-100 text-gray-600"
+                                }`}>
                                 {user.roles.includes("admin") ? "Admin" :
-                                 user.roles.includes("agency") ? "Agente" : "Usuario"}
+                                    user.roles.includes("agency") ? "Agente" : "Usuario"}
                             </span>
                         </div>
                         <div>

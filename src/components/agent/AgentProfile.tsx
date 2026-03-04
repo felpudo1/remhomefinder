@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, Clock, CheckCircle, Trash2, Ban } from "lucide-react";
+import { UserStatus } from "@/types/property";
 
 export interface Agency {
     id: string;
@@ -8,12 +9,9 @@ export interface Agency {
     contact_email: string;
     contact_phone: string;
     contact_person_phone: string;
-    status: "pending" | "approved" | "rejected" | "suspended";
     description: string;
     created_at: string;
 }
-
-type UserStatus = "active" | "pending" | "suspended" | "rejected";
 
 const statusConfig = {
     pending: { label: "Pendiente de aprobación", icon: Clock, variant: "outline" as const, className: "border-yellow-500/30 text-yellow-700 bg-yellow-500/10" },
@@ -28,7 +26,8 @@ interface AgentProfileProps {
 }
 
 export const AgentProfile = ({ agency, profileStatus }: AgentProfileProps) => {
-    const status = profileStatus || (agency.status === "approved" ? "active" : agency.status);
+    // Status viene siempre de profiles via useProfile — ya no hay agency.status
+    const status = profileStatus ?? "active";
     const sc = statusConfig[status];
     const StatusIcon = sc?.icon;
 

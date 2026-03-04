@@ -1,0 +1,4 @@
+{
+    "summary": "AdminAgencias actualizado: ya no escribe en agencies.status, solo en profiles.status via RPC. Se aplicó update optimista con rollback. Se eliminó el `as any`. Listo para que JP ejecute el DROP COLUMN SQL.",
+    "current_status": "Falta el DROP COLUMN SQL de agencies.status para cerrar la deuda técnica. El código ya está listo para esa migración."
+}

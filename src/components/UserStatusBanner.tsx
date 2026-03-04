@@ -1,6 +1,5 @@
-import { Clock, Ban, Trash2, AlertTriangle } from "lucide-react";
-
-type UserStatus = "active" | "pending" | "suspended" | "rejected";
+import { Clock, Ban, Trash2 } from "lucide-react";
+import { UserStatus } from "@/types/property";
 
 const STATUS_BANNERS: Record<Exclude<UserStatus, "active">, {
   icon: React.ElementType;

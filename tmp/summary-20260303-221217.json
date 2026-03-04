@@ -1,0 +1,4 @@
+{
+    "summary": "useAuth.ts actualizado para que los agentes arranquen con status 'pending' al registrarse. Los usuarios normales mantienen el default 'active' de la BD. Cambio mínimo, en el lugar correcto.",
+    "current_status": "El flujo completo de status de usuarios está correctamente implementado end-to-end."
+}

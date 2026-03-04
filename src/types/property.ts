@@ -2,6 +2,9 @@ export type ListingType = "rent" | "sale";
 
 export type PropertyStatus = "ingresado" | "contacted" | "coordinated" | "visited" | "discarded" | "a_analizar" | "eliminado";
 
+/** Estado del perfil de usuario en la plataforma (tabla profiles.status) */
+export type UserStatus = "active" | "pending" | "suspended" | "rejected";
+
 export interface PropertyComment {
   id: string;
   author: string;

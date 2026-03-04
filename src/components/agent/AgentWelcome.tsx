@@ -21,6 +21,11 @@ export const AgentWelcome = ({ userName }: AgentWelcomeProps) => {
                 Gracias por elegirnos para potenciar tus ventas y escalar tus propiedades. Tu cuenta fue creada exitosamente y actualmente se encuentra en un rápido proceso de revisión.
             </p>
 
+            {/* Aviso de notificación — entre el texto intro y las tarjetas */}
+            <div className="mb-10 inline-flex items-center justify-center px-6 py-3 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold text-base md:text-lg gap-2">
+                Te notificaremos apenas tu cuenta sea activada.
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl w-full text-left">
                 <div className="p-6 rounded-3xl bg-card border border-border shadow-sm flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow">
                     <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center shrink-0">
@@ -49,10 +54,6 @@ export const AgentWelcome = ({ userName }: AgentWelcomeProps) => {
                         </p>
                     </div>
                 </div>
-            </div>
-
-            <div className="mt-12 inline-flex items-center justify-center px-6 py-3 rounded-full bg-muted/50 text-sm text-muted-foreground border border-border/50">
-                Te notificaremos por correo electrónico apenas tu cuenta sea activada.
             </div>
         </div>
     );

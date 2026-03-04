@@ -14,9 +14,10 @@ import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentHeader } from "@/components/AgentHeader";
 import { Footer } from "@/components/Footer";
+import { UserStatus } from "@/types/property";
+import { useProfile } from "@/hooks/useProfile";
 
 type AgentTab = "propiedades" | "estadisticas" | "perfil";
-type UserStatus = "active" | "pending" | "suspended" | "rejected";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
@@ -26,11 +27,14 @@ const TABS = [
 
 const AgentDashboard = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
-  const [profileStatus, setProfileStatus] = useState<UserStatus>("pending");
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
   const navigate = useNavigate();
+
+  // Perfil del usuario — status centralizado via useProfile
+  const { data: profile } = useProfile();
+  const profileStatus: UserStatus = profile?.status ?? "pending";
 
   useEffect(() => {
     const init = async () => {
@@ -41,16 +45,15 @@ const AgentDashboard = () => {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
 
-      // Fetch agency and profile status in parallel
-      const [agencyRes, profileRes] = await Promise.all([
-        supabase.from("agencies").select("*").eq("created_by", user.id).limit(1),
-        supabase.from("profiles").select("status").eq("user_id", user.id).single(),
-      ]);
+      // Solo fetch de agency — el profile status lo maneja useProfile
+      const { data: agencies, error: agencyErr } = await supabase
+        .from("agencies")
+        .select("*")
+        .eq("created_by", user.id)
+        .limit(1);
 
-      if (agencyRes.error) console.error(agencyRes.error.message);
-      else if (agencyRes.data && agencyRes.data.length > 0) setAgency(agencyRes.data[0] as Agency);
-
-      if (profileRes.data) setProfileStatus((profileRes.data as any).status || "active");
+      if (agencyErr) console.error(agencyErr.message);
+      else if (agencies && agencies.length > 0) setAgency(agencies[0] as Agency);
 
       setLoading(false);
     };
