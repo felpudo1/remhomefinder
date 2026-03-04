@@ -14,6 +14,7 @@ interface AdminProperty {
   marketplace_status: string | null;
   created_by_email: string;
   source_marketplace_id: string | null;
+  listing_type: "rent" | "sale";
   created_at: string;
 }
 
@@ -35,7 +36,7 @@ export function AdminPublicaciones({ toast }: Props) {
     setLoading(true);
     const { data, error } = await supabase
       .from("properties")
-      .select("id, title, url, status, marketplace_status, created_by_email, source_marketplace_id, created_at")
+      .select("id, title, url, status, marketplace_status, created_by_email, source_marketplace_id, listing_type, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -79,9 +80,10 @@ export function AdminPublicaciones({ toast }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
         <span>Título</span>
         <span>Usuario</span>
+        <span>Operación</span>
         <span>Marketplace</span>
         <span>Estado</span>
         <span>Acción</span>
@@ -94,7 +96,7 @@ export function AdminPublicaciones({ toast }: Props) {
           : null;
 
         return (
-          <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+          <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
             <div className="flex items-center gap-2 min-w-0">
               <span className="truncate text-foreground font-medium">{prop.title}</span>
               {prop.url && (
@@ -105,6 +107,11 @@ export function AdminPublicaciones({ toast }: Props) {
             </div>
             <div className="min-w-[120px]">
               <span className="text-xs text-muted-foreground truncate block max-w-[160px]">{prop.created_by_email || "—"}</span>
+            </div>
+            <div className="min-w-[70px]">
+              <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
+                {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
+              </Badge>
             </div>
             <div className="min-w-[80px]">
               {mkStatus ? (
