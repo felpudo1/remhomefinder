@@ -254,8 +254,6 @@ const Index = () => {
       {/* Navbar ahora es un componente modularizado */}
       <UserHeader
         userEmail={userEmail}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
         selectedStatuses={selectedStatuses}
         handleStatusToggle={handleStatusToggle}
         statusCounts={statusCounts}
@@ -308,6 +306,8 @@ const Index = () => {
                       onClearFilters={handleClearFilters}
                       totalCount={properties.length}
                       filteredCount={filteredAndSorted.length}
+                      searchQuery={searchQuery}
+                      onSearchChange={setSearchQuery}
                       mobileOpen={isMobileFiltersOpen}
                       onMobileClose={() => setIsMobileFiltersOpen(false)}
                     />

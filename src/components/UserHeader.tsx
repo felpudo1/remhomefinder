@@ -1,12 +1,9 @@
-import { Home, Search, User, Users, LogOut } from "lucide-react";
+import { Home, User, Users, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 
 interface HeaderProps {
     userEmail: string | null;
-    searchQuery: string;
-    setSearchQuery: (query: string) => void;
     selectedStatuses: PropertyStatus[];
     handleStatusToggle: (status: PropertyStatus) => void;
     statusCounts: Record<PropertyStatus, number>;
@@ -17,8 +14,6 @@ interface HeaderProps {
 
 export const UserHeader = ({
     userEmail,
-    searchQuery,
-    setSearchQuery,
     selectedStatuses,
     handleStatusToggle,
     statusCounts,
@@ -45,16 +40,6 @@ export const UserHeader = ({
                     </div>
                 </div>
 
-                {/* Buscador — se achica en mobile */}
-                <div className="flex-1 max-w-xs md:max-w-md relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
-                    />
-                </div>
 
                 {/* Filtros de estado rápidos — solo desktop */}
                 <div className="hidden md:flex items-center gap-2">
@@ -83,13 +68,14 @@ export const UserHeader = ({
                         <span className="max-w-[120px] truncate">{userEmail}</span>
                     </div>
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 ${activeGroupId ? "text-primary" : ""}`}
+                        variant={activeGroupId ? "default" : "outline"}
+                        size="sm"
+                        className="h-9 px-3 gap-2 rounded-xl text-sm font-medium"
                         onClick={() => setIsGroupsOpen(true)}
                         title="Grupos familiares"
                     >
                         <Users className="w-4 h-4" />
+                        <span>Compartir en familia</span>
                     </Button>
                     <Button
                         variant="ghost"

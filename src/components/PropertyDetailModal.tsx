@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import {
   Select,
   SelectContent,
@@ -215,33 +216,12 @@ export function PropertyDetailModal({
 
           {/* Status and Group Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5 text-left">
+            <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-foreground">Estado</span>
-              <Select
-                value={property.status}
-                onValueChange={(val) => onStatusChange(property.id, val as PropertyStatus)}
-              >
-                <SelectTrigger
-                  className={`w-full h-9 text-sm border-0 ${config.bg} ${config.color} font-medium rounded-lg px-3`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-                    <SelectValue />
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
-                    ([key, cfg]) => (
-                      <SelectItem key={key} value={key} className="text-sm">
-                        <span className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                          {cfg.label}
-                        </span>
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+                {config.label}
+              </span>
             </div>
 
             {groups.length > 0 && (

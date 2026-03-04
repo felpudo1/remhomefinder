@@ -1,6 +1,7 @@
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { SlidersHorizontal, X, Search } from "lucide-react";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
@@ -12,6 +13,8 @@ interface FilterSidebarProps {
   onClearFilters: () => void;
   totalCount: number;
   filteredCount: number;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
   // Props para mobile: controlan apertura/cierre del drawer
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -32,6 +35,8 @@ export function FilterSidebar({
   onClearFilters,
   totalCount,
   filteredCount,
+  searchQuery,
+  onSearchChange,
   mobileOpen = false,
   onMobileClose,
 }: FilterSidebarProps) {
@@ -67,6 +72,17 @@ export function FilterSidebar({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Buscador */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar propiedad..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
+        />
       </div>
 
       {/* Contador de resultados */}
