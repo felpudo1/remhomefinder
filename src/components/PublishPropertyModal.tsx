@@ -144,6 +144,10 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || "1"),
       });
+      // Aplicar el tipo de operación detectado por la IA
+      if (d.listingType === "sale" || d.listingType === "rent") {
+        setListingType(d.listingType);
+      }
       setStep("manual");
       sonnerToast.success("¡Datos extraídos con IA!");
     } catch (err) {
