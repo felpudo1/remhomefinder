@@ -37,7 +37,7 @@ export function DeletePropertyDialog({ open, onOpenChange, onConfirm, title }: D
                 <AlertDialogHeader>
                     <AlertDialogTitle>¿Eliminar esta propiedad?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        La propiedad "{title}" será marcada como eliminada. Indicá el motivo de la eliminación.
+                        La propiedad "<span className="font-medium">{title}</span>" será eliminada permanentemente junto con sus comentarios. Esta acción no se puede deshacer.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <Textarea

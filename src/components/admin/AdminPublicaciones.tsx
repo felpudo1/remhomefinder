@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { STATUS_CONFIG, type PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
+import { DeletePropertyDialog } from "@/components/property/DeletePropertyDialog";
 
 interface AdminProperty {
   id: string;
@@ -29,6 +31,7 @@ const PROPERTY_STATUSES: PropertyStatus[] = [
 export function AdminPublicaciones({ toast }: Props) {
   const [properties, setProperties] = useState<AdminProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<AdminProperty | null>(null);
 
   useEffect(() => { fetchProperties(); }, []);
 
@@ -66,6 +69,25 @@ export function AdminPublicaciones({ toast }: Props) {
     }
   };
 
+  const deleteProperty = async (reason: string) => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setProperties(p => p.filter(prop => prop.id !== id));
+    setDeleteTarget(null);
+
+    const { error } = await supabase
+      .from("properties")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
+      fetchProperties();
+    } else {
+      toast({ title: "Propiedad eliminada permanentemente" });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -82,13 +104,14 @@ export function AdminPublicaciones({ toast }: Props) {
     <div className="space-y-2">
       {/* Desktop: tabla con grid */}
       <div className="hidden lg:block">
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
           <span>Título</span>
           <span>Usuario</span>
           <span>Operación</span>
           <span>Marketplace</span>
           <span>Estado</span>
           <span>Acción</span>
+          <span></span>
         </div>
 
         {properties.map((prop) => {
@@ -98,7 +121,7 @@ export function AdminPublicaciones({ toast }: Props) {
             : null;
 
           return (
-            <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+            <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="truncate text-foreground font-medium">{prop.title}</span>
                 {prop.url && (
@@ -145,6 +168,16 @@ export function AdminPublicaciones({ toast }: Props) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => setDeleteTarget(prop)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           );
         })}
@@ -172,9 +205,19 @@ export function AdminPublicaciones({ toast }: Props) {
                   </div>
                   <span className="text-xs text-muted-foreground block mt-0.5">{prop.created_by_email || "—"}</span>
                 </div>
-                <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs shrink-0">
-                  {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
-                </Badge>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
+                    {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => setDeleteTarget(prop)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
@@ -204,6 +247,14 @@ export function AdminPublicaciones({ toast }: Props) {
           );
         })}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <DeletePropertyDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={deleteProperty}
+        title={deleteTarget?.title || ""}
+      />
     </div>
   );
 }
