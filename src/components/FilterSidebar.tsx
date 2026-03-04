@@ -60,7 +60,7 @@ export function FilterSidebar({
           {onMobileClose && (
             <button
               onClick={onMobileClose}
-              className="md:hidden text-muted-foreground hover:text-foreground transition-colors p-1"
+              className="lg:hidden text-muted-foreground hover:text-foreground transition-colors p-1"
               aria-label="Cerrar filtros"
             >
               <X className="w-4 h-4" />
@@ -129,18 +129,18 @@ export function FilterSidebar({
   return (
     <>
       {/* ── DESKTOP: sidebar fijo visible siempre ── */}
-      <aside className="hidden md:block w-64 shrink-0">{panelContent}</aside>
+      <aside className="hidden lg:block w-64 shrink-0">{panelContent}</aside>
 
-      {/* ── MOBILE: overlay drawer que se abre sobre el contenido ── */}
+      {/* ── MOBILE/TABLET: overlay drawer que se abre sobre el contenido ── */}
       {mobileOpen && (
         <>
           {/* Fondo oscuro detrás del drawer */}
           <div
-            className="fixed inset-0 bg-black/40 z-40 md:hidden"
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
             onClick={onMobileClose}
           />
           {/* Panel del drawer deslizando desde la izquierda */}
-          <div className="fixed inset-y-0 left-0 w-72 z-50 md:hidden overflow-y-auto bg-background p-4 shadow-2xl animate-slide-in-from-left">
+          <div className="fixed inset-y-0 left-0 w-72 z-50 lg:hidden overflow-y-auto bg-background p-4 shadow-2xl animate-slide-in-from-left">
             {panelContent}
           </div>
         </>
