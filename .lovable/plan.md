@@ -1,27 +1,30 @@
 
 
-## Plan: Corregir 2 problemas
+## Plan: Agregar `marketplace_status` a properties
 
-### 1. Build error en `AdminEstadisticas.tsx` (línea 28-32)
+Tu enfoque es el correcto y es la mejor opción. No hay una alternativa más "pro" — separar el estado del marketplace del estado personal del usuario es exactamente el patrón adecuado. El usuario mantiene su flujo (ingresado → contactado → coordinado → visitado) y además ve si el agente marcó la propiedad como vendida/reservada/alquilada.
 
-La migración que centralizó el status en `profiles` rompió esta query. La columna `status` ya no existe en `agencies`.
+### Paso 1 — Migración SQL
 
-**Fix**: Cambiar la query para contar agencias pendientes desde `profiles` en vez de `agencies`:
-- Reemplazar `supabase.from("agencies").select("id, status")` por una query a `profiles` con join a `user_roles` donde `role = 'agency'` y `status = 'pending'`.
+- Agregar columna `marketplace_status` (tipo `marketplace_property_status`, default `'active'`, nullable) a `properties`.
+- Actualizar el trigger `sync_marketplace_to_properties` para que también sincronice `marketplace_status = NEW.status`.
+- Backfill: actualizar las filas existentes que tengan `source_marketplace_id` con el status actual del marketplace.
 
-### 2. Scraping siempre marca "alquiler"
+### Paso 2 — Tipos TypeScript
 
-El código en el edge function ya tiene `listingType` en el schema y en la respuesta, y `AddPropertyModal` ya lo lee. El problema es que:
+- Agregar `marketplaceStatus` al tipo `Property` en `src/types/property.ts`.
+- Actualizar el mapper `mapDbToProperty` en `src/lib/mappers/propertyMappers.ts` para incluir el nuevo campo.
 
-1. El **FALLBACK_PROMPT** no menciona que debe detectar si es venta o alquiler — solo habla de moneda, barrio y resumen.
-2. La edge function probablemente **no está deployada** con los últimos cambios.
+### Paso 3 — UI en PropertyCard
 
-**Fix**:
-- Actualizar el `FALLBACK_PROMPT` para incluir instrucción explícita de detectar si el aviso es venta o alquiler.
-- Re-deployar la edge function `scrape-property`.
+- Reutilizar el mismo `STATUS_OVERLAY_CONFIG` del `MarketplaceCard` (reservada, vendida, alquilada).
+- Pasar un `statusOverlay` al `PropertyCardBase` cuando `marketplaceStatus` sea `reserved`, `sold` o `rented`.
+- El overlay se muestra encima de la foto, idéntico al marketplace.
 
 ### Archivos a modificar
-1. `src/components/admin/AdminEstadisticas.tsx` — query de pendingAgencies desde profiles
-2. `supabase/functions/scrape-property/index.ts` — mejorar FALLBACK_PROMPT
-3. Deploy de la edge function
+
+1. Nueva migración SQL (1 archivo)
+2. `src/types/property.ts` — agregar campo
+3. `src/lib/mappers/propertyMappers.ts` — mapear campo
+4. `src/components/PropertyCard.tsx` — mostrar overlay
 
