@@ -1,4 +1,4 @@
-import { Property, PropertyStatus, PropertyComment } from "@/types/property";
+import { Property, PropertyStatus, PropertyComment, MarketplacePropertyStatus } from "@/types/property";
 import { Database } from "@/integrations/supabase/types";
 
 import defaultHouse1 from "@/assets/default-house-1.jpg";
@@ -68,6 +68,7 @@ export function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property
         contactedName: db.contacted_name || "",
         groupId: db.group_id || null,
         sourceMarketplaceId: db.source_marketplace_id || null,
+        marketplaceStatus: (db as any).marketplace_status as MarketplacePropertyStatus | null ?? null,
         listingType: (db.listing_type as "rent" | "sale") || "rent",
     };
 }

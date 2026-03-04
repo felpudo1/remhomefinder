@@ -291,6 +291,9 @@ export type Database = {
           id: string
           images: string[]
           listing_type: Database["public"]["Enums"]["listing_type"]
+          marketplace_status:
+            | Database["public"]["Enums"]["marketplace_property_status"]
+            | null
           neighborhood: string
           price_expenses: number
           price_rent: number
@@ -321,6 +324,9 @@ export type Database = {
           id?: string
           images?: string[]
           listing_type?: Database["public"]["Enums"]["listing_type"]
+          marketplace_status?:
+            | Database["public"]["Enums"]["marketplace_property_status"]
+            | null
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
@@ -351,6 +357,9 @@ export type Database = {
           id?: string
           images?: string[]
           listing_type?: Database["public"]["Enums"]["listing_type"]
+          marketplace_status?:
+            | Database["public"]["Enums"]["marketplace_property_status"]
+            | null
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
