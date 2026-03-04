@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, XCircle, ExternalLink, CalendarIcon, Building2 } from "lucide-react";
+import { Trash2, XCircle, ExternalLink, CalendarIcon, Building2, Users } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,23 +131,36 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         </>
       }
       subImageContent={
-        <div className="px-4 pt-2 flex items-center justify-between gap-2">
-          {property.sourceMarketplaceId ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
-              <Building2 className="w-3 h-3" />
-              De agencia
-            </span>
-          ) : ownerEmail ? (
-            <span className="text-[11px] text-muted-foreground">
-              Ingresado por {ownerEmail}
-            </span>
-          ) : <span />}
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${property.listingType === "sale"
+        <div className="px-4 pt-2 space-y-1">
+          {/* Fila 1: Ingresado por (izq) + Tipo operación (der) */}
+          <div className="flex items-center justify-between gap-2">
+            {property.sourceMarketplaceId ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
+                <Building2 className="w-3 h-3" />
+                De agencia
+              </span>
+            ) : ownerEmail ? (
+              <span className="text-[11px] text-muted-foreground">
+                Ingresado por {ownerEmail}
+              </span>
+            ) : <span />}
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${property.listingType === "sale"
               ? "bg-accent/15 text-accent-foreground"
               : "bg-primary/10 text-primary"
-            }`}>
-            {property.listingType === "sale" ? "Venta" : "Alquiler"}
-          </span>
+              }`}>
+              {property.listingType === "sale" ? "Venta" : "Alquiler"}
+            </span>
+          </div>
+
+          {/* Fila 2: Badge de compartido — solo visible cuando la prop está en un grupo familiar */}
+          {property.groupId && (
+            <div className="flex justify-end">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                <Users className="w-3 h-3" />
+                Compartido por {ownerEmail || property.createdByEmail}
+              </span>
+            </div>
+          )}
         </div>
       }
       extraBodyContent={

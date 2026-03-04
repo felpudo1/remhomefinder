@@ -38,6 +38,8 @@ export function usePropertyQueries() {
             const { data: props, error: propsError } = await supabase
                 .from("properties")
                 .select("*")
+                // Excluir propiedades ocultadas por el administrador (soft delete)
+                .eq("admin_hidden", false)
                 .order("created_at", { ascending: false });
 
             if (propsError) throw propsError;
