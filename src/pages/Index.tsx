@@ -333,7 +333,7 @@ const Index = () => {
                           )}
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                           {filteredAndSorted.map((property) => (
                             <PropertyCard
                               key={property.id}
@@ -355,7 +355,7 @@ const Index = () => {
           {/* Botón flotante "Filtros" solo en mobile (abajo a la izquierda) */}
           <button
             onClick={() => setIsMobileFiltersOpen(true)}
-            className="fixed bottom-8 left-8 md:hidden flex items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow hover:card-shadow-hover transition-all duration-200 z-30 text-sm font-medium"
+            className="fixed bottom-8 left-8 lg:hidden flex items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow hover:card-shadow-hover transition-all duration-200 z-30 text-sm font-medium"
             aria-label="Abrir filtros"
           >
             <SlidersHorizontal className="w-4 h-4" />
