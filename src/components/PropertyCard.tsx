@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Property, PropertyStatus, STATUS_CONFIG } from "@/types/property";
+import { Property, PropertyStatus, STATUS_CONFIG, MarketplacePropertyStatus } from "@/types/property";
 import {
   Select,
   SelectContent,
@@ -35,6 +35,15 @@ function formatDateTime(date: Date): string {
   return format(date, "dd/MM/yyyy HH:mm");
 }
 
+const MARKETPLACE_STATUS_OVERLAY: Record<string, { label: string; className: string } | null> = {
+  active: null,
+  paused: null,
+  reserved: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  sold: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  rented: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+  deleted: null,
+};
+
 export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: PropertyCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
@@ -45,6 +54,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [showContactedConfirm, setShowContactedConfirm] = useState(false);
   const [contactedName, setContactedName] = useState("");
   const config = STATUS_CONFIG[property.status];
+  const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
 
   const handleStatusChange = (val: string) => {
     if (val === "eliminado") {
@@ -77,6 +87,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
       listingType={property.listingType}
       onClick={onClick}
       className={isEliminated || isDiscarded ? "opacity-60" : ""}
+      statusOverlay={
+        mktOverlay ? (
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${mktOverlay.className}`}>
+            {mktOverlay.label}
+          </span>
+        ) : undefined
+      }
       topOverlay={
         <>
           <span

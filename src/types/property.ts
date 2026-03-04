@@ -40,6 +40,7 @@ export interface Property {
   contactedName?: string;
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
+  marketplaceStatus?: MarketplacePropertyStatus | null;
   listingType: ListingType;
 }
 
