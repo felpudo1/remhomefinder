@@ -92,6 +92,7 @@ async function getPromptFromDb(role: string): Promise<string | null> {
 
 const FALLBACK_PROMPT = `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina.
 Analizá el contenido del aviso y extraé los datos de la propiedad.
+- Para listingType: determiná si el aviso es de VENTA ("sale") o ALQUILER ("rent"). Buscá palabras clave como "venta", "vendo", "se vende", "USD venta" para sale, o "alquiler", "alquilo", "se alquila", "/mes" para rent. Esto es CRÍTICO, no asumas alquiler por defecto.
 - Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares.
 - Para el barrio: extraé el barrio o zona mencionada.
 - Para el resumen: hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.

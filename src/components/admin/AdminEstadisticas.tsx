@@ -23,13 +23,18 @@ export function AdminEstadisticas() {
 
     const fetchStats = async () => {
         setLoading(true);
-        const [propertiesRes, agenciesRes, usersRes] = await Promise.all([
+        const [propertiesRes, agenciesRes, pendingRes, usersRes] = await Promise.all([
             supabase.from("properties").select("id", { count: "exact", head: true }),
-            supabase.from("agencies").select("id, status", { count: "exact" }),
+            supabase.from("agencies").select("id", { count: "exact", head: true }),
+            supabase
+                .from("profiles")
+                .select("user_id, status, user_roles!inner(role)")
+                .eq("status", "pending")
+                .eq("user_roles.role", "agency"),
             supabase.from("user_roles").select("user_id", { count: "exact", head: true }),
         ]);
 
-        const pendingAgencies = (agenciesRes.data || []).filter(a => a.status === "pending").length;
+        const pendingAgencies = pendingRes.data?.length || 0;
 
         setStats({
             totalProperties: propertiesRes.count || 0,
