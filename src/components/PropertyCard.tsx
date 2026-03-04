@@ -114,20 +114,25 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         </>
       }
       subImageContent={
-        property.sourceMarketplaceId ? (
-          <div className="px-4 pt-2">
+        <div className="px-4 pt-2 flex items-center gap-2">
+          {property.sourceMarketplaceId ? (
             <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
               <Building2 className="w-3 h-3" />
               De agencia
             </span>
-          </div>
-        ) : ownerEmail ? (
-          <div className="px-4 pt-2">
+          ) : ownerEmail ? (
             <span className="text-[11px] text-muted-foreground">
               Ingresado por {ownerEmail}
             </span>
-          </div>
-        ) : null
+          ) : null}
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
+            property.listingType === "sale"
+              ? "bg-accent/15 text-accent-foreground"
+              : "bg-primary/10 text-primary"
+          }`}>
+            {property.listingType === "sale" ? "Venta" : "Alquiler"}
+          </span>
+        </div>
       }
       extraBodyContent={
         <>
