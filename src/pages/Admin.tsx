@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
   Shield, Building2, Users, Bot, BarChart3,
-  LogOut, ArrowLeft, Loader2, Settings
+  LogOut, ArrowLeft, Loader2, Settings, FileText
 } from "lucide-react";
 import { ROUTES, ROLES } from "@/lib/constants";
 
@@ -14,12 +14,13 @@ import { AdminUsuarios } from "@/components/admin/AdminUsuarios";
 import { AdminPrompt } from "@/components/admin/AdminPrompt";
 import { AdminEstadisticas } from "@/components/admin/AdminEstadisticas";
 import { AdminSystem } from "@/components/admin/AdminSystem";
+import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 
-type AdminSection = "agentes" | "usuarios" | "prompt" | "estadisticas" | "sistema";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "prompt" | "estadisticas" | "sistema";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "prompt", "estadisticas", "sistema"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "prompt", "estadisticas", "sistema"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -29,6 +30,7 @@ const MENU_ITEMS: {
 }[] = [
     { id: "agentes", label: "Agentes", icon: Building2, description: "Solicitudes y estado de agencias" },
     { id: "usuarios", label: "Usuarios", icon: Users, description: "Todos los usuarios registrados" },
+    { id: "publicaciones", label: "Publicaciones", icon: FileText, description: "Todas las publicaciones guardadas por usuarios" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
@@ -98,6 +100,7 @@ const Admin = () => {
     switch (activeSection) {
       case "agentes": return <AdminAgencias toast={toast} />;
       case "usuarios": return <AdminUsuarios toast={toast} />;
+      case "publicaciones": return <AdminPublicaciones toast={toast} />;
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;
