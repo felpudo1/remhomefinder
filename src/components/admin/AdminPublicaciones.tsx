@@ -5,15 +5,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { STATUS_CONFIG, type PropertyStatus } from "@/types/property";
-import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
+import { PROPERTY_STATUS_LABELS, AGENT_PROPERTY_STATUSES } from "@/lib/constants";
 import { DeletePropertyDialog } from "@/components/property/DeletePropertyDialog";
+
+type MarketplaceStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";
+
+const MK_STATUS_COLORS: Record<MarketplaceStatus, string> = {
+  active: "bg-emerald-100 text-emerald-700",
+  paused: "bg-amber-100 text-amber-700",
+  reserved: "bg-blue-100 text-blue-700",
+  sold: "bg-gray-100 text-gray-600",
+  rented: "bg-violet-100 text-violet-700",
+  deleted: "bg-red-100 text-red-700",
+};
 
 interface AdminProperty {
   id: string;
   title: string;
   url: string;
   status: PropertyStatus;
-  marketplace_status: string | null;
+  marketplace_status: MarketplaceStatus | null;
   created_by_email: string;
   source_marketplace_id: string | null;
   listing_type: "rent" | "sale";
@@ -23,10 +34,6 @@ interface AdminProperty {
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
-
-const PROPERTY_STATUSES: PropertyStatus[] = [
-  "ingresado", "contacted", "coordinated", "visited", "a_analizar", "discarded", "eliminado",
-];
 
 export function AdminPublicaciones({ toast }: Props) {
   const [properties, setProperties] = useState<AdminProperty[]>([]);
@@ -52,21 +59,37 @@ export function AdminPublicaciones({ toast }: Props) {
     setLoading(false);
   };
 
-  const updateStatus = async (id: string, newStatus: PropertyStatus) => {
+  const updateMarketplaceStatus = async (prop: AdminProperty, newStatus: MarketplaceStatus) => {
     const prev = properties;
-    setProperties(p => p.map(prop => prop.id === id ? { ...prop, status: newStatus } : prop));
+    setProperties(p => p.map(pr => pr.id === prop.id ? { ...pr, marketplace_status: newStatus } : pr));
 
-    const { error } = await supabase
-      .from("properties")
-      .update({ status: newStatus })
-      .eq("id", id);
+    // If linked to marketplace, update the source (trigger syncs to all copies)
+    if (prop.source_marketplace_id) {
+      const { error } = await supabase
+        .from("marketplace_properties")
+        .update({ status: newStatus })
+        .eq("id", prop.source_marketplace_id);
 
-    if (error) {
-      setProperties(prev);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      if (error) {
+        setProperties(prev);
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
     } else {
-      toast({ title: "Estado actualizado" });
+      // No marketplace source, update directly on properties
+      const { error } = await supabase
+        .from("properties")
+        .update({ marketplace_status: newStatus })
+        .eq("id", prop.id);
+
+      if (error) {
+        setProperties(prev);
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
     }
+
+    toast({ title: "Estado de publicación actualizado" });
   };
 
   const deleteProperty = async (reason: string) => {
@@ -88,6 +111,10 @@ export function AdminPublicaciones({ toast }: Props) {
     }
   };
 
+  const getStatusOptions = (listingType: "rent" | "sale"): readonly string[] => {
+    return listingType === "sale" ? AGENT_PROPERTY_STATUSES.SALE : AGENT_PROPERTY_STATUSES.RENT;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -102,26 +129,23 @@ export function AdminPublicaciones({ toast }: Props) {
 
   return (
     <div className="space-y-2">
-      {/* Desktop: tabla con grid */}
+      {/* Desktop */}
       <div className="hidden lg:block">
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
           <span>Título</span>
           <span>Usuario</span>
           <span>Operación</span>
-          <span>Marketplace</span>
-          <span>Estado</span>
-          <span>Acción</span>
+          <span>Estado publicación</span>
+          <span>Cambiar estado</span>
           <span></span>
         </div>
 
         {properties.map((prop) => {
-          const sc = STATUS_CONFIG[prop.status];
-          const mkStatus = prop.marketplace_status && prop.marketplace_status !== "active"
-            ? PROPERTY_STATUS_LABELS[prop.marketplace_status] || prop.marketplace_status
-            : null;
+          const mkLabel = prop.marketplace_status ? PROPERTY_STATUS_LABELS[prop.marketplace_status] || prop.marketplace_status : "—";
+          const mkColor = prop.marketplace_status ? MK_STATUS_COLORS[prop.marketplace_status] || "" : "";
 
           return (
-            <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+            <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="truncate text-foreground font-medium">{prop.title}</span>
                 {prop.url && (
@@ -138,31 +162,27 @@ export function AdminPublicaciones({ toast }: Props) {
                   {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
                 </Badge>
               </div>
-              <div className="min-w-[80px]">
-                {mkStatus ? (
-                  <Badge variant="secondary" className="text-xs">{mkStatus}</Badge>
+              <div className="min-w-[90px]">
+                {prop.marketplace_status ? (
+                  <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${mkColor}`}>
+                    {mkLabel}
+                  </span>
                 ) : (
                   <span className="text-xs text-muted-foreground">—</span>
                 )}
               </div>
-              <div className="min-w-[100px]">
-                <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${sc.bg} ${sc.color}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                  {sc.label}
-                </span>
-              </div>
-              <div className="shrink-0 min-w-[140px]">
-                <Select value={prop.status} onValueChange={(v) => updateStatus(prop.id, v as PropertyStatus)}>
-                  <SelectTrigger className="h-8 rounded-xl text-xs w-[140px]">
-                    <SelectValue />
+              <div className="shrink-0 min-w-[150px]">
+                <Select
+                  value={prop.marketplace_status || ""}
+                  onValueChange={(v) => updateMarketplaceStatus(prop, v as MarketplaceStatus)}
+                >
+                  <SelectTrigger className="h-8 rounded-xl text-xs w-[150px]">
+                    <SelectValue placeholder="Sin estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PROPERTY_STATUSES.map((s) => (
+                    {getStatusOptions(prop.listing_type).map((s) => (
                       <SelectItem key={s} value={s}>
-                        <span className="flex items-center gap-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[s].dot}`} />
-                          {STATUS_CONFIG[s].label}
-                        </span>
+                        {PROPERTY_STATUS_LABELS[s] || s}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -183,13 +203,11 @@ export function AdminPublicaciones({ toast }: Props) {
         })}
       </div>
 
-      {/* Mobile: cards apiladas */}
+      {/* Mobile */}
       <div className="lg:hidden space-y-3">
         {properties.map((prop) => {
-          const sc = STATUS_CONFIG[prop.status];
-          const mkStatus = prop.marketplace_status && prop.marketplace_status !== "active"
-            ? PROPERTY_STATUS_LABELS[prop.marketplace_status] || prop.marketplace_status
-            : null;
+          const mkLabel = prop.marketplace_status ? PROPERTY_STATUS_LABELS[prop.marketplace_status] || prop.marketplace_status : null;
+          const mkColor = prop.marketplace_status ? MK_STATUS_COLORS[prop.marketplace_status] || "" : "";
 
           return (
             <div key={prop.id} className="rounded-xl border border-border p-4 space-y-3 bg-card">
@@ -221,24 +239,26 @@ export function AdminPublicaciones({ toast }: Props) {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${sc.bg} ${sc.color}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                  {sc.label}
-                </span>
-                {mkStatus && <Badge variant="secondary" className="text-xs">{mkStatus}</Badge>}
+                {mkLabel ? (
+                  <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${mkColor}`}>
+                    {mkLabel}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Sin estado de publicación</span>
+                )}
               </div>
 
-              <Select value={prop.status} onValueChange={(v) => updateStatus(prop.id, v as PropertyStatus)}>
+              <Select
+                value={prop.marketplace_status || ""}
+                onValueChange={(v) => updateMarketplaceStatus(prop, v as MarketplaceStatus)}
+              >
                 <SelectTrigger className="h-8 rounded-xl text-xs w-full">
-                  <SelectValue placeholder="Cambiar estado" />
+                  <SelectValue placeholder="Cambiar estado publicación" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROPERTY_STATUSES.map((s) => (
+                  {getStatusOptions(prop.listing_type).map((s) => (
                     <SelectItem key={s} value={s}>
-                      <span className="flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[s].dot}`} />
-                        {STATUS_CONFIG[s].label}
-                      </span>
+                      {PROPERTY_STATUS_LABELS[s] || s}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -248,7 +268,6 @@ export function AdminPublicaciones({ toast }: Props) {
         })}
       </div>
 
-      {/* Delete confirmation dialog */}
       <DeletePropertyDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
