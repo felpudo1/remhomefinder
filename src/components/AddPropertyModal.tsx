@@ -457,6 +457,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </p>
             </div>
 
+            {/* Aviso importante sobre Marketplace y RRSS */}
+            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">
+              <strong>AVISO:</strong> Para ingresar publicaciones de MARKETPLACE y redes sociales, debe sacar captura con los datos y click en <strong>Analizar fotos de RRSS</strong> o agregar las publicaciones manualmente.
+            </div>
+
             <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
               {isLoading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
@@ -495,7 +500,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               )}
             </Button>
 
-            {/* Input oculto para selección de screenshots (máx 3) — LEGACY */}
+            {/* BACKUP: Input oculto para selección de screenshots (máx 3) — LEGACY
             <input
               ref={imageAnalysisRef}
               type="file"
@@ -505,13 +510,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               onChange={(e) => handleImageAnalysis(e.target.files)}
             />
 
-            {/* Separador */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
               <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
             </div>
 
-            {/* LEGACY: Botón para analizar screenshots base64 */}
             <Button
               variant="outline"
               onClick={() => imageAnalysisRef.current?.click()}
@@ -530,11 +533,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
             </div>
 
-            {/* LEGACY: Botón captura única */}
             <Button variant="outline" onClick={() => setStep("image-upload")} className="w-full rounded-xl gap-2 opacity-60">
               <Camera className="w-4 h-4" />
               Ingresar captura de RRSS para analizar
             </Button>
+            END BACKUP */}
 
             <Button variant="ghost" onClick={() => setStep("manual")} className="w-full rounded-xl text-muted-foreground text-sm">
               Agregar manualmente
