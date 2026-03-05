@@ -28,10 +28,21 @@ const DEFAULT_PROMPT_AGENT = `Sos un extractor de avisos inmobiliarios profesion
 - RESUMEN: Hacé un resumen profesional de 2-3 oraciones orientado a la venta/alquiler del inmueble.
 - Si un dato no está disponible, dejá el número en 0 o el texto vacío. Never invent data.`;
 
+const DEFAULT_PROMPT_IMAGE = `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina a partir de capturas de pantalla de publicaciones en redes sociales (Instagram, Facebook Marketplace, etc.).
+Analizá la imagen y extraé los datos de la propiedad que puedas identificar.
+- TIPO DE OPERACIÓN: Determiná si el aviso es de VENTA ("sale") o ALQUILER ("rent"). Buscá palabras clave como "venta", "vendo", "se vende", "USD venta" para sale, o "alquiler", "alquilo", "se alquila", "/mes" para rent.
+- MONEDA: Usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares.
+- BARRIO: Extraé el barrio o zona mencionada. NUNCA pongas la ciudad.
+- AMBIENTES: "monoambiente" = 1, "1 dormitorio" = 2, "2 dormitorios" = 3 (ambientes = dormitorios + 1).
+- SUPERFICIE: Priorizá metros cubiertos sobre totales.
+- RESUMEN: Hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso. Mencioná si es venta o alquiler.
+- IMPORTANTE: Si un dato no está disponible o no se puede leer claramente en la imagen, dejalo vacío (string vacío) o en 0. No inventes datos.`;
+
 // Claves en la tabla app_settings de Supabase
 const SETTINGS_KEYS = {
   user: "scraper_prompt_user",
   agent: "scraper_prompt_agent",
+  image: "image_extract_prompt_user",
 } as const;
 
 interface Props {
@@ -46,22 +57,24 @@ interface Props {
 export function AdminPrompt({ toast }: Props) {
   const [promptUser, setPromptUser] = useState(DEFAULT_PROMPT_USER);
   const [promptAgent, setPromptAgent] = useState(DEFAULT_PROMPT_AGENT);
+  const [promptImage, setPromptImage] = useState(DEFAULT_PROMPT_IMAGE);
   const [savedUser, setSavedUser] = useState(true);
   const [savedAgent, setSavedAgent] = useState(true);
+  const [savedImage, setSavedImage] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // Cargar prompts desde Supabase al montar el componente
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
         .from("app_settings")
         .select("key, value")
-        .in("key", [SETTINGS_KEYS.user, SETTINGS_KEYS.agent]);
+        .in("key", [SETTINGS_KEYS.user, SETTINGS_KEYS.agent, SETTINGS_KEYS.image]);
 
       if (data) {
         for (const row of data) {
           if (row.key === SETTINGS_KEYS.user) setPromptUser(row.value);
           if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
+          if (row.key === SETTINGS_KEYS.image) setPromptImage(row.value);
         }
       }
       setLoading(false);
@@ -69,14 +82,14 @@ export function AdminPrompt({ toast }: Props) {
     load();
   }, []);
 
-  // Guardar prompt en Supabase por tipo
-  const handleSave = async (type: "user" | "agent") => {
+  const handleSave = async (type: "user" | "agent" | "image") => {
     const key = SETTINGS_KEYS[type];
-    const value = type === "user" ? promptUser : promptAgent;
+    const value = type === "user" ? promptUser : type === "agent" ? promptAgent : promptImage;
+    const labels = { user: "usuarios", agent: "agentes", image: "extracción de imágenes" };
 
     const { error } = await supabase
       .from("app_settings")
-      .upsert({ key, value, description: `Prompt del scraper para ${type}s` }, { onConflict: "key" });
+      .upsert({ key, value, description: `Prompt para ${labels[type]}` }, { onConflict: "key" });
 
     if (error) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
@@ -84,17 +97,18 @@ export function AdminPrompt({ toast }: Props) {
     }
 
     if (type === "user") setSavedUser(true);
-    else setSavedAgent(true);
+    else if (type === "agent") setSavedAgent(true);
+    else setSavedImage(true);
     toast({
       title: "Prompt guardado",
-      description: `El prompt de ${type === "user" ? "usuarios" : "agentes"} se actualizó correctamente.`,
+      description: `El prompt de ${labels[type]} se actualizó correctamente.`,
     });
   };
 
-  // Resetear prompt al valor por defecto
-  const handleReset = (type: "user" | "agent") => {
+  const handleReset = (type: "user" | "agent" | "image") => {
     if (type === "user") { setPromptUser(DEFAULT_PROMPT_USER); setSavedUser(false); }
-    else { setPromptAgent(DEFAULT_PROMPT_AGENT); setSavedAgent(false); }
+    else if (type === "agent") { setPromptAgent(DEFAULT_PROMPT_AGENT); setSavedAgent(false); }
+    else { setPromptImage(DEFAULT_PROMPT_IMAGE); setSavedImage(false); }
     toast({ title: "Prompt reseteado", description: "Volvió a los valores originales. Guardá para confirmar." });
   };
 
@@ -139,6 +153,16 @@ export function AdminPrompt({ toast }: Props) {
         onChange={(v) => { setPromptAgent(v); setSavedAgent(false); }}
         onSave={() => handleSave("agent")}
         onReset={() => handleReset("agent")}
+      />
+
+      {/* Editor de Prompt para Extracción de Imágenes */}
+      <PromptEditor
+        label="Prompt Extracción de Imágenes (RRSS)"
+        value={promptImage}
+        saved={savedImage}
+        onChange={(v) => { setPromptImage(v); setSavedImage(false); }}
+        onSave={() => handleSave("image")}
+        onReset={() => handleReset("image")}
       />
     </div>
   );
