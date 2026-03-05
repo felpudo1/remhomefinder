@@ -296,7 +296,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="url"
-                  placeholder="http://intocasas.com.uy/..."
+                  placeholder="http://intocasas.com.uy"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   className="pl-9 rounded-xl"
@@ -421,16 +421,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </div>
             </div>
 
-            {scrapedImages.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Fotos extraídas ({scrapedImages.length})</Label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {scrapedImages.slice(0, 6).map((img, i) => (
-                    <img key={i} src={img} alt={`Foto ${i + 1}`} className="w-20 h-16 rounded-lg object-cover shrink-0 border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  ))}
-                </div>
-              </div>
-            )}
 
             {form.aiSummary && (
               <div className="bg-muted rounded-xl p-3 text-xs text-muted-foreground flex gap-2">
@@ -439,12 +429,49 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </div>
             )}
 
+            {/* Fotos section - moved up, highlighted when coming from image */}
+            <div className={`space-y-1.5 ${cameFromImage ? "bg-primary/5 border border-primary/20 rounded-xl p-3" : ""}`}>
+              <Label className="text-xs font-medium flex items-center gap-1">
+                <ImageIcon className="w-3 h-3" />
+                {cameFromImage ? "📸 Agregá fotos reales de la propiedad" : "Fotos"}
+              </Label>
+              {cameFromImage && scrapedImages.length === 0 && (
+                <p className="text-[10px] text-muted-foreground">La IA no puede extraer fotos desde capturas. Subí hasta 3 fotos reales.</p>
+              )}
+              {scrapedImages.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {scrapedImages.map((img, i) => (
+                    <div key={i} className="relative shrink-0">
+                      <img src={img} alt={`Foto ${i + 1}`} className="w-16 h-12 rounded-lg object-cover border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      <button type="button" onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input type="url" placeholder="https://... URL de la foto" value={manualImageUrl} onChange={(e) => setManualImageUrl(e.target.value)} className="rounded-xl text-sm flex-1" onKeyDown={(e) => { if (e.key === "Enter" && manualImageUrl.trim()) { e.preventDefault(); setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); } }} />
+                <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" disabled={!manualImageUrl.trim()} onClick={() => { setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); }}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex gap-2 items-center">
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
+                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+                  {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                  {isUploading ? "Subiendo..." : "Subir desde dispositivo"}
+                </Button>
+                <p className="text-[10px] text-muted-foreground">o pegá URLs arriba</p>
+              </div>
+            </div>
+
             {/* Link de la publicación */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Link de la publicación</Label>
               <div className="relative">
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} onBlur={() => checkDuplicateUrl(url)} placeholder="https://zonaprop.com.ar/..." className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
+                <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} onBlur={() => checkDuplicateUrl(url)} placeholder="http://intocasas.com.uy" className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
               </div>
               {urlDuplicated && (
                 <p className="text-xs text-destructive font-medium">⚠️ Esta URL ya fue ingresada. Revisá tus propiedades existentes.</p>
@@ -489,41 +516,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </div>
             </div>
 
-            {/* Fotos section - highlighted when coming from image */}
-            <div className={`space-y-1.5 ${cameFromImage ? "bg-primary/5 border border-primary/20 rounded-xl p-3" : ""}`}>
-              <Label className="text-xs font-medium flex items-center gap-1">
-                <ImageIcon className="w-3 h-3" />
-                {cameFromImage ? "📸 Agregá fotos reales de la propiedad" : "Fotos"}
-              </Label>
-              {cameFromImage && scrapedImages.length === 0 && (
-                <p className="text-[10px] text-muted-foreground">La IA no puede extraer fotos desde capturas. Subí hasta 3 fotos reales.</p>
-              )}
-              {scrapedImages.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {scrapedImages.map((img, i) => (
-                    <div key={i} className="relative shrink-0">
-                      <img src={img} alt={`Foto ${i + 1}`} className="w-16 h-12 rounded-lg object-cover border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                      <button type="button" onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center">
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Input type="url" placeholder="https://... URL de la foto" value={manualImageUrl} onChange={(e) => setManualImageUrl(e.target.value)} className="rounded-xl text-sm flex-1" onKeyDown={(e) => { if (e.key === "Enter" && manualImageUrl.trim()) { e.preventDefault(); setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); } }} />
-                <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" disabled={!manualImageUrl.trim()} onClick={() => { setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); }}>
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2 items-center">
-                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
-                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
-                  {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                  {isUploading ? "Subiendo..." : "Subir desde dispositivo"}
-                </Button>
-                <p className="text-[10px] text-muted-foreground">o pegá URLs arriba</p>
-              </div>
+            {/* Warning banner */}
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200">
+              ⚠️ Por favor chequeá y completá los datos antes de agregar la propiedad.
             </div>
 
             {/* Group selector */}
