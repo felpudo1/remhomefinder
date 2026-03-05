@@ -17,31 +17,72 @@ async function getImagePromptFromDb(): Promise<string | null> {
 }
 
 const FALLBACK_PROMPT = `Sos un asistente que extrae datos de avisos inmobiliarios de Uruguay y Argentina a partir de capturas de pantalla de publicaciones en redes sociales (Instagram, Facebook Marketplace, etc.).
-Analizá la imagen y extraé los datos de la propiedad que puedas identificar.
+Analizá la(s) imagen(es) y extraé los datos de la propiedad que puedas identificar.
 - Para listingType: determiná si el aviso es de VENTA ("sale") o ALQUILER ("rent"). Buscá palabras clave como "venta", "vendo", "se vende", "USD venta" para sale, o "alquiler", "alquilo", "se alquila", "/mes" para rent.
 - Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares.
 - Para el barrio: extraé el barrio o zona mencionada.
 - Para el resumen: hacé un resumen breve de 1-2 oraciones destacando lo más importante del aviso.
 - IMPORTANTE: Si un dato no está disponible o no se puede leer claramente en la imagen, dejalo vacío (string vacío) o en 0. No inventes datos.`;
 
+const toolSchema = {
+  type: "function" as const,
+  function: {
+    name: "extract_property_data",
+    description: "Extract structured property data from a real estate listing screenshot",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Título descriptivo de la propiedad" },
+        listingType: { type: "string", enum: ["sale", "rent"], description: "Tipo de operación: 'sale' para venta, 'rent' para alquiler" },
+        priceRent: { type: "number", description: "Precio de alquiler mensual (o precio total de venta si listingType es sale). 0 si no se detecta." },
+        priceExpenses: { type: "number", description: "Gastos comunes/expensas mensuales. 0 si no se detecta." },
+        currency: { type: "string", description: "Moneda: USD, UYU o ARS" },
+        neighborhood: { type: "string", description: "Barrio o zona. Vacío si no se detecta." },
+        sqMeters: { type: "number", description: "Superficie en metros cuadrados. 0 si no se detecta." },
+        rooms: { type: "number", description: "Cantidad de ambientes/dormitorios. 0 si no se detecta." },
+        aiSummary: { type: "string", description: "Resumen breve del aviso con lo que se pudo identificar" },
+      },
+      required: ["title", "listingType", "aiSummary"],
+      additionalProperties: false,
+    },
+  },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imageUrl, role = "user" } = await req.json();
-    if (!imageUrl) {
-      return new Response(JSON.stringify({ success: false, error: "imageUrl is required" }), {
+    // Acepta imageUrl (string) o imageUrls (string[])
+    const body = await req.json();
+    const { role = "user" } = body;
+
+    // Normalizar a array de URLs
+    let urls: string[] = [];
+    if (body.imageUrls && Array.isArray(body.imageUrls)) {
+      urls = body.imageUrls.slice(0, 3);
+    } else if (body.imageUrl) {
+      urls = [body.imageUrl];
+    }
+
+    if (urls.length === 0) {
+      return new Response(JSON.stringify({ success: false, error: "imageUrl o imageUrls es requerido" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`Extracting property data from image (role: ${role}):`, imageUrl);
+    console.log(`Extracting property data from ${urls.length} image(s) (role: ${role}):`, urls);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const dbPrompt = await getImagePromptFromDb();
     const systemPrompt = dbPrompt || FALLBACK_PROMPT;
+
+    // Construir contenido multimodal con todas las imágenes
+    const imageContent = urls.map((url) => ({
+      type: "image_url" as const,
+      image_url: { url },
+    }));
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -53,34 +94,12 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraé los datos de esta captura de pantalla de un aviso inmobiliario publicado en redes sociales:" },
-              { type: "image_url", image_url: { url: imageUrl } },
+              { type: "text", text: "Extraé los datos de esta(s) captura(s) de pantalla de un aviso inmobiliario publicado en redes sociales:" },
+              ...imageContent,
             ],
           },
         ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "extract_property_data",
-            description: "Extract structured property data from a real estate listing screenshot",
-            parameters: {
-              type: "object",
-              properties: {
-                title: { type: "string", description: "Título descriptivo de la propiedad" },
-                listingType: { type: "string", enum: ["sale", "rent"], description: "Tipo de operación: 'sale' para venta, 'rent' para alquiler" },
-                priceRent: { type: "number", description: "Precio de alquiler mensual (o precio total de venta si listingType es sale). 0 si no se detecta." },
-                priceExpenses: { type: "number", description: "Gastos comunes/expensas mensuales. 0 si no se detecta." },
-                currency: { type: "string", description: "Moneda: USD, UYU o ARS" },
-                neighborhood: { type: "string", description: "Barrio o zona. Vacío si no se detecta." },
-                sqMeters: { type: "number", description: "Superficie en metros cuadrados. 0 si no se detecta." },
-                rooms: { type: "number", description: "Cantidad de ambientes/dormitorios. 0 si no se detecta." },
-                aiSummary: { type: "string", description: "Resumen breve del aviso con lo que se pudo identificar" },
-              },
-              required: ["title", "listingType", "aiSummary"],
-              additionalProperties: false,
-            },
-          },
-        }],
+        tools: [toolSchema],
         tool_choice: { type: "function", function: { name: "extract_property_data" } },
       }),
     });

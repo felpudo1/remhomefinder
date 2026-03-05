@@ -63,8 +63,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Ref para el input oculto de análisis de screenshots
   const imageAnalysisRef = useRef<HTMLInputElement>(null);
+  // Ref para el nuevo botón unificado
+  const unifiedImageRef = useRef<HTMLInputElement>(null);
   // Estado de carga para el análisis de imágenes
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
+  const [isAnalyzingUnified, setIsAnalyzingUnified] = useState(false);
   const [form, setForm] = useState({
     title: "",
     priceRent: "",
@@ -75,6 +78,74 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     rooms: "",
     aiSummary: "",
   });
+
+  /**
+   * NUEVO: Botón unificado — sube 1-3 fotos a Storage y llama extract-from-image
+   * con URLs públicas. Usa el prompt configurable desde DB.
+   */
+  const handleUnifiedImageAnalysis = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsAnalyzingUnified(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Debés estar logueado"); setIsAnalyzingUnified(false); return; }
+
+      // Subir cada imagen a Storage (máx 3)
+      const uploadedUrls: string[] = [];
+      for (const file of Array.from(files).slice(0, 3)) {
+        if (!file.type.startsWith("image/")) continue;
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
+        if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
+        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      if (uploadedUrls.length === 0) {
+        toast.error("No se pudieron subir las imágenes.");
+        setIsAnalyzingUnified(false);
+        return;
+      }
+
+      // Llamar extract-from-image con imageUrls (array)
+      const { data, error } = await supabase.functions.invoke("extract-from-image", {
+        body: { imageUrls: uploadedUrls, role: "user" },
+      });
+
+      if (error || !data?.success) {
+        const errMsg = data?.error || "No pudimos extraer datos de las imágenes. Completá manualmente.";
+        toast.info("📋 " + errMsg, { duration: 8000 });
+        setCameFromImage(true);
+        setStep("manual");
+        setIsAnalyzingUnified(false);
+        return;
+      }
+
+      const d = data.data;
+      setForm({
+        title: d.title || "",
+        priceRent: d.priceRent ? String(d.priceRent) : "",
+        priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
+        currency: d.currency || "UYU",
+        neighborhood: d.neighborhood || "",
+        sqMeters: d.sqMeters ? String(d.sqMeters) : "",
+        rooms: d.rooms ? String(d.rooms) : "",
+        aiSummary: d.aiSummary || "",
+      });
+      if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
+      setCameFromImage(true);
+      setStep("manual");
+      toast.success("¡Datos extraídos de las imágenes con IA!");
+    } catch (err) {
+      console.error("Unified image analysis error:", err);
+      toast.error("Error al analizar las imágenes. Intentá de nuevo.");
+    } finally {
+      setIsAnalyzingUnified(false);
+      if (unifiedImageRef.current) unifiedImageRef.current.value = "";
+    }
+  };
 
   /**
    * Analiza screenshots de publicaciones inmobiliarias usando Gemini Vision.
@@ -382,7 +453,37 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               )}
             </Button>
 
-            {/* Input oculto para selección de screenshots (máx 3) */}
+            {/* Input oculto para nuevo botón unificado (máx 3) */}
+            <input
+              ref={unifiedImageRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleUnifiedImageAnalysis(e.target.files)}
+            />
+
+            {/* Separador */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
+            </div>
+
+            {/* NUEVO botón unificado: sube a Storage + extract-from-image con prompt DB */}
+            <Button
+              variant="outline"
+              onClick={() => unifiedImageRef.current?.click()}
+              disabled={isAnalyzingUnified || isAnalyzingImages || isLoading}
+              className="w-full rounded-xl gap-2"
+            >
+              {isAnalyzingUnified ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Analizando imágenes...</>
+              ) : (
+                <><Camera className="w-4 h-4" />Analizar fotos de RRSS (1-3 imágenes)</>
+              )}
+            </Button>
+
+            {/* Input oculto para selección de screenshots (máx 3) — LEGACY */}
             <input
               ref={imageAnalysisRef}
               type="file"
@@ -392,18 +493,18 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               onChange={(e) => handleImageAnalysis(e.target.files)}
             />
 
-            {/* Separador entre URL y análisis de imágenes */}
+            {/* Separador */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
               <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
             </div>
 
-            {/* Botón para analizar screenshots de publicaciones de RRSS */}
+            {/* LEGACY: Botón para analizar screenshots base64 */}
             <Button
               variant="outline"
               onClick={() => imageAnalysisRef.current?.click()}
               disabled={isAnalyzingImages || isLoading}
-              className="w-full rounded-xl gap-2"
+              className="w-full rounded-xl gap-2 opacity-60"
             >
               {isAnalyzingImages ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Analizando imágenes...</>
@@ -417,7 +518,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
             </div>
 
-            <Button variant="outline" onClick={() => setStep("image-upload")} className="w-full rounded-xl gap-2">
+            {/* LEGACY: Botón captura única */}
+            <Button variant="outline" onClick={() => setStep("image-upload")} className="w-full rounded-xl gap-2 opacity-60">
               <Camera className="w-4 h-4" />
               Ingresar captura de RRSS para analizar
             </Button>
