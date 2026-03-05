@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users } from "lucide-react";
+import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,18 +41,23 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"url" | "manual">("url");
+  const [step, setStep] = useState<"url" | "image-upload" | "manual">("url");
+  const [cameFromImage, setCameFromImage] = useState(false);
 
-  // Sync with activeGroupId when it changes or when modal opens
+  // Image upload state
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const screenshotInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (open) {
       setSelectedGroupId(activeGroupId || null);
     }
   }, [open, activeGroupId]);
+
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  // Estado para indicar si la URL ya existe en la base de datos
   const [urlDuplicated, setUrlDuplicated] = useState(false);
   const [isCheckingUrl, setIsCheckingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +76,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     if (!url.trim()) return;
     setIsLoading(true);
     try {
-      // Primero verificar si la URL ya existe en la base de datos antes de gastar créditos de scraping
       const { data: existing } = await supabase
         .from("properties")
         .select("id")
@@ -87,10 +91,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         body: { url: url.trim(), scraper, role: "user" },
       });
 
-      // supabase.functions.invoke puts non-2xx response body into error.context
       if (error || !data?.success) {
         let errorMsg = "No pudimos extraer datos automáticamente. Completá los datos manualmente.";
-        // Try to get message from the error context (non-2xx responses)
         try {
           const errBody = typeof error?.context === "string" ? JSON.parse(error.context) : error?.context;
           if (errBody?.error === "MARKETPLACE_MANUAL" || errBody?.message) {
@@ -120,7 +122,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
       });
-      // Aplicar el tipo de operación detectado por la IA (sale o rent)
       if (d.listingType === "sale" || d.listingType === "rent") {
         setListingType(d.listingType);
       }
@@ -129,6 +130,74 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     } catch (err) {
       console.error("Scrape error:", err);
       toast.error("Error al conectar con el servicio de scraping");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Image analysis ---
+  const handleScreenshotSelect = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file.type.startsWith("image/")) {
+      toast.error("Seleccioná una imagen");
+      return;
+    }
+    setScreenshotFile(file);
+    setScreenshotPreview(URL.createObjectURL(file));
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!screenshotFile) return;
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Debés estar logueado"); setIsLoading(false); return; }
+
+      // Upload screenshot to storage
+      const ext = screenshotFile.name.split(".").pop() || "jpg";
+      const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, screenshotFile);
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+      const imageUrl = urlData.publicUrl;
+
+      // Call extract-from-image
+      const { data, error } = await supabase.functions.invoke("extract-from-image", {
+        body: { imageUrl, role: "user" },
+      });
+
+      if (error || !data?.success) {
+        const errMsg = data?.error || "No pudimos extraer datos de la imagen. Completá manualmente.";
+        toast.info("📋 " + errMsg, { duration: 8000 });
+        setCameFromImage(true);
+        setStep("manual");
+        setIsLoading(false);
+        return;
+      }
+
+      const d = data.data;
+      setScrapedImages(d.images || []);
+      setForm({
+        title: d.title || "",
+        priceRent: d.priceRent ? String(d.priceRent) : "",
+        priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
+        currency: d.currency || "USD",
+        neighborhood: d.neighborhood || "",
+        sqMeters: d.sqMeters ? String(d.sqMeters) : "",
+        rooms: d.rooms ? String(d.rooms) : "",
+        aiSummary: d.aiSummary || "",
+      });
+      if (d.listingType === "sale" || d.listingType === "rent") {
+        setListingType(d.listingType);
+      }
+      setCameFromImage(true);
+      setStep("manual");
+      toast.success("¡Datos extraídos de la imagen!");
+    } catch (err) {
+      console.error("Image analysis error:", err);
+      toast.error("Error al analizar la imagen");
     } finally {
       setIsLoading(false);
     }
@@ -164,28 +233,14 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     }
   };
 
-  /**
-   * Verifica si la URL ya existe en la base de datos
-   * Se ejecuta cuando el usuario termina de escribir la URL en modo manual
-   */
   const checkDuplicateUrl = async (urlToCheck: string) => {
-    if (!urlToCheck.trim()) {
-      setUrlDuplicated(false);
-      return;
-    }
+    if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     setIsCheckingUrl(true);
     try {
-      const { data } = await supabase
-        .from("properties")
-        .select("id")
-        .eq("url", urlToCheck.trim())
-        .limit(1);
+      const { data } = await supabase.from("properties").select("id").eq("url", urlToCheck.trim()).limit(1);
       setUrlDuplicated(!!(data && data.length > 0));
-    } catch {
-      setUrlDuplicated(false);
-    } finally {
-      setIsCheckingUrl(false);
-    }
+    } catch { setUrlDuplicated(false); }
+    finally { setIsCheckingUrl(false); }
   };
 
   const handleSubmit = () => {
@@ -215,11 +270,13 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setUrlDuplicated(false);
     setListingType("rent");
     setStep("url");
+    setCameFromImage(false);
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
     setIsLoading(false);
     onClose();
   };
 
-  // Validación: formulario válido solo si no hay URL duplicada
   const isFormValid = form.title && form.neighborhood && form.priceRent && !urlDuplicated;
 
   return (
@@ -227,7 +284,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
-            {step === "url" ? "Agregar Propiedad" : "Detalles de la Propiedad"}
+            {step === "url" ? "Agregar Propiedad" : step === "image-upload" ? "Analizar captura de RRSS" : "Detalles de la Propiedad"}
           </DialogTitle>
         </DialogHeader>
 
@@ -249,9 +306,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               <p className="text-xs text-muted-foreground">
                 Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
               </p>
-              <p className="text-xs text-amber-600 font-medium">
-                Las publicaciones de MarketPlace, IG y RRSS hay que ingresarlas manualmente.
-              </p>
             </div>
 
             <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
@@ -267,50 +321,112 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
             </div>
 
-            <Button variant="outline" onClick={() => setStep("manual")} className="w-full rounded-xl">
+            <Button variant="outline" onClick={() => setStep("image-upload")} className="w-full rounded-xl gap-2">
+              <Camera className="w-4 h-4" />
+              Ingresar captura de RRSS para analizar
+            </Button>
+
+            <Button variant="ghost" onClick={() => setStep("manual")} className="w-full rounded-xl text-muted-foreground text-sm">
               Agregar manualmente
             </Button>
           </div>
         )}
 
+        {step === "image-upload" && (
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Subí una captura de pantalla del aviso</Label>
+              <p className="text-xs text-muted-foreground">
+                Seleccioná una captura de Instagram, Facebook Marketplace u otra red social. La IA extraerá los datos que pueda detectar.
+              </p>
+            </div>
+
+            <input
+              ref={screenshotInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleScreenshotSelect(e.target.files)}
+            />
+
+            {screenshotPreview ? (
+              <div className="relative">
+                <img
+                  src={screenshotPreview}
+                  alt="Captura"
+                  className="w-full max-h-64 object-contain rounded-xl border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setScreenshotFile(null); setScreenshotPreview(null); }}
+                  className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => screenshotInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
+              >
+                <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Tocá para seleccionar la captura</span>
+              </button>
+            )}
+
+            <Button
+              onClick={handleAnalyzeImage}
+              disabled={!screenshotFile || isLoading}
+              className="w-full rounded-xl gap-2"
+            >
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Analizando imagen...</>
+              ) : (
+                <><Sparkles className="w-4 h-4" />Analizar con IA</>
+              )}
+            </Button>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setStep("url"); setScreenshotFile(null); setScreenshotPreview(null); }} className="flex-1 rounded-xl">
+                Volver
+              </Button>
+              <Button variant="ghost" onClick={() => { setCameFromImage(true); setStep("manual"); }} className="flex-1 rounded-xl text-muted-foreground text-sm">
+                Saltar y completar manual
+              </Button>
+            </div>
+          </div>
+        )}
+
         {step === "manual" && (
           <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
+            {/* Nota cuando viene de análisis de imagen */}
+            {cameFromImage && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200 flex gap-2">
+                <Camera className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <p>Datos extraídos desde captura. <strong>Revisá y completá</strong> los campos faltantes. Agregá fotos reales de la propiedad abajo.</p>
+              </div>
+            )}
+
             {/* Tipo de operación */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Tipo de operación</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={listingType === "rent" ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => setListingType("rent")}
-                >
+                <Button type="button" variant={listingType === "rent" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("rent")}>
                   Alquiler
                 </Button>
-                <Button
-                  type="button"
-                  variant={listingType === "sale" ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => setListingType("sale")}
-                >
+                <Button type="button" variant={listingType === "sale" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("sale")}>
                   Venta
                 </Button>
               </div>
             </div>
+
             {scrapedImages.length > 0 && (
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Fotos extraídas ({scrapedImages.length})</Label>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {scrapedImages.slice(0, 6).map((img, i) => (
-                    <img
-                      key={i}
-                      src={img}
-                      alt={`Foto ${i + 1}`}
-                      className="w-20 h-16 rounded-lg object-cover shrink-0 border border-border"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
+                    <img key={i} src={img} alt={`Foto ${i + 1}`} className="w-20 h-16 rounded-lg object-cover shrink-0 border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                   ))}
                 </div>
               </div>
@@ -323,27 +439,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </div>
             )}
 
-            {/* Campo para pegar el link de la publicación (visible en modo manual) */}
+            {/* Link de la publicación */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Link de la publicación</Label>
               <div className="relative">
                 <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="url"
-                  value={url}
-                  onChange={(e) => {
-                    setUrl(e.target.value);
-                    setUrlDuplicated(false);
-                  }}
-                  onBlur={() => checkDuplicateUrl(url)}
-                  placeholder="https://zonaprop.com.ar/..."
-                  className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`}
-                />
+                <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} onBlur={() => checkDuplicateUrl(url)} placeholder="https://zonaprop.com.ar/..." className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
               </div>
               {urlDuplicated && (
-                <p className="text-xs text-destructive font-medium">
-                  ⚠️ Esta URL ya fue ingresada. Revisá tus propiedades existentes.
-                </p>
+                <p className="text-xs text-destructive font-medium">⚠️ Esta URL ya fue ingresada. Revisá tus propiedades existentes.</p>
               )}
             </div>
 
@@ -385,10 +489,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            {/* Fotos section - highlighted when coming from image */}
+            <div className={`space-y-1.5 ${cameFromImage ? "bg-primary/5 border border-primary/20 rounded-xl p-3" : ""}`}>
               <Label className="text-xs font-medium flex items-center gap-1">
-                <ImageIcon className="w-3 h-3" /> Fotos
+                <ImageIcon className="w-3 h-3" />
+                {cameFromImage ? "📸 Agregá fotos reales de la propiedad" : "Fotos"}
               </Label>
+              {cameFromImage && scrapedImages.length === 0 && (
+                <p className="text-[10px] text-muted-foreground">La IA no puede extraer fotos desde capturas. Subí hasta 3 fotos reales.</p>
+              )}
               {scrapedImages.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {scrapedImages.map((img, i) => (
@@ -402,51 +511,14 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 </div>
               )}
               <div className="flex gap-2">
-                <Input
-                  type="url"
-                  placeholder="https://... URL de la foto"
-                  value={manualImageUrl}
-                  onChange={(e) => setManualImageUrl(e.target.value)}
-                  className="rounded-xl text-sm flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && manualImageUrl.trim()) {
-                      e.preventDefault();
-                      setScrapedImages(prev => [...prev, manualImageUrl.trim()]);
-                      setManualImageUrl("");
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="rounded-xl shrink-0"
-                  disabled={!manualImageUrl.trim()}
-                  onClick={() => {
-                    setScrapedImages(prev => [...prev, manualImageUrl.trim()]);
-                    setManualImageUrl("");
-                  }}
-                >
+                <Input type="url" placeholder="https://... URL de la foto" value={manualImageUrl} onChange={(e) => setManualImageUrl(e.target.value)} className="rounded-xl text-sm flex-1" onKeyDown={(e) => { if (e.key === "Enter" && manualImageUrl.trim()) { e.preventDefault(); setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); } }} />
+                <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" disabled={!manualImageUrl.trim()} onClick={() => { setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); }}>
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
               <div className="flex gap-2 items-center">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e.target.files)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl gap-1.5 text-xs"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
+                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
                   {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                   {isUploading ? "Subiendo..." : "Subir desde dispositivo"}
                 </Button>
@@ -475,7 +547,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setStep("url")} className="flex-1 rounded-xl">Volver</Button>
+              <Button variant="outline" onClick={() => { setStep(cameFromImage ? "image-upload" : "url"); }} className="flex-1 rounded-xl">Volver</Button>
               <Button onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">Agregar Propiedad</Button>
             </div>
           </div>
