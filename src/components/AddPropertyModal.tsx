@@ -156,27 +156,37 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setIsAnalyzingImages(true);
 
     try {
-      // Convertir cada archivo a base64 data URL
-      const toBase64 = (file: File): Promise<string> =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Debés estar logueado"); setIsAnalyzingImages(false); return; }
 
-      const base64Images = await Promise.all(
-        Array.from(files).slice(0, 3).map(toBase64)
-      );
+      // Subir cada imagen a Storage (máx 3)
+      const uploadedUrls: string[] = [];
+      for (const file of Array.from(files).slice(0, 3)) {
+        if (!file.type.startsWith("image/")) continue;
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
+        if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
+        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+        uploadedUrls.push(urlData.publicUrl);
+      }
 
-      // Llamar Edge Function con images en vez de url
-      const { data, error } = await supabase.functions.invoke("scrape-property", {
-        body: { images: base64Images, role: "user" },
+      if (uploadedUrls.length === 0) {
+        toast.error("No se pudieron subir las imágenes.");
+        setIsAnalyzingImages(false);
+        return;
+      }
+
+      // Llamar extract-from-image con URLs de Storage
+      const { data, error } = await supabase.functions.invoke("extract-from-image", {
+        body: { imageUrls: uploadedUrls, role: "user" },
       });
 
       if (error || !data?.success) {
-        const msg = data?.error || error?.message || "No se pudieron analizar las imágenes.";
-        toast.error(msg);
+        const msg = data?.error || error?.message || "No se pudieron analizar las imágenes. Completá manualmente.";
+        toast.info("📋 " + msg, { duration: 8000 });
+        setCameFromImage(true);
+        setStep("manual");
         setIsAnalyzingImages(false);
         return;
       }
@@ -194,6 +204,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         aiSummary: d.aiSummary || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
+      // Agregar las imágenes subidas a la galería
+      setScrapedImages(prev => [...prev, ...uploadedUrls]);
+      setCameFromImage(true);
       setStep("manual");
       toast.success("¡Datos extraídos de las imágenes con IA!");
     } catch (err) {
@@ -201,7 +214,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       toast.error("Error al analizar las imágenes. Intentá de nuevo.");
     } finally {
       setIsAnalyzingImages(false);
-      // Limpiar el input para permitir re-selección del mismo archivo
       if (imageAnalysisRef.current) imageAnalysisRef.current.value = "";
     }
   };
