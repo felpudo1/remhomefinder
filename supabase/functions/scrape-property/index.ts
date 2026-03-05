@@ -159,15 +159,114 @@ async function extractWithAI(markdown: string, role: string): Promise<Record<str
   return JSON.parse(toolCall.function.arguments);
 }
 
+/**
+ * Extrae datos de una propiedad a partir de screenshots (base64 data URLs).
+ * Usa Gemini Vision via la gateway de Lovable.
+ * @param images - Array de data URLs en base64 (ej: "data:image/jpeg;base64,...")
+ */
+async function extractWithVision(images: string[]): Promise<Record<string, any>> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  // Construir el contenido multimodal: imagen(es) + texto de instrucción
+  const imageContent = images.slice(0, 3).map((dataUrl) => ({
+    type: "image_url",
+    image_url: { url: dataUrl },
+  }));
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.0-flash",
+      messages: [{
+        role: "user",
+        content: [
+          ...imageContent,
+          {
+            type: "text",
+            text: `Analizá esta(s) imagen(es) de un aviso inmobiliario de Uruguay o Argentina y extraé los datos de la propiedad.
+- Para listingType: determiná si es VENTA ("sale") o ALQUILER ("rent").
+- Para moneda: usá "UYU" para pesos uruguayos, "ARS" para pesos argentinos, "USD" para dólares.
+- Para el barrio: extraé el barrio o zona mencionada.
+- Para el resumen: hacé un resumen breve de 1-2 oraciones.
+- Si un dato no está visible, dejalo vacío o en 0.`,
+          },
+        ],
+      }],
+      tools: [{
+        type: "function",
+        function: {
+          name: "extract_property_data",
+          description: "Extract structured property data from a real estate listing screenshot",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Título descriptivo de la propiedad" },
+              listingType: { type: "string", enum: ["sale", "rent"], description: "Tipo de operación" },
+              priceRent: { type: "number", description: "Precio de alquiler o de venta" },
+              priceExpenses: { type: "number", description: "Gastos comunes (0 si no aplica)" },
+              currency: { type: "string", description: "Moneda: USD, UYU o ARS" },
+              neighborhood: { type: "string", description: "Barrio o zona" },
+              sqMeters: { type: "number", description: "Superficie en metros cuadrados" },
+              rooms: { type: "number", description: "Cantidad de ambientes" },
+              aiSummary: { type: "string", description: "Resumen breve del aviso" },
+            },
+            required: ["title", "listingType", "neighborhood", "aiSummary"],
+            additionalProperties: false,
+          },
+        },
+      }],
+      tool_choice: { type: "function", function: { name: "extract_property_data" } },
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    const status = aiResponse.status;
+    if (status === 429) throw new Error("Demasiadas solicitudes. Intentá de nuevo en unos segundos.");
+    if (status === 402) throw new Error("Créditos de IA agotados.");
+    throw new Error("Error al procesar las imágenes con IA");
+  }
+
+  const aiData = await aiResponse.json();
+  const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
+  if (!toolCall?.function?.arguments) throw new Error("La IA no pudo extraer los datos de las imágenes");
+  return JSON.parse(toolCall.function.arguments);
+}
+
 // ── Main handler ──
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { url, scraper = "firecrawl", role = "user" } = await req.json();
+    // Desestructurar body: puede venir url (scraping) o images (visión)
+    const { url, images, scraper = "firecrawl", role = "user" } = await req.json();
+
+    // ── PATH DE VISIÓN: si vienen imágenes, analizarlas directamente con IA ──
+    if (images && Array.isArray(images) && images.length > 0) {
+      console.log(`Vision path: analizando ${images.length} imagen(es) con Gemini Vision`);
+      const extracted = await extractWithVision(images);
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          title: extracted.title || "",
+          listingType: extracted.listingType || "rent",
+          priceRent: extracted.priceRent || 0,
+          priceExpenses: extracted.priceExpenses || 0,
+          currency: extracted.currency || "UYU",
+          neighborhood: extracted.neighborhood || "",
+          sqMeters: extracted.sqMeters || 0,
+          rooms: extracted.rooms || 1,
+          aiSummary: extracted.aiSummary || "",
+          images: [], // no se pueden copiar fotos desde screenshots
+        },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── PATH DE URL: scraping + IA (comportamiento original) ──
     if (!url) {
-      return new Response(JSON.stringify({ success: false, error: "URL is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: false, error: "Se requiere url o images" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     let formattedUrl = url.trim();

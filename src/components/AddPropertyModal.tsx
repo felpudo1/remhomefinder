@@ -61,6 +61,10 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [urlDuplicated, setUrlDuplicated] = useState(false);
   const [isCheckingUrl, setIsCheckingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Ref para el input oculto de análisis de screenshots
+  const imageAnalysisRef = useRef<HTMLInputElement>(null);
+  // Estado de carga para el análisis de imágenes
+  const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
   const [form, setForm] = useState({
     title: "",
     priceRent: "",
@@ -72,6 +76,68 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     aiSummary: "",
   });
 
+  /**
+   * Analiza screenshots de publicaciones inmobiliarias usando Gemini Vision.
+   * Convierte las imágenes a base64 y las envía a la Edge Function.
+   */
+  const handleImageAnalysis = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsAnalyzingImages(true);
+
+    try {
+      // Convertir cada archivo a base64 data URL
+      const toBase64 = (file: File): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+      const base64Images = await Promise.all(
+        Array.from(files).slice(0, 3).map(toBase64)
+      );
+
+      // Llamar Edge Function con images en vez de url
+      const { data, error } = await supabase.functions.invoke("scrape-property", {
+        body: { images: base64Images, role: "user" },
+      });
+
+      if (error || !data?.success) {
+        const msg = data?.error || error?.message || "No se pudieron analizar las imágenes.";
+        toast.error(msg);
+        setIsAnalyzingImages(false);
+        return;
+      }
+
+      // Llenar el formulario con los datos extraídos
+      const d = data.data;
+      setForm({
+        title: d.title || "",
+        priceRent: String(d.priceRent || ""),
+        priceExpenses: String(d.priceExpenses || ""),
+        currency: d.currency || "UYU",
+        neighborhood: d.neighborhood || "",
+        sqMeters: String(d.sqMeters || ""),
+        rooms: String(d.rooms || ""),
+        aiSummary: d.aiSummary || "",
+      });
+      if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
+      setStep("manual");
+      toast.success("¡Datos extraídos de las imágenes con IA!");
+    } catch (err) {
+      console.error("Image analysis error:", err);
+      toast.error("Error al analizar las imágenes. Intentá de nuevo.");
+    } finally {
+      setIsAnalyzingImages(false);
+      // Limpiar el input para permitir re-selección del mismo archivo
+      if (imageAnalysisRef.current) imageAnalysisRef.current.value = "";
+    }
+  };
+
+  /**
+   * Scrapea una URL y extrae datos con IA.
+   */
   const handleScrape = async () => {
     if (!url.trim()) return;
     setIsLoading(true);
@@ -313,6 +379,36 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
               ) : (
                 <><Sparkles className="w-4 h-4" />Extraer datos de la publicación</>
+              )}
+            </Button>
+
+            {/* Input oculto para selección de screenshots (máx 3) */}
+            <input
+              ref={imageAnalysisRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleImageAnalysis(e.target.files)}
+            />
+
+            {/* Separador entre URL y análisis de imágenes */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
+            </div>
+
+            {/* Botón para analizar screenshots de publicaciones de RRSS */}
+            <Button
+              variant="outline"
+              onClick={() => imageAnalysisRef.current?.click()}
+              disabled={isAnalyzingImages || isLoading}
+              className="w-full rounded-xl gap-2"
+            >
+              {isAnalyzingImages ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Analizando imágenes...</>
+              ) : (
+                <><Camera className="w-4 h-4" />Ingresar imágenes para analizar (IG, FB)</>
               )}
             </Button>
 
