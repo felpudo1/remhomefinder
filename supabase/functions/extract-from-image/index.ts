@@ -7,13 +7,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function getPromptFromDb(role: string): Promise<string | null> {
+async function getImagePromptFromDb(): Promise<string | null> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(supabaseUrl, serviceKey);
 
-  const key = role === "agent" ? "scraper_prompt_agent" : "scraper_prompt_user";
-  const { data } = await sb.from("app_settings").select("value").eq("key", key).maybeSingle();
+  const { data } = await sb.from("app_settings").select("value").eq("key", "image_extract_prompt_user").maybeSingle();
   return data?.value || null;
 }
 
@@ -41,7 +40,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const dbPrompt = await getPromptFromDb(role);
+    const dbPrompt = await getImagePromptFromDb();
     const systemPrompt = dbPrompt || FALLBACK_PROMPT;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
