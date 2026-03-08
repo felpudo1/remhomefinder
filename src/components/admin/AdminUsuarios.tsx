@@ -8,6 +8,7 @@ interface UserProfile {
     display_name: string;
     status: "active" | "pending" | "suspended" | "rejected";
     roles: string[];
+    property_count: number;
 }
 
 interface Props {
@@ -30,10 +31,11 @@ export function AdminUsuarios({ toast }: Props) {
     const fetchUsers = async () => {
         setLoading(true);
 
-        // Fetch profiles and roles in parallel
-        const [profilesRes, rolesRes] = await Promise.all([
+        // Fetch profiles, roles and properties in parallel
+        const [profilesRes, rolesRes, propsRes] = await Promise.all([
             supabase.from("profiles").select("user_id, display_name, status"),
             supabase.from("user_roles").select("user_id, role"),
+            supabase.from("properties").select("user_id"),
         ]);
 
         if (profilesRes.error || rolesRes.error) {
@@ -48,11 +50,17 @@ export function AdminUsuarios({ toast }: Props) {
             roleMap[r.user_id].push(r.role);
         }
 
+        const propsCountMap: Record<string, number> = {};
+        for (const p of propsRes.data || []) {
+            propsCountMap[p.user_id] = (propsCountMap[p.user_id] || 0) + 1;
+        }
+
         const userList: UserProfile[] = (profilesRes.data || []).map((p: any) => ({
             user_id: p.user_id,
             display_name: p.display_name || "Sin nombre",
             status: p.status || "active",
             roles: roleMap[p.user_id] || ["user"],
+            property_count: propsCountMap[p.user_id] || 0,
         }));
 
         // Sort: admins first, then agencies, then users
@@ -98,9 +106,10 @@ export function AdminUsuarios({ toast }: Props) {
 
     return (
         <div className="space-y-2">
-            <div className="grid grid-cols-4 gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
+            <div className="grid grid-cols-5 gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
                 <span>Usuario</span>
                 <span>Rol</span>
+                <span>Propiedades</span>
                 <span>Estado</span>
                 <span>Acción</span>
             </div>
@@ -111,7 +120,7 @@ export function AdminUsuarios({ toast }: Props) {
                 const isAdmin = user.roles.includes("admin");
 
                 return (
-                    <div key={user.user_id} className="grid grid-cols-4 gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+                    <div key={user.user_id} className="grid grid-cols-5 gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
                         <div className="flex items-center gap-2 min-w-0">
                             <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                             <span className="truncate text-foreground">{user.display_name}</span>
@@ -119,11 +128,16 @@ export function AdminUsuarios({ toast }: Props) {
                         <div className="flex items-center gap-2">
                             <Shield className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                             <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.roles.includes("admin") ? "bg-red-100 text-red-700" :
-                                    user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
-                                        "bg-gray-100 text-gray-600"
+                                user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
+                                    "bg-gray-100 text-gray-600"
                                 }`}>
                                 {user.roles.includes("admin") ? "Admin" :
                                     user.roles.includes("agency") ? "Agente" : "Usuario"}
+                            </span>
+                        </div>
+                        <div className="flex items-center">
+                            <span className="inline-flex items-center justify-center bg-primary/10 text-primary px-2 py-0.5 rounded-md text-xs font-semibold min-w-8">
+                                {user.property_count}
                             </span>
                         </div>
                         <div>
