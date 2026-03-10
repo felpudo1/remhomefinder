@@ -6,6 +6,7 @@ import { ListingType } from "@/types/property";
 interface PropertyCardBaseProps {
     title: string;
     neighborhood: string;
+    city?: string;
     priceRent: number;
     priceExpenses: number;
     currency: string;
