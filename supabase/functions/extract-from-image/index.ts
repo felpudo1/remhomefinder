@@ -38,6 +38,7 @@ const toolSchema = {
         priceExpenses: { type: "number", description: "Gastos comunes/expensas mensuales. 0 si no se detecta." },
         currency: { type: "string", description: "Moneda: USD, UYU o ARS" },
         neighborhood: { type: "string", description: "Barrio o zona. Vacío si no se detecta." },
+        city: { type: "string", description: "Ciudad (ej: Montevideo, Punta del Este, Buenos Aires). Vacío si no se detecta." },
         sqMeters: { type: "number", description: "Superficie en metros cuadrados. 0 si no se detecta." },
         rooms: { type: "number", description: "Cantidad de ambientes/dormitorios. 0 si no se detecta." },
         aiSummary: { type: "string", description: "Resumen breve del aviso con lo que se pudo identificar" },

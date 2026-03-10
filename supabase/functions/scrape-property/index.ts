@@ -211,6 +211,7 @@ async function extractWithVision(images: string[]): Promise<Record<string, any>>
               priceExpenses: { type: "number", description: "Gastos comunes (0 si no aplica)" },
               currency: { type: "string", description: "Moneda: USD, UYU o ARS" },
               neighborhood: { type: "string", description: "Barrio o zona" },
+              city: { type: "string", description: "Ciudad (ej: Montevideo, Punta del Este, Buenos Aires)" },
               sqMeters: { type: "number", description: "Superficie en metros cuadrados" },
               rooms: { type: "number", description: "Cantidad de ambientes" },
               aiSummary: { type: "string", description: "Resumen breve del aviso" },
