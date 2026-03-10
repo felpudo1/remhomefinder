@@ -320,7 +320,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
       // Upload screenshot to storage
       const ext = screenshotFile.name.split(".").pop() || "jpg";
-      const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+      const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, screenshotFile);
       if (uploadErr) throw uploadErr;
 
