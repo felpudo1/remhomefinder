@@ -30,6 +30,8 @@ interface PropertyCardBaseProps {
     actions?: React.ReactNode;
     /** Clase adicional para el contenedor principal */
     className?: string;
+    /** Overlay de estrellas sobre la imagen */
+    ratingOverlay?: React.ReactNode;
     /** Manejador de click específico para la imagen (para abrir galería sin abrir detalle) */
     onImageClick?: (index: number) => void;
 }
@@ -59,6 +61,7 @@ export function PropertyCardBase({
     actions,
     className = "",
     onImageClick,
+    ratingOverlay,
 }: PropertyCardBaseProps) {
     const [currentImg, setCurrentImg] = useState(0);
 
@@ -115,6 +118,13 @@ export function PropertyCardBase({
                 {statusOverlay && (
                     <div className="absolute top-3 right-3">
                         {statusOverlay}
+                    </div>
+                )}
+
+                {/* Overlay de estrellas (puntuación familiar) */}
+                {ratingOverlay && (
+                    <div className="absolute top-3 right-3">
+                        {ratingOverlay}
                     </div>
                 )}
             </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ExternalLink, Trash2, Users, Building2, EyeOff, Eye } from "lucide-react";
+import { Loader2, ExternalLink, Trash2, Users, Building2, EyeOff, Eye, BarChart3, Star, ChevronUp, ChevronDown, MapPin, DollarSign, Maximize2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,25 @@ interface MktProperty {
   agency_name?: string;
 }
 
+/** Interface unificada para la pestaña de estadísticas */
+interface StatProperty {
+  id: string;
+  title: string;
+  creator: string; // Email o Nombre de Agencia
+  type: "user" | "agency";
+  listing_type: "rent" | "sale";
+  neighborhood: string;
+  city: string;
+  total_cost: number;
+  sq_meters: number;
+  rooms: number;
+  status: string;
+  average_rating: number;
+  total_votes: number;
+  created_at: string;
+  url: string;
+}
+
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
@@ -72,9 +91,18 @@ export function AdminPublicaciones({ toast }: Props) {
   const [loadingMkt, setLoadingMkt] = useState(true);
   const [deleteMktTarget, setDeleteMktTarget] = useState<MktProperty | null>(null);
 
+  // Estado para estadísticas unificadas
+  const [statProps, setStatProps] = useState<StatProperty[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof StatProperty; direction: 'asc' | 'desc' }>({
+    key: 'created_at',
+    direction: 'desc'
+  });
+
   useEffect(() => {
     fetchUserProperties();
     fetchMktProperties();
+    fetchAllStats();
   }, []);
 
   /**
@@ -123,6 +151,121 @@ export function AdminPublicaciones({ toast }: Props) {
     }
     setLoadingMkt(false);
   };
+
+  /**
+   * Carga TODAS las propiedades con sus estadísticas de calificación.
+   * Lógica PRO: Separa rating SOCIAL (Agencias) de rating FAMILIAR (Usuarios).
+   */
+  const fetchAllStats = async () => {
+    setLoadingStats(true);
+    try {
+      const [mktRes, userRes, ratingsRes] = await Promise.all([
+        supabase.from("marketplace_properties").select("*, agencies(name)"),
+        supabase.from("properties").select("*"),
+        supabase.from("property_ratings").select("*"),
+      ]);
+
+      if (mktRes.error) throw mktRes.error;
+      if (userRes.error) throw userRes.error;
+      if (ratingsRes.error) throw ratingsRes.error;
+
+      // 1. Mapeo de propiedades de usuario a su origen de marketplace
+      const propToMktMap: Record<string, string> = {};
+      userRes.data.forEach(p => {
+        if (p.source_marketplace_id) propToMktMap[p.id] = p.source_marketplace_id;
+      });
+
+      // 2. Agregación diferenciada
+      const globalMktStats: Record<string, { sum: number, count: number }> = {};
+      const familyStats: Record<string, { sum: number, count: number }> = {};
+
+      ratingsRes.data.forEach(r => {
+        // ¿Este voto pertenece a algo de marketplace (directo o copia)?
+        const mktId = propToMktMap[r.property_id] || (mktRes.data.some(m => m.id === r.property_id) ? r.property_id : null);
+
+        if (mktId) {
+          if (!globalMktStats[mktId]) globalMktStats[mktId] = { sum: 0, count: 0 };
+          globalMktStats[mktId].sum += r.rating;
+          globalMktStats[mktId].count++;
+        }
+
+        // Siempre guardamos el rating específico para la vista familiar
+        if (!familyStats[r.property_id]) familyStats[r.property_id] = { sum: 0, count: 0 };
+        familyStats[r.property_id].sum += r.rating;
+        familyStats[r.property_id].count++;
+      });
+
+      const unified: StatProperty[] = [
+        ...mktRes.data.map((p: any) => {
+          const stats = globalMktStats[p.id];
+          return {
+            id: p.id,
+            title: p.title,
+            creator: p.agencies?.name || "Agencia",
+            type: "agency" as const,
+            listing_type: p.listing_type,
+            neighborhood: p.neighborhood,
+            city: p.city,
+            total_cost: p.total_cost,
+            sq_meters: p.sq_meters,
+            rooms: p.rooms,
+            status: p.status,
+            average_rating: stats ? stats.sum / stats.count : 0,
+            total_votes: stats ? stats.count : 0,
+            created_at: p.created_at,
+            url: p.url,
+          };
+        }),
+        ...userRes.data.map((p: any) => {
+          const stats = familyStats[p.id];
+          return {
+            id: p.id,
+            title: p.title,
+            creator: p.created_by_email,
+            type: "user" as const,
+            listing_type: p.listing_type,
+            neighborhood: p.neighborhood,
+            city: p.city,
+            total_cost: p.total_cost,
+            sq_meters: p.sq_meters,
+            rooms: p.rooms,
+            status: p.status,
+            average_rating: stats ? stats.sum / stats.count : 0,
+            total_votes: stats ? stats.count : 0,
+            created_at: p.created_at,
+            url: p.url,
+          };
+        })
+      ];
+
+      setStatProps(unified);
+    } catch (e: any) {
+      toast({ title: "Error en estadísticas", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleSort = (key: keyof StatProperty) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedStats = [...statProps].sort((a, b) => {
+    const aVal = a[sortConfig.key];
+    const bVal = b[sortConfig.key];
+
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    }
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    return 0;
+  });
 
   /**
    * Oculta o restaura una propiedad de usuario (soft delete).
@@ -215,19 +358,22 @@ export function AdminPublicaciones({ toast }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Tabs defaultValue="marketplace" className="w-full">
-      {/* TabsList responsive: texto corto en mobile, completo en desktop */}
-      <TabsList className="mb-6 bg-muted rounded-xl p-1 h-auto w-full grid grid-cols-2">
+      {/* TabsList responsive */}
+      <TabsList className="mb-6 bg-muted rounded-xl p-1 h-auto w-full grid grid-cols-3">
         <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
           <Building2 className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Publicaciones del Marketplace</span>
-          <span className="sm:hidden">Marketplace</span>
+          <span className="hidden sm:inline">Marketplace</span>
           <Badge variant="secondary" className="ml-1 text-xs">{mktProps.length}</Badge>
         </TabsTrigger>
         <TabsTrigger value="usuarios" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
           <Users className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Propiedades de Usuarios</span>
-          <span className="sm:hidden">Usuarios</span>
+          <span className="hidden sm:inline">Usuarios</span>
           <Badge variant="secondary" className="ml-1 text-xs">{userProps.length}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="estadisticas" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
+          <BarChart3 className="w-4 h-4 shrink-0" />
+          <span className="hidden sm:inline">Estadísticas</span>
+          <Badge variant="secondary" className="ml-1 text-xs">{statProps.length}</Badge>
         </TabsTrigger>
       </TabsList>
 
@@ -467,6 +613,100 @@ export function AdminPublicaciones({ toast }: Props) {
           onConfirm={deleteUserProperty}
           title={deleteUserTarget?.title || ""}
         />
+      </TabsContent>
+
+      {/* ── TAB 3: Estadísticas / Auditoría ── */}
+      <TabsContent value="estadisticas" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Vista unificada de auditoría total. Analizá el rendimiento, precios y feedback de todas las propiedades.
+          </p>
+          <Button variant="outline" size="sm" onClick={fetchAllStats} disabled={loadingStats} className="rounded-xl">
+            {loadingStats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <BarChart3 className="w-4 h-4 mr-2" />}
+            Actualizar
+          </Button>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border">
+                  {[
+                    { key: 'title', label: 'Propiedad', icon: Building2 },
+                    { key: 'creator', label: 'Creador' },
+                    { key: 'neighborhood', label: 'Ubicación', icon: MapPin },
+                    { key: 'total_cost', label: 'Precio', icon: DollarSign },
+                    { key: 'sq_meters', label: 'Sup.', icon: Maximize2 },
+                    { key: 'status', label: 'Estado' },
+                    { key: 'average_rating', label: 'Rating', icon: Star },
+                    { key: 'total_votes', label: 'Votos', icon: Users },
+                  ].map((col) => (
+                    <th key={col.key} className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <button
+                        onClick={() => handleSort(col.key as keyof StatProperty)}
+                        className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                      >
+                        {col.icon && <col.icon className="w-3 h-3" />}
+                        {col.label}
+                        {sortConfig.key === col.key && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                        )}
+                      </button>
+                    </th>
+                  ))}
+                  <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Ver</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {sortedStats.map((p) => (
+                  <tr key={p.id} className="hover:bg-muted/30 transition-colors text-xs">
+                    <td className="p-3 max-w-[200px]">
+                      <div className="font-semibold truncate">{p.title}</div>
+                      <div className="text-[10px] opacity-50 mt-0.5">{p.type === 'agency' ? 'Marketplace' : 'Personal'}</div>
+                    </td>
+                    <td className="p-3">
+                      <div className="truncate max-w-[120px] text-muted-foreground">{p.creator}</div>
+                    </td>
+                    <td className="p-3">
+                      <div className="truncate max-w-[100px]">{p.neighborhood}</div>
+                      <div className="text-[10px] opacity-50">{p.city}</div>
+                    </td>
+                    <td className="p-3 font-mono font-medium">
+                      ${p.total_cost.toLocaleString()}
+                    </td>
+                    <td className="p-3">
+                      {p.sq_meters}m²
+                      <div className="text-[10px] opacity-50">{p.rooms} amb.</div>
+                    </td>
+                    <td className="p-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium text-[9px] uppercase border ${p.status === 'active' || p.status === 'ingresado' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"
+                        }`}>
+                        {PROPERTY_STATUS_LABELS[p.status] || p.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-500">
+                        <Star className={`w-3 h-3 ${p.average_rating > 0 ? "fill-current" : ""}`} />
+                        {p.average_rating > 0 ? p.average_rating.toFixed(1) : "—"}
+                      </div>
+                    </td>
+                    <td className="p-3 text-muted-foreground font-medium">
+                      {p.total_votes > 0 ? p.total_votes : "0"}
+                    </td>
+                    <td className="p-3 text-right">
+                      {p.url && (
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted transition-colors text-primary">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </TabsContent>
     </Tabs>
   );

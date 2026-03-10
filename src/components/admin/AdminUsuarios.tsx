@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2 } from "lucide-react";
+import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface UserProfile {
     user_id: string;
@@ -25,6 +26,10 @@ const STATUS_CONFIG = {
 export function AdminUsuarios({ toast }: Props) {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' }>({
+        key: 'roles',
+        direction: 'asc'
+    });
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -73,6 +78,38 @@ export function AdminUsuarios({ toast }: Props) {
         setLoading(false);
     };
 
+    const handleSort = (key: keyof UserProfile) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedUsers = [...users].sort((a, b) => {
+        if (sortConfig.key === 'roles') {
+            const priority = (roles: string[]) => roles.includes("admin") ? 0 : roles.includes("agency") ? 1 : 2;
+            const aPrio = priority(a.roles);
+            const bPrio = priority(b.roles);
+            return sortConfig.direction === 'asc' ? aPrio - bPrio : bPrio - aPrio;
+        }
+
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return sortConfig.direction === 'asc'
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
+        }
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        return 0;
+    });
+
     const updateStatus = async (userId: string, newStatus: UserProfile["status"]) => {
         // Update optimista: actualizar el estado local de inmediato sin esperar al servidor
         const previousUsers = users;
@@ -106,15 +143,47 @@ export function AdminUsuarios({ toast }: Props) {
 
     return (
         <div className="space-y-2">
-            <div className="grid grid-cols-5 gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                <span>Usuario</span>
-                <span>Rol</span>
-                <span>Propiedades</span>
-                <span>Estado</span>
+            <div className="grid grid-cols-5 gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
+                <button
+                    onClick={() => handleSort('display_name')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                >
+                    Usuario
+                    {sortConfig.key === 'display_name' && (
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    )}
+                </button>
+                <button
+                    onClick={() => handleSort('roles')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                >
+                    Rol
+                    {sortConfig.key === 'roles' && (
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    )}
+                </button>
+                <button
+                    onClick={() => handleSort('property_count')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                >
+                    Propiedades
+                    {sortConfig.key === 'property_count' && (
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    )}
+                </button>
+                <button
+                    onClick={() => handleSort('status')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                >
+                    Estado
+                    {sortConfig.key === 'status' && (
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    )}
+                </button>
                 <span>Acción</span>
             </div>
 
-            {users.map((user) => {
+            {sortedUsers.map((user) => {
                 const sc = STATUS_CONFIG[user.status];
                 const StatusIcon = sc.icon;
                 const isAdmin = user.roles.includes("admin");

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { Property, PropertyStatus, STATUS_CONFIG, MarketplacePropertyStatus } from "@/types/property";
 import {
   Select,
@@ -22,8 +24,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
+import { usePropertyRating } from "@/hooks/usePropertyRating";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface PropertyCardProps {
   property: Property;
@@ -54,8 +59,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [coordinatedDateTime, setCoordinatedDateTime] = useState("");
   const [showContactedConfirm, setShowContactedConfirm] = useState(false);
   const [contactedName, setContactedName] = useState("");
+  const { toast } = useToast();
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [galleryInitialImg, setGalleryInitialImg] = useState(0);
+
+  // Hook de calificación por estrellas (solo si hay grupo)
+  const { userVote, averageRating, totalVotes, totalGroupMembers, rate } = usePropertyRating(property.id, property.groupId || null);
+
   const config = STATUS_CONFIG[property.status];
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
 
@@ -138,6 +148,22 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </>
             )}
           </>
+        }
+        ratingOverlay={
+          property.groupId && (
+            <div className={cn(
+              "flex flex-col gap-2",
+              mktOverlay && "mt-10" // Si hay badge de estado, bajamos las estrellas para no taparlo
+            )}>
+              <StarRating
+                rating={userVote}
+                averageRating={averageRating}
+                totalVotes={totalVotes}
+                totalGroupMembers={totalGroupMembers}
+                onRate={rate}
+              />
+            </div>
+          )
         }
         subImageContent={
           <div className="px-4 pt-2 space-y-1">
