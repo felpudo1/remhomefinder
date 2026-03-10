@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link, Sparkles, Loader2, Camera, Plus, ImageIcon, X } from "lucide-react";
 
 export interface ScraperInputProps {
-    step: "url" | "image-upload";
+    step: "url" | "image-upload" | "manual";
     url: string;
     setUrl: (url: string) => void;
     isLoading: boolean;
