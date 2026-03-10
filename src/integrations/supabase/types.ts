@@ -588,6 +588,7 @@ export type Database = {
         | "ingresado"
         | "a_analizar"
         | "eliminado"
+        | "eliminado_agencia"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
     CompositeTypes: {
@@ -735,6 +736,7 @@ export const Constants = {
         "ingresado",
         "a_analizar",
         "eliminado",
+        "eliminado_agencia",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
     },
