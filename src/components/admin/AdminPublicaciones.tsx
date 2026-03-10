@@ -162,7 +162,7 @@ export function AdminPublicaciones({ toast }: Props) {
       const [mktRes, userRes, ratingsRes] = await Promise.all([
         supabase.from("marketplace_properties").select("*, agencies(name)"),
         supabase.from("properties").select("*"),
-        supabase.from("property_ratings").select("*"),
+        supabase.from("property_ratings" as any).select("*") as any,
       ]);
 
       if (mktRes.error) throw mktRes.error;
@@ -171,7 +171,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
       const mktData = mktRes.data || [];
       const userData = userRes.data || [];
-      const ratingsData = ratingsRes.data || [];
+      const ratingsData: any[] = ratingsRes.data || [];
 
       // 1. Mapeo de propiedades de usuario a su origen de marketplace
       const propToMktMap: Record<string, string> = {};

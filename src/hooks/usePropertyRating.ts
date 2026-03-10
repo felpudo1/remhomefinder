@@ -19,9 +19,9 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             if (!user) return null;
 
             // 1. Obtenemos todos los votos del grupo para esta propiedad
-            const { data: ratings, error: ratingsError } = await supabase
-                .from("property_ratings")
-                .select("*")
+            const { data: ratings, error: ratingsError } = await (supabase
+                .from("property_ratings" as any)
+                .select("*") as any)
                 .eq("property_id", propertyId)
                 .eq("group_id", groupId);
 
@@ -58,8 +58,8 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             if (!user || !groupId) throw new Error("Acceso denegado");
 
             // Usar upsert basado en el UNIQUE(property_id, user_id)
-            const { error } = await supabase
-                .from("property_ratings")
+            const { error } = await (supabase
+                .from("property_ratings" as any) as any)
                 .upsert({
                     property_id: propertyId,
                     user_id: user.id,

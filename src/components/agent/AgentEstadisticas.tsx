@@ -78,14 +78,14 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             const [userPropsRes, allRatingsRes] = await Promise.all([
                 supabase.from("properties").select("id, source_marketplace_id").in("source_marketplace_id", mktIds),
                 // Optimizamos: traemos solo los ratings que nos interesan (los de nuestras copias o del mkt original)
-                supabase.from("property_ratings").select("*")
+                supabase.from("property_ratings" as any).select("*") as any
             ]);
 
             if (userPropsRes.error) throw userPropsRes.error;
             if (allRatingsRes.error) throw allRatingsRes.error;
 
             const userPropsData = userPropsRes.data || [];
-            const allRatingsData = allRatingsRes.data || [];
+            const allRatingsData: any[] = allRatingsRes.data || [];
 
             // Mapeo: user_prop_id -> mkt_id
             const userPropToMkt: Record<string, string> = {};
