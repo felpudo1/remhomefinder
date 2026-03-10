@@ -162,7 +162,7 @@ export function AdminPublicaciones({ toast }: Props) {
       const [mktRes, userRes, ratingsRes] = await Promise.all([
         supabase.from("marketplace_properties").select("*, agencies(name)"),
         supabase.from("properties").select("*"),
-        supabase.from("property_ratings").select("*"),
+        supabase.from("property_ratings" as any).select("*") as any,
       ]);
 
       if (mktRes.error) throw mktRes.error;
