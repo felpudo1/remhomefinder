@@ -17,6 +17,7 @@ export function usePropertyMutations() {
             priceExpenses: number;
             currency: string;
             neighborhood: string;
+            city: string;
             sqMeters: number;
             rooms: number;
             aiSummary: string;
