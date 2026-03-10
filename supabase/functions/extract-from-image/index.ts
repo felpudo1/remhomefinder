@@ -41,6 +41,8 @@ const toolSchema = {
         sqMeters: { type: "number", description: "Superficie en metros cuadrados. 0 si no se detecta." },
         rooms: { type: "number", description: "Cantidad de ambientes/dormitorios. 0 si no se detecta." },
         aiSummary: { type: "string", description: "Resumen breve del aviso con lo que se pudo identificar" },
+        ref: { type: "string", description: "Código de referencia del aviso si existe (ej: REF-123, ID del aviso). Vacío si no se detecta." },
+        details: { type: "string", description: "Detalles adicionales del aviso: características, amenities, descripción extendida. Vacío si no se detecta." },
       },
       required: ["title", "listingType", "aiSummary"],
       additionalProperties: false,
