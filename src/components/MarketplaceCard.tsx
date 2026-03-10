@@ -32,6 +32,7 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: Ma
     <PropertyCardBase
       title={property.title}
       neighborhood={property.neighborhood}
+      city={property.city}
       priceRent={property.priceRent}
       priceExpenses={property.priceExpenses}
       currency={property.currency}

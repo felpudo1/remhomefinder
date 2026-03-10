@@ -77,6 +77,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
     <PropertyCardBase
       title={property.title}
       neighborhood={property.neighborhood}
+      city={property.city}
       priceRent={property.priceRent}
       priceExpenses={property.priceExpenses}
       currency={property.currency}

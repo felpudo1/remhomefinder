@@ -50,6 +50,7 @@ export function useMarketplaceProperties() {
         totalCost: Number(p.total_cost),
         currency: p.currency,
         neighborhood: p.neighborhood,
+        city: p.city || "",
         sqMeters: Number(p.sq_meters),
         rooms: p.rooms,
         images: resolveImages(p.images),

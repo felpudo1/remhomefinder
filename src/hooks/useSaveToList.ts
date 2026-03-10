@@ -19,6 +19,7 @@ export function useSaveToList() {
         total_cost: property.totalCost,
         currency: property.currency,
         neighborhood: property.neighborhood,
+        city: property.city || "",
         sq_meters: property.sqMeters,
         rooms: property.rooms,
         ai_summary: property.description,

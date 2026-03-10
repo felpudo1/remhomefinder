@@ -177,6 +177,7 @@ export type Database = {
       marketplace_properties: {
         Row: {
           agency_id: string
+          city: string
           created_at: string
           currency: string
           description: string
@@ -196,6 +197,7 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          city?: string
           created_at?: string
           currency?: string
           description?: string
@@ -215,6 +217,7 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          city?: string
           created_at?: string
           currency?: string
           description?: string
@@ -281,6 +284,7 @@ export type Database = {
           admin_hidden_at: string | null
           admin_hidden_by: string | null
           ai_summary: string
+          city: string
           contacted_name: string | null
           coordinated_date: string | null
           created_at: string
@@ -319,6 +323,7 @@ export type Database = {
           admin_hidden_at?: string | null
           admin_hidden_by?: string | null
           ai_summary?: string
+          city?: string
           contacted_name?: string | null
           coordinated_date?: string | null
           created_at?: string
@@ -357,6 +362,7 @@ export type Database = {
           admin_hidden_at?: string | null
           admin_hidden_by?: string | null
           ai_summary?: string
+          city?: string
           contacted_name?: string | null
           coordinated_date?: string | null
           created_at?: string

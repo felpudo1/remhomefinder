@@ -37,6 +37,7 @@ interface AddPropertyModalProps {
     priceExpenses: number;
     currency: string;
     neighborhood: string;
+    city: string;
     sqMeters: number;
     rooms: number;
     aiSummary: string;
@@ -89,6 +90,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     priceExpenses: "",
     currency: "USD",
     neighborhood: "",
+    city: "",
     sqMeters: "",
     rooms: "",
     aiSummary: "",
@@ -147,6 +149,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
         currency: d.currency || "UYU",
         neighborhood: d.neighborhood || "",
+        city: d.city || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
@@ -220,6 +223,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         priceExpenses: String(d.priceExpenses || ""),
         currency: d.currency || "UYU",
         neighborhood: d.neighborhood || "",
+        city: d.city || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
@@ -290,6 +294,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         priceExpenses: String(d.priceExpenses || ""),
         currency: d.currency || "ARS",
         neighborhood: d.neighborhood || "",
+        city: d.city || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
@@ -359,6 +364,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
         currency: d.currency || "USD",
         neighborhood: d.neighborhood || "",
+        city: d.city || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
@@ -428,6 +434,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
       currency: form.currency,
       neighborhood: form.neighborhood,
+      city: form.city,
       sqMeters: Number(form.sqMeters) || 0,
       rooms: Number(form.rooms) || 1,
       aiSummary: form.aiSummary,
@@ -442,7 +449,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   const handleClose = () => {
     setUrl("");
-    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
+    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", city: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
     setScrapedImages([]);
     setManualImageUrl("");
     setUrlDuplicated(false);
@@ -752,9 +759,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl text-sm" />
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Barrio *</Label>
-              <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Barrio *</Label>
+                <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Ciudad</Label>
+                <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej: Montevideo" className="rounded-xl text-sm" />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

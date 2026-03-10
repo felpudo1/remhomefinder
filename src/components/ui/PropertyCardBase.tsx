@@ -6,6 +6,7 @@ import { ListingType } from "@/types/property";
 interface PropertyCardBaseProps {
     title: string;
     neighborhood: string;
+    city?: string;
     priceRent: number;
     priceExpenses: number;
     currency: string;
@@ -38,6 +39,7 @@ interface PropertyCardBaseProps {
 export function PropertyCardBase({
     title,
     neighborhood,
+    city,
     priceRent,
     priceExpenses,
     currency,
@@ -113,7 +115,9 @@ export function PropertyCardBase({
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 text-muted-foreground min-w-0">
                         <MapPin className="w-3.5 h-3.5 shrink-0" />
-                        <span className="text-xs font-medium truncate">{neighborhood || "Sin barrio"}</span>
+                        <span className="text-xs font-medium truncate">
+                            {neighborhood || "Sin barrio"}{city ? `, ${city}` : ""}
+                        </span>
                     </div>
                     {statusBadge}
                 </div>
