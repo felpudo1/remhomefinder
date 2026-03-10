@@ -26,28 +26,51 @@ const STATUS_CONFIG = {
 export function AdminUsuarios({ toast }: Props) {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
+    const PAGE_SIZE = 50;
     const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' }>({
-        key: 'roles',
+        key: 'display_name',
         direction: 'asc'
     });
 
-    useEffect(() => { fetchUsers(); }, []);
+    useEffect(() => { fetchUsers(); }, [page, sortConfig]);
 
     const fetchUsers = async () => {
         setLoading(true);
 
-        // Fetch profiles, roles and properties in parallel
-        const [profilesRes, rolesRes, propsRes] = await Promise.all([
-            supabase.from("profiles").select("user_id, display_name, status"),
-            supabase.from("user_roles").select("user_id, role"),
-            supabase.from("properties").select("user_id"),
-        ]);
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
 
-        if (profilesRes.error || rolesRes.error) {
-            toast({ title: "Error al cargar usuarios", description: profilesRes.error?.message || rolesRes.error?.message, variant: "destructive" });
+        // Fetch profiles with pagination and count
+        const { data: profiles, error: profilesError, count } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, status", { count: "exact" })
+            .order(sortConfig.key === 'display_name' ? 'display_name' : 'user_id', {
+                ascending: sortConfig.direction === 'asc'
+            })
+            .range(from, to);
+
+        if (profilesError) {
+            toast({ title: "Error al cargar usuarios", description: profilesError.message, variant: "destructive" });
             setLoading(false);
             return;
         }
+
+        setTotalCount(count || 0);
+        const userIds = profiles.map(p => p.user_id);
+
+        if (userIds.length === 0) {
+            setUsers([]);
+            setLoading(false);
+            return;
+        }
+
+        // Fetch roles and properties only for the current page users
+        const [rolesRes, propsRes] = await Promise.all([
+            supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
+            supabase.from("properties").select("user_id").in("user_id", userIds),
+        ]);
 
         const roleMap: Record<string, string[]> = {};
         for (const r of rolesRes.data || []) {
@@ -60,19 +83,13 @@ export function AdminUsuarios({ toast }: Props) {
             propsCountMap[p.user_id] = (propsCountMap[p.user_id] || 0) + 1;
         }
 
-        const userList: UserProfile[] = (profilesRes.data || []).map((p: any) => ({
+        const userList: UserProfile[] = (profiles || []).map((p: any) => ({
             user_id: p.user_id,
             display_name: p.display_name || "Sin nombre",
             status: p.status || "active",
             roles: roleMap[p.user_id] || ["user"],
             property_count: propsCountMap[p.user_id] || 0,
         }));
-
-        // Sort: admins first, then agencies, then users
-        userList.sort((a, b) => {
-            const priority = (roles: string[]) => roles.includes("admin") ? 0 : roles.includes("agency") ? 1 : 2;
-            return priority(a.roles) - priority(b.roles);
-        });
 
         setUsers(userList);
         setLoading(false);
@@ -86,29 +103,9 @@ export function AdminUsuarios({ toast }: Props) {
         setSortConfig({ key, direction });
     };
 
-    const sortedUsers = [...users].sort((a, b) => {
-        if (sortConfig.key === 'roles') {
-            const priority = (roles: string[]) => roles.includes("admin") ? 0 : roles.includes("agency") ? 1 : 2;
-            const aPrio = priority(a.roles);
-            const bPrio = priority(b.roles);
-            return sortConfig.direction === 'asc' ? aPrio - bPrio : bPrio - aPrio;
-        }
-
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-            return sortConfig.direction === 'asc'
-                ? aValue.localeCompare(bValue)
-                : bValue.localeCompare(aValue);
-        }
-
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-            return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-
-        return 0;
-    });
+    // Nota: El sorting ya se realiza en la DB para display_name.
+    // Para otros criterios (roles), se mantiene local solo para la página actual por ahora.
+    const sortedUsers = [...users];
 
     const updateStatus = async (userId: string, newStatus: UserProfile["status"]) => {
         // Update optimista: actualizar el estado local de inmediato sin esperar al servidor
@@ -235,6 +232,35 @@ export function AdminUsuarios({ toast }: Props) {
                     </div>
                 );
             })}
+            {/* Controles de Paginación */}
+            <div className="flex items-center justify-between px-4 py-4 border-t border-border mt-4">
+                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                    Mostrando {users.length} de {totalCount} usuarios
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        disabled={page === 0 || loading}
+                        className="h-8 rounded-xl px-4 text-xs"
+                    >
+                        Anterior
+                    </Button>
+                    <div className="flex items-center px-3 text-xs font-bold text-primary bg-primary/10 rounded-xl h-8">
+                        {page + 1}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => p + 1)}
+                        disabled={(page + 1) * PAGE_SIZE >= totalCount || loading}
+                        className="h-8 rounded-xl px-4 text-xs"
+                    >
+                        Siguiente
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }

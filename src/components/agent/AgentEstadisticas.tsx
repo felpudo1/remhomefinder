@@ -8,7 +8,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye, Percent } from "lucide-react";
+import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye, Percent, Calendar } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { format, subDays, isSameDay, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Agency } from "./AgentProfile";
 
 interface AgentEstadisticasProps {
@@ -71,6 +74,58 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
 
             if (error) throw error;
             return (data as PropertyPerformance[]) || [];
+        }
+    });
+
+    // Query para datos históricos (Gráfico)
+    const { data: chartData = [], isLoading: chartLoading } = useQuery({
+        queryKey: ["agency-historical-stats", agency.id],
+        enabled: !!agency,
+        queryFn: async () => {
+            // 1. Obtener guardados históricos de los últimos 14 días
+            const { data: savesData, error: savesError } = await supabase
+                .from("properties")
+                .select("created_at, source_marketplace_id")
+                .filter("source_marketplace_id", "not.is", null)
+                .gte("created_at", subDays(new Date(), 14).toISOString());
+
+            // 2. Obtener logs de visitas (si la tabla existe)
+            const { data: viewsData, error: viewsError } = await supabase
+                .from("property_views_log" as any)
+                .select("created_at")
+                .gte("created_at", subDays(new Date(), 14).toISOString()) as any;
+
+            // Procesamos los datos para agrupar por día
+            const last14Days = Array.from({ length: 14 }, (_, i) => {
+                const date = subDays(new Date(), 13 - i);
+                return {
+                    dateLabel: format(date, 'dd MMM', { locale: es }),
+                    // Solo guardamos la referencia para el filtrado, pero la quitaremos al final
+                    _idDate: date,
+                    saves: 0,
+                    views: 0
+                };
+            });
+
+            // Agregamos guardados (filtrando por las propiedades de esta agencia)
+            const myMktIds = new Set(performanceData.map(p => p.id));
+            savesData?.forEach(s => {
+                if (s.source_marketplace_id && myMktIds.has(s.source_marketplace_id)) {
+                    const day = last14Days.find(d => isSameDay(d._idDate, parseISO(s.created_at)));
+                    if (day) day.saves++;
+                }
+            });
+
+            // Agregamos visitas (si viewsError es nulo, la tabla existe)
+            if (!viewsError) {
+                viewsData?.forEach((v: any) => {
+                    const day = last14Days.find(d => isSameDay(d._idDate, parseISO(v.created_at)));
+                    if (day) day.views++;
+                });
+            }
+
+            // Limpiamos los objetos Date antes de devolver a Recharts
+            return last14Days.map(({ _idDate, ...rest }) => rest);
         }
     });
 
@@ -160,6 +215,88 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                     <CardContent>
                         <div className="text-2xl font-bold">{soldCount}</div>
                         <p className="text-xs text-muted-foreground mt-1">Operaciones cerradas</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* SECCIÓN DE GRÁFICOS - EVOLUCIÓN TEMPORAL */}
+            <div className="grid grid-cols-1 gap-6">
+                <Card className="border-border shadow-md overflow-hidden bg-white/50 backdrop-blur-sm">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border/50 mb-4">
+                        <div>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-primary" />
+                                Evolución de Interés (Últimos 14 días)
+                            </CardTitle>
+                            <p className="text-xs text-muted-foreground mt-1">Comparativa de visitas vs propiedades guardadas por usuarios.</p>
+                        </div>
+                        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-tighter">
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-primary" /> Visitas</div>
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Guardados</div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        {chartLoading ? (
+                            <div className="h-[300px] flex items-center justify-center">
+                                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : (
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
+                                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                            </linearGradient>
+                                            <linearGradient id="colorSaves" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                        <XAxis
+                                            dataKey="dateLabel"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                                            dy={10}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'hsl(var(--background))',
+                                                borderRadius: '12px',
+                                                border: '1px solid hsl(var(--border))',
+                                                fontSize: '12px'
+                                            }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="views"
+                                            name="Visitas"
+                                            stroke="hsl(var(--primary))"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorViews)"
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="saves"
+                                            name="Guardados"
+                                            stroke="#10b981"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorSaves)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

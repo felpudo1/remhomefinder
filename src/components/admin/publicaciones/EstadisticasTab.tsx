@@ -16,15 +16,24 @@ interface EstadisticasTabProps {
     sortConfig: { key: keyof StatProperty; direction: 'asc' | 'desc' };
     handleSort: (key: keyof StatProperty) => void;
     sortedStats: StatProperty[];
+    // Nuevas props de paginación
+    page: number;
+    setPage: (page: number | ((p: number) => number)) => void;
+    totalCount: number;
+    pageSize: number;
 }
 
 export function EstadisticasTab({
-    statProps, // Agregado
+    statProps,
     loadingStats,
     fetchAllStats,
     sortConfig,
     handleSort,
     sortedStats,
+    page,
+    setPage,
+    totalCount,
+    pageSize,
 }: EstadisticasTabProps) {
     return (
         <div className="space-y-4">
@@ -132,6 +141,36 @@ export function EstadisticasTab({
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Controles de Paginación */}
+            <div className="flex items-center justify-between px-4 py-4 bg-muted/20 border border-border rounded-2xl">
+                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                    Mostrando {statProps.length} de aprox. {totalCount} registros unificados
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        disabled={page === 0 || loadingStats}
+                        className="h-8 rounded-xl px-4 text-xs shadow-sm"
+                    >
+                        Anterior
+                    </Button>
+                    <div className="flex items-center px-3 text-xs font-bold text-primary bg-primary/10 rounded-xl h-8">
+                        {page + 1}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => p + 1)}
+                        disabled={statProps.length < pageSize / 2 || loadingStats}
+                        className="h-8 rounded-xl px-4 text-xs shadow-sm"
+                    >
+                        Siguiente
+                    </Button>
                 </div>
             </div>
         </div>

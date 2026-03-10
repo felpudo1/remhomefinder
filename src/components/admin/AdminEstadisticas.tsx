@@ -36,6 +36,9 @@ export function AdminEstadisticas() {
     // Estado para estadísticas detalladas (migrado de AdminPublicaciones)
     const [statProps, setStatProps] = useState<StatProperty[]>([]);
     const [loadingStats, setLoadingStats] = useState(true);
+    const [page, setPage] = useState(0);
+    const [totalUnifiedCount, setTotalUnifiedCount] = useState(0);
+    const PAGE_SIZE = 50;
     const [sortConfig, setSortConfig] = useState<{ key: keyof StatProperty; direction: 'asc' | 'desc' }>({
         key: 'created_at',
         direction: 'desc'
@@ -43,8 +46,11 @@ export function AdminEstadisticas() {
 
     useEffect(() => {
         fetchStats();
-        fetchAllStats();
     }, []);
+
+    useEffect(() => {
+        fetchAllStats();
+    }, [page, sortConfig]);
 
     const fetchStats = async () => {
         setLoading(true);
@@ -156,9 +162,18 @@ export function AdminEstadisticas() {
     const fetchAllStats = async () => {
         setLoadingStats(true);
         try {
+            const from = page * (PAGE_SIZE / 2);
+            const to = from + (PAGE_SIZE / 2) - 1;
+
             const [mktRes, userRes, ratingsRes] = await Promise.all([
-                supabase.from("marketplace_properties").select("*, agencies(name)"),
-                supabase.from("properties").select("*"),
+                supabase.from("marketplace_properties")
+                    .select("*, agencies(name)", { count: "exact" })
+                    .order('created_at', { ascending: false })
+                    .range(from, to),
+                supabase.from("properties")
+                    .select("*", { count: "exact" })
+                    .order('created_at', { ascending: false })
+                    .range(from, to),
                 supabase.from("property_ratings" as any).select("*") as any,
             ]);
 
@@ -253,6 +268,8 @@ export function AdminEstadisticas() {
             ];
 
             setStatProps(unified);
+            // El total unificado es la suma de los counts exactos de ambas tablas
+            setTotalUnifiedCount((mktRes.count || 0) + (userRes.count || 0));
         } catch (e: any) {
             toast({ title: "Error en estadísticas", description: e.message, variant: "destructive" });
         } finally {
@@ -403,6 +420,11 @@ export function AdminEstadisticas() {
                     sortConfig={sortConfig}
                     handleSort={handleSort}
                     sortedStats={sortedStats}
+                    // Props de paginación
+                    page={page}
+                    setPage={setPage}
+                    totalCount={totalUnifiedCount}
+                    pageSize={PAGE_SIZE}
                 />
             </div>
         </div>

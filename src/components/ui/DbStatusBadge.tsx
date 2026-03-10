@@ -44,9 +44,6 @@ export function DbStatusBadge() {
         };
 
         checkConnection();
-        // Realizamos la verificación cada 30 segundos
-        const interval = setInterval(checkConnection, 30_000);
-        return () => clearInterval(interval);
     }, []);
 
     // Configuración de estilos e íconos según el estado
