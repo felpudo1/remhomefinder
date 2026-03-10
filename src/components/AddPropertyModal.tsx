@@ -677,16 +677,32 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               {cameFromImage && scrapedImages.length === 0 && (
                 <p className="text-[10px] text-muted-foreground">La IA no puede extraer fotos desde capturas. Subí hasta 3 fotos reales.</p>
               )}
-              {scrapedImages.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
+              {scrapedImages.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   {scrapedImages.map((img, i) => (
-                    <div key={i} className="relative shrink-0">
-                      <img src={img} alt={`Foto ${i + 1}`} className="w-16 h-12 rounded-lg object-cover border border-border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                      <button type="button" onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center">
-                        <X className="w-2.5 h-2.5" />
-                      </button>
+                    <div key={i} className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-muted shadow-sm hover:shadow-md transition-all duration-300">
+                      <img
+                        src={img}
+                        alt={`Foto ${i + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => { (e.target as HTMLImageElement).parentElement?.classList.add('hidden'); }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))}
+                          className="bg-destructive text-destructive-foreground p-1.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform"
+                          title="Eliminar foto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-border rounded-xl p-4 text-center bg-muted/30">
+                  <p className="text-[10px] text-muted-foreground italic">No hay fotos seleccionadas aún</p>
                 </div>
               )}
               <div className="flex gap-2">
