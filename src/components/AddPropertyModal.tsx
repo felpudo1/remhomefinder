@@ -1,4 +1,17 @@
 import { useState, useRef, useEffect } from "react";
+
+/** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback para contextos no seguros
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 import {
   Dialog,
   DialogContent,
@@ -96,7 +109,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       for (const file of Array.from(files).slice(0, 3)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+        const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
         if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
@@ -166,7 +179,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       for (const file of Array.from(files).slice(0, 3)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+        const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
         if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
@@ -307,7 +320,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
       // Upload screenshot to storage
       const ext = screenshotFile.name.split(".").pop() || "jpg";
-      const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+      const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, screenshotFile);
       if (uploadErr) throw uploadErr;
 
@@ -365,7 +378,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const path = `${user.id}/${safeUUID()}.${ext}`;
         const { error } = await supabase.storage.from("property-images").upload(path, file);
         if (error) { console.error("Upload error:", error); continue; }
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
