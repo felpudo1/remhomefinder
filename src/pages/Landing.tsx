@@ -17,7 +17,7 @@ const Landing = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-background selection:bg-primary/20">
+        <div className="min-h-screen selection:bg-primary/20">
             {/* Navbar */}
             <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -46,9 +46,13 @@ const Landing = () => {
             <section className="relative pt-32 pb-20 md:pt-48 md:pb-36 overflow-hidden text-center">
                 {/* Imagen de fondo */}
                 <div className="absolute inset-0 -z-20">
-                    <img src={authBg} alt="" className="w-full h-full object-cover" />
+                    <img
+                        src="/assets/images/03-04%20at%2021.28.041.jpeg"
+                        alt=""
+                        className="w-full h-full object-cover"
+                    />
                 </div>
-                <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/85 via-background/70 to-background" />
+                <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/90 via-background/40 to-transparent" />
 
                 <div className="max-w-4xl mx-auto px-6 space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
@@ -64,7 +68,7 @@ const Landing = () => {
 
                     </h1>
 
-                    <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">Compartí, comentá y calificá las propiedades para tomar la mejor decisión. <br /> La misma visión, el mismo objetivo. <br />Todo desde una sola plataforma.</p>
+                    <p className="text-lg md:text-xl text-primary font-semibold max-w-2xl mx-auto leading-relaxed">Compartí, comentá y calificá las propiedades para tomar la mejor decisión. <br /> La misma visión, el mismo objetivo. <br />Todo desde una sola plataforma.</p>
 
                     <div className="pt-8 flex justify-center">
                         <Button

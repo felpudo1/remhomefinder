@@ -70,10 +70,18 @@ const Auth = () => {
   return (
     <>
       <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-        {/* Contenedor de la imagen de fondo con efectos y filtros */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] scale-100 animate-slow-zoom"
-          style={{ backgroundImage: `url(${authBgImg})` }} />
+        {/* Contenedor del video de fondo */}
+        <div className="absolute inset-0 -z-10">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          >
+            <source src="/assets/videos/11661546-hd_720_1280_30fps+.mp4" type="video/mp4" />
+          </video>
+        </div>
 
 
         {/* Overlay oscuro y blur para mejorar legibilidad */}
