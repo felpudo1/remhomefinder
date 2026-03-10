@@ -39,6 +39,7 @@ export function usePropertyMutations() {
                 total_cost: form.priceRent + form.priceExpenses,
                 currency: form.currency,
                 neighborhood: form.neighborhood,
+                city: form.city || "",
                 sq_meters: form.sqMeters,
                 rooms: form.rooms,
                 ai_summary: form.aiSummary,

@@ -756,9 +756,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl text-sm" />
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Barrio *</Label>
-              <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Barrio *</Label>
+                <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Ciudad</Label>
+                <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej: Montevideo" className="rounded-xl text-sm" />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

@@ -44,6 +44,7 @@ export function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property
         totalCost: Number(db.total_cost),
         currency: db.currency || "USD",
         neighborhood: db.neighborhood || "",
+        city: (db as any).city || "",
         sqMeters: Number(db.sq_meters),
         rooms: db.rooms || 0,
         status: (db.status || "ingresado") as PropertyStatus,

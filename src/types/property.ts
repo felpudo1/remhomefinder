@@ -61,6 +61,7 @@ export interface MarketplaceProperty {
   totalCost: number;
   currency: string;
   neighborhood: string;
+  city: string;
   sqMeters: number;
   rooms: number;
   images: string[];
