@@ -142,6 +142,7 @@ serve(async (req) => {
         priceExpenses: extracted.priceExpenses || 0,
         currency: extracted.currency || "USD",
         neighborhood: extracted.neighborhood || "",
+        city: extracted.city || "",
         sqMeters: extracted.sqMeters || 0,
         rooms: extracted.rooms || 0,
         aiSummary: extracted.aiSummary || "",
