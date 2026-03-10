@@ -431,6 +431,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
       currency: form.currency,
       neighborhood: form.neighborhood,
+      city: form.city,
       sqMeters: Number(form.sqMeters) || 0,
       rooms: Number(form.rooms) || 1,
       aiSummary: form.aiSummary,
