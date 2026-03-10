@@ -43,6 +43,8 @@ interface AddPropertyModalProps {
     images: string[];
     groupId?: string | null;
     listingType?: string;
+    ref?: string;
+    details?: string;
   }) => void;
   activeGroupId?: string | null;
   scraper?: "firecrawl" | "zenrows";
