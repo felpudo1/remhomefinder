@@ -155,6 +155,7 @@ export function AdminPublicaciones({ toast }: Props) {
             status: p.status,
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
+            views_count: p.views_count || 0,
             created_at: p.created_at,
             url: p.url,
           };
@@ -175,6 +176,7 @@ export function AdminPublicaciones({ toast }: Props) {
             status: p.status,
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
+            views_count: p.views_count || 0,
             created_at: p.created_at,
             url: p.url,
           };

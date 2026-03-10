@@ -49,4 +49,5 @@ export interface StatProperty {
     total_votes: number;
     created_at: string;
     url: string;
+    views_count?: number;
 }

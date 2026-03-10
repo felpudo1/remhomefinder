@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Property, PropertyStatus, STATUS_CONFIG, PropertyComment } from "@/types/property";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,24 @@ export function PropertyDetailModal({
       setCommentAuthor(currentUserEmail);
     }
   }, [open, currentUserEmail]);
+
+  useEffect(() => {
+    if (open && property?.id) {
+      const incrementViews = async () => {
+        try {
+          // Si tiene sourceMarketplaceId es una propiedad personal; sino, es directa de marketplace.
+          const isMarketplace = !property.sourceMarketplaceId;
+          await supabase.rpc('increment_property_views', {
+            p_property_id: property.id,
+            p_is_marketplace: isMarketplace
+          });
+        } catch (error) {
+          console.error("Error al incrementar vistas:", error);
+        }
+      };
+      incrementViews();
+    }
+  }, [open, property?.id, property?.sourceMarketplaceId]);
 
   // Manejo de teclado para la galería (AHORA GESTIONADO POR FullScreenGallery)
 

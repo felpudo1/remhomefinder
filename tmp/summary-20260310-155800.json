@@ -1,0 +1,4 @@
+{
+    "summary": "El usuario avisó sobre un fallo visual en la tabla de estadísticas del Admin: columnas desalineadas por falta del encabezado 'Estado'. Ya lo hemos reincorporado.",
+    "current_status": "Columnas de Admin nuevamente estabilizadas."
+}

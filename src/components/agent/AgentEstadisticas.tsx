@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3 } from "lucide-react";
+import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye } from "lucide-react";
 import { Agency } from "./AgentProfile";
 
 interface AgentEstadisticasProps {
@@ -14,8 +14,8 @@ interface PropertyPerformance {
     title: string;
     status: string;
     saves: number;
-    votes: number;
     rating: number;
+    views: number;
     url: string;
     listing_type: string;
 }
@@ -49,65 +49,12 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         queryKey: ["agency-performance-detailed", agency.id],
         enabled: !!agency,
         queryFn: async (): Promise<PropertyPerformance[]> => {
-            // 1. Traer mis publicaciones
-            const { data: mktProps, error: mktError } = await supabase
-                .from("marketplace_properties")
-                .select("id, title, status, listing_type, url")
-                .eq("agency_id", agency.id);
+            const { data, error } = await supabase.rpc("get_agency_performance_detailed" as any, {
+                p_agency_id: agency.id,
+            } as any);
 
-            if (mktError) throw mktError;
-            if (!mktProps) return [];
-
-            const mktIds = mktProps.map(p => p.id);
-
-            // 2. Traer copias de usuarios y ratings simultáneamente
-            const [userPropsRes, allRatingsRes] = await Promise.all([
-                supabase.from("properties").select("id, source_marketplace_id").in("source_marketplace_id", mktIds),
-                supabase.from("property_ratings" as any).select("*") as any
-            ]);
-
-            if (userPropsRes.error) throw userPropsRes.error;
-            if (allRatingsRes.error) throw allRatingsRes.error;
-
-            const userPropsData = userPropsRes.data || [];
-            const allRatingsData: any[] = allRatingsRes.data || [];
-
-            // Mapeo: user_prop_id -> mkt_id
-            const userPropToMkt: Record<string, string> = {};
-            // Mapeo: mkt_id -> save_count
-            const saveCounts: Record<string, number> = {};
-
-            userPropsData.forEach(up => {
-                if (up.source_marketplace_id) {
-                    userPropToMkt[up.id] = up.source_marketplace_id;
-                    saveCounts[up.source_marketplace_id] = (saveCounts[up.source_marketplace_id] || 0) + 1;
-                }
-            });
-
-            // Agregación de ratings: mkt_id -> { sum, count }
-            const ratingStats: Record<string, { sum: number, count: number }> = {};
-            allRatingsData.forEach(r => {
-                const targetMktId = userPropToMkt[r.property_id] || (mktIds.includes(r.property_id) ? r.property_id : null);
-                if (targetMktId) {
-                    if (!ratingStats[targetMktId]) ratingStats[targetMktId] = { sum: 0, count: 0 };
-                    ratingStats[targetMktId].sum += r.rating;
-                    ratingStats[targetMktId].count++;
-                }
-            });
-
-            return mktProps.map(p => {
-                const rs = ratingStats[p.id];
-                return {
-                    id: p.id,
-                    title: p.title,
-                    status: p.status,
-                    saves: saveCounts[p.id] || 0,
-                    votes: rs ? rs.count : 0,
-                    rating: rs ? rs.sum / rs.count : 0,
-                    url: p.url,
-                    listing_type: p.listing_type
-                };
-            });
+            if (error) throw error;
+            return (data as PropertyPerformance[]) || [];
         }
     });
 
@@ -275,6 +222,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                                         {[
                                             { key: 'title', label: 'Aviso', icon: Building2 },
                                             { key: 'saves', label: 'Guardados', icon: Bookmark },
+                                            { key: 'views', label: 'Vistas', icon: Eye },
                                             { key: 'votes', label: 'Votantes', icon: Users },
                                             { key: 'rating', label: 'Rating', icon: Star },
                                         ].map((col) => (
@@ -317,6 +265,9 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                                                     </div>
                                                     <span>{p.saves}</span>
                                                 </div>
+                                            </td>
+                                            <td className="p-3 text-muted-foreground">
+                                                {p.views || 0}
                                             </td>
                                             <td className="p-3 text-muted-foreground">
                                                 {p.votes} personas

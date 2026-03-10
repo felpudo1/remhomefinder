@@ -45,6 +45,7 @@ export interface Property {
   listingType: ListingType;
   ref: string;
   details: string;
+  viewsCount?: number;
 }
 
 export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";

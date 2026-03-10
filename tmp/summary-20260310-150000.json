@@ -1,0 +1,4 @@
+{
+    "summary": "Se reemplazó la lógica manual de mapeo en AgentEstadisticas.tsx por una llamada limpia a una nueva función RPC ('get_agency_performance_detailed'). Se le entregó al usuario el script SQL listo para ejecutar en Supabase que permite saltar la restricción RLS de forma segura.",
+    "current_status": "El código frontend ya está actualizado, el panel mostrará error o blanco hasta que el usuario ejecute el script SQL provisto."
+}

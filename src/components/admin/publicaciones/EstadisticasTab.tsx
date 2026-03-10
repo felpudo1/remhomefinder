@@ -1,4 +1,4 @@
-import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3 } from "lucide-react";
+import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { StatProperty } from "@/types/admin-publications";
@@ -45,6 +45,7 @@ export function EstadisticasTab({
                                     { key: 'sq_meters', label: 'Sup.', icon: Maximize2 },
                                     { key: 'status', label: 'Estado' },
                                     { key: 'average_rating', label: 'Rating', icon: Star },
+                                    { key: 'views_count', label: 'Vistas', icon: Eye },
                                     { key: 'total_votes', label: 'Votos', icon: Users },
                                 ].map((col) => (
                                     <th key={col.key} className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -95,6 +96,9 @@ export function EstadisticasTab({
                                             <Star className={`w-3 h-3 ${(p.average_rating || 0) > 0 ? "fill-current" : ""}`} />
                                             {(p.average_rating || 0) > 0 ? p.average_rating.toFixed(1) : "—"}
                                         </div>
+                                    </td>
+                                    <td className="p-3 text-muted-foreground font-medium">
+                                        {p.views_count || 0}
                                     </td>
                                     <td className="p-3 text-muted-foreground font-medium">
                                         {(p.total_votes || 0) > 0 ? p.total_votes : "0"}

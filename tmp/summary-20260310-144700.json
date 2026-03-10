@@ -1,0 +1,4 @@
+{
+    "summary": "JP consultó sobre la viabilidad y complejidad de agregar un contador de visualizaciones a las publicaciones, preguntando si requiere modificar la base de datos. Se le respondió analizando la estructura actual e indicando que sí requiere cambios en DB, pero que la complejidad es baja a moderada.",
+    "current_status": "El proyecto sigue estable sin modificaciones. Quedamos a la espera de si el usuario desea que se implemente la arquitectura propuesta para contar las vistas."
+}

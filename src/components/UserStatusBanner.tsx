@@ -13,7 +13,7 @@ const STATUS_BANNERS: Record<Exclude<UserStatus, "active">, {
   pending: {
     icon: Clock,
     title: "Cuenta pendiente de activación",
-    message: "Tu cuenta está pendiente de aprobación por un administrador. Mientras tanto, podés explorar la plataforma pero algunas funcionalidades estarán limitadas.",
+    message: "Tu cuenta está pendiente de aprobación por un administrador. Contactate con soporte que con mucho gusto te vamos a asistir.",
     bgClass: "bg-yellow-500/5",
     borderClass: "border-yellow-500/20",
     textClass: "text-yellow-800",
