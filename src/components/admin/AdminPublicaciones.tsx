@@ -1,3 +1,9 @@
+/**
+ * ARCHIVO: AdminPublicaciones.tsx
+ * DESCRIPCIÓN: El gran cerebro del Administrador para controlar publicaciones.
+ * Se encarga de pedir todos los datos de la base (avisos, fotos, votos, calificaciones)
+ * y armar una lista maestra simplificada para que sea fácil analizar el mercado.
+ */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ExternalLink, Trash2, Users, Building2, EyeOff, Eye, BarChart3, Star, ChevronUp, ChevronDown, MapPin, DollarSign, Maximize2 } from "lucide-react";
@@ -95,6 +101,11 @@ export function AdminPublicaciones({ toast }: Props) {
    * Carga TODAS las propiedades con sus estadísticas de calificación.
    * Lógica PRO: Separa rating SOCIAL (Agencias) de rating FAMILIAR (Usuarios).
    */
+  /**
+   * FUNCIÓN: fetchAllStats
+   * Es la "licuadora" de datos. Agarra las tablas de Marketplace y la de Usuarios,
+   * las mezcla, calcula los promedios de ratings y saca la cuenta del CR% (Conversión).
+   */
   const fetchAllStats = async () => {
     setLoadingStats(true);
     try {
@@ -112,13 +123,13 @@ export function AdminPublicaciones({ toast }: Props) {
       const userData = userRes.data || [];
       const ratingsData: any[] = ratingsRes.data || [];
 
-      // 1. Mapeo de propiedades de usuario a su origen de marketplace
+      // 1. Mapeo para saber qué propiedad privada viene de qué aviso del marketplace
       const propToMktMap: Record<string, string> = {};
       userData.forEach(p => {
         if (p.source_marketplace_id) propToMktMap[p.id] = p.source_marketplace_id;
       });
 
-      // 2. Agregación robusta de ratings
+      // 2. Agregación robusta de ratings (Estrellas)
       const globalMktStats: Record<string, { sum: number, count: number }> = {};
       const familyStats: Record<string, { sum: number, count: number }> = {};
       const mktIdSet = new Set(mktData.map((m: any) => m.id));
@@ -138,13 +149,13 @@ export function AdminPublicaciones({ toast }: Props) {
           globalMktStats[mktId].count++;
         }
 
-        // Ratings individuales para vista personal
+        // Ratings individuales para el grupo familiar
         if (!familyStats[r.property_id]) familyStats[r.property_id] = { sum: 0, count: 0 };
         familyStats[r.property_id].sum += ratingVal;
         familyStats[r.property_id].count++;
       });
 
-      // 3. Conteo de Guardados (Saves)
+      // 3. Conteo de Guardados (Saves) genuinos
       const savesMap: Record<string, number> = {};
       userData.forEach(p => {
         if (p.source_marketplace_id) {
@@ -152,6 +163,7 @@ export function AdminPublicaciones({ toast }: Props) {
         }
       });
 
+      // Armamos el objeto final que la tabla va a mostrar
       const unified: StatProperty[] = [
         ...mktData.map((p: any) => {
           const stats = globalMktStats[p.id];
@@ -171,6 +183,7 @@ export function AdminPublicaciones({ toast }: Props) {
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
             views_count: p.views_count || 0,
+            // CR% = (Gente que la guardó / Gente que la vio) * 100
             cr: p.views_count > 0 ? (saves / p.views_count) * 100 : 0,
             created_at: p.created_at,
             url: p.url,

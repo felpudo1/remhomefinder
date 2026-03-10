@@ -1,3 +1,7 @@
+/**
+ * ARCHIVO: admin-publications.ts
+ * DESCRIPCIÓN: Definiciones de "planos" (interfaces) para los datos del admin.
+ */
 import { PropertyStatus } from "./property";
 
 export type MarketplaceStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";
@@ -33,10 +37,14 @@ export interface MktProperty {
     agency_name?: string;
 }
 
+/**
+ * INTERFAZ: StatProperty
+ * Es el molde final de una propiedad cuando está en la tabla de estadísticas.
+ */
 export interface StatProperty {
     id: string;
     title: string;
-    creator: string; // Email o Nombre de Agencia
+    creator: string; // Quién la puso (email o agencia)
     type: "user" | "agency";
     listing_type: "rent" | "sale";
     neighborhood: string;
@@ -45,10 +53,10 @@ export interface StatProperty {
     sq_meters: number;
     rooms: number;
     status: string;
-    average_rating: number;
-    total_votes: number;
+    average_rating: number; // Promedio de 1 a 5 estrellas
+    total_votes: number; // Cuánta gente opinó
     created_at: string;
     url: string;
-    views_count?: number;
-    cr?: number;
+    views_count?: number; // Cuántos clics recibió
+    cr?: number; // Tasa de éxito (Conversion Rate)
 }

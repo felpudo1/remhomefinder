@@ -1,3 +1,9 @@
+/**
+ * ARCHIVO: PropertyDetailModal.tsx
+ * DESCRIPCIÓN: Este componente es el "corazón" de la visualización de una propiedad. 
+ * Se encarga de mostrar las fotos, los detalles, los comentarios y también de 
+ * "chismosear" a la base de datos cada vez que alguien entra a ver la propiedad.
+ */
 import { useState, useEffect } from "react";
 import { Property, PropertyStatus, STATUS_CONFIG, PropertyComment } from "@/types/property";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,16 +74,38 @@ export function PropertyDetailModal({
     }
   }, [open, currentUserEmail]);
 
+  /**
+   * EFECTO DE VISTAS: 
+   * Cada vez que se abre el modal, este efecto intenta sumarle 1 al contador de la base de datos.
+   * Tiene un "filtro de seguridad" usando localStorage para que una persona no sume 
+   * 1000 visitas abriendo y cerrando el modal el mismo día.
+   */
   useEffect(() => {
     if (open && property?.id) {
       const incrementViews = async () => {
         try {
-          // Si tiene sourceMarketplaceId es una propiedad personal; sino, es directa de marketplace.
+          // Protección Anti-Spam: Anotamos en el navegador que ya vimos esta propiedad hoy.
+          const today = new Date().toISOString().split('T')[0]; // Ejemplo: "2024-03-10"
+          const storageKey = `viewed_${property.id}`;
+          const lastViewed = localStorage.getItem(storageKey);
+
+          if (lastViewed === today) {
+            // Si ya la vimos hoy, no molestamos a la base de datos
+            return;
+          }
+
+          // Si NO tiene sourceMarketplaceId, es un aviso original del marketplace.
           const isMarketplace = !property.sourceMarketplaceId;
+
+          // Llamamos a la función mágica de Supabase (RPC) que sabe sumar +1 salteándose bloqueos
           await supabase.rpc('increment_property_views', {
             p_property_id: property.id,
             p_is_marketplace: isMarketplace
           });
+
+          // Guardamos "Visto con éxito" para que no vuelva a sumar hasta mañana
+          localStorage.setItem(storageKey, today);
+
         } catch (error) {
           console.error("Error al incrementar vistas:", error);
         }
@@ -92,6 +120,10 @@ export function PropertyDetailModal({
 
   const config = STATUS_CONFIG[property.status];
 
+  /**
+   * FUNCIÓN: handleAddComment
+   * Sirve para que el usuario guarde su opinión o una nota sobre la casa/apartamento.
+   */
   const handleAddComment = () => {
     if (!commentText.trim()) return;
     onAddComment(property.id, {

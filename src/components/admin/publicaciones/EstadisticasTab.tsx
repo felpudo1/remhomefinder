@@ -1,3 +1,8 @@
+/**
+ * ARCHIVO: EstadisticasTab.tsx
+ * DESCRIPCIÓN: Sub-componente del Admin. Es la tabla bonita donde el jefe (tú)
+ * puede ver todos los números de rendimiento: Precios, Vistas, CR%, etc.
+ */
 import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3, Eye, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";

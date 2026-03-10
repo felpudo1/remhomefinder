@@ -1,3 +1,9 @@
+/**
+ * ARCHIVO: AgentEstadisticas.tsx
+ * DESCRIPCIÓN: Panel de control para el Agente Inmobiliario.
+ * Aquí el agente puede ver qué tan populares son sus avisos, cuánta gente los guardó, 
+ * cuántos clics (vistas) tienen y cuál es su Tasa de Conversión (CR%).
+ */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +15,10 @@ interface AgentEstadisticasProps {
     agency: Agency;
 }
 
+/**
+ * INTERFAZ: PropertyPerformance
+ * Define la forma de los datos que vienen del servidor para cada aviso del agente.
+ */
 interface PropertyPerformance {
     id: string;
     title: string;
@@ -45,6 +55,11 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
     });
 
     // Query para rendimiento detallado por aviso
+    /**
+     * QUERY: performanceData
+     * Trae el listado completo de avisos de la inmobiliaria con sus numeritos de éxito.
+     * Usa la función SQL "get_agency_performance_detailed" que unifica vistas y guardados.
+     */
     const { data: performanceData = [], isLoading: performanceLoading } = useQuery({
         queryKey: ["agency-performance-detailed", agency.id],
         enabled: !!agency,
