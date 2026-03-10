@@ -103,17 +103,21 @@ const Index = () => {
     priceExpenses: number;
     currency: string;
     neighborhood: string;
+    city: string;
     sqMeters: number;
     rooms: number;
     aiSummary: string;
+    images?: string[];
     groupId?: string | null;
+    listingType?: string;
+    ref?: string;
+    details?: string;
   }) => {
     try {
       await addProperty(form);
       setIsAddOpen(false);
       toast({ title: "Éxito", description: "Propiedad agregada correctamente" });
     } catch (e: any) {
-      // Detectar error de URL duplicada desde Supabase (violación de unique constraint)
       toast({ title: "Error", description: e?.message || "Error desconocido", variant: "destructive" });
     }
   };
