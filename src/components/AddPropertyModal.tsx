@@ -43,6 +43,8 @@ interface AddPropertyModalProps {
     images: string[];
     groupId?: string | null;
     listingType?: string;
+    ref?: string;
+    details?: string;
   }) => void;
   activeGroupId?: string | null;
   scraper?: "firecrawl" | "zenrows";
@@ -90,6 +92,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     sqMeters: "",
     rooms: "",
     aiSummary: "",
+    ref: "",
+    details: "",
   });
 
   /**
@@ -146,6 +150,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
       // Agregar las imágenes subidas a la galería para que se persistan
@@ -217,6 +223,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
       // Agregar las imágenes subidas a la galería
@@ -285,6 +293,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") {
         setListingType(d.listingType);
@@ -352,6 +362,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") {
         setListingType(d.listingType);
@@ -422,13 +434,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       images: scrapedImages,
       groupId: selectedGroupId,
       listingType,
+      ref: form.ref,
+      details: form.details,
     });
     handleClose();
   };
 
   const handleClose = () => {
     setUrl("");
-    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "" });
+    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
     setScrapedImages([]);
     setManualImageUrl("");
     setUrlDuplicated(false);
@@ -771,7 +785,22 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               </div>
             </div>
 
-            {/* Warning banner */}
+            {/* Ref */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Referencia</Label>
+              <Input value={form.ref} onChange={(e) => setForm({ ...form, ref: e.target.value })} placeholder="Ej: REF-12345" className="rounded-xl text-sm" />
+            </div>
+
+            {/* Detalles */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Detalles</Label>
+              <textarea
+                value={form.details}
+                onChange={(e) => setForm({ ...form, details: e.target.value })}
+                placeholder="Detalles adicionales extraídos por IA o ingresados manualmente..."
+                className="w-full min-h-[60px] rounded-xl text-sm border border-input bg-background px-3 py-2 resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200">
               ⚠️ Por favor chequeá y completá los datos antes de agregar la propiedad.
             </div>
