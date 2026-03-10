@@ -434,6 +434,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       images: scrapedImages,
       groupId: selectedGroupId,
       listingType,
+      ref: form.ref,
+      details: form.details,
     });
     handleClose();
   };
