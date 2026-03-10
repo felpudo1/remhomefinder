@@ -1,49 +1,284 @@
+/**
+ * ARCHIVO: AdminEstadisticas.tsx
+ * DESCRIPCIÓN: Sección de estadísticas generales de la plataforma.
+ * Muestra métricas clave del sistema y la tabla de auditoría detallada.
+ */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, MessageSquare, Users2, Loader2, TrendingUp } from "lucide-react";
+import { Home, Building2, TrendingUp, Users2, Loader2, BarChart3, Shield } from "lucide-react";
+import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
+import { StatProperty } from "@/types/admin-publications";
+import { useToast } from "@/hooks/use-toast";
 
-interface Stats {
-    totalProperties: number;
-    totalAgencies: number;
-    pendingAgencies: number;
-    totalUsers: number;
+interface StatusCount {
+    label: string;
+    count: number;
+    color?: string;
 }
 
-/**
- * Sección de estadísticas generales de la plataforma.
- * Muestra métricas clave del sistema.
- */
+interface CategoryStats {
+    total: number;
+    breakdown: StatusCount[];
+}
+
+interface Stats {
+    properties: CategoryStats;
+    agencies: CategoryStats;
+    users: CategoryStats;
+    admins: number;
+}
+
 export function AdminEstadisticas() {
+    const { toast } = useToast();
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Estado para estadísticas detalladas (migrado de AdminPublicaciones)
+    const [statProps, setStatProps] = useState<StatProperty[]>([]);
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof StatProperty; direction: 'asc' | 'desc' }>({
+        key: 'created_at',
+        direction: 'desc'
+    });
+
     useEffect(() => {
         fetchStats();
+        fetchAllStats();
     }, []);
 
     const fetchStats = async () => {
         setLoading(true);
-        const [propertiesRes, agenciesRes, pendingRes, usersRes] = await Promise.all([
-            supabase.from("properties").select("id", { count: "exact", head: true }),
-            supabase.from("agencies").select("id", { count: "exact", head: true }),
-            supabase
-                .from("profiles")
-                .select("user_id, status, user_roles!inner(role)")
-                .eq("status", "pending")
-                .eq("user_roles.role", "agency"),
-            supabase.from("user_roles").select("user_id", { count: "exact", head: true }),
-        ]);
+        try {
+            // 1. Obtener perfiles y roles por separado para evitar errores de join
+            const [profilesRes, rolesRes] = await Promise.all([
+                supabase.from("profiles").select("user_id, status"),
+                supabase.from("user_roles").select("user_id, role"),
+            ]);
 
-        const pendingAgencies = pendingRes.data?.length || 0;
+            if (profilesRes.error) throw profilesRes.error;
+            if (rolesRes.error) throw rolesRes.error;
 
-        setStats({
-            totalProperties: propertiesRes.count || 0,
-            totalAgencies: agenciesRes.count || 0,
-            pendingAgencies,
-            totalUsers: usersRes.count || 0,
-        });
-        setLoading(false);
+            const roleMap: Record<string, string[]> = {};
+            rolesRes.data?.forEach(r => {
+                if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
+                roleMap[r.user_id].push(r.role);
+            });
+
+            // Procesar desgloses de Agencias y Usuarios en memoria
+            const agStats = { total: 0, active: 0, pending: 0, suspended: 0, rejected: 0 };
+            const userStats = { total: 0, active: 0, pending: 0, suspended: 0, rejected: 0 };
+            let adminsCount = 0;
+
+            profilesRes.data?.forEach((p: any) => {
+                const roles = roleMap[p.user_id] || [];
+                const status = p.status;
+
+                if (roles.includes('agency')) {
+                    agStats.total++;
+                    if (status === 'active') agStats.active++;
+                    else if (status === 'pending') agStats.pending++;
+                    else if (status === 'suspended') agStats.suspended++;
+                    else if (status === 'rejected') agStats.rejected++;
+                }
+
+                if (roles.includes('user')) {
+                    userStats.total++;
+                    if (status === 'active') userStats.active++;
+                    else if (status === 'pending') userStats.pending++;
+                    else if (status === 'suspended') userStats.suspended++;
+                    else if (status === 'rejected') userStats.rejected++;
+                }
+
+                if (roles.includes('admin')) {
+                    adminsCount++;
+                }
+            });
+
+            // 2. Agencias (validación extra por tabla agencies si es necesario, pero profiles+role es la fuente de verdad del estado)
+            const agenciesTotalRes = await supabase.from("agencies").select("id", { count: "exact", head: true });
+
+            // 3. Propiedades (Marketplace)
+            const mktTotal = await supabase.from("marketplace_properties").select("id", { count: "exact", head: true });
+            const { data: mktData, error: mktError } = await (supabase
+                .from("marketplace_properties")
+                .select("status") as any);
+
+            if (mktError) throw mktError;
+
+            const propStats = { active: 0, paused: 0, closed: 0 };
+            mktData?.forEach(p => {
+                if (p.status === 'active') propStats.active++;
+                else if (p.status === 'paused') propStats.paused++;
+                else if (['sold', 'rented'].includes(p.status)) propStats.closed++;
+            });
+
+            setStats({
+                properties: {
+                    total: mktTotal.count || 0,
+                    breakdown: [
+                        { label: "Activas", count: propStats.active, color: "text-emerald-500" },
+                        { label: "Pausadas", count: propStats.paused, color: "text-amber-500" },
+                        { label: "Cerradas", count: propStats.closed, color: "text-blue-500" },
+                    ]
+                },
+                agencies: {
+                    total: agenciesTotalRes.count || 0,
+                    breakdown: [
+                        { label: "Activas", count: agStats.active, color: "text-emerald-500" },
+                        { label: "Pendientes", count: agStats.pending, color: "text-amber-500" },
+                        { label: "Suspendidas", count: agStats.suspended, color: "text-orange-500" },
+                        { label: "Eliminadas", count: agStats.rejected, color: "text-rose-500" },
+                    ]
+                },
+                users: {
+                    total: userStats.total,
+                    breakdown: [
+                        { label: "Activos", count: userStats.active, color: "text-emerald-500" },
+                        { label: "Pendientes", count: userStats.pending, color: "text-amber-500" },
+                        { label: "Suspendidos", count: userStats.suspended, color: "text-orange-500" },
+                        { label: "Eliminados", count: userStats.rejected, color: "text-rose-500" },
+                    ]
+                },
+                admins: adminsCount,
+            });
+        } catch (e: any) {
+            console.error("Error en dashboard stats:", e);
+            toast({ title: "Error al cargar dashboard", description: e.message, variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
     };
+
+    /**
+     * FUNCIÓN: fetchAllStats (Migrada)
+     * Procesa la auditoría unificada de Marketplace y Usuarios personales.
+     */
+    const fetchAllStats = async () => {
+        setLoadingStats(true);
+        try {
+            const [mktRes, userRes, ratingsRes] = await Promise.all([
+                supabase.from("marketplace_properties").select("*, agencies(name)"),
+                supabase.from("properties").select("*"),
+                supabase.from("property_ratings" as any).select("*") as any,
+            ]);
+
+            if (mktRes.error) throw mktRes.error;
+            if (userRes.error) throw userRes.error;
+            if (ratingsRes.error) throw ratingsRes.error;
+
+            const mktData = mktRes.data || [];
+            const userData = userRes.data || [];
+            const ratingsData: any[] = ratingsRes.data || [];
+
+            const propToMktMap: Record<string, string> = {};
+            userData.forEach(p => {
+                if (p.source_marketplace_id) propToMktMap[p.id] = p.source_marketplace_id;
+            });
+
+            const globalMktStats: Record<string, { sum: number, count: number }> = {};
+            const familyStats: Record<string, { sum: number, count: number }> = {};
+            const mktIdSet = new Set(mktData.map((m: any) => m.id));
+
+            ratingsData.forEach(r => {
+                if (!r.property_id || r.rating === null) return;
+                const ratingVal = Number(r.rating);
+                if (isNaN(ratingVal)) return;
+
+                const mktId = propToMktMap[r.property_id] || (mktIdSet.has(r.property_id) ? r.property_id : null);
+
+                if (mktId) {
+                    if (!globalMktStats[mktId]) globalMktStats[mktId] = { sum: 0, count: 0 };
+                    globalMktStats[mktId].sum += ratingVal;
+                    globalMktStats[mktId].count++;
+                }
+
+                if (!familyStats[r.property_id]) familyStats[r.property_id] = { sum: 0, count: 0 };
+                familyStats[r.property_id].sum += ratingVal;
+                familyStats[r.property_id].count++;
+            });
+
+            const savesMap: Record<string, number> = {};
+            userData.forEach(p => {
+                if (p.source_marketplace_id) {
+                    savesMap[p.source_marketplace_id] = (savesMap[p.source_marketplace_id] || 0) + 1;
+                }
+            });
+
+            const unified: StatProperty[] = [
+                ...mktData.map((p: any) => {
+                    const stats = globalMktStats[p.id];
+                    const saves = savesMap[p.id] || 0;
+                    return {
+                        id: p.id,
+                        title: p.title,
+                        creator: p.agencies?.name || "Agencia",
+                        type: "agency" as const,
+                        listing_type: p.listing_type,
+                        neighborhood: p.neighborhood,
+                        city: p.city,
+                        total_cost: p.total_cost,
+                        sq_meters: p.sq_meters,
+                        rooms: p.rooms,
+                        status: p.status,
+                        average_rating: stats ? stats.sum / stats.count : 0,
+                        total_votes: stats ? stats.count : 0,
+                        views_count: p.views_count || 0,
+                        cr: p.views_count > 0 ? (saves / p.views_count) * 100 : 0,
+                        created_at: p.created_at,
+                        url: p.url,
+                    };
+                }),
+                ...userData.map((p: any) => {
+                    const stats = familyStats[p.id];
+                    return {
+                        id: p.id,
+                        title: p.title,
+                        creator: p.created_by_email,
+                        type: "user" as const,
+                        listing_type: p.listing_type,
+                        neighborhood: p.neighborhood,
+                        city: p.city,
+                        total_cost: p.total_cost,
+                        sq_meters: p.sq_meters,
+                        rooms: p.rooms,
+                        status: p.status,
+                        average_rating: stats ? stats.sum / stats.count : 0,
+                        total_votes: stats ? stats.count : 0,
+                        views_count: p.views_count || 0,
+                        cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0,
+                        created_at: p.created_at,
+                        url: p.url,
+                    };
+                })
+            ];
+
+            setStatProps(unified);
+        } catch (e: any) {
+            toast({ title: "Error en estadísticas", description: e.message, variant: "destructive" });
+        } finally {
+            setLoadingStats(false);
+        }
+    };
+
+    const handleSort = (key: keyof StatProperty) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedStats = [...statProps].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+            return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return 0;
+    });
 
     if (loading) {
         return (
@@ -53,55 +288,124 @@ export function AdminEstadisticas() {
         );
     }
 
-    const cards = [
-        {
-            label: "Propiedades totales",
-            value: stats?.totalProperties ?? 0,
-            icon: Home,
-            color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-        },
-        {
-            label: "Agencias registradas",
-            value: stats?.totalAgencies ?? 0,
-            icon: Building2,
-            color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
-        },
-        {
-            label: "Agencias pendientes",
-            value: stats?.pendingAgencies ?? 0,
-            icon: TrendingUp,
-            color: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
-        },
-        {
-            label: "Usuarios con roles",
-            value: stats?.totalUsers ?? 0,
-            icon: Users2,
-            color: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-        },
-    ];
-
     return (
-        <div>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-                {cards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <div key={card.label} className="rounded-xl border border-border bg-background p-5 flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${card.color}`}>
-                                <Icon className="w-5 h-5" />
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Categoría: Propiedades */}
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 flex items-center justify-center">
+                            <Home className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-foreground">Propiedades</h4>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Marketplace</p>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                            <span className="text-3xl font-black text-foreground">{stats?.properties.total}</span>
+                            <span className="text-xs text-muted-foreground mb-1">TOTAL</span>
+                        </div>
+                        <div className="pt-3 border-t border-border/50 space-y-2">
+                            {stats?.properties.breakdown.map(b => (
+                                <div key={b.label} className="flex justify-between text-xs font-medium">
+                                    <span className="text-muted-foreground">{b.label}</span>
+                                    <span className={b.color}>{b.count}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Categoría: Agencias */}
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 flex items-center justify-center">
+                            <Building2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-foreground">Agencias</h4>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Socios HF</p>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                            <span className="text-3xl font-black text-foreground">{stats?.agencies.total}</span>
+                            <span className="text-xs text-muted-foreground mb-1">TOTAL</span>
+                        </div>
+                        <div className="pt-3 border-t border-border/50 space-y-2">
+                            {stats?.agencies.breakdown.map(b => (
+                                <div key={b.label} className="flex justify-between text-xs font-medium">
+                                    <span className="text-muted-foreground">{b.label}</span>
+                                    <span className={b.color}>{b.count}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Categoría: Usuarios */}
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 flex items-center justify-center">
+                            <Users2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-foreground">Usuarios</h4>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Clientes</p>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                            <span className="text-3xl font-black text-foreground">{stats?.users.total}</span>
+                            <span className="text-xs text-muted-foreground mb-1">REGISTRADOS</span>
+                        </div>
+                        <div className="pt-3 border-t border-border/50 space-y-2">
+                            {stats?.users.breakdown.map(b => (
+                                <div key={b.label} className="flex justify-between text-xs font-medium">
+                                    <span className="text-muted-foreground">{b.label}</span>
+                                    <span className={b.color}>{b.count}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Categoría: Equipo */}
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 flex items-center justify-center">
+                                <Shield className="w-5 h-5" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-foreground">{card.value.toLocaleString("es-AR")}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{card.label}</p>
+                                <h4 className="font-bold text-foreground">Control</h4>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Staff</p>
                             </div>
                         </div>
-                    );
-                })}
+                        <div className="flex justify-between items-end mb-6">
+                            <span className="text-3xl font-black text-foreground">{stats?.admins}</span>
+                            <span className="text-xs text-muted-foreground mb-1">ADMINS</span>
+                        </div>
+                    </div>
+                    <div className="bg-muted/40 rounded-xl p-3 text-[10px] text-center text-muted-foreground font-medium uppercase tracking-tighter">
+                        Dashboard Maestro de Auditoría
+                    </div>
+                </div>
             </div>
 
-            <p className="text-xs text-center text-muted-foreground/60">
-                Datos actualizados en tiempo real desde Supabase.
-            </p>
+            <div className="border-t border-border pt-8">
+                <EstadisticasTab
+                    statProps={statProps}
+                    loadingStats={loadingStats}
+                    fetchAllStats={fetchAllStats}
+                    sortConfig={sortConfig}
+                    handleSort={handleSort}
+                    sortedStats={sortedStats}
+                />
+            </div>
         </div>
     );
 }
+

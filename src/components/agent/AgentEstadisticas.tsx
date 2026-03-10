@@ -26,6 +26,7 @@ interface PropertyPerformance {
     saves: number;
     rating: number;
     views: number;
+    votes: number; // Agregado para arreglar lint
     url: string;
     listing_type: string;
 }
@@ -35,9 +36,9 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         queryKey: ["agency-properties-stats", agency.id],
         enabled: !!agency,
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase
                 .from("marketplace_properties")
-                .select("status, price_rent, sq_meters")
+                .select("status, price_rent, sq_meters") as any)
                 .eq("agency_id", agency.id);
             if (error) throw error;
             return data || [];

@@ -19,6 +19,7 @@ interface EstadisticasTabProps {
 }
 
 export function EstadisticasTab({
+    statProps, // Agregado
     loadingStats,
     fetchAllStats,
     sortConfig,
@@ -26,14 +27,20 @@ export function EstadisticasTab({
     sortedStats,
 }: EstadisticasTabProps) {
     return (
-        <TabsContent value="estadisticas" className="space-y-4">
+        <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                    Vista unificada de auditoría total. Analizá el rendimiento, precios y feedback de todas las propiedades.
-                </p>
-                <Button variant="outline" size="sm" onClick={fetchAllStats} disabled={loadingStats} className="rounded-xl">
+                <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-primary" />
+                        Vista unificada de auditoría total
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Analizá el rendimiento, precios y feedback de todas las propiedades.
+                    </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchAllStats} disabled={loadingStats} className="rounded-xl shadow-sm">
                     {loadingStats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <BarChart3 className="w-4 h-4 mr-2" />}
-                    Actualizar
+                    Actualizar Datos
                 </Button>
             </div>
 
@@ -127,6 +134,6 @@ export function EstadisticasTab({
                     </table>
                 </div>
             </div>
-        </TabsContent>
+        </div>
     );
 }

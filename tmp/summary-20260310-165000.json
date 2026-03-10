@@ -1,0 +1,4 @@
+{
+    "summary": "Corregí el error de carga en Estadísticas (column user_roles.role does not exist) provocado por un join fallido. Refactoricé fetchStats para usar consultas paralelas y combinación en memoria, siguiendo el patrón de AdminUsuarios.tsx. También apliqué parches de tipos para la columna status en marketplace_properties.",
+    "current_status": "Dashboard de Estadísticas arreglado y funcional. Métricas de usuarios y agencias por estado operativas."
+}

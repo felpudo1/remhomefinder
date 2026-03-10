@@ -6,19 +6,15 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ExternalLink, Trash2, Users, Building2, EyeOff, Eye, BarChart3, Star, ChevronUp, ChevronDown, MapPin, DollarSign, Maximize2 } from "lucide-react";
+import { Loader2, Building2, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { STATUS_CONFIG, type PropertyStatus } from "@/types/property";
-import { PROPERTY_STATUS_LABELS, AGENT_PROPERTY_STATUSES } from "@/lib/constants";
-import { DeletePropertyDialog } from "@/components/property/DeletePropertyDialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserProperty, MktProperty, StatProperty, MarketplaceStatus } from "@/types/admin-publications";
 
 import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
 import { UsuariosTab } from "./publicaciones/UsuariosTab";
-import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
-import { UserProperty, MktProperty, StatProperty, MarketplaceStatus } from "@/types/admin-publications";
 
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
@@ -36,18 +32,9 @@ export function AdminPublicaciones({ toast }: Props) {
   const [loadingMkt, setLoadingMkt] = useState(true);
   const [deleteMktTarget, setDeleteMktTarget] = useState<MktProperty | null>(null);
 
-  // Estado para estadísticas unificadas
-  const [statProps, setStatProps] = useState<StatProperty[]>([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof StatProperty; direction: 'asc' | 'desc' }>({
-    key: 'created_at',
-    direction: 'desc'
-  });
-
   useEffect(() => {
     fetchUserProperties();
     fetchMktProperties();
-    fetchAllStats();
   }, []);
 
   /**
@@ -97,150 +84,6 @@ export function AdminPublicaciones({ toast }: Props) {
     setLoadingMkt(false);
   };
 
-  /**
-   * Carga TODAS las propiedades con sus estadísticas de calificación.
-   * Lógica PRO: Separa rating SOCIAL (Agencias) de rating FAMILIAR (Usuarios).
-   */
-  /**
-   * FUNCIÓN: fetchAllStats
-   * Es la "licuadora" de datos. Agarra las tablas de Marketplace y la de Usuarios,
-   * las mezcla, calcula los promedios de ratings y saca la cuenta del CR% (Conversión).
-   */
-  const fetchAllStats = async () => {
-    setLoadingStats(true);
-    try {
-      const [mktRes, userRes, ratingsRes] = await Promise.all([
-        supabase.from("marketplace_properties").select("*, agencies(name)"),
-        supabase.from("properties").select("*"),
-        supabase.from("property_ratings" as any).select("*") as any,
-      ]);
-
-      if (mktRes.error) throw mktRes.error;
-      if (userRes.error) throw userRes.error;
-      if (ratingsRes.error) throw ratingsRes.error;
-
-      const mktData = mktRes.data || [];
-      const userData = userRes.data || [];
-      const ratingsData: any[] = ratingsRes.data || [];
-
-      // 1. Mapeo para saber qué propiedad privada viene de qué aviso del marketplace
-      const propToMktMap: Record<string, string> = {};
-      userData.forEach(p => {
-        if (p.source_marketplace_id) propToMktMap[p.id] = p.source_marketplace_id;
-      });
-
-      // 2. Agregación robusta de ratings (Estrellas)
-      const globalMktStats: Record<string, { sum: number, count: number }> = {};
-      const familyStats: Record<string, { sum: number, count: number }> = {};
-      const mktIdSet = new Set(mktData.map((m: any) => m.id));
-
-      ratingsData.forEach(r => {
-        if (!r.property_id || r.rating === null) return;
-
-        const ratingVal = Number(r.rating);
-        if (isNaN(ratingVal)) return;
-
-        // ¿Pertenece a marketplace (directo o copia)?
-        const mktId = propToMktMap[r.property_id] || (mktIdSet.has(r.property_id) ? r.property_id : null);
-
-        if (mktId) {
-          if (!globalMktStats[mktId]) globalMktStats[mktId] = { sum: 0, count: 0 };
-          globalMktStats[mktId].sum += ratingVal;
-          globalMktStats[mktId].count++;
-        }
-
-        // Ratings individuales para el grupo familiar
-        if (!familyStats[r.property_id]) familyStats[r.property_id] = { sum: 0, count: 0 };
-        familyStats[r.property_id].sum += ratingVal;
-        familyStats[r.property_id].count++;
-      });
-
-      // 3. Conteo de Guardados (Saves) genuinos
-      const savesMap: Record<string, number> = {};
-      userData.forEach(p => {
-        if (p.source_marketplace_id) {
-          savesMap[p.source_marketplace_id] = (savesMap[p.source_marketplace_id] || 0) + 1;
-        }
-      });
-
-      // Armamos el objeto final que la tabla va a mostrar
-      const unified: StatProperty[] = [
-        ...mktData.map((p: any) => {
-          const stats = globalMktStats[p.id];
-          const saves = savesMap[p.id] || 0;
-          return {
-            id: p.id,
-            title: p.title,
-            creator: p.agencies?.name || "Agencia",
-            type: "agency" as const,
-            listing_type: p.listing_type,
-            neighborhood: p.neighborhood,
-            city: p.city,
-            total_cost: p.total_cost,
-            sq_meters: p.sq_meters,
-            rooms: p.rooms,
-            status: p.status,
-            average_rating: stats ? stats.sum / stats.count : 0,
-            total_votes: stats ? stats.count : 0,
-            views_count: p.views_count || 0,
-            // CR% = (Gente que la guardó / Gente que la vio) * 100
-            cr: p.views_count > 0 ? (saves / p.views_count) * 100 : 0,
-            created_at: p.created_at,
-            url: p.url,
-          };
-        }),
-        ...userData.map((p: any) => {
-          const stats = familyStats[p.id];
-          return {
-            id: p.id,
-            title: p.title,
-            creator: p.created_by_email,
-            type: "user" as const,
-            listing_type: p.listing_type,
-            neighborhood: p.neighborhood,
-            city: p.city,
-            total_cost: p.total_cost,
-            sq_meters: p.sq_meters,
-            rooms: p.rooms,
-            status: p.status,
-            average_rating: stats ? stats.sum / stats.count : 0,
-            total_votes: stats ? stats.count : 0,
-            views_count: p.views_count || 0,
-            cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0, // En personales usamos votos/interés como CR
-            created_at: p.created_at,
-            url: p.url,
-          };
-        })
-      ];
-
-      setStatProps(unified);
-    } catch (e: any) {
-      toast({ title: "Error en estadísticas", description: e.message, variant: "destructive" });
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  const handleSort = (key: keyof StatProperty) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedStats = [...statProps].sort((a, b) => {
-    const aVal = a[sortConfig.key];
-    const bVal = b[sortConfig.key];
-
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-    }
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
-    }
-    return 0;
-  });
 
   /**
    * Oculta o restaura una propiedad de usuario (soft delete).
@@ -298,7 +141,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     const { error } = await supabase
       .from("marketplace_properties")
-      .update({ status: newStatus })
+      .update({ status: newStatus } as any)
       .eq("id", prop.id);
 
     if (error) {
@@ -333,7 +176,7 @@ export function AdminPublicaciones({ toast }: Props) {
   return (
     <Tabs defaultValue="marketplace" className="w-full">
       {/* TabsList responsive */}
-      <TabsList className="mb-6 bg-muted rounded-xl p-1 h-auto w-full grid grid-cols-3">
+      <TabsList className="mb-6 bg-muted rounded-xl p-1 h-auto w-full grid grid-cols-2">
         <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
           <Building2 className="w-4 h-4 shrink-0" />
           <span className="hidden sm:inline">Marketplace</span>
@@ -343,11 +186,6 @@ export function AdminPublicaciones({ toast }: Props) {
           <Users className="w-4 h-4 shrink-0" />
           <span className="hidden sm:inline">Usuarios</span>
           <Badge variant="secondary" className="ml-1 text-xs">{userProps.length}</Badge>
-        </TabsTrigger>
-        <TabsTrigger value="estadisticas" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
-          <BarChart3 className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Estadísticas</span>
-          <Badge variant="secondary" className="ml-1 text-xs">{statProps.length}</Badge>
         </TabsTrigger>
       </TabsList>
 
@@ -369,16 +207,6 @@ export function AdminPublicaciones({ toast }: Props) {
         deleteUserTarget={deleteUserTarget}
         setDeleteUserTarget={setDeleteUserTarget}
         deleteUserProperty={deleteUserProperty}
-      />
-
-      {/* ── TAB 3: Estadísticas / Auditoría ── */}
-      <EstadisticasTab
-        statProps={statProps}
-        loadingStats={loadingStats}
-        fetchAllStats={fetchAllStats}
-        sortConfig={sortConfig}
-        handleSort={handleSort}
-        sortedStats={sortedStats}
       />
     </Tabs>
   );
