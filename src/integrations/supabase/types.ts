@@ -288,6 +288,7 @@ export type Database = {
           currency: string
           deleted_by_email: string | null
           deleted_reason: string | null
+          details: string
           discarded_by_email: string | null
           discarded_reason: string | null
           group_id: string | null
@@ -300,6 +301,7 @@ export type Database = {
           neighborhood: string
           price_expenses: number
           price_rent: number
+          ref: string
           rooms: number
           source_marketplace_id: string | null
           sq_meters: number
@@ -324,6 +326,7 @@ export type Database = {
           currency?: string
           deleted_by_email?: string | null
           deleted_reason?: string | null
+          details?: string
           discarded_by_email?: string | null
           discarded_reason?: string | null
           group_id?: string | null
@@ -336,6 +339,7 @@ export type Database = {
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
+          ref?: string
           rooms?: number
           source_marketplace_id?: string | null
           sq_meters?: number
@@ -360,6 +364,7 @@ export type Database = {
           currency?: string
           deleted_by_email?: string | null
           deleted_reason?: string | null
+          details?: string
           discarded_by_email?: string | null
           discarded_reason?: string | null
           group_id?: string | null
@@ -372,6 +377,7 @@ export type Database = {
           neighborhood?: string
           price_expenses?: number
           price_rent?: number
+          ref?: string
           rooms?: number
           source_marketplace_id?: string | null
           sq_meters?: number
