@@ -42,6 +42,8 @@ export interface Property {
   sourceMarketplaceId?: string | null;
   marketplaceStatus?: MarketplacePropertyStatus | null;
   listingType: ListingType;
+  ref: string;
+  details: string;
 }
 
 export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";

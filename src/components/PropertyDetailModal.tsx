@@ -203,6 +203,14 @@ export function PropertyDetailModal({
             </div>
           </div>
 
+          {/* Ref */}
+          {property.ref && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-foreground">Ref:</span>
+              <span className="text-sm text-muted-foreground">{property.ref}</span>
+            </div>
+          )}
+
           {/* AI Summary */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -213,6 +221,16 @@ export function PropertyDetailModal({
               {property.aiSummary}
             </p>
           </div>
+
+          {/* Detalles */}
+          {property.details && (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-foreground">Detalles</div>
+              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-xl p-4 whitespace-pre-line">
+                {property.details}
+              </p>
+            </div>
+          )}
 
           {/* Status and Group Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

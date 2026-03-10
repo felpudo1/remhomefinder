@@ -90,6 +90,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     sqMeters: "",
     rooms: "",
     aiSummary: "",
+    ref: "",
+    details: "",
   });
 
   /**
