@@ -55,4 +55,5 @@ export const PROPERTY_STATUS_LABELS: Record<string, string> = {
     rented: "Alquilada",
     sold: "Vendida",
     deleted: "Eliminada",
+    eliminado_agencia: "Finalizado por Agencia",
 };

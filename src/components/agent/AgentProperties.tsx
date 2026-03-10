@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Trash2, Edit, ChevronDown, Check } from "lucide-react";
+import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -52,11 +52,6 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         }
     };
 
-    const handleDelete = async (id: string) => {
-        const { error } = await supabase.from("marketplace_properties").delete().eq("id", id);
-        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
-        else { queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] }); toast({ title: "Eliminada" }); }
-    };
 
     if (!isActive) return null;
 
@@ -105,8 +100,8 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                 }}
                                 statusOverlay={
                                     <Badge variant="outline" className={`text-xs font-bold border-none ${p.status === 'active' ? 'bg-green-500/90 text-white' :
-                                            p.status === 'paused' ? 'bg-yellow-500/90 text-white' :
-                                                'bg-blue-600/90 text-white'
+                                        p.status === 'paused' ? 'bg-yellow-500/90 text-white' :
+                                            'bg-blue-600/90 text-white'
                                         }`}>
                                         {PROPERTY_STATUS_LABELS[p.status] || p.status}
                                     </Badge>
@@ -137,9 +132,6 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                             </DropdownMenuContent>
                                         </DropdownMenu>
 
-                                        <Button size="sm" variant="ghost" className="gap-1 rounded-lg text-xs text-destructive hover:text-destructive w-auto px-2" onClick={() => handleDelete(p.id)}>
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </Button>
                                     </div>
                                 }
                             />

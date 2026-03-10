@@ -29,8 +29,23 @@ export function useSaveToList() {
         listing_type: property.listingType || "rent",
       };
 
-      if (groupId) {
-        insertData.group_id = groupId;
+      // Si no viene groupId, intentamos obtener el primero del usuario
+      let finalGroupId = groupId;
+      if (!finalGroupId) {
+        const { data: membership } = await supabase
+          .from("group_members")
+          .select("group_id")
+          .eq("user_id", user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (membership) {
+          finalGroupId = membership.group_id;
+        }
+      }
+
+      if (finalGroupId) {
+        insertData.group_id = finalGroupId;
       }
 
       const { data, error } = await supabase

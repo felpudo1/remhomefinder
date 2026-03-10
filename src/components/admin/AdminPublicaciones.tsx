@@ -169,9 +169,13 @@ export function AdminPublicaciones({ toast }: Props) {
       if (userRes.error) throw userRes.error;
       if (ratingsRes.error) throw ratingsRes.error;
 
+      const mktData = mktRes.data || [];
+      const userData = userRes.data || [];
+      const ratingsData = ratingsRes.data || [];
+
       // 1. Mapeo de propiedades de usuario a su origen de marketplace
       const propToMktMap: Record<string, string> = {};
-      userRes.data.forEach(p => {
+      userData.forEach(p => {
         if (p.source_marketplace_id) propToMktMap[p.id] = p.source_marketplace_id;
       });
 
@@ -179,9 +183,9 @@ export function AdminPublicaciones({ toast }: Props) {
       const globalMktStats: Record<string, { sum: number, count: number }> = {};
       const familyStats: Record<string, { sum: number, count: number }> = {};
 
-      ratingsRes.data.forEach(r => {
+      ratingsData.forEach(r => {
         // ¿Este voto pertenece a algo de marketplace (directo o copia)?
-        const mktId = propToMktMap[r.property_id] || (mktRes.data.some(m => m.id === r.property_id) ? r.property_id : null);
+        const mktId = propToMktMap[r.property_id] || (mktData.some(m => m.id === r.property_id) ? r.property_id : null);
 
         if (mktId) {
           if (!globalMktStats[mktId]) globalMktStats[mktId] = { sum: 0, count: 0 };
@@ -196,7 +200,7 @@ export function AdminPublicaciones({ toast }: Props) {
       });
 
       const unified: StatProperty[] = [
-        ...mktRes.data.map((p: any) => {
+        ...mktData.map((p: any) => {
           const stats = globalMktStats[p.id];
           return {
             id: p.id,
@@ -216,7 +220,7 @@ export function AdminPublicaciones({ toast }: Props) {
             url: p.url,
           };
         }),
-        ...userRes.data.map((p: any) => {
+        ...userData.map((p: any) => {
           const stats = familyStats[p.id];
           return {
             id: p.id,

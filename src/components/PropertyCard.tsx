@@ -85,6 +85,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
 
   const isEliminated = property.status === "eliminado";
   const isDiscarded = property.status === "discarded";
+  const isAgentDeleted = property.status === "eliminado_agencia";
 
   return (
     <>
@@ -105,7 +106,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           setGalleryInitialImg(index);
           setIsGalleryOpen(true);
         }}
-        className={isEliminated || isDiscarded ? "opacity-60" : ""}
+        className={isEliminated || isDiscarded || isAgentDeleted ? "opacity-60" : ""}
         statusOverlay={
           mktOverlay ? (
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${mktOverlay.className}`}>
@@ -240,12 +241,31 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 )}
               </div>
             )}
+
+            {isAgentDeleted && (
+              <div className="bg-slate-100 border border-slate-200 rounded-xl p-2.5 space-y-1 mt-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <XCircle className="w-3.5 h-3.5" />
+                  AVISO FINALIZADO POR AGENCIA
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Esta publicación ya no está disponible en el HFMarket. Podés conservarla aquí para tu historial familiar y ver tus notas.
+                </p>
+              </div>
+            )}
           </>
         }
         actions={
           <>
-            <Select value={property.status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="h-8 text-xs w-auto border-border bg-background px-2 gap-1 rounded-lg">
+            <Select
+              value={property.status}
+              onValueChange={handleStatusChange}
+              disabled={isAgentDeleted}
+            >
+              <SelectTrigger className={cn(
+                "h-8 text-xs w-auto border-border bg-background px-2 gap-1 rounded-lg",
+                isAgentDeleted && "opacity-50 cursor-not-allowed"
+              )}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

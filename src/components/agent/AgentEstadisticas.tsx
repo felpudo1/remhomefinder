@@ -2,11 +2,22 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy } from "lucide-react";
+import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3 } from "lucide-react";
 import { Agency } from "./AgentProfile";
 
 interface AgentEstadisticasProps {
     agency: Agency;
+}
+
+interface PropertyPerformance {
+    id: string;
+    title: string;
+    status: string;
+    saves: number;
+    votes: number;
+    rating: number;
+    url: string;
+    listing_type: string;
 }
 
 export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
@@ -46,6 +57,98 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
     const soldCount = properties.filter(p => p.status === "sold" || p.status === "rented").length;
     const totalSaves = statsData?.total_saved || 0;
     const topProps = statsData?.top_properties || [];
+
+    // Query para rendimiento detallado por aviso
+    const { data: performanceData = [], isLoading: performanceLoading } = useQuery({
+        queryKey: ["agency-performance-detailed", agency.id],
+        enabled: !!agency,
+        queryFn: async (): Promise<PropertyPerformance[]> => {
+            // 1. Traer mis publicaciones
+            const { data: mktProps, error: mktError } = await supabase
+                .from("marketplace_properties")
+                .select("id, title, status, listing_type, url")
+                .eq("agency_id", agency.id);
+
+            if (mktError) throw mktError;
+            if (!mktProps) return [];
+
+            const mktIds = mktProps.map(p => p.id);
+
+            // 2. Traer copias de usuarios y ratings simultáneamente
+            const [userPropsRes, allRatingsRes] = await Promise.all([
+                supabase.from("properties").select("id, source_marketplace_id").in("source_marketplace_id", mktIds),
+                // Optimizamos: traemos solo los ratings que nos interesan (los de nuestras copias o del mkt original)
+                supabase.from("property_ratings").select("*")
+            ]);
+
+            if (userPropsRes.error) throw userPropsRes.error;
+            if (allRatingsRes.error) throw allRatingsRes.error;
+
+            const userPropsData = userPropsRes.data || [];
+            const allRatingsData = allRatingsRes.data || [];
+
+            // Mapeo: user_prop_id -> mkt_id
+            const userPropToMkt: Record<string, string> = {};
+            // Mapeo: mkt_id -> save_count
+            const saveCounts: Record<string, number> = {};
+
+            userPropsData.forEach(up => {
+                if (up.source_marketplace_id) {
+                    userPropToMkt[up.id] = up.source_marketplace_id;
+                    saveCounts[up.source_marketplace_id] = (saveCounts[up.source_marketplace_id] || 0) + 1;
+                }
+            });
+
+            // Agregación de ratings: mkt_id -> { sum, count }
+            const ratingStats: Record<string, { sum: number, count: number }> = {};
+            allRatingsData.forEach(r => {
+                const targetMktId = userPropToMkt[r.property_id] || (mktIds.includes(r.property_id) ? r.property_id : null);
+                if (targetMktId) {
+                    if (!ratingStats[targetMktId]) ratingStats[targetMktId] = { sum: 0, count: 0 };
+                    ratingStats[targetMktId].sum += r.rating;
+                    ratingStats[targetMktId].count++;
+                }
+            });
+
+            return mktProps.map(p => {
+                const rs = ratingStats[p.id];
+                return {
+                    id: p.id,
+                    title: p.title,
+                    status: p.status,
+                    saves: saveCounts[p.id] || 0,
+                    votes: rs ? rs.count : 0,
+                    rating: rs ? rs.sum / rs.count : 0,
+                    url: p.url,
+                    listing_type: p.listing_type
+                };
+            });
+        }
+    });
+
+    const [sortConfig, setSortConfig] = useState<{ key: keyof PropertyPerformance, direction: 'asc' | 'desc' }>({
+        key: 'saves',
+        direction: 'desc'
+    });
+
+    const handleSort = (key: keyof PropertyPerformance) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const sortedPerformance = [...performanceData].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+            return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return 0;
+    });
 
     return (
         <div className="space-y-6">
@@ -148,6 +251,98 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Nueva Tabla de Rendimiento Detallado */}
+            <Card className="border-border shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-primary" />
+                            Rendimiento por Aviso
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-1">Análisis detallado de guardados y valoraciones del mercado.</p>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {performanceLoading ? (
+                        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                    ) : performanceData.length === 0 ? (
+                        <p className="text-sm text-center py-10 text-muted-foreground">No hay avisos para mostrar.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-border bg-muted/30">
+                                        {[
+                                            { key: 'title', label: 'Aviso', icon: Building2 },
+                                            { key: 'saves', label: 'Guardados', icon: Bookmark },
+                                            { key: 'votes', label: 'Votantes', icon: Users },
+                                            { key: 'rating', label: 'Rating', icon: Star },
+                                        ].map((col) => (
+                                            <th key={col.key} className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                <button
+                                                    onClick={() => handleSort(col.key as keyof PropertyPerformance)}
+                                                    className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                                                >
+                                                    {col.icon && <col.icon className="w-3 h-3" />}
+                                                    {col.label}
+                                                    {sortConfig.key === col.key && (
+                                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                                                    )}
+                                                </button>
+                                            </th>
+                                        ))}
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {sortedPerformance.map((p) => (
+                                        <tr key={p.id} className="hover:bg-muted/30 transition-colors text-xs">
+                                            <td className="p-3">
+                                                <div className="font-semibold truncate max-w-[250px]">{p.title}</div>
+                                                <div className="flex gap-1.5 mt-0.5">
+                                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${p.status === 'active' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"
+                                                        }`}>
+                                                        {p.status}
+                                                    </span>
+                                                    <span className="text-[9px] text-muted-foreground uppercase">{p.listing_type === 'sale' ? 'Venta' : 'Alquiler'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-3 font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-24 bg-muted h-1.5 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="bg-primary h-full rounded-full"
+                                                            style={{ width: `${Math.min((p.saves / (totalSaves || 1)) * 100, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <span>{p.saves}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-muted-foreground">
+                                                {p.votes} personas
+                                            </td>
+                                            <td className="p-3">
+                                                <div className="flex items-center gap-1.5 font-bold text-amber-500">
+                                                    <Star className={`w-3 h-3 ${p.rating > 0 ? "fill-current" : ""}`} />
+                                                    {p.rating > 0 ? p.rating.toFixed(1) : "—"}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-right">
+                                                {p.url && (
+                                                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };
