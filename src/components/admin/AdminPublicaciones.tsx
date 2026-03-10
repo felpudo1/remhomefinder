@@ -118,29 +118,44 @@ export function AdminPublicaciones({ toast }: Props) {
         if (p.source_marketplace_id) propToMktMap[p.id] = p.source_marketplace_id;
       });
 
-      // 2. Agregación diferenciada
+      // 2. Agregación robusta de ratings
       const globalMktStats: Record<string, { sum: number, count: number }> = {};
       const familyStats: Record<string, { sum: number, count: number }> = {};
+      const mktIdSet = new Set(mktData.map((m: any) => m.id));
 
       ratingsData.forEach(r => {
-        // ¿Este voto pertenece a algo de marketplace (directo o copia)?
-        const mktId = propToMktMap[r.property_id] || (mktData.some(m => m.id === r.property_id) ? r.property_id : null);
+        if (!r.property_id || r.rating === null) return;
+
+        const ratingVal = Number(r.rating);
+        if (isNaN(ratingVal)) return;
+
+        // ¿Pertenece a marketplace (directo o copia)?
+        const mktId = propToMktMap[r.property_id] || (mktIdSet.has(r.property_id) ? r.property_id : null);
 
         if (mktId) {
           if (!globalMktStats[mktId]) globalMktStats[mktId] = { sum: 0, count: 0 };
-          globalMktStats[mktId].sum += r.rating;
+          globalMktStats[mktId].sum += ratingVal;
           globalMktStats[mktId].count++;
         }
 
-        // Siempre guardamos el rating específico para la vista familiar
+        // Ratings individuales para vista personal
         if (!familyStats[r.property_id]) familyStats[r.property_id] = { sum: 0, count: 0 };
-        familyStats[r.property_id].sum += r.rating;
+        familyStats[r.property_id].sum += ratingVal;
         familyStats[r.property_id].count++;
+      });
+
+      // 3. Conteo de Guardados (Saves)
+      const savesMap: Record<string, number> = {};
+      userData.forEach(p => {
+        if (p.source_marketplace_id) {
+          savesMap[p.source_marketplace_id] = (savesMap[p.source_marketplace_id] || 0) + 1;
+        }
       });
 
       const unified: StatProperty[] = [
         ...mktData.map((p: any) => {
           const stats = globalMktStats[p.id];
+          const saves = savesMap[p.id] || 0;
           return {
             id: p.id,
             title: p.title,
@@ -156,7 +171,7 @@ export function AdminPublicaciones({ toast }: Props) {
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
             views_count: p.views_count || 0,
-            cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0,
+            cr: p.views_count > 0 ? (saves / p.views_count) * 100 : 0,
             created_at: p.created_at,
             url: p.url,
           };
@@ -178,7 +193,7 @@ export function AdminPublicaciones({ toast }: Props) {
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
             views_count: p.views_count || 0,
-            cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0,  // Para usuarios (guardados directos) este número podría tener lógicas distintas si quisiéramos. Usamos total_votes temporalmente como proxy de interés si aplica.
+            cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0, // En personales usamos votos/interés como CR
             created_at: p.created_at,
             url: p.url,
           };

@@ -1,0 +1,4 @@
+{
+    "summary": "Se corrigió el error donde el CR% en Admin mostraba 0. El problema era que el cálculo usaba el conteo de votos en lugar del de guardados (saves) y se había borrado accidentalmente la lógica de ratings en una edición previa. Se restauró todo y ahora el CR% refleja correctamente (Guardados / Vistas) * 100.",
+    "current_status": "Lógica de CR% corregida y validada. Esperando confirmación del usuario en el panel de administrador."
+}
