@@ -23,11 +23,13 @@ export function usePropertyMutations() {
             images?: string[];
             groupId?: string | null;
             listingType?: string;
+            ref?: string;
+            details?: string;
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
 
-            const insertData = {
+            const insertData: any = {
                 user_id: user.id,
                 url: form.url || "",
                 title: form.title,
@@ -43,6 +45,8 @@ export function usePropertyMutations() {
                 images: form.images || [],
                 listing_type: (form.listingType as "rent" | "sale") || "rent",
                 group_id: form.groupId || null,
+                ref: form.ref || "",
+                details: form.details || "",
             };
 
             const { data, error } = await supabase

@@ -70,5 +70,7 @@ export function mapDbToProperty(db: DbProperty, comments: DbComment[]): Property
         sourceMarketplaceId: db.source_marketplace_id || null,
         marketplaceStatus: (db as any).marketplace_status as MarketplacePropertyStatus | null ?? null,
         listingType: (db.listing_type as "rent" | "sale") || "rent",
+        ref: (db as any).ref || "",
+        details: (db as any).details || "",
     };
 }
