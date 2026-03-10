@@ -135,6 +135,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         aiSummary: d.aiSummary || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
+      // Agregar las imágenes subidas a la galería para que se persistan
+      setScrapedImages(prev => [...prev, ...uploadedUrls]);
       setCameFromImage(true);
       setStep("manual");
       toast.success("¡Datos extraídos de las imágenes con IA!");
