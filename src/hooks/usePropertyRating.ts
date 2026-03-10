@@ -58,9 +58,9 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             if (!user || !groupId) throw new Error("Acceso denegado");
 
             // Usar upsert basado en el UNIQUE(property_id, user_id)
-            const { error } = await supabase
-                .from("property_ratings")
-                .upsert({
+            const { error } = await (supabase
+                .from("property_ratings" as any)
+                .upsert as any)({
                     property_id: propertyId,
                     user_id: user.id,
                     group_id: groupId,

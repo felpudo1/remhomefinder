@@ -85,7 +85,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             if (allRatingsRes.error) throw allRatingsRes.error;
 
             const userPropsData = userPropsRes.data || [];
-            const allRatingsData = allRatingsRes.data || [];
+            const allRatingsData: any[] = allRatingsRes.data || [];
 
             // Mapeo: user_prop_id -> mkt_id
             const userPropToMkt: Record<string, string> = {};

@@ -171,7 +171,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
       const mktData = mktRes.data || [];
       const userData = userRes.data || [];
-      const ratingsData = ratingsRes.data || [];
+      const ratingsData: any[] = ratingsRes.data || [];
 
       // 1. Mapeo de propiedades de usuario a su origen de marketplace
       const propToMktMap: Record<string, string> = {};
