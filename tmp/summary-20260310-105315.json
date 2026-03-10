@@ -1,0 +1,4 @@
+{
+    "summary": "Se agregaron contadores a las pestañas 'Mi Listado' y 'HFMarket' del dashboard. Se importó el hook useMarketplaceProperties en Index y se utilizaron los lengths de properties y marketplaceProperties.",
+    "current_status": "Pestañas actualizadas con contadores visuales con la estructura () pequeña y semitransparente."
+}

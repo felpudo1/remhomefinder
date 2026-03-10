@@ -1,0 +1,4 @@
+{
+    "summary": "Implementación final del Soft Delete sincronizado entre Marketplace y familias. Se habilitó al Admin para borrar físicamente anuncios bloqueados por RLS y se ajustó el trigger a BEFORE DELETE. Se eliminó el botón de borrado en el panel del agente para incentivar el uso de estados profesionales.",
+    "current_status": "Sistema de borrado e integridad de historial familiar robustecido. Panel del agente unificado con estadísticas de rendimiento por aviso. Próximos pasos: Refinamiento de performance en lecturas de ratings y tipado estricto de RPCs."
+}

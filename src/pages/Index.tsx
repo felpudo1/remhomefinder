@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG, UserStatus } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
+import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
@@ -32,6 +33,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { userEmail, handleLogout } = useAuthRedirect();
   const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
+  const { data: marketplaceProperties = [] } = useMarketplaceProperties();
 
   // Estado del perfil del usuario — centralizado en useProfile
   const { data: profile } = useProfile();
@@ -279,11 +281,11 @@ const Index = () => {
               <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full flex h-12">
                 <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-[2] transition-all">
                   <Home className="w-4 h-4" />
-                  Mi Listado
+                  Mi Listado <span className="text-xs opacity-70 ml-1">({properties.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-1 transition-all">
                   <Store className="w-4 h-4" />
-                  HFMarket
+                  HFMarket <span className="text-xs opacity-70 ml-1">({marketplaceProperties.length})</span>
                 </TabsTrigger>
               </TabsList>
 
