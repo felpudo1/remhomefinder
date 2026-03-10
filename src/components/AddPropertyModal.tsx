@@ -294,6 +294,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         priceExpenses: String(d.priceExpenses || ""),
         currency: d.currency || "ARS",
         neighborhood: d.neighborhood || "",
+        city: d.city || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
