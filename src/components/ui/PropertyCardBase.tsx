@@ -39,6 +39,7 @@ interface PropertyCardBaseProps {
 export function PropertyCardBase({
     title,
     neighborhood,
+    city,
     priceRent,
     priceExpenses,
     currency,
