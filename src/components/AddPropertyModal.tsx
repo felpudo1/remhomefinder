@@ -26,6 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGroups } from "@/hooks/useGroups";
+import { ScraperInput } from "./add-property/ScraperInput";
+import { PropertyFormManual } from "./add-property/PropertyFormManual";
 
 interface AddPropertyModalProps {
   open: boolean;
@@ -469,380 +471,60 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
-            {step === "url" ? "Agregar Propiedad" : step === "image-upload" ? "Analizar captura de RRSS" : "Detalles de la Propiedad"}
+            {step === "url"
+              ? "Agregar Propiedad"
+              : step === "image-upload"
+                ? "Analizar captura de RRSS"
+                : "Detalles de la Propiedad"}
           </DialogTitle>
         </DialogHeader>
 
-        {step === "url" && (
-          <div className="space-y-5 py-2">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Pegá la URL del aviso</Label>
-              <div className="relative">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="url"
-                  placeholder="http://intocasas.com.uy"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="pl-9 rounded-xl"
-                  onKeyDown={(e) => e.key === "Enter" && handleScrape()}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
-              </p>
-            </div>
-
-            {/* Aviso importante sobre Marketplace y RRSS */}
-            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">
-              <strong>AVISO:</strong> Para ingresar publicaciones de MARKETPLACE y redes sociales, debe sacar captura con los datos y click en <strong>Analizar fotos de RRSS</strong> o agregar las publicaciones manualmente.
-            </div>
-
-            <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
-              {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" />Extraer datos de la publicación</>
-              )}
-            </Button>
-
-            {/* Input oculto para nuevo botón unificado (máx 3) */}
-            <input
-              ref={unifiedImageRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => handleUnifiedImageAnalysis(e.target.files)}
-            />
-
-            {/* Separador */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-            </div>
-
-            {/* NUEVO botón unificado: sube a Storage + extract-from-image con prompt DB */}
-            <Button
-              variant="secondary"
-              onClick={() => unifiedImageRef.current?.click()}
-              disabled={isAnalyzingUnified || isAnalyzingImages || isLoading}
-              className="w-full rounded-xl gap-2"
-            >
-              {isAnalyzingUnified ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Analizando imágenes...</>
-              ) : (
-                <><Camera className="w-4 h-4" />Analizar fotos de RRSS (1-3 imágenes)</>
-              )}
-            </Button>
-
-            {/* BACKUP: Input oculto para selección de screenshots (máx 3) — LEGACY
-            <input
-              ref={imageAnalysisRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => handleImageAnalysis(e.target.files)}
-            />
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={() => imageAnalysisRef.current?.click()}
-              disabled={isAnalyzingImages || isLoading}
-              className="w-full rounded-xl gap-2 opacity-60"
-            >
-              {isAnalyzingImages ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Analizando imágenes...</>
-              ) : (
-                <><Camera className="w-4 h-4" />Ingresar imágenes para analizar (IG, FB)</>
-              )}
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-            </div>
-
-            <Button variant="outline" onClick={() => setStep("image-upload")} className="w-full rounded-xl gap-2 opacity-60">
-              <Camera className="w-4 h-4" />
-              Ingresar captura de RRSS para analizar
-            </Button>
-            END BACKUP */}
-
-            {/* Separador */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-            </div>
-
-            <Button
-              variant="secondary"
-              onClick={() => setStep("manual")}
-              className="w-full rounded-xl gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Agregar manualmente
-            </Button>
-          </div>
-        )}
-
-        {step === "image-upload" && (
-          <div className="space-y-5 py-2">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Subí una captura de pantalla del aviso</Label>
-              <p className="text-xs text-muted-foreground">
-                Seleccioná una captura de Instagram, Facebook Marketplace u otra red social. La IA extraerá los datos que pueda detectar.
-              </p>
-            </div>
-
-            <input
-              ref={screenshotInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleScreenshotSelect(e.target.files)}
-            />
-
-            {screenshotPreview ? (
-              <div className="relative">
-                <img
-                  src={screenshotPreview}
-                  alt="Captura"
-                  className="w-full max-h-64 object-contain rounded-xl border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => { setScreenshotFile(null); setScreenshotPreview(null); }}
-                  className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => screenshotInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
-              >
-                <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Tocá para seleccionar la captura</span>
-              </button>
-            )}
-
-            <Button
-              onClick={handleAnalyzeImage}
-              disabled={!screenshotFile || isLoading}
-              className="w-full rounded-xl gap-2"
-            >
-              {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Analizando imagen...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" />Analizar con IA</>
-              )}
-            </Button>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setStep("url"); setScreenshotFile(null); setScreenshotPreview(null); }} className="flex-1 rounded-xl">
-                Volver
-              </Button>
-              <Button variant="ghost" onClick={() => { setCameFromImage(true); setStep("manual"); }} className="flex-1 rounded-xl text-muted-foreground text-sm">
-                Saltar y completar manual
-              </Button>
-            </div>
-          </div>
-        )}
+        <ScraperInput
+          step={step}
+          url={url}
+          setUrl={setUrl}
+          isLoading={isLoading}
+          isAnalyzingUnified={isAnalyzingUnified}
+          handleScrape={handleScrape}
+          unifiedImageRef={unifiedImageRef}
+          handleUnifiedImageAnalysis={handleUnifiedImageAnalysis}
+          setStep={setStep}
+          screenshotInputRef={screenshotInputRef}
+          screenshotFile={screenshotFile}
+          screenshotPreview={screenshotPreview}
+          handleScreenshotSelect={handleScreenshotSelect}
+          setScreenshotFile={setScreenshotFile}
+          setScreenshotPreview={setScreenshotPreview}
+          handleAnalyzeImage={handleAnalyzeImage}
+          setCameFromImage={setCameFromImage}
+        />
 
         {step === "manual" && (
-          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
-            {/* Nota cuando viene de análisis de imagen */}
-            {cameFromImage && (
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200 flex gap-2">
-                <Camera className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                <p>Datos extraídos desde captura. <strong>Revisá y completá</strong> los campos faltantes. Agregá fotos reales de la propiedad abajo.</p>
-              </div>
-            )}
-
-            {/* Tipo de operación */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Tipo de operación</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant={listingType === "rent" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("rent")}>
-                  Alquiler
-                </Button>
-                <Button type="button" variant={listingType === "sale" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("sale")}>
-                  Venta
-                </Button>
-              </div>
-            </div>
-
-
-            {form.aiSummary && (
-              <div className="bg-muted rounded-xl p-3 text-xs text-muted-foreground flex gap-2">
-                <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
-                <p className="leading-relaxed">{form.aiSummary}</p>
-              </div>
-            )}
-
-            {/* Fotos section - moved up, highlighted when coming from image */}
-            <div className={`space-y-1.5 ${cameFromImage ? "bg-primary/5 border border-primary/20 rounded-xl p-3" : ""}`}>
-              <Label className="text-xs font-medium flex items-center gap-1">
-                <ImageIcon className="w-3 h-3" />
-                {cameFromImage ? "📸 Agregá fotos reales de la propiedad" : "Fotos"}
-              </Label>
-              {cameFromImage && scrapedImages.length === 0 && (
-                <p className="text-[10px] text-muted-foreground">La IA no puede extraer fotos desde capturas. Subí hasta 3 fotos reales.</p>
-              )}
-              {scrapedImages.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {scrapedImages.map((img, i) => (
-                    <div key={i} className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-muted shadow-sm hover:shadow-md transition-all duration-300">
-                      <img
-                        src={img}
-                        alt={`Foto ${i + 1}`}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        onError={(e) => { (e.target as HTMLImageElement).parentElement?.classList.add('hidden'); }}
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))}
-                          className="bg-destructive text-destructive-foreground p-1.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform"
-                          title="Eliminar foto"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="border border-dashed border-border rounded-xl p-4 text-center bg-muted/30">
-                  <p className="text-[10px] text-muted-foreground italic">No hay fotos seleccionadas aún</p>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Input type="url" placeholder="https://... URL de la foto" value={manualImageUrl} onChange={(e) => setManualImageUrl(e.target.value)} className="rounded-xl text-sm flex-1" onKeyDown={(e) => { if (e.key === "Enter" && manualImageUrl.trim()) { e.preventDefault(); setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); } }} />
-                <Button type="button" variant="outline" size="icon" className="rounded-xl shrink-0" disabled={!manualImageUrl.trim()} onClick={() => { setScrapedImages(prev => [...prev, manualImageUrl.trim()]); setManualImageUrl(""); }}>
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2 items-center">
-                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
-                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
-                  {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                  {isUploading ? "Subiendo..." : "Subir desde dispositivo"}
-                </Button>
-                <p className="text-[10px] text-muted-foreground">o pegá URLs arriba</p>
-              </div>
-            </div>
-
-            {/* Link de la publicación */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Link de la publicación</Label>
-              <div className="relative">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} onBlur={() => checkDuplicateUrl(url)} placeholder="http://intocasas.com.uy" className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
-              </div>
-              {urlDuplicated && (
-                <p className="text-xs text-destructive font-medium">⚠️ Esta URL ya fue ingresada. Revisá tus propiedades existentes.</p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Título *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl text-sm" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Barrio *</Label>
-                <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Ciudad</Label>
-                <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej: Montevideo" className="rounded-xl text-sm" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">{listingType === "sale" ? "Precio de venta *" : "Alquiler *"}</Label>
-                <Input type="number" value={form.priceRent} onChange={(e) => setForm({ ...form, priceRent: e.target.value })} placeholder={listingType === "sale" ? "150000" : "850"} className="rounded-xl text-sm" />
-              </div>
-              {listingType === "rent" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">G/C</Label>
-                  <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="120" className="rounded-xl text-sm" />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Moneda</Label>
-                <Input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} placeholder="USD" className="rounded-xl text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">m²</Label>
-                <Input type="number" value={form.sqMeters} onChange={(e) => setForm({ ...form, sqMeters: e.target.value })} placeholder="58" className="rounded-xl text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Ambientes</Label>
-                <Input type="number" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} placeholder="2" className="rounded-xl text-sm" />
-              </div>
-            </div>
-
-            {/* Ref */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Referencia</Label>
-              <Input value={form.ref} onChange={(e) => setForm({ ...form, ref: e.target.value })} placeholder="Ej: REF-12345" className="rounded-xl text-sm" />
-            </div>
-
-            {/* Detalles */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Detalles</Label>
-              <textarea
-                value={form.details}
-                onChange={(e) => setForm({ ...form, details: e.target.value })}
-                placeholder="Detalles adicionales extraídos por IA o ingresados manualmente..."
-                className="w-full min-h-[60px] rounded-xl text-sm border border-input bg-background px-3 py-2 resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200">
-              ⚠️ Por favor chequeá y completá los datos antes de agregar la propiedad.
-            </div>
-
-            {/* Group selector */}
-            {groups.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1">
-                  <Users className="w-3 h-3" /> Agregar al grupo
-                </Label>
-                <Select value={selectedGroupId || "none"} onValueChange={(v) => setSelectedGroupId(v === "none" ? null : v)}>
-                  <SelectTrigger className="rounded-xl text-sm">
-                    <SelectValue placeholder="Sin grupo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin grupo (solo mío)</SelectItem>
-                    {groups.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => { setStep(cameFromImage ? "image-upload" : "url"); }} className="flex-1 rounded-xl">Volver</Button>
-              <Button onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">Agregar Propiedad</Button>
-            </div>
-          </div>
+          <PropertyFormManual
+            form={form}
+            setForm={setForm}
+            listingType={listingType}
+            setListingType={setListingType}
+            cameFromImage={cameFromImage}
+            scrapedImages={scrapedImages}
+            setScrapedImages={setScrapedImages}
+            manualImageUrl={manualImageUrl}
+            setManualImageUrl={setManualImageUrl}
+            fileInputRef={fileInputRef}
+            handleFileUpload={handleFileUpload}
+            isUploading={isUploading}
+            url={url}
+            setUrl={setUrl}
+            urlDuplicated={urlDuplicated}
+            setUrlDuplicated={setUrlDuplicated}
+            checkDuplicateUrl={checkDuplicateUrl}
+            groups={groups}
+            selectedGroupId={selectedGroupId}
+            setSelectedGroupId={setSelectedGroupId}
+            setStep={setStep}
+            handleSubmit={handleSubmit}
+            isFormValid={isFormValid}
+          />
         )}
       </DialogContent>
     </Dialog>

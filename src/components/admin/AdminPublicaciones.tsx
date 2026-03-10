@@ -9,71 +9,10 @@ import { STATUS_CONFIG, type PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS, AGENT_PROPERTY_STATUSES } from "@/lib/constants";
 import { DeletePropertyDialog } from "@/components/property/DeletePropertyDialog";
 
-// ── Tipos de estado del marketplace ──────────────────────────────────────────
-type MarketplaceStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";
-
-/**
- * Colores visuales para cada estado del marketplace (publicaciones de agentes).
- */
-const MK_STATUS_COLORS: Record<MarketplaceStatus, string> = {
-  active: "bg-emerald-100 text-emerald-700",
-  paused: "bg-amber-100 text-amber-700",
-  reserved: "bg-blue-100 text-blue-700",
-  sold: "bg-gray-100 text-gray-600",
-  rented: "bg-violet-100 text-violet-700",
-  deleted: "bg-red-100 text-red-700",
-};
-
-// ── Tipos de datos ────────────────────────────────────────────────────────────
-
-/**
- * Propiedad guardada por un usuario en su listado personal.
- * Status = flujo personal del user (contactado, visitado, coordinado, etc.)
- */
-interface UserProperty {
-  id: string;
-  title: string;
-  url: string;
-  status: PropertyStatus;
-  created_by_email: string;
-  source_marketplace_id: string | null;
-  listing_type: "rent" | "sale";
-  created_at: string;
-  admin_hidden: boolean;
-}
-
-/**
- * Publicación de agente en el HFMarket.
- * Status = estado de la publicación (activa, pausada, vendida, etc.)
- */
-interface MktProperty {
-  id: string;
-  title: string;
-  url: string;
-  status: MarketplaceStatus;
-  listing_type: "rent" | "sale";
-  created_at: string;
-  agency_name?: string;
-}
-
-/** Interface unificada para la pestaña de estadísticas */
-interface StatProperty {
-  id: string;
-  title: string;
-  creator: string; // Email o Nombre de Agencia
-  type: "user" | "agency";
-  listing_type: "rent" | "sale";
-  neighborhood: string;
-  city: string;
-  total_cost: number;
-  sq_meters: number;
-  rooms: number;
-  status: string;
-  average_rating: number;
-  total_votes: number;
-  created_at: string;
-  url: string;
-}
+import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
+import { UsuariosTab } from "./publicaciones/UsuariosTab";
+import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
+import { UserProperty, MktProperty, StatProperty, MarketplaceStatus } from "@/types/admin-publications";
 
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
@@ -356,8 +295,7 @@ export function AdminPublicaciones({ toast }: Props) {
     }
   };
 
-  const getStatusOptions = (listingType: "rent" | "sale"): readonly string[] =>
-    listingType === "sale" ? AGENT_PROPERTY_STATUSES.SALE : AGENT_PROPERTY_STATUSES.RENT;
+
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -382,336 +320,34 @@ export function AdminPublicaciones({ toast }: Props) {
       </TabsList>
 
       {/* ── TAB 1: Publicaciones del marketplace (agentes) ── */}
-      <TabsContent value="marketplace">
-        <p className="text-sm text-muted-foreground mb-4">
-          Publicaciones ingresadas por agentes al HFMarket. Desde aquí podés cambiar el estado o eliminarlas.
-          El cambio de estado se propaga automáticamente a todos los usuarios que las guardaron.
-        </p>
-
-        {loadingMkt ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-        ) : mktProps.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">No hay publicaciones del marketplace.</div>
-        ) : (
-          <div className="space-y-2">
-            {/* Desktop */}
-            <div className="hidden lg:block">
-              <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                <span>Título</span>
-                <span>Agencia</span>
-                <span>Operación</span>
-                <span>Estado actual</span>
-                <span>Cambiar estado</span>
-                <span></span>
-              </div>
-              {mktProps.map(prop => {
-                const color = MK_STATUS_COLORS[prop.status] || "";
-                return (
-                  <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="truncate font-medium">{prop.title}</span>
-                      {prop.url && (
-                        <a href={prop.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-primary hover:text-primary/80">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground min-w-[100px] truncate">{prop.agency_name}</span>
-                    <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
-                      {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
-                    </Badge>
-                    <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${color}`}>
-                      {PROPERTY_STATUS_LABELS[prop.status] || prop.status}
-                    </span>
-                    <Select value={prop.status} onValueChange={(v) => updateMktStatus(prop, v as MarketplaceStatus)}>
-                      <SelectTrigger className="h-8 rounded-xl text-xs w-[150px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {getStatusOptions(prop.listing_type).map(s => (
-                          <SelectItem key={s} value={s}>{PROPERTY_STATUS_LABELS[s] || s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setDeleteMktTarget(prop)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Mobile */}
-            <div className="lg:hidden space-y-3">
-              {mktProps.map(prop => {
-                const color = MK_STATUS_COLORS[prop.status] || "";
-                return (
-                  <div key={prop.id} className="rounded-xl border border-border p-4 space-y-3 bg-card">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">{prop.title}</span>
-                          {prop.url && (
-                            <a href={prop.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-primary">
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground block mt-0.5">{prop.agency_name}</span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
-                          {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
-                        </Badge>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setDeleteMktTarget(prop)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    <span className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${color}`}>
-                      {PROPERTY_STATUS_LABELS[prop.status] || prop.status}
-                    </span>
-                    <Select value={prop.status} onValueChange={(v) => updateMktStatus(prop, v as MarketplaceStatus)}>
-                      <SelectTrigger className="h-8 rounded-xl text-xs w-full"><SelectValue placeholder="Cambiar estado" /></SelectTrigger>
-                      <SelectContent>
-                        {getStatusOptions(prop.listing_type).map(s => (
-                          <SelectItem key={s} value={s}>{PROPERTY_STATUS_LABELS[s] || s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <DeletePropertyDialog
-          open={!!deleteMktTarget}
-          onOpenChange={(open) => !open && setDeleteMktTarget(null)}
-          onConfirm={deleteMktProperty}
-          title={deleteMktTarget?.title || ""}
-        />
-      </TabsContent>
+      <MarketplaceTab
+        mktProps={mktProps}
+        loadingMkt={loadingMkt}
+        updateMktStatus={updateMktStatus}
+        deleteMktTarget={deleteMktTarget}
+        setDeleteMktTarget={setDeleteMktTarget}
+        deleteMktProperty={deleteMktProperty}
+      />
 
       {/* ── TAB 2: Propiedades de usuarios (listado personal) ── */}
-      <TabsContent value="usuarios">
-        <p className="text-sm text-muted-foreground mb-4">
-          Propiedades guardadas por usuarios en su listado de búsqueda personal.
-          El estado mostrado es el estado personal del usuario en su flujo de búsqueda.
-        </p>
-
-        {loadingUser ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-        ) : userProps.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">No hay propiedades guardadas por usuarios.</div>
-        ) : (
-          <div className="space-y-2">
-            {/* Desktop */}
-            <div className="hidden lg:block">
-              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                <span>Título</span>
-                <span>Usuario</span>
-                <span>Operación</span>
-                <span>Estado personal</span>
-                <span></span>
-              </div>
-              {/* Muestra TODAS las propiedades — el ícono indica su visibilidad para el usuario */}
-              {userProps.map(prop => {
-                const cfg = STATUS_CONFIG[prop.status];
-                return (
-                  <div key={prop.id} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="truncate font-medium">{prop.title}</span>
-                      {prop.url && (
-                        <a href={prop.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-primary hover:text-primary/80">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground min-w-[120px] truncate block max-w-[160px]">
-                      {prop.created_by_email || "—"}
-                    </span>
-                    <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
-                      {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
-                    </Badge>
-                    {cfg ? (
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                    {/* Eye + Trash en la misma línea */}
-                    <div className="flex items-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        title={prop.admin_hidden ? 'Restaurar propiedad' : 'Ocultar al usuario'}
-                        onClick={() => toggleHideUserProperty(prop)}
-                      >
-                        {prop.admin_hidden
-                          ? <EyeOff className="w-4 h-4 text-red-500" />
-                          : <Eye className="w-4 h-4 text-emerald-500" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setDeleteUserTarget(prop)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Mobile */}
-            <div className="lg:hidden space-y-3">
-              {userProps.map(prop => {
-                const cfg = STATUS_CONFIG[prop.status];
-                return (
-                  <div key={prop.id} className="rounded-xl border border-border p-4 space-y-2 bg-card">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">{prop.title}</span>
-                          {prop.url && (
-                            <a href={prop.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-primary">
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground block mt-0.5">{prop.created_by_email || "—"}</span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
-                          {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => toggleHideUserProperty(prop)}
-                        >
-                          {prop.admin_hidden
-                            ? <EyeOff className="w-3.5 h-3.5 text-red-500" />
-                            : <Eye className="w-3.5 h-3.5 text-emerald-500" />}
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setDeleteUserTarget(prop)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    {cfg && (
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <DeletePropertyDialog
-          open={!!deleteUserTarget}
-          onOpenChange={(open) => !open && setDeleteUserTarget(null)}
-          onConfirm={deleteUserProperty}
-          title={deleteUserTarget?.title || ""}
-        />
-      </TabsContent>
+      <UsuariosTab
+        userProps={userProps}
+        loadingUser={loadingUser}
+        toggleHideUserProperty={toggleHideUserProperty}
+        deleteUserTarget={deleteUserTarget}
+        setDeleteUserTarget={setDeleteUserTarget}
+        deleteUserProperty={deleteUserProperty}
+      />
 
       {/* ── TAB 3: Estadísticas / Auditoría ── */}
-      <TabsContent value="estadisticas" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Vista unificada de auditoría total. Analizá el rendimiento, precios y feedback de todas las propiedades.
-          </p>
-          <Button variant="outline" size="sm" onClick={fetchAllStats} disabled={loadingStats} className="rounded-xl">
-            {loadingStats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <BarChart3 className="w-4 h-4 mr-2" />}
-            Actualizar
-          </Button>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-muted/50 border-b border-border">
-                  {[
-                    { key: 'title', label: 'Propiedad', icon: Building2 },
-                    { key: 'creator', label: 'Creador' },
-                    { key: 'neighborhood', label: 'Ubicación', icon: MapPin },
-                    { key: 'total_cost', label: 'Precio', icon: DollarSign },
-                    { key: 'sq_meters', label: 'Sup.', icon: Maximize2 },
-                    { key: 'status', label: 'Estado' },
-                    { key: 'average_rating', label: 'Rating', icon: Star },
-                    { key: 'total_votes', label: 'Votos', icon: Users },
-                  ].map((col) => (
-                    <th key={col.key} className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      <button
-                        onClick={() => handleSort(col.key as keyof StatProperty)}
-                        className="flex items-center gap-1.5 hover:text-foreground transition-colors"
-                      >
-                        {col.icon && <col.icon className="w-3 h-3" />}
-                        {col.label}
-                        {sortConfig.key === col.key && (
-                          sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                        )}
-                      </button>
-                    </th>
-                  ))}
-                  <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Ver</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {sortedStats.map((p) => (
-                  <tr key={p.id} className="hover:bg-muted/30 transition-colors text-xs">
-                    <td className="p-3 max-w-[200px]">
-                      <div className="font-semibold truncate">{p.title}</div>
-                      <div className="text-[10px] opacity-50 mt-0.5">{p.type === 'agency' ? 'Marketplace' : 'Personal'}</div>
-                    </td>
-                    <td className="p-3">
-                      <div className="truncate max-w-[120px] text-muted-foreground">{p.creator}</div>
-                    </td>
-                    <td className="p-3">
-                      <div className="truncate max-w-[100px]">{p.neighborhood}</div>
-                      <div className="text-[10px] opacity-50">{p.city}</div>
-                    </td>
-                    <td className="p-3 font-mono font-medium">
-                      ${p.total_cost.toLocaleString()}
-                    </td>
-                    <td className="p-3">
-                      {p.sq_meters}m²
-                      <div className="text-[10px] opacity-50">{p.rooms} amb.</div>
-                    </td>
-                    <td className="p-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium text-[9px] uppercase border ${p.status === 'active' || p.status === 'ingresado' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"
-                        }`}>
-                        {PROPERTY_STATUS_LABELS[p.status] || p.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1.5 font-bold text-amber-500">
-                        <Star className={`w-3 h-3 ${p.average_rating > 0 ? "fill-current" : ""}`} />
-                        {p.average_rating > 0 ? p.average_rating.toFixed(1) : "—"}
-                      </div>
-                    </td>
-                    <td className="p-3 text-muted-foreground font-medium">
-                      {p.total_votes > 0 ? p.total_votes : "0"}
-                    </td>
-                    <td className="p-3 text-right">
-                      {p.url && (
-                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted transition-colors text-primary">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </TabsContent>
+      <EstadisticasTab
+        statProps={statProps}
+        loadingStats={loadingStats}
+        fetchAllStats={fetchAllStats}
+        sortConfig={sortConfig}
+        handleSort={handleSort}
+        sortedStats={sortedStats}
+      />
     </Tabs>
   );
 }
