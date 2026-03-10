@@ -124,7 +124,7 @@ async function extractWithAI(markdown: string, role: string): Promise<Record<str
         function: {
           name: "extract_property_data",
           description: "Extract structured property data from a real estate listing",
-          parameters: {
+           parameters: {
             type: "object",
             properties: {
               title: { type: "string", description: "Título descriptivo de la propiedad" },
@@ -136,6 +136,8 @@ async function extractWithAI(markdown: string, role: string): Promise<Record<str
               sqMeters: { type: "number", description: "Superficie en metros cuadrados" },
               rooms: { type: "number", description: "Cantidad de ambientes" },
               aiSummary: { type: "string", description: "Resumen breve del aviso" },
+              ref: { type: "string", description: "Código de referencia del aviso si existe (ej: REF-123). Vacío si no se detecta." },
+              details: { type: "string", description: "Detalles adicionales: características, amenities, descripción extendida. Vacío si no se detecta." },
             },
             required: ["title", "listingType", "neighborhood", "aiSummary"],
             additionalProperties: false,
