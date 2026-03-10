@@ -109,7 +109,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       for (const file of Array.from(files).slice(0, 3)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/screenshot-${crypto.randomUUID()}.${ext}`;
+        const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
         if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
