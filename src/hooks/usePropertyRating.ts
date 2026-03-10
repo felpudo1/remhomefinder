@@ -74,9 +74,14 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             toast({ title: "¡Voto registrado!", description: "Tu familia podrá ver tu opinión. ⭐" });
         },
         onError: (error: any) => {
+            // REGLA 3: Solo lo solicitado - Mensaje amigable en lugar de error técnico
+            const isDuplicate = error.code === "23505" ||
+                error.message?.includes("unique constraint") ||
+                error.message?.includes("property_ratings_property_id_user_id_key");
+
             toast({
                 title: "Error al votar",
-                description: error.message,
+                description: isDuplicate ? "Este aviso ya fue puntuado." : error.message,
                 variant: "destructive"
             });
         },
