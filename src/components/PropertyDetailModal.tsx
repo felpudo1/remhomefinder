@@ -30,9 +30,11 @@ import {
   Share2,
   Users,
   Building2,
+  X,
 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { useGroups } from "@/hooks/useGroups";
+import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 
 interface PropertyDetailModalProps {
   property: Property | null;
@@ -55,6 +57,7 @@ export function PropertyDetailModal({
 }: PropertyDetailModalProps) {
   const { groups } = useGroups();
   const [activeImg, setActiveImg] = useState(0);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentAuthor, setCommentAuthor] = useState(currentUserEmail || "Me");
 
@@ -63,6 +66,8 @@ export function PropertyDetailModal({
       setCommentAuthor(currentUserEmail);
     }
   }, [open, currentUserEmail]);
+
+  // Manejo de teclado para la galería (AHORA GESTIONADO POR FullScreenGallery)
 
   if (!property) return null;
 
@@ -91,32 +96,35 @@ export function PropertyDetailModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl">
         {/* Image Gallery */}
-        <div className="relative h-64 bg-muted rounded-t-2xl overflow-hidden">
+        <div className="relative h-64 bg-muted rounded-t-2xl overflow-hidden cursor-zoom-in" onClick={() => setIsGalleryOpen(true)}>
           <img
-            src={property.images[activeImg]}
+            src={property.images[activeImg] || "/placeholder.svg"}
             alt={property.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
+          <div className="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
+          </div>
           {property.images.length > 1 && (
             <>
               <button
-                onClick={() => setActiveImg((p) => (p - 1 + property.images.length) % property.images.length)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors"
+                onClick={(e) => { e.stopPropagation(); setActiveImg((p) => (p - 1 + property.images.length) % property.images.length); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors shadow-lg z-10"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setActiveImg((p) => (p + 1) % property.images.length)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors"
+                onClick={(e) => { e.stopPropagation(); setActiveImg((p) => (p + 1) % property.images.length); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors shadow-lg z-10"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                 {property.images.map((_, i) => (
                   <button
                     key={i}
-                    onClick={() => setActiveImg(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${i === activeImg ? "bg-card scale-125" : "bg-card/50"
+                    onClick={(e) => { e.stopPropagation(); setActiveImg(i); }}
+                    className={`w-2 h-2 rounded-full transition-all ${i === activeImg ? "bg-card scale-125 shadow-md" : "bg-card/50"
                       }`}
                   />
                 ))}
@@ -125,35 +133,39 @@ export function PropertyDetailModal({
           )}
         </div>
 
-        <div className="p-6 space-y-5">
+        {/* Acciones Rápidas - Botones grandes para Mobile/Web */}
+        <div className="px-6 pt-4 grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            className="h-11 rounded-xl gap-2 font-medium border-border hover:bg-muted w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              const publicUrl = `${window.location.origin}/p/${property.id}`;
+              navigator.clipboard.writeText(publicUrl);
+              toast({ title: "¡Copiado!", description: "Link listo para compartir." });
+            }}
+          >
+            <Share2 className="w-4 h-4" />
+            Compartir
+          </Button>
+          <Button
+            variant="secondary"
+            className="h-11 rounded-xl gap-2 font-medium bg-secondary/50 hover:bg-secondary w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(property.url, "_blank");
+            }}
+          >
+            <ExternalLink className="w-4 h-4" />
+            Ver publicación original
+          </Button>
+        </div>
+
+        <div className="px-6 pb-6 pt-2 space-y-5">
           {/* Header */}
           <div>
             <div className="flex items-start justify-between gap-4 mb-2">
               <h2 className="text-xl font-bold leading-tight text-foreground">{property.title}</h2>
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Botón para copiar link público al portapapeles */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const publicUrl = `${window.location.origin}/p/${property.id}`;
-                    navigator.clipboard.writeText(publicUrl);
-                    toast({ title: "Link copiado", description: "El link público fue copiado al portapapeles." });
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  title="Copiar link público"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
-                <a
-                  href={property.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
             </div>
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <MapPin className="w-4 h-4" />
@@ -211,24 +223,33 @@ export function PropertyDetailModal({
             </div>
           )}
 
-          {/* AI Summary */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Resumen IA
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-xl p-4">
-              {property.aiSummary}
-            </p>
-          </div>
+          {/* Detalles y Resumen IA unificados */}
+          {(property.aiSummary || property.details) && (
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-foreground">Detalles de la propiedad</div>
+              <div className="bg-muted/50 rounded-xl p-4 space-y-4">
+                {property.aiSummary && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary uppercase tracking-wider">
+                      <Sparkles className="w-3 h-3" />
+                      Resumen IA
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed italic">
+                      {property.aiSummary}
+                    </p>
+                  </div>
+                )}
 
-          {/* Detalles */}
-          {property.details && (
-            <div className="space-y-2">
-              <div className="text-sm font-semibold text-foreground">Detalles</div>
-              <p className="text-sm text-muted-foreground leading-relaxed bg-muted/50 rounded-xl p-4 whitespace-pre-line">
-                {property.details}
-              </p>
+                {property.aiSummary && property.details && (
+                  <div className="border-t border-border/50 pt-2" />
+                )}
+
+                {property.details && (
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {property.details}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -335,7 +356,15 @@ export function PropertyDetailModal({
             </div>
           </div>
         </div>
+
+        {/* Full Screen Gallery Overlay (MODULARIZADO) */}
+        <FullScreenGallery
+          images={property.images}
+          isOpen={isGalleryOpen}
+          initialIndex={activeImg}
+          onClose={() => setIsGalleryOpen(false)}
+        />
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }

@@ -158,7 +158,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
             <p className="text-sm mt-1">Las agencias aún no publicaron propiedades.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filtered.map((property) => {
               const isInactive = INACTIVE_STATUSES.has(property.status);
               return (

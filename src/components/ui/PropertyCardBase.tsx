@@ -30,6 +30,8 @@ interface PropertyCardBaseProps {
     actions?: React.ReactNode;
     /** Clase adicional para el contenedor principal */
     className?: string;
+    /** Manejador de click específico para la imagen (para abrir galería sin abrir detalle) */
+    onImageClick?: (index: number) => void;
 }
 
 /**
@@ -56,8 +58,16 @@ export function PropertyCardBase({
     extraBodyContent,
     actions,
     className = "",
+    onImageClick,
 }: PropertyCardBaseProps) {
     const [currentImg, setCurrentImg] = useState(0);
+
+    const handleImageContainerClick = (e: React.MouseEvent) => {
+        if (onImageClick) {
+            e.stopPropagation();
+            onImageClick(currentImg);
+        }
+    };
 
     return (
         <div
@@ -65,7 +75,10 @@ export function PropertyCardBase({
             onClick={onClick}
         >
             {/* Sección de Imagen */}
-            <div className="relative h-48 overflow-hidden bg-muted">
+            <div
+                className="relative h-48 md:h-64 lg:h-72 overflow-hidden bg-muted cursor-zoom-in"
+                onClick={handleImageContainerClick}
+            >
                 <img
                     src={images[currentImg] || "/placeholder.svg"}
                     alt={title}
