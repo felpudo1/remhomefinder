@@ -1,0 +1,4 @@
+{
+    "summary": "JP solicitó que se le pida permiso SIEMPRE antes de abrir el navegador.",
+    "current_status": "Regla operativa aceptada: Consultar antes de usar `browser_subagent`. Página 404 corregida."
+}

@@ -56,7 +56,7 @@ const NotFound = () => {
           size="lg"
           className="group relative overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 px-8 py-6 text-lg font-semibold"
         >
-          <Link href="/">
+          <Link to="/">
             <Home className="mr-2 h-5 w-5 transition-transform group-hover:-translate-y-1" />
             Volver a la Civilización
           </Link>
