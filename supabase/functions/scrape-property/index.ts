@@ -213,6 +213,8 @@ async function extractWithVision(images: string[]): Promise<Record<string, any>>
               sqMeters: { type: "number", description: "Superficie en metros cuadrados" },
               rooms: { type: "number", description: "Cantidad de ambientes" },
               aiSummary: { type: "string", description: "Resumen breve del aviso" },
+              ref: { type: "string", description: "Código de referencia del aviso si existe. Vacío si no se detecta." },
+              details: { type: "string", description: "Detalles adicionales: características, amenities, descripción extendida. Vacío si no se detecta." },
             },
             required: ["title", "listingType", "neighborhood", "aiSummary"],
             additionalProperties: false,
