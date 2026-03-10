@@ -438,7 +438,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   const handleClose = () => {
     setUrl("");
-    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "" });
+    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
     setScrapedImages([]);
     setManualImageUrl("");
     setUrlDuplicated(false);
