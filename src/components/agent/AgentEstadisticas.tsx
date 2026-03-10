@@ -44,20 +44,6 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         },
     });
 
-    if (propsLoading || statsLoading) {
-        return (
-            <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    const activeCount = properties.filter(p => p.status === "active").length;
-    const pausedCount = properties.filter(p => p.status === "paused").length;
-    const soldCount = properties.filter(p => p.status === "sold" || p.status === "rented").length;
-    const totalSaves = statsData?.total_saved || 0;
-    const topProps = statsData?.top_properties || [];
-
     // Query para rendimiento detallado por aviso
     const { data: performanceData = [], isLoading: performanceLoading } = useQuery({
         queryKey: ["agency-performance-detailed", agency.id],
@@ -77,7 +63,6 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             // 2. Traer copias de usuarios y ratings simultáneamente
             const [userPropsRes, allRatingsRes] = await Promise.all([
                 supabase.from("properties").select("id, source_marketplace_id").in("source_marketplace_id", mktIds),
-                // Optimizamos: traemos solo los ratings que nos interesan (los de nuestras copias o del mkt original)
                 supabase.from("property_ratings" as any).select("*") as any
             ]);
 
@@ -130,6 +115,20 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         key: 'saves',
         direction: 'desc'
     });
+
+    if (propsLoading || statsLoading) {
+        return (
+            <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    const activeCount = properties.filter(p => p.status === "active").length;
+    const pausedCount = properties.filter(p => p.status === "paused").length;
+    const soldCount = properties.filter(p => p.status === "sold" || p.status === "rented").length;
+    const totalSaves = statsData?.total_saved || 0;
+    const topProps = statsData?.top_properties || [];
 
     const handleSort = (key: keyof PropertyPerformance) => {
         setSortConfig(prev => ({
