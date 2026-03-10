@@ -800,8 +800,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 placeholder="Detalles adicionales extraídos por IA o ingresados manualmente..."
                 className="w-full min-h-[60px] rounded-xl text-sm border border-input bg-background px-3 py-2 resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
-
-            {/* Warning banner */}
+            </div>
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200">
               ⚠️ Por favor chequeá y completá los datos antes de agregar la propiedad.
             </div>
