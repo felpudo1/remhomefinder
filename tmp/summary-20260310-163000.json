@@ -1,0 +1,4 @@
+{
+    "summary": "JP consultó si agregar la Tasa de Conversión (CR%) requeriría tocar la base de datos de Supabase. Se confirmó que no, dado que los datos (vistas y guardados) ya están en el frontend y se pueden calcular directamente al renderizar.",
+    "current_status": "El usuario está evaluando si avanzamos con la Tasa de Conversión (CR%) en los paneles estadísticos."
+}

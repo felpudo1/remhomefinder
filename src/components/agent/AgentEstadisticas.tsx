@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye } from "lucide-react";
+import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye, Percent } from "lucide-react";
 import { Agency } from "./AgentProfile";
 
 interface AgentEstadisticasProps {
@@ -223,6 +223,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                                             { key: 'title', label: 'Aviso', icon: Building2 },
                                             { key: 'saves', label: 'Guardados', icon: Bookmark },
                                             { key: 'views', label: 'Vistas', icon: Eye },
+                                            { key: 'cr', label: 'CR%', icon: Percent },
                                             { key: 'votes', label: 'Votantes', icon: Users },
                                             { key: 'rating', label: 'Rating', icon: Star },
                                         ].map((col) => (
@@ -268,6 +269,11 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                                             </td>
                                             <td className="p-3 text-muted-foreground">
                                                 {p.views || 0}
+                                            </td>
+                                            <td className="p-3">
+                                                <div className={`font-bold ${p.views > 0 && (p.saves / p.views) * 100 > 5 ? "text-emerald-500" : p.views > 0 && (p.saves / p.views) * 100 > 2 ? "text-amber-500" : "text-muted-foreground"}`}>
+                                                    {p.views > 0 ? `${((p.saves / p.views) * 100).toFixed(1)}%` : "0%"}
+                                                </div>
                                             </td>
                                             <td className="p-3 text-muted-foreground">
                                                 {p.votes} personas

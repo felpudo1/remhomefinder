@@ -1,4 +1,4 @@
-import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3, Eye } from "lucide-react";
+import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3, Eye, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { StatProperty } from "@/types/admin-publications";
@@ -46,6 +46,7 @@ export function EstadisticasTab({
                                     { key: 'status', label: 'Estado' },
                                     { key: 'average_rating', label: 'Rating', icon: Star },
                                     { key: 'views_count', label: 'Vistas', icon: Eye },
+                                    { key: 'cr', label: 'CR%', icon: Percent },
                                     { key: 'total_votes', label: 'Votos', icon: Users },
                                 ].map((col) => (
                                     <th key={col.key} className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -99,6 +100,11 @@ export function EstadisticasTab({
                                     </td>
                                     <td className="p-3 text-muted-foreground font-medium">
                                         {p.views_count || 0}
+                                    </td>
+                                    <td className="p-3">
+                                        <div className={`font-bold ${p.cr && p.cr > 5 ? "text-emerald-500" : p.cr && p.cr > 2 ? "text-amber-500" : "text-muted-foreground"}`}>
+                                            {p.cr ? `${p.cr.toFixed(1)}%` : "0%"}
+                                        </div>
                                     </td>
                                     <td className="p-3 text-muted-foreground font-medium">
                                         {(p.total_votes || 0) > 0 ? p.total_votes : "0"}

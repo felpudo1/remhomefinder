@@ -50,4 +50,5 @@ export interface StatProperty {
     created_at: string;
     url: string;
     views_count?: number;
+    cr?: number;
 }

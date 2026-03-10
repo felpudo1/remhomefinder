@@ -156,6 +156,7 @@ export function AdminPublicaciones({ toast }: Props) {
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
             views_count: p.views_count || 0,
+            cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0,
             created_at: p.created_at,
             url: p.url,
           };
@@ -177,6 +178,7 @@ export function AdminPublicaciones({ toast }: Props) {
             average_rating: stats ? stats.sum / stats.count : 0,
             total_votes: stats ? stats.count : 0,
             views_count: p.views_count || 0,
+            cr: p.views_count > 0 ? (stats ? stats.count : 0) / p.views_count * 100 : 0,  // Para usuarios (guardados directos) este número podría tener lógicas distintas si quisiéramos. Usamos total_votes temporalmente como proxy de interés si aplica.
             created_at: p.created_at,
             url: p.url,
           };
