@@ -90,6 +90,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     priceExpenses: "",
     currency: "USD",
     neighborhood: "",
+    city: "",
     sqMeters: "",
     rooms: "",
     aiSummary: "",
