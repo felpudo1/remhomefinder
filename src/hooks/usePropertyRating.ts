@@ -19,9 +19,9 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             if (!user) return null;
 
             // 1. Obtenemos todos los votos del grupo para esta propiedad
-            const { data: ratings, error: ratingsError } = await supabase
-                .from("property_ratings")
-                .select("*")
+            const { data: ratings, error: ratingsError } = await (supabase
+                .from("property_ratings" as any)
+                .select("*") as any)
                 .eq("property_id", propertyId)
                 .eq("group_id", groupId);
 
