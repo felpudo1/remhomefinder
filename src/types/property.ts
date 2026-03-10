@@ -22,6 +22,7 @@ export interface Property {
   totalCost: number;
   currency: string;
   neighborhood: string;
+  city: string;
   sqMeters: number;
   rooms: number;
   status: PropertyStatus;
