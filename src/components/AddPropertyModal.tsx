@@ -360,6 +360,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") {
         setListingType(d.listingType);
