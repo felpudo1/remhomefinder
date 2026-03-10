@@ -1,0 +1,4 @@
+{
+    "summary": "Se mejoró el modal de agregar propiedad: se añadió un separador 'o' y se uniformó el estilo del botón 'Agregar manualmente'.",
+    "current_status": "Interfaz del modal AddPropertyModal actualizada según lo solicitado. Esperando nuevas instrucciones."
+}

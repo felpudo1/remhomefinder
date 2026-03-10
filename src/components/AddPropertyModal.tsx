@@ -488,7 +488,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
             {/* NUEVO botón unificado: sube a Storage + extract-from-image con prompt DB */}
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => unifiedImageRef.current?.click()}
               disabled={isAnalyzingUnified || isAnalyzingImages || isLoading}
               className="w-full rounded-xl gap-2"
@@ -539,7 +539,18 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             </Button>
             END BACKUP */}
 
-            <Button variant="ghost" onClick={() => setStep("manual")} className="w-full rounded-xl text-muted-foreground text-sm">
+            {/* Separador */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
+            </div>
+
+            <Button
+              variant="secondary"
+              onClick={() => setStep("manual")}
+              className="w-full rounded-xl gap-2"
+            >
+              <Plus className="w-4 h-4" />
               Agregar manualmente
             </Button>
           </div>
