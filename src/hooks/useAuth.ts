@@ -61,7 +61,7 @@ export const useAuth = () => {
     }) => {
         const { email, password, confirmPassword, accountType, displayName, phone, agencyName, agencyPhone } = params;
         setLoading(true);
-
+        setIsSigningUp(true);
         try {
             // Validación con Zod
             const validation = registerSchema.safeParse(params);
