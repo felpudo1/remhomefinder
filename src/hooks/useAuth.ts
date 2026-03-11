@@ -195,6 +195,7 @@ export const useAuth = () => {
 
     return {
         loading,
+        isSigningUp,
         signIn,
         signUp,
         redirectByRole
