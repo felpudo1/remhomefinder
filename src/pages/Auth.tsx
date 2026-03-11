@@ -38,7 +38,7 @@ const Auth = () => {
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) redirectByRole(session.user.id);
+      if (session && !isSigningUp) redirectByRole(session.user.id);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
