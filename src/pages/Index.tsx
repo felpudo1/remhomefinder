@@ -25,7 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/constants";
-import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT, AddButtonConfig } from "@/components/admin/AdminSystem";
+import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT } from "@/lib/config-keys";
+import type { AddButtonConfig } from "@/components/admin/AdminSystem";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
