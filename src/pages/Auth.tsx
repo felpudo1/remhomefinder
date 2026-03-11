@@ -32,7 +32,7 @@ const Auth = () => {
   const [familyName, setFamilyName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading, signIn, signUp, redirectByRole } = useAuth();
+  const { loading, isSigningUp, signIn, signUp, redirectByRole } = useAuth();
 
   useEffect(() => {
     const {
