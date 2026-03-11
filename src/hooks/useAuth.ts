@@ -122,20 +122,35 @@ export const useAuth = () => {
                     if (lastError) throw lastError;
                 };
 
-                await upsertProfile().catch(e => console.error("Profile upsert error:", e));
+                // Esperar a que el perfil se guarde antes de continuar
+                try {
+                    await upsertProfile();
+                } catch (e) {
+                    console.error("Profile upsert error:", e);
+                }
 
-                // Si es agente, crear la agencia
+                // Si es agente, crear la agencia (el trigger asigna el rol 'agency')
                 if (accountType === ROLES.AGENCY && agencyName) {
-                    const { error: agencyError } = await supabase.from("agencies").insert([{
+                    // Pequeña pausa para asegurar que la sesión esté lista
+                    await new Promise(r => setTimeout(r, 500));
+                    
+                    const { error: agencyError } = await supabase.from("agencies").insert({
                         name: agencyName.trim(),
                         contact_name: displayName.trim(),
                         contact_email: email,
-                        contact_phone: agencyPhone?.trim(),
+                        contact_phone: agencyPhone?.trim() || '',
                         contact_person_phone: phone.trim(),
-                        created_by: data.user.id
-                    }]);
+                        created_by: data.user!.id
+                    });
 
-                    if (agencyError) console.error("DB Agency Error:", agencyError);
+                    if (agencyError) {
+                        console.error("DB Agency Error:", agencyError);
+                        toast({
+                            title: "Advertencia",
+                            description: "No se pudo crear la agencia. Contactá al administrador.",
+                            variant: "destructive"
+                        });
+                    }
                 }
             }
 
