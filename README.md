@@ -1,73 +1,68 @@
-# Welcome to your Lovable project
+# 🏡 HomeFinder — Herramienta Inteligente de Gestión Inmobiliaria
 
-## Project info
+![HomeFinder Banner](https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1920)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**HomeFinder** es una plataforma diseñada para digitalizar y potenciar la búsqueda y gestión de propiedades inmobiliarias. Pensada originalmente para el mercado uruguayo.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Misión y Visión
 
-**Use Lovable**
+Nuestra misión es simplificar la toma de decisiones inmobiliarias mediante el uso de inteligencia de datos y una interfaz de usuario excepcional.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **UY (Uruguay):** Mercado de lanzamiento y consolidación.
+- 
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🛠️ Stack Tecnológico (Senior Pro)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Core:** [React](https://reactjs.org/) + [Vite](https://vitejs.dev/) (Alta velocidad de desarrollo).
+- **Lenguaje:** [TypeScript](https://www.typescriptlang.org/) (Seguridad y tipado estricto).
+- **Capa de Datos:** 
+  - [Supabase](https://supabase.com/) (PostgreSQL + Auth + Realtime).
+  - [TanStack Query](https://tanstack.com/query) (Caché y Server State).
+- **Estado Global:** [Zustand](https://zustand-demo.pmnd.rs/) (Client State ultra-ligero).
+- **Estética:** [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/) (Componentes premium y minimalistas).
+- **Resiliencia:** Error Boundaries globales para una UX sin interrupciones catastróficas.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🏗️ Estructura del Proyecto
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+src/
+├── components/     # UI Base y componentes por caso de uso.
+├── hooks/          # Lógica de negocio reutilizable (Auth, Subscription, etc).
+├── lib/            # Utilidades y configuración centralizada (config-keys).
+├── store/          # Estado global de la UI con Zustand.
+├── integrations/   # Clientes de servicios externos (Supabase).
+└── pages/          # Vistas principales de la aplicación.
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔒 Arquitectura Responsable
 
-**Use GitHub Codespaces**
+- **Configuración Centralizada:** Todas las claves del sistema viven en `src/lib/config-keys.ts`, permitiendo un mantenimiento simple y escalable.
+- **Seguridad:** Validación de esquemas con **ZOD** y reglas de RLS en Supabase.
+- **Rendimiento:** Carga diferida (Lazy Loading) y optimización de re-renders mediante Zustand y Query Selectors.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 👨‍💻 Desarrollo
 
-This project is built with:
+```bash
+# Instalar dependencias
+pnpm install
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Correr en modo desarrollo (Puerto 3000)
+pnpm run dev
+```
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+<div align="center">
+  <p><i>Desarrollado con ❤️ para transformar el mercado inmobiliario regional.</i></p>
+  <p><b>HomeFinder Resilience System v1.0</b></p>
+</div>

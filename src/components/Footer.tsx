@@ -1,11 +1,12 @@
 import { Heart, Mail, Phone } from "lucide-react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 
-export const SUPPORT_EMAIL_CONFIG_KEY = "support_email";
-export const SUPPORT_EMAIL_DEFAULT = "";
-
-export const SUPPORT_PHONE_CONFIG_KEY = "support_phone";
-export const SUPPORT_PHONE_DEFAULT = "";
+import {
+    SUPPORT_EMAIL_CONFIG_KEY,
+    SUPPORT_EMAIL_DEFAULT,
+    SUPPORT_PHONE_CONFIG_KEY,
+    SUPPORT_PHONE_DEFAULT
+} from "@/lib/config-keys";
 
 export const Footer = () => {
     const { value: supportEmail } = useSystemConfig(SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT);

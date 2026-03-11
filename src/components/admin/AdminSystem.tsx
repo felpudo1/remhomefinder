@@ -6,24 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-    SUPPORT_EMAIL_CONFIG_KEY,
-    SUPPORT_EMAIL_DEFAULT,
-    SUPPORT_PHONE_CONFIG_KEY,
-    SUPPORT_PHONE_DEFAULT
-} from "@/components/Footer";
-import {
-    FREE_PLAN_SAVE_LIMIT_KEY,
-    FREE_PLAN_SAVE_LIMIT_DEFAULT
-} from "@/hooks/useSubscription";
-
-/** Posibles valores de configuración del botón de agregar */
-export type AddButtonConfig = "blue" | "white" | "both" | "none";
-
-import {
     SHOW_AUTH_VIDEO_CONFIG_KEY,
     SHOW_AUTH_VIDEO_DEFAULT,
     ADD_BUTTON_CONFIG_KEY,
-    ADD_BUTTON_DEFAULT
+    ADD_BUTTON_DEFAULT,
+    SUPPORT_EMAIL_CONFIG_KEY,
+    SUPPORT_EMAIL_DEFAULT,
+    SUPPORT_PHONE_CONFIG_KEY,
+    SUPPORT_PHONE_DEFAULT,
+    FREE_PLAN_SAVE_LIMIT_KEY,
+    FREE_PLAN_SAVE_LIMIT_DEFAULT
 } from "@/lib/config-keys";
 
 export function AdminSystem() {

@@ -2,9 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSystemConfig } from "./useSystemConfig";
 
-/** Clave para el límite de guardados en la tabla system_config */
-export const FREE_PLAN_SAVE_LIMIT_KEY = "free_plan_save_limit";
-export const FREE_PLAN_SAVE_LIMIT_DEFAULT = "10";
+import {
+    FREE_PLAN_SAVE_LIMIT_KEY,
+    FREE_PLAN_SAVE_LIMIT_DEFAULT
+} from "@/lib/config-keys";
 
 /**
  * Hook centralizado para gestionar la suscripción y límites del usuario.
