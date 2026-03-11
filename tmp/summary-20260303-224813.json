@@ -1,4 +1,0 @@
-{
-    "summary": "Se reemplazó 'expensas' por 'gastos comunes' en toda la app: PropertyCardBase, PublishPropertyModal, PropertyDetailModal y los prompts de IA en AdminPrompt.",
-    "current_status": "Terminología consistente en toda la app. Variables internas como priceExpenses se mantienen igual (convención de código)."
-}

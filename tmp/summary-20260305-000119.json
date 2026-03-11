@@ -1,4 +1,0 @@
-{
-    "summary": "Se encontró el bug que causaba los fallos: el botón de scraping por URL usaba el modelo 'google/gemini-3-flash-preview' que no existe en Lovable Gateway. Se corrigió a 'google/gemini-2.5-flash' y se deployó a producción.",
-    "current_status": "Función scrape-property actualizada deployada. JP puede volver a probar los 3 botones."
-}

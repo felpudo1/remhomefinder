@@ -1,4 +1,0 @@
-{
-    "summary": "Se refactorizaron exitosamente los componentes AddPropertyModal.tsx y AdminPublicaciones.tsx. Se dividieron en subcomponentes ubicados en src/components/add-property/ y src/components/admin/publicaciones/ respectivamente. Se extrajeron los tipos compartidos a src/types/admin-publications.ts. Se corrió pnpm tsc --noEmit para validar tipos sin errores.",
-    "current_status": "Refactorización completada. Ambos componentes masivos han sido rediseñados usando arquitectura profesional (REGLA 2) mejorando la mantenibilidad, sin modificar la funcionalidad base ni la UI."
-}

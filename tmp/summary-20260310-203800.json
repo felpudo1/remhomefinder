@@ -1,4 +1,0 @@
-{
-    "summary": "Mejoras de rendimiento (paginación de 50 en 50 en Admin) y visualización (gráficos Recharts en Dashboard Agente). Se solucionó un bug de renderizado en el dashboard y se ejecutaron comandos de mantenimiento kill/run.",
-    "current_status": "Paginación activa en Admin. Gráficos funcionales en Agente con log de visitas histórico habilitado. Aplicación estable en puerto 3000."
-}

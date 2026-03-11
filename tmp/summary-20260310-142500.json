@@ -1,4 +1,0 @@
-{
-    "summary": "El usuario solicitó cambiar el mensaje que se muestra a los usuarios pendientes de activación en el componente UserStatusBanner.tsx, reflejando que deben contactarse con soporte. El cambio se realizó en el archivo especificado sin alterar funcionales extras.",
-    "current_status": "Se actualizó el mensaje de estado 'pending' correctamente y la app dev sigue en funcionamiento estable."
-}

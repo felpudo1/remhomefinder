@@ -1,4 +1,0 @@
-{
-    "summary": "Se corrigieron las 3 debilidades identificadas: 1) UserStatus centralizado en types/property.ts, 2) eliminadas 3 definiciones duplicadas en AgentDashboard, Index.tsx, UserStatusBanner y AgentProfile, 3) eliminado el `as any` en AgentDashboard reemplazado por tipado correcto.",
-    "current_status": "Código más limpio y con una sola fuente de verdad para UserStatus. Sin casts peligrosos."
-}

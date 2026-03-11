@@ -1,4 +1,0 @@
-{
-    "summary": "Se corrigió el error en el botón de la página 404 (el enlace usaba `href` en lugar de `to`).",
-    "current_status": "Página 404 completamente funcional y con diseño premium. Proyecto estable."
-}

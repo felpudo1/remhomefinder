@@ -1,4 +1,0 @@
-{
-    "summary": "Se cambió el icono de salir por un botón con el texto 'Abandonar grupo' en GroupsModal.tsx. Se ajustó el layout a vertical para asegurar que el texto sea perfectamente legible.",
-    "current_status": "Mejora de UI completada. Botón 'Abandonar grupo' implementado."
-}

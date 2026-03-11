@@ -1,4 +1,0 @@
-{
-    "summary": "Se revirtió el filtrado agresivo en el frontend para que la UI espere a la confirmación de la base de datos antes de ocultar una propiedad, atendiendo a la observación del usuario. Se mantiene la indicación de que para la sincronización entre distintos usuarios es necesario habilitar la publicación de Realtime en Supabase.",
-    "current_status": "Filtro de frontend revertido. Pendiente habilitación de Realtime en la DB por parte del usuario mediante SQL."
-}

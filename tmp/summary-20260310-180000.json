@@ -1,4 +1,0 @@
-{
-    "summary": "Mejoré el mensaje de error al votar una propiedad ya puntuada. Ahora muestra 'Este aviso ya fue puntuado' en lugar de un error técnico de Postgres, siguiendo la REGLA 1 y 3.",
-    "current_status": "Mensaje de error de votación amigable implementado y verificado."
-}

@@ -1,4 +1,0 @@
-{
-    "summary": "Implementación de mejora en comentarios: visibilidad para usuarios compartidos y actualizaciones optimistas en frontend. Se creó migración SQL para arreglar RLS. Se explicó al usuario la necesidad de correr el script SQL manualmente.",
-    "current_status": "Esperando ejecución de script SQL por parte del usuario para validar visibilidad de comentarios."
-}

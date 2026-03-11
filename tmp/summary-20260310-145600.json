@@ -1,4 +1,0 @@
-{
-    "summary": "Se analizó por qué el panel de agencia muestra 0 guardados en el detalle pero 1 en los KPIs generales. La causa descubierta es que los KPIs generales usan una función de base de datos (RPC `get_agency_dashboard_stats`) que tiene permisos para contar los guardados de forma segura, mientras que el detalle inferior intenta consultar la tabla `properties` de los usuarios directamente desde el navegador. Por políticas de seguridad (RLS), la base de datos bloquea al agente de ver qué usuarios guardaron qué propiedades, devolviendo cero resultados. Se le explicará esto a JP sin hacer cambios.",
-    "current_status": "Esperando indicación del usuario tras presentarle la evaluación del bug de guardados del dashboard de agencia."
-}

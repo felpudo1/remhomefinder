@@ -1,4 +1,0 @@
-{
-    "summary": "JP consultó sobre la complejidad y los pasos necesarios para implementar Login con Google y agregar eventos a Google Calendar para coordinar visitas. Di mi opinión técnica como Senior Pro sin realizar cambios en el código de la app.",
-    "current_status": "Sin cambios en código. Asesoramiento sobre OAuth2 de Google, Google Cloud Console y Supabase Auth."
-}

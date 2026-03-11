@@ -1,4 +1,0 @@
-{
-    "summary": "Refactorizado el status badge para que aparezca como overlay sobre la foto (esquina superior derecha) solo para propiedades reservadas, vendidas y alquiladas. Las activas y pausadas no muestran badge. El body de la tarjeta quedó limpio. Corregido también el typo del botón 'Guardar/Guardada'.",
-    "current_status": "MarketplaceCard con overlay de estado limpio y correcto. Listo para prueba."
-}

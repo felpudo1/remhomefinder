@@ -1,4 +1,0 @@
-{
-    "summary": "Ajustada la lógica del Marketplace: las propiedades eliminadas se filtran completamente. Reservadas, vendidas y alquiladas siguen apareciendo al fondo con opacidad 50%.",
-    "current_status": "Filtros del marketplace correctamente configurados por estado."
-}

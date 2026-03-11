@@ -1,4 +1,0 @@
-{
-    "summary": "Se implementó la nueva página /admin con sidebar de navegación. Se crearon 4 sub-componentes: AdminAgencias, AdminUsuarios, AdminPrompt y AdminEstadisticas. El verificador de browser encontró límite de cuota.",
-    "current_status": "Admin panel con menús internos implementado. JP debe verificar manualmente la vista /admin."
-}

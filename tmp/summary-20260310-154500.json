@@ -1,4 +1,0 @@
-{
-    "summary": "JP reportó que en las estadísticas del agente no se muestran las vistas (views). Se procedió a explicarle que, al tratarse de un RPC nuevo de base de datos cacheado por React Query en el frontend, se requiere un refresco de página completo o que podría haber un tema con el tipo de dato devuelto. También se verificó la lógica para confirmar que el contador incrementa las visitas públicas del MKT.",
-    "current_status": "Asistiendo a JP en la verificación del contador de vistas del lado del agente."
-}

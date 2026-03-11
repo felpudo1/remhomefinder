@@ -1,4 +1,0 @@
-{
-    "summary": "Se refactorizó AdminSystem.tsx dividiéndolo en 4 sub-componentes modulares para mejorar la mantenibilidad. Se creó la estructura /components/admin/system/ para organizar estas piezas.",
-    "current_status": "AdminSystem refactorizado y verificado. Código más limpio y escalable. Servidor en puerto 3000."
-}

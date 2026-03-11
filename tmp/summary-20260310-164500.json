@@ -1,4 +1,0 @@
-{
-    "summary": "Agregué la tarjeta de Administradores a las estadísticas, desglosando finalmente: Usuarios Totales (Agentes + Users), Usuarios Registrados (solo clientes) y Administradores. Reorganicé la grilla de métricas para que las 6 tarjetas se vean equilibradas.",
-    "current_status": "Dashboard de Estadísticas completo con desglose profesional de tipos de usuario y auditoría detallada."
-}

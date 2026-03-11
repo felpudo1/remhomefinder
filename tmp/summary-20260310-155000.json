@@ -1,4 +1,0 @@
-{
-    "summary": "El usuario comprobó que el Admin tiene las vistas pero el Agente no le sumaba las vistas de los 'Guardados'. Explicamos que la primera consulta leía puramente del MKT y se le proporcionó un nuevo SQL que acumula Vistas en MKT + Vistas en Propiedades Privadas Guardadas.",
-    "current_status": "Esperamos confirmación de último script SQL de unificación del panel del Agente."
-}

@@ -1,4 +1,0 @@
-{
-    "summary": "Implementación de indicador de creador en tarjeta de propiedad: se añadió el email del usuario logueado en la esquina superior derecha, opuesto al estado, según solicitud explícita del usuario.",
-    "current_status": "Funcionalidad de comentarios y visualización de creador implementada. Esperando feedback del usuario."
-}

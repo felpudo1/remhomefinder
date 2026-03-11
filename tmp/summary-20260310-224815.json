@@ -1,4 +1,0 @@
-{
-    "summary":  "Implementación del Sistema de Referidos de Agentes completada. Incluye migración de BD, captura de URL, registro vinculado, UI en panel de agente y prioridad VIP en Marketplace.",
-    "current_status":  "Sistema de referidos 100% funcional. Pendiente de prueba real por parte de JP."
-}

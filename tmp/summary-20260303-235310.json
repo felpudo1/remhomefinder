@@ -1,4 +1,0 @@
-{
-    "summary": "Buscador movido del Header al panel de Filtros. Botón de Grupos agrandado con texto 'Compartir en familia'. Cambios en UserHeader, FilterSidebar e Index.tsx.",
-    "current_status": "Header limpio. El buscador vive ahora en el panel lateral de filtros. El botón de grupos es más visible y descriptivo."
-}

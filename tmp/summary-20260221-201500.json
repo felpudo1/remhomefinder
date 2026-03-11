@@ -1,4 +1,0 @@
-{
-    "summary": "Se movió la validación de URL duplicada al botón 'Extraer datos de la publicación' para evitar scraping innecesario cuando la URL ya existe.",
-    "current_status": "Validación de duplicados ahora se ejecuta antes del scraping."
-}

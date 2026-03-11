@@ -1,4 +1,0 @@
-{
-    "summary": "Se implementó la edición de publicaciones para los agentes extendiendo la funcionalidad de PublishPropertyModal según la REGLA 2 y 5.",
-    "current_status": "La edición de propiedades está lista para ser probada manualmente. Se actualizó la vista del dashboard del agente."
-}

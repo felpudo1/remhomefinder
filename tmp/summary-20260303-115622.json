@@ -1,4 +1,0 @@
-{
-    "summary": "Se agregó un badge de estado (Reservada/Vendida/Alquilada) sobre la foto de las tarjetas en el MarketplaceCard. Se creó el prop `statusOverlay` en `PropertyCardBase` (esquina superior derecha). Se actualizó el tipo `MarketplacePropertyStatus` para incluir los nuevos estados.",
-    "current_status": "Badge de estado implementado y funcional en el MarketplaceCard. Listo para prueba del usuario."
-}

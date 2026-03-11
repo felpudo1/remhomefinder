@@ -1,4 +1,0 @@
-{
-    "summary": "Se integró Zustand de forma minimalista instalando la dependencia y creando useUIStore.ts. Se dejó preparada la infraestructura para manejar el estado global de la interfaz de usuario.",
-    "current_status": "Zustand instalado y configurado con un store base. Código listo para escalabilidad futura."
-}

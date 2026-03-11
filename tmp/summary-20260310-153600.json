@@ -1,4 +1,0 @@
-{
-    "summary": "El usuario trató de actualizar el RPC get_agency_performance_detailed pero saltó error de Supabase pidiendo primero un DROP FUNCTION por el cambio de tipo de retorno. Le mandamos la consulta corregida que primero descarta la función antigua.",
-    "current_status": "Se asiste al usuario para resolver el error SQL en la base de datos de producción durante el update de vistas."
-}

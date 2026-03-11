@@ -1,4 +1,0 @@
-{
-    "summary": "Se finalizó la herramienta de configuración de video. Se verificó con diagnóstico visual que Auth.tsx responde correctamente al cambio en el panel de Admin. Se limpió el código de logs y banners de prueba.",
-    "current_status": "Toggle de video funcionando al 100%. Servidor corriendo en puerto 3000."
-}

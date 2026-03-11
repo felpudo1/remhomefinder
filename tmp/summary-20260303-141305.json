@@ -1,4 +1,0 @@
-{
-    "summary": "La configuración del botón (+) fue migrada de localStorage a Supabase. Se creó: useSystemConfig.ts hook, migración SQL, y se actualizaron AdminSystem.tsx e Index.tsx. Default ahora es 'blue' (Firecrawl).",
-    "current_status": "Solo falta que JP ejecute la migración SQL en Supabase para activar el feature."
-}

@@ -1,4 +1,0 @@
-{
-    "summary": "El usuario revisó el Admin Panel y confirmó que las columnas en Estadísticas encajan perfecto ahora tras reponer el encabezado faltante de Estado. Con esto el desarrollo de la analítica de Vistas queda finalizado totalmente.",
-    "current_status": "Vistas operativas en base de datos, componente de Detalles de Propiedad y en Dashboard de Agencia y Estadísticas de Admin. Esperando nuevo requerimiento del usuario."
-}

@@ -1,4 +1,0 @@
-{
-    "summary": "El usuario confirmó que el último script SQL funcionó correctamente. Las vistas de las propiedades públicas (marketplace) y de las copias privadas guardadas por los usuarios se muestran correctamente en los paneles de Agencia y Administrador. Tarea de Contador de Vistas finalizada exitosamente.",
-    "current_status": "Contador de vistas implementado y funcional tanto para administradores como para agencias (incluyendo vistas de propiedades guardadas). A la espera de nuevas directivas."
-}

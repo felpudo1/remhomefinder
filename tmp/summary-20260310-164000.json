@@ -1,4 +1,0 @@
-{
-    "summary": "Movi la tabla de auditoría detallada a Estadísticas Principal y desglosé las métricas de usuarios por rol (Totales vs Registrados) según aclaración del usuario (Totales = Agentes + Users). Arreglé error de pantalla en blanco y lints de tipos.",
-    "current_status": "Panel de Administración reorganizado con Estadísticas como Dashboard Maestro y métricas de usuarios refinadas."
-}

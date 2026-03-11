@@ -1,4 +1,0 @@
-{
-    "summary": "Implementación finalizada. TypeScript, React (Admin y Agencia), y el modal de detalles listos para procesar los clics como vistas. Se le facilitó a JP un segundo script de SQL para que la tabla Agencia reconozca la columna views_count de Supabase.",
-    "current_status": "Vistas integradas exitosamente. Pendiente de que JP corra el script SQL final en su base de datos Supabase para terminar de enlazar Agentes -> RPC -> Dashboard."
-}

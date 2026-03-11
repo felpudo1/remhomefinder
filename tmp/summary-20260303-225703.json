@@ -1,4 +1,0 @@
-{
-    "summary": "Se corrigió el bug de listingType: 1) el prompt de IA ahora incluye instrucción explícita para retornar listingType 'sale' o 'rent', 2) AddPropertyModal ahora lee d.listingType y llama setListingType para reflejarlo en la UI.",
-    "current_status": "El botón Venta/Alquiler ahora se selecciona automáticamente según lo que detecta la IA al hacer scraping."
-}

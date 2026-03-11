@@ -1,4 +1,0 @@
-{
-    "summary": "Se hizo el deploy de la función extract-from-image al proyecto remoto de Supabase.",
-    "current_status": "Ambas funciones (scrape-property y extract-from-image) están deployadas y corriendo en producción."
-}

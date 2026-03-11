@@ -1,4 +1,0 @@
-{
-    "summary": "Se creó una herramienta en el panel de Administración (AdminSystem.tsx) para activar/desactivar el video de fondo en Auth.tsx. Esto soluciona los problemas de consumo de recursos en emuladores.",
-    "current_status": "Funcionalidad de toggle de video activa. Servidor corriendo en puerto 3000."
-}

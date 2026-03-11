@@ -1,4 +1,0 @@
-{
-    "summary": "Implementación de estadísticas detalladas para agentes y sistema de Soft Delete sincronizado para borrados del marketplace. Se corrigió también un crash visual en las pestañas de estadísticas.",
-    "current_status": "Funcionalidades de analítica y sincronización de borrado completadas. El sistema es ahora más robusto y proporciona mejor feedback tanto a agentes como a familias."
-}

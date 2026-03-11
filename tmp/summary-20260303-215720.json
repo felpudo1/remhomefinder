@@ -1,4 +1,0 @@
-{
-    "summary": "Se ejecutó el DROP COLUMN agencies.status con políticas RLS actualizadas. AdminAgencias ahora lee desde profiles.status. types.ts y AgentProfile.Agency limpiados. Toda la deuda técnica de agencies.status cerrada.",
-    "current_status": "El traspaso de status de agencies a profiles está 100% completo. Codebase consistente."
-}

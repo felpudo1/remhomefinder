@@ -1,4 +1,0 @@
-{
-    "summary": "Se ejecutó el comando 'kill and run'. Se mataron los procesos en el puerto 3000 y se reinició Vite.",
-    "current_status": "Servidor corriendo en el puerto 3000. Esperando directivas."
-}

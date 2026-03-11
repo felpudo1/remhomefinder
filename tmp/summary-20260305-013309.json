@@ -1,4 +1,0 @@
-{
-    "summary": "Se instaló localtunnel como dependencia de desarrollo para poder exponer el servidor local a internet y solventar los problemas de contexto seguro en IPs locales.",
-    "current_status": "localtunnel instalado. Listo para ejecutarse con pnpm dlx localtunnel --port 3000."
-}

@@ -1,4 +1,0 @@
-{
-    "summary": "Se rediseñó el panel de agente mediante pestañas separadas (Perfil, Propiedades, Estadísticas). Se integró el seguimiento de métricas clave, incluyendo Total de Guardados eludiendo RLS mediante function.",
-    "current_status": "A la espera de que JP aplique la migración de DB para probar las Estadísticas."
-}

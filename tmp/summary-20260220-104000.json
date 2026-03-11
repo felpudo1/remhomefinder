@@ -1,4 +1,0 @@
-{
-    "summary": "Se identificó que el problema de sincronización en tiempo real se debía a que las tablas no estaban incluidas en la 'publication' de Supabase Realtime. Se proporcionó el script SQL al usuario para habilitarlo. También se mejoró el filtrado en el frontend para ocultar propiedades marcadas como 'eliminado' de forma inmediata.",
-    "current_status": "Esperando que el usuario ejecute el script SQL para habilitar Realtime en la base de datos."
-}
