@@ -80,6 +80,9 @@ export const useAuth = () => {
                         full_name: displayName,
                         name: displayName,
                         phone: phone,
+                        account_type: accountType,
+                        agency_name: agencyName?.trim() || '',
+                        agency_phone: agencyPhone?.trim() || '',
                     }
                 }
             });
