@@ -1,12 +1,5 @@
-import { Settings, CheckCircle2, Loader2 } from "lucide-react";
-import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import React from "react";
 import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT } from "@/lib/config-keys";
-
-/** Posibles valores de configuración del botón de agregar */
-export type AddButtonConfig = "blue" | "white" | "both" | "none";
+import { AddButtonConfig } from "@/types/property";
 
 /**
  * Componente para personalizar la visualización de los botones de agregar propiedad (+).

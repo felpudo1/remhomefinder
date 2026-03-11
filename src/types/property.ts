@@ -13,6 +13,9 @@ export interface PropertyComment {
   createdAt: Date;
 }
 
+// Soporte para configuración de botones
+export type AddButtonConfig = "blue" | "white" | "both" | "none";
+
 export interface Property {
   id: string;
   url: string;
