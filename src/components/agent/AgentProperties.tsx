@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check } from "lucide-react";
+import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -64,6 +64,51 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 <Button size="sm" className="gap-1.5" onClick={() => { setPropertyToEdit(null); setPublishOpen(true); }}>
                     <Plus className="w-4 h-4" /> Publicar propiedad
                 </Button>
+            </div>
+
+            {/* Nueva sección: Invitación de Clientes (Referidos) */}
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-primary">
+                            <Users className="w-5 h-5" />
+                            <h4 className="font-bold text-sm uppercase tracking-wider">Invitá a tus clientes</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
+                            Compartí tu link personalizado. Los clientes que se registren con él verán **tus propiedades arriba de todo** en el Marketplace.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    <div className="flex-1 min-w-[200px] h-10 bg-background border border-border rounded-xl px-3 flex items-center text-xs text-muted-foreground truncate">
+                        {`${window.location.origin}/?agente=${agency.created_by}`}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl gap-2 h-10"
+                        onClick={() => {
+                            const link = `${window.location.origin}/?agente=${agency.created_by}`;
+                            navigator.clipboard.writeText(link);
+                            toast({ title: "Link copiado", description: "Ya podés pegarlo donde quieras." });
+                        }}
+                    >
+                        <Edit className="w-4 h-4" /> Copiar Link
+                    </Button>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm"
+                        onClick={() => {
+                            const link = `${window.location.origin}/?agente=${agency.created_by}`;
+                            const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${link}`);
+                            window.open(`https://wa.me/?text=${text}`, '_blank');
+                        }}
+                    >
+                        <Users className="w-4 h-4" /> Compartir por WhatsApp
+                    </Button>
+                </div>
             </div>
 
             {propsLoading ? (

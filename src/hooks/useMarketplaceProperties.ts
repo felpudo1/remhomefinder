@@ -31,7 +31,7 @@ export function useMarketplaceProperties() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_properties")
-        .select("*, agencies(name)")
+        .select("*, agencies(name, created_by)")
         .neq("status", "deleted")   // Traer todo excepto las eliminadas
         .order("created_at", { ascending: false });
 
@@ -42,6 +42,7 @@ export function useMarketplaceProperties() {
         id: p.id,
         agencyId: p.agency_id,
         agencyName: p.agencies?.name || "Agencia",
+        agentId: p.agencies?.created_by || null,
         title: p.title,
         description: p.description,
         url: p.url,

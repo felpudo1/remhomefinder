@@ -7,6 +7,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { ReferralTracker } from "@/components/ReferralTracker";
 
 const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
 
@@ -36,6 +37,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ReferralTracker />
         <Suspense fallback={<LoadingPage />}>
           <Routes>
             <Route path={ROUTES.HOME} element={<Landing />} />

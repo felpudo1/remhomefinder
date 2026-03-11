@@ -1,5 +1,5 @@
 import { MarketplaceProperty } from "@/types/property";
-import { Bookmark, Building2 } from "lucide-react";
+import { Bookmark, Building2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
@@ -11,6 +11,7 @@ interface MarketplaceCardProps {
   onSave: (property: MarketplaceProperty) => void;
   isSaving?: boolean;
   alreadySaved?: boolean;
+  isReferred?: boolean;
 }
 
 /**
@@ -27,7 +28,7 @@ const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string }
   deleted: null,
 };
 
-export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: MarketplaceCardProps) {
+export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const overlay = STATUS_OVERLAY_CONFIG[property.status];
@@ -51,10 +52,18 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved }: Ma
           setIsGalleryOpen(true);
         }}
         topOverlay={
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/90 text-primary-foreground backdrop-blur-sm">
-            <Building2 className="w-3 h-3" />
-            {property.agencyName}
-          </span>
+          <div className="flex flex-col gap-1.5 items-start">
+            {isReferred && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-yellow-500 text-black shadow-lg animate-pulse">
+                <Star className="w-3 h-3 fill-current" />
+                TU AGENTE
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-md">
+              <Building2 className="w-3 h-3" />
+              {property.agencyName}
+            </span>
+          </div>
         }
         statusOverlay={
           overlay ? (

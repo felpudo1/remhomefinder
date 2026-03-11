@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface UserProfile {
     user_id: string;
     display_name: string;
+    email: string | null;
     status: "active" | "pending" | "suspended" | "rejected";
     roles: string[];
     property_count: number;
@@ -47,7 +48,7 @@ export function AdminUsuarios({ toast }: Props) {
         // Fetch profiles with pagination and count
         const { data: profiles, error: profilesError, count } = await supabase
             .from("profiles")
-            .select("user_id, display_name, status, plan_type", { count: "exact" })
+            .select("user_id, display_name, email, status, plan_type", { count: "exact" })
             .order(sortConfig.key === 'display_name' ? 'display_name' : 'user_id', {
                 ascending: sortConfig.direction === 'asc'
             })
@@ -88,6 +89,7 @@ export function AdminUsuarios({ toast }: Props) {
         const userList: UserProfile[] = (profiles || []).map((p: any) => ({
             user_id: p.user_id,
             display_name: p.display_name || "Sin nombre",
+            email: p.email || "-",
             status: p.status || "active",
             roles: roleMap[p.user_id] || ["user"],
             property_count: propsCountMap[p.user_id] || 0,
@@ -160,7 +162,7 @@ export function AdminUsuarios({ toast }: Props) {
 
     return (
         <div className="space-y-2">
-            <div className="grid grid-cols-5 gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
+            <div className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_1fr_1.2fr] gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
                 <button
                     onClick={() => handleSort('display_name')}
                     className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
@@ -170,6 +172,9 @@ export function AdminUsuarios({ toast }: Props) {
                         sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                     )}
                 </button>
+                <div className="flex items-center gap-1 text-left font-bold">
+                    Email
+                </div>
                 <button
                     onClick={() => handleSort('roles')}
                     className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
@@ -209,10 +214,13 @@ export function AdminUsuarios({ toast }: Props) {
                 const isAdmin = user.roles.includes("admin");
 
                 return (
-                    <div key={user.user_id} className="grid grid-cols-5 gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+                    <div key={user.user_id} className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_1fr_1.2fr] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
                         <div className="flex items-center gap-2 min-w-0">
                             <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                            <span className="truncate text-foreground">{user.display_name}</span>
+                            <span className="truncate text-foreground font-medium">{user.display_name}</span>
+                        </div>
+                        <div className="min-w-0">
+                            <span className="truncate text-muted-foreground text-xs">{user.email}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Shield className="w-3.5 h-3.5 text-primary/60 shrink-0" />

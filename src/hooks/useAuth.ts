@@ -99,12 +99,14 @@ export const useAuth = () => {
                 // Intentar guardar perfil con reintentos para evitar race conditions
                 // Los agentes arrrancan en 'pending' hasta que el admin los apruebe
                 const upsertProfile = async (retries = 3) => {
+                    const referralId = sessionStorage.getItem("hf_referral_agent_id");
                     let lastError: unknown = null;
                     for (let i = 0; i < retries; i++) {
                         const { error: profileError } = await supabase.from("profiles").upsert({
                             user_id: data.user!.id,
                             phone: phone,
                             display_name: displayName,
+                            referred_by_agent_id: referralId,
                             // Agentes arrancan en 'pending', usuarios en 'active' (default de BD)
                             ...(accountType === ROLES.AGENCY ? { status: "pending" } : {}),
                         }, {

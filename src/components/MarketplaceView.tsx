@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList } from "@/hooks/useSaveToList";
 import { useProperties } from "@/hooks/useProperties";
+import { useProfile } from "@/hooks/useProfile";
 import { MarketplaceCard } from "@/components/MarketplaceCard";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceProperty } from "@/types/property";
@@ -20,6 +21,9 @@ interface MarketplaceViewProps {
 export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClose }: MarketplaceViewProps) {
   const { data: marketplaceProperties = [], isLoading } = useMarketplaceProperties();
   const { properties: userProperties } = useProperties();
+  const { data: profile } = useProfile();
+  const referredAgentId = profile?.referred_by_agent_id;
+
   const saveToList = useSaveToList();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,11 +95,23 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       result = result.filter((p) => p.listingType === selectedListingType);
     }
 
-    // Las propiedades inactivas (reservadas, vendidas, alquiladas) van al final del listado
+    // Ordenamiento PRO: 
+    // 1. Activas vs Inactivas
+    // 2. Referido (Prioridad agente VIP)
+    // 3. Fecha (Recientes primero)
     result = [...result].sort((a, b) => {
+      // Prioridad socio-comercial (Referido)
+      if (referredAgentId) {
+        const aIsReferred = a.agentId === referredAgentId ? 0 : 1;
+        const bIsReferred = b.agentId === referredAgentId ? 0 : 1;
+        if (aIsReferred !== bIsReferred) return aIsReferred - bIsReferred;
+      }
+
       const aInactive = INACTIVE_STATUSES.has(a.status) ? 1 : 0;
       const bInactive = INACTIVE_STATUSES.has(b.status) ? 1 : 0;
-      return aInactive - bInactive;
+      if (aInactive !== bInactive) return aInactive - bInactive;
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     return result;
@@ -171,6 +187,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                     onSave={handleSave}
                     isSaving={savingId === property.id}
                     alreadySaved={savedMarketplaceIds.has(property.id)}
+                    isReferred={referredAgentId === property.agentId}
                   />
                 </div>
               );

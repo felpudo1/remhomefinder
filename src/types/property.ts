@@ -54,6 +54,7 @@ export interface MarketplaceProperty {
   id: string;
   agencyId: string;
   agencyName: string;
+  agentId: string | null;
   title: string;
   description: string;
   url: string;

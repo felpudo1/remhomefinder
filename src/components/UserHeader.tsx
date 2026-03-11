@@ -1,4 +1,5 @@
-import { Home, User, Users, LogOut, Star } from "lucide-react";
+import { Home, User, Users, LogOut, Star, Medal } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
@@ -23,6 +24,9 @@ export const UserHeader = ({
     handleLogout,
 }: HeaderProps) => {
     const { isPremium } = useSubscription();
+    const { data: profile } = useProfile();
+
+    const isReferred = !!profile?.referredByAgentId;
 
     const StatusStar = () => (
         isPremium ? (
@@ -30,6 +34,12 @@ export const UserHeader = ({
         ) : (
             <Star className="w-3 h-3 text-slate-400/50" />
         )
+    );
+
+    const ReferralMedal = () => (
+        isReferred ? (
+            <Medal className="w-3 h-3 text-blue-500 animate-pulse" title="Usuario Referido" />
+        ) : null
     );
     return (
         <header className="bg-card border-b border-border sticky top-0 z-40 card-shadow">
@@ -45,6 +55,7 @@ export const UserHeader = ({
                         {userEmail && (
                             <div className="flex items-center gap-1 md:hidden">
                                 <StatusStar />
+                                <ReferralMedal />
                                 <span className="text-[11px] text-muted-foreground truncate max-w-[120px] leading-tight">
                                     {userEmail}
                                 </span>
@@ -76,8 +87,9 @@ export const UserHeader = ({
                 {/* User info & logout */}
                 <div className="flex items-center gap-1 md:gap-2 shrink-0">
                     {/* Email visible solo en desktop */}
-                    <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/40">
+                    <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/40 transition-all hover:bg-muted/50">
                         <StatusStar />
+                        <ReferralMedal />
                         <span className="max-w-[120px] truncate font-medium">{userEmail}</span>
                     </div>
                     <Button
