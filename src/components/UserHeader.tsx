@@ -1,4 +1,5 @@
-import { Home, User, Users, LogOut } from "lucide-react";
+import { Home, User, Users, LogOut, Star } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 
@@ -21,6 +22,15 @@ export const UserHeader = ({
     setIsGroupsOpen,
     handleLogout,
 }: HeaderProps) => {
+    const { isPremium } = useSubscription();
+
+    const StatusStar = () => (
+        isPremium ? (
+            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+        ) : (
+            <Star className="w-3 h-3 text-slate-400/50" />
+        )
+    );
     return (
         <header className="bg-card border-b border-border sticky top-0 z-40 card-shadow">
             <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between gap-2 md:gap-3">
@@ -33,9 +43,12 @@ export const UserHeader = ({
                         <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
                         {/* Email del usuario visible solo en mobile, como subtexto bajo el nombre */}
                         {userEmail && (
-                            <span className="text-[11px] text-muted-foreground truncate max-w-[120px] md:hidden leading-tight">
-                                {userEmail}
-                            </span>
+                            <div className="flex items-center gap-1 md:hidden">
+                                <StatusStar />
+                                <span className="text-[11px] text-muted-foreground truncate max-w-[120px] leading-tight">
+                                    {userEmail}
+                                </span>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -63,9 +76,9 @@ export const UserHeader = ({
                 {/* User info & logout */}
                 <div className="flex items-center gap-1 md:gap-2 shrink-0">
                     {/* Email visible solo en desktop */}
-                    <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <User className="w-3.5 h-3.5" />
-                        <span className="max-w-[120px] truncate">{userEmail}</span>
+                    <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/40">
+                        <StatusStar />
+                        <span className="max-w-[120px] truncate font-medium">{userEmail}</span>
                     </div>
                     <Button
                         variant={activeGroupId ? "default" : "outline"}
