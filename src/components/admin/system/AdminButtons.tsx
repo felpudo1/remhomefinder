@@ -1,5 +1,9 @@
 import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT } from "@/lib/config-keys";
 import { AddButtonConfig } from "@/types/property";
+import { useToast } from "@/hooks/use-toast";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { Settings, Loader2, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Componente para personalizar la visualización de los botones de agregar propiedad (+).
