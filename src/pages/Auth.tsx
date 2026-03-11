@@ -42,7 +42,7 @@ const Auth = () => {
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) redirectByRole(session.user.id);
+      if (session && !isSigningUp) redirectByRole(session.user.id);
     });
 
     return () => subscription.unsubscribe();
