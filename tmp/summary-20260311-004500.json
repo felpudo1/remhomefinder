@@ -1,0 +1,4 @@
+{
+    "summary": "Se ejecutaron los comandos kill y run. No se encontraron procesos previos activos. Se inició el servidor de desarrollo en el puerto 3000 exitosamente.",
+    "current_status": "Servidor de desarrollo corriendo en http://localhost:3000"
+}

@@ -57,7 +57,7 @@ export const UserHeader = ({
                                 <StatusStar />
                                 <ReferralMedal />
                                 <span className="text-[11px] text-muted-foreground truncate max-w-[120px] leading-tight">
-                                    {userEmail}
+                                    {profile?.displayName || userEmail}
                                 </span>
                             </div>
                         )}
@@ -90,7 +90,7 @@ export const UserHeader = ({
                     <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/40 transition-all hover:bg-muted/50">
                         <StatusStar />
                         <ReferralMedal />
-                        <span className="max-w-[120px] truncate font-medium">{userEmail}</span>
+                        <span className="max-w-[120px] truncate font-medium">{profile?.displayName || userEmail}</span>
                     </div>
                     <Button
                         variant={activeGroupId ? "default" : "outline"}
