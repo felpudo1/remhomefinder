@@ -11,6 +11,7 @@ import { loginSchema, registerSchema } from "@/lib/schemas/auth";
  */
 export const useAuth = () => {
     const [loading, setLoading] = useState(false);
+    const [isSigningUp, setIsSigningUp] = useState(false);
     const navigate = useNavigate();
     const { toast } = useToast();
 
