@@ -11,6 +11,7 @@ export interface Agency {
     contact_person_phone: string;
     description: string;
     created_at: string;
+    created_by: string;
 }
 
 const statusConfig = {

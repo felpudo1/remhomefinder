@@ -38,7 +38,7 @@ export const UserHeader = ({
 
     const ReferralMedal = () => (
         isReferred ? (
-            <Medal className="w-3 h-3 text-blue-500 animate-pulse" title="Usuario Referido" />
+            <Medal className="w-3 h-3 text-blue-500 animate-pulse" />
         ) : null
     );
     return (

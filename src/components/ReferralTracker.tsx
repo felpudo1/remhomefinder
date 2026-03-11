@@ -25,7 +25,7 @@ export const ReferralTracker = () => {
             sessionStorage.setItem("hf_referral_agent_id", agentId);
 
             // 2. Si ya está logueado y no tiene referido, vincularlo ahora
-            if (profile && !profile.referred_by_agent_id) {
+            if (profile && !profile.referredByAgentId) {
                 const linkReferral = async () => {
                     try {
                         const { data: { user } } = await supabase.auth.getUser();
