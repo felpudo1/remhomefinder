@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLES, ROUTES } from "@/lib/constants";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { SHOW_AUTH_VIDEO_CONFIG_KEY, SHOW_AUTH_VIDEO_DEFAULT } from "@/lib/config-keys";
 
 // Tipos posibles del estado de la base de datos
 type AccountType = "user" | "agency";
@@ -33,6 +35,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loading, isSigningUp, signIn, signUp, redirectByRole } = useAuth();
+  const { value: showVideo } = useSystemConfig(SHOW_AUTH_VIDEO_CONFIG_KEY, SHOW_AUTH_VIDEO_DEFAULT);
 
   useEffect(() => {
     const {
@@ -70,18 +73,28 @@ const Auth = () => {
   return (
     <>
       <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-        {/* Contenedor del video de fondo */}
-        <div className="absolute inset-0 -z-10">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover"
-          >
-            <source src="/assets/videos/11661546-hd_720_1280_30fps+.mp4" type="video/mp4" />
-          </video>
-        </div>
+        {/* Contenedor del video de fondo - Condicional según AdminSystem */}
+        {showVideo === "true" ? (
+          <div className="absolute inset-0 -z-10">
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            >
+              <source src="/assets/videos/11661546-hd_720_1280_30fps+.mp4" type="video/mp4" />
+            </video>
+          </div>
+        ) : (
+          <div className="absolute inset-0 -z-10">
+            <img
+              src={authBgImg}
+              alt="Fondo"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
 
 
         {/* Overlay oscuro y blur para mejorar legibilidad */}

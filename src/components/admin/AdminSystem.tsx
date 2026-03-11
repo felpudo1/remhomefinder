@@ -19,11 +19,12 @@ import {
 /** Posibles valores de configuración del botón de agregar */
 export type AddButtonConfig = "blue" | "white" | "both" | "none";
 
-/** Clave en la tabla system_config de Supabase */
-export const ADD_BUTTON_CONFIG_KEY = "add_button_config";
-
-/** Valor por defecto si no hay config en Supabase */
-export const ADD_BUTTON_DEFAULT: AddButtonConfig = "blue";
+import {
+    SHOW_AUTH_VIDEO_CONFIG_KEY,
+    SHOW_AUTH_VIDEO_DEFAULT,
+    ADD_BUTTON_CONFIG_KEY,
+    ADD_BUTTON_DEFAULT
+} from "@/lib/config-keys";
 
 export function AdminSystem() {
     const { toast } = useToast();
@@ -62,6 +63,14 @@ export function AdminSystem() {
 
     const [limitDraft, setLimitDraft] = useState(saveLimit);
 
+    // Video config
+    const {
+        value: showVideo,
+        isLoading: isLoadingVideo,
+        setValue: setShowVideo,
+        isSaving: isSavingVideo,
+    } = useSystemConfig(SHOW_AUTH_VIDEO_CONFIG_KEY, SHOW_AUTH_VIDEO_DEFAULT);
+
     useEffect(() => {
         setPhoneDraft(supportPhone);
     }, [supportPhone]);
@@ -74,8 +83,20 @@ export function AdminSystem() {
         try {
             await setValue(newValue);
             toast({ title: "Configuración guardada", description: "El cambio se aplicará a todos los usuarios." });
-        } catch {
-            toast({ title: "Error al guardar", variant: "destructive" });
+        } catch (error: any) {
+            console.error("Error al guardar ADD_BUTTON:", error);
+            toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const handleToggleVideo = async () => {
+        const newValue = showVideo === "true" ? "false" : "true";
+        try {
+            await setShowVideo(newValue);
+            toast({ title: "Video actualizado", description: newValue === "true" ? "Video activado." : "Video desactivado." });
+        } catch (error: any) {
+            console.error("Error al guardar SHOW_VIDEO:", error);
+            toast({ title: "Error al guardar video", description: error.message, variant: "destructive" });
         }
     };
 
@@ -246,6 +267,39 @@ export function AdminSystem() {
                     >
                         Guardar Teléfono
                     </Button>
+                </div>
+            </div>
+
+            {/* Sección: Video de fondo */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm">Video de fondo (Auth)</h3>
+                    {(isLoadingVideo || isSavingVideo) && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                </div>
+                <p className="text-xs text-muted-foreground pl-6">
+                    Activa o desactiva el video de fondo en la página de inicio de sesión/registro para ahorrar recursos.
+                </p>
+
+                <div className="flex items-center gap-3 pl-6">
+                    <button
+                        onClick={handleToggleVideo}
+                        disabled={isLoadingVideo || isSavingVideo}
+                        className={cn(
+                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                            showVideo === "true" ? "bg-primary" : "bg-muted"
+                        )}
+                    >
+                        <span
+                            className={cn(
+                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                showVideo === "true" ? "translate-x-6" : "translate-x-1"
+                            )}
+                        />
+                    </button>
+                    <span className="text-sm font-medium text-foreground">
+                        {showVideo === "true" ? "Video Activado" : "Video Desactivado (Imagen fija)"}
+                    </span>
                 </div>
             </div>
 
