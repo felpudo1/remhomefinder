@@ -11,6 +11,7 @@ export interface UserProfile {
     displayName: string;
     avatarUrl: string;
     phone: string;
+    email: string | null;
     status: UserStatus;
     referredByAgentId: string | null;
 }
