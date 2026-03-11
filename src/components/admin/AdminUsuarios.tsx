@@ -11,6 +11,7 @@ interface UserProfile {
     status: "active" | "pending" | "suspended" | "rejected";
     roles: string[];
     property_count: number;
+    plan_type: "free" | "premium";
 }
 
 interface Props {
@@ -46,7 +47,7 @@ export function AdminUsuarios({ toast }: Props) {
         // Fetch profiles with pagination and count
         const { data: profiles, error: profilesError, count } = await supabase
             .from("profiles")
-            .select("user_id, display_name, status", { count: "exact" })
+            .select("user_id, display_name, status, plan_type", { count: "exact" })
             .order(sortConfig.key === 'display_name' ? 'display_name' : 'user_id', {
                 ascending: sortConfig.direction === 'asc'
             })
@@ -90,6 +91,7 @@ export function AdminUsuarios({ toast }: Props) {
             status: p.status || "active",
             roles: roleMap[p.user_id] || ["user"],
             property_count: propsCountMap[p.user_id] || 0,
+            plan_type: (p.plan_type as "free" | "premium") || "free",
         }));
 
         setUsers(userList);
@@ -109,7 +111,7 @@ export function AdminUsuarios({ toast }: Props) {
     const sortedUsers = [...users];
 
     const updateStatus = async (userId: string, newStatus: UserProfile["status"]) => {
-        // Update optimista: actualizar el estado local de inmediato sin esperar al servidor
+        // Update optimista
         const previousUsers = users;
         setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, status: newStatus } : u));
 
@@ -119,11 +121,28 @@ export function AdminUsuarios({ toast }: Props) {
         });
 
         if (error) {
-            // Rollback: revertir al estado anterior si falló
             setUsers(previousUsers);
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } else {
             toast({ title: "Estado actualizado", description: `Cambiado a "${STATUS_CONFIG[newStatus].label}".` });
+        }
+    };
+
+    const updatePlan = async (userId: string, newPlan: "free" | "premium") => {
+        // Update optimista
+        const previousUsers = users;
+        setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, plan_type: newPlan } : u));
+
+        const { error } = await supabase
+            .from("profiles")
+            .update({ plan_type: newPlan })
+            .eq("user_id", userId);
+
+        if (error) {
+            setUsers(previousUsers);
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } else {
+            toast({ title: "Plan actualizado", description: `Usuario ahora es ${newPlan.toUpperCase()}.` });
         }
     };
 
@@ -178,7 +197,10 @@ export function AdminUsuarios({ toast }: Props) {
                         sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                     )}
                 </button>
-                <span>Acción</span>
+                <div className="grid grid-cols-2 gap-2">
+                    <span>Plan</span>
+                    <span>Acción</span>
+                </div>
             </div>
 
             {sortedUsers.map((user) => {
@@ -213,9 +235,22 @@ export function AdminUsuarios({ toast }: Props) {
                                 {sc.label}
                             </span>
                         </div>
-                        <div className="shrink-0">
+                        <div className="flex items-center gap-2 pr-2">
+                            <Select value={user.plan_type} onValueChange={(v) => updatePlan(user.user_id, v as "free" | "premium")}>
+                                <SelectTrigger className={cn(
+                                    "h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider w-[90px]",
+                                    user.plan_type === "premium" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted"
+                                )}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="free" className="text-[10px] font-bold uppercase tracking-wider">Free</SelectItem>
+                                    <SelectItem value="premium" className="text-[10px] font-bold uppercase tracking-wider">Premium</SelectItem>
+                                </SelectContent>
+                            </Select>
+
                             {isAdmin ? (
-                                <span className="text-xs text-muted-foreground">—</span>
+                                <span className="text-xs text-muted-foreground w-[130px] text-center">—</span>
                             ) : (
                                 <Select value={user.status} onValueChange={(v) => updateStatus(user.user_id, v as UserProfile["status"])}>
                                     <SelectTrigger className="h-8 rounded-xl text-xs w-[130px]">

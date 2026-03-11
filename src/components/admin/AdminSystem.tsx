@@ -4,12 +4,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
     SUPPORT_EMAIL_CONFIG_KEY,
     SUPPORT_EMAIL_DEFAULT,
     SUPPORT_PHONE_CONFIG_KEY,
     SUPPORT_PHONE_DEFAULT
 } from "@/components/Footer";
+import {
+    FREE_PLAN_SAVE_LIMIT_KEY,
+    FREE_PLAN_SAVE_LIMIT_DEFAULT
+} from "@/hooks/useSubscription";
 
 /** Posibles valores de configuración del botón de agregar */
 export type AddButtonConfig = "blue" | "white" | "both" | "none";
@@ -46,9 +51,24 @@ export function AdminSystem() {
     } = useSystemConfig(SUPPORT_PHONE_CONFIG_KEY, SUPPORT_PHONE_DEFAULT);
 
     const [phoneDraft, setPhoneDraft] = useState(supportPhone);
+
+    // Save limit config
+    const {
+        value: saveLimit,
+        isLoading: isLoadingLimit,
+        setValue: setSaveLimit,
+        isSaving: isSavingLimit,
+    } = useSystemConfig(FREE_PLAN_SAVE_LIMIT_KEY, FREE_PLAN_SAVE_LIMIT_DEFAULT);
+
+    const [limitDraft, setLimitDraft] = useState(saveLimit);
+
     useEffect(() => {
         setPhoneDraft(supportPhone);
     }, [supportPhone]);
+
+    useEffect(() => {
+        setLimitDraft(saveLimit);
+    }, [saveLimit]);
 
     const handleSelect = async (newValue: AddButtonConfig) => {
         try {
@@ -74,6 +94,15 @@ export function AdminSystem() {
             toast({ title: "Teléfono de soporte guardado", description: "Se mostrará como enlace de WhatsApp en el footer." });
         } catch {
             toast({ title: "Error al guardar teléfono", variant: "destructive" });
+        }
+    };
+
+    const handleSaveLimit = async () => {
+        try {
+            await setSaveLimit(limitDraft.trim());
+            toast({ title: "Límite guardado", description: "El cambio se aplicará a todos los usuarios Free de inmediato." });
+        } catch {
+            toast({ title: "Error al guardar límite", variant: "destructive" });
         }
     };
 
@@ -122,45 +151,39 @@ export function AdminSystem() {
                 <p>Estos ajustes controlan qué elementos de UI se muestran a los usuarios regulares de la plataforma.</p>
             </div>
 
-            {/* Sección: Botón de agregar propiedad */}
+            {/* Sección: Planes y Límites */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-primary" />
-                    <h3 className="font-semibold text-foreground text-sm">Botón de agregar propiedad</h3>
-                    {(isLoading || isSaving) && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm">Planes y Límites (Freemium)</h3>
+                    {(isLoadingLimit || isSavingLimit) && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                 </div>
                 <p className="text-xs text-muted-foreground pl-6">
-                    Controlá qué botón flotante (+) ven los usuarios en su panel principal. El cambio aplica para todos en tiempo real.
+                    Ajustá el límite de propiedades que un usuario con plan **Free** puede guardar en su lista personal.
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {options.map((option) => {
-                        const isSelected = selected === option.value;
-                        return (
-                            <button
-                                key={option.value}
-                                onClick={() => handleSelect(option.value)}
-                                disabled={isLoading || isSaving}
-                                className={`relative text-left p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${isSelected
-                                    ? "border-primary bg-primary/5 shadow-sm"
-                                    : "border-border bg-card hover:border-border/80"
-                                    }`}
-                            >
-                                {isSelected && (
-                                    <CheckCircle2 className="w-4 h-4 text-primary absolute top-3 right-3" />
-                                )}
-                                <div className="mb-3">{option.preview}</div>
-                                <div>
-                                    <p className={`text-sm font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}>
-                                        {option.label}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                                        {option.description}
-                                    </p>
-                                </div>
-                            </button>
-                        );
-                    })}
+                <div className="flex gap-2 pl-6 max-w-sm">
+                    <div className="relative flex-1">
+                        <Input
+                            type="number"
+                            placeholder="Ej: 10"
+                            value={limitDraft}
+                            onChange={(e) => setLimitDraft(e.target.value)}
+                            disabled={isLoadingLimit || isSavingLimit}
+                            className="rounded-xl border-border bg-card pr-20"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase">
+                            AVISOS
+                        </div>
+                    </div>
+                    <Button
+                        onClick={handleSaveLimit}
+                        disabled={isLoadingLimit || isSavingLimit || limitDraft === saveLimit}
+                        className="rounded-xl shrink-0"
+                        size="sm"
+                    >
+                        Actualizar Límite
+                    </Button>
                 </div>
             </div>
 
@@ -223,6 +246,50 @@ export function AdminSystem() {
                     >
                         Guardar Teléfono
                     </Button>
+                </div>
+            </div>
+
+            {/* Sección: Botón de agregar propiedad (AHORA AL FINAL Y MÁS CHICO) */}
+            <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider text-[11px]">Personalización de Botones de Agregado</h3>
+                    {(isLoading || isSaving) && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                </div>
+                <p className="text-[10px] text-muted-foreground pl-6 leading-relaxed max-w-2xl">
+                    Ajuste avanzado para controlar qué botone(s) (+) ven los usuarios regulares. Úselo con discreción.
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-6">
+                    {options.map((option) => {
+                        const isSelected = selected === option.value;
+                        return (
+                            <button
+                                key={option.value}
+                                onClick={() => handleSelect(option.value)}
+                                disabled={isLoading || isSaving}
+                                className={cn(
+                                    "text-left p-3 rounded-xl border flex flex-col justify-between transition-all duration-200 disabled:opacity-50",
+                                    isSelected
+                                        ? "border-primary bg-primary/[0.03] ring-1 ring-primary/20"
+                                        : "border-border bg-card hover:bg-muted/30"
+                                )}
+                            >
+                                <div className="flex justify-between items-start mb-1">
+                                    <p className={cn(
+                                        "text-[10px] font-bold leading-none",
+                                        isSelected ? "text-primary" : "text-foreground"
+                                    )}>
+                                        {option.label.split('(')[0].trim()}
+                                    </p>
+                                    {isSelected && <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />}
+                                </div>
+                                <p className="text-[9px] text-muted-foreground line-clamp-2 leading-tight">
+                                    {option.description}
+                                </p>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </div>

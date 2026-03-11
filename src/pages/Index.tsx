@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Property, PropertyStatus, PropertyComment, STATUS_CONFIG, UserStatus } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
@@ -17,6 +17,9 @@ import { Home, Plus, Search, Loader2, LogOut, User, SlidersHorizontal, Mail, Che
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { GroupsModal } from "@/components/GroupsModal";
+import { UpgradePlanModal } from "@/components/UpgradePlanModal";
+import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -60,6 +63,18 @@ const Index = () => {
 
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
+
+  const { canSaveMore, maxSaves, isPremium, plan } = useSubscription();
+
+  // "Surprise" - Detect if user just became premium
+  useEffect(() => {
+    if (isPremium && localStorage.getItem(`hf_premium_welcome_shown_${userEmail}`) !== "true") {
+      setIsPremiumWelcomeOpen(true);
+      localStorage.setItem(`hf_premium_welcome_shown_${userEmail}`, "true");
+    }
+  }, [isPremium, userEmail]);
 
   // Derive selectedProperty from query data so it updates automatically
   const selectedProperty = useMemo(
@@ -378,7 +393,13 @@ const Index = () => {
           {/* Botón flotante "+" ZenRows */}
           {(addButtonConfig === "white" || addButtonConfig === "both") && (
             <button
-              onClick={() => setIsAddZenRowsOpen(true)}
+              onClick={() => {
+                if (canSaveMore(properties.length)) {
+                  setIsAddZenRowsOpen(true);
+                } else {
+                  setIsUpgradeOpen(true);
+                }
+              }}
               className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow hover:card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
               aria-label="Agregar con ZenRows"
               title="Agregar con ZenRows"
@@ -390,7 +411,13 @@ const Index = () => {
           {/* Botón flotante "+" Firecrawl */}
           {(addButtonConfig === "blue" || addButtonConfig === "both") && (
             <button
-              onClick={() => setIsAddOpen(true)}
+              onClick={() => {
+                if (canSaveMore(properties.length)) {
+                  setIsAddOpen(true);
+                } else {
+                  setIsUpgradeOpen(true);
+                }
+              }}
               className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center card-shadow-hover hover:scale-105 transition-all duration-200 z-30"
               aria-label="Agregar con Firecrawl"
               title="Agregar con Firecrawl"
@@ -428,6 +455,17 @@ const Index = () => {
             onClose={() => setIsGroupsOpen(false)}
             activeGroupId={activeGroupId}
             onSelectGroup={setActiveGroupId}
+          />
+
+          <UpgradePlanModal
+            open={isUpgradeOpen}
+            onClose={() => setIsUpgradeOpen(false)}
+            maxSaves={maxSaves}
+          />
+
+          <PremiumWelcomeModal
+            open={isPremiumWelcomeOpen}
+            onClose={() => setIsPremiumWelcomeOpen(false)}
           />
 
           {/* Banner de grupo activo */}
