@@ -46,9 +46,9 @@ export function useProfile() {
                 displayName: data.display_name || "",
                 avatarUrl: data.avatar_url || "",
                 phone: data.phone || "",
+                email: data.email || null,
                 status: (data.status as UserStatus) || "active",
                 referredByAgentId: data.referred_by_agent_id || null,
-                email: data.email || null,
             };
         },
         // Refrescar cuando el componente monta — status puede cambiar desde el admin

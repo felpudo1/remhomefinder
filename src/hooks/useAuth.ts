@@ -106,6 +106,7 @@ export const useAuth = () => {
                             user_id: data.user!.id,
                             phone: phone,
                             display_name: displayName,
+                            email: email,
                             referred_by_agent_id: referralId,
                             // Agentes arrancan en 'pending', usuarios en 'active' (default de BD)
                             ...(accountType === ROLES.AGENCY ? { status: "pending" } : {}),
