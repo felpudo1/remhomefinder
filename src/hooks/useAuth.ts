@@ -80,6 +80,9 @@ export const useAuth = () => {
                         full_name: displayName,
                         name: displayName,
                         phone: phone,
+                        account_type: accountType,
+                        agency_name: agencyName?.trim() || '',
+                        agency_phone: agencyPhone?.trim() || '',
                     }
                 }
             });
@@ -94,11 +97,13 @@ export const useAuth = () => {
                         full_name: displayName,
                         name: displayName,
                         phone: phone,
+                        account_type: accountType,
+                        agency_name: agencyName?.trim() || '',
+                        agency_phone: agencyPhone?.trim() || '',
                     },
                 });
 
                 // Intentar guardar perfil con reintentos para evitar race conditions
-                // Los agentes arrrancan en 'pending' hasta que el admin los apruebe
                 const upsertProfile = async (retries = 3) => {
                     const referralId = sessionStorage.getItem("hf_referral_agent_id");
                     let lastError: unknown = null;
@@ -109,7 +114,6 @@ export const useAuth = () => {
                             display_name: displayName,
                             email: email,
                             referred_by_agent_id: referralId,
-                            // Agentes arrancan en 'pending', usuarios en 'active' (default de BD)
                             ...(accountType === ROLES.AGENCY ? { status: "pending" } : {}),
                         }, {
                             onConflict: "user_id"
@@ -122,36 +126,13 @@ export const useAuth = () => {
                     if (lastError) throw lastError;
                 };
 
-                // Esperar a que el perfil se guarde antes de continuar
                 try {
                     await upsertProfile();
                 } catch (e) {
                     console.error("Profile upsert error:", e);
                 }
-
-                // Si es agente, crear la agencia (el trigger asigna el rol 'agency')
-                if (accountType === ROLES.AGENCY && agencyName) {
-                    // Pequeña pausa para asegurar que la sesión esté lista
-                    await new Promise(r => setTimeout(r, 500));
-                    
-                    const { error: agencyError } = await supabase.from("agencies").insert({
-                        name: agencyName.trim(),
-                        contact_name: displayName.trim(),
-                        contact_email: email,
-                        contact_phone: agencyPhone?.trim() || '',
-                        contact_person_phone: phone.trim(),
-                        created_by: data.user!.id
-                    });
-
-                    if (agencyError) {
-                        console.error("DB Agency Error:", agencyError);
-                        toast({
-                            title: "Advertencia",
-                            description: "No se pudo crear la agencia. Contactá al administrador.",
-                            variant: "destructive"
-                        });
-                    }
-                }
+                // Nota: la agencia y el rol se crean automáticamente en el servidor
+                // mediante triggers en handle_new_user_profile y handle_new_user_role
             }
 
             toast({
