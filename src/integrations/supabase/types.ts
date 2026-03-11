@@ -257,6 +257,7 @@ export type Database = {
           id: string
           phone: string
           plan_type: string | null
+          referred_by_agent_id: string | null
           status: Database["public"]["Enums"]["user_status"]
           updated_at: string
           user_id: string
@@ -269,6 +270,7 @@ export type Database = {
           id?: string
           phone?: string
           plan_type?: string | null
+          referred_by_agent_id?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id: string
@@ -281,6 +283,7 @@ export type Database = {
           id?: string
           phone?: string
           plan_type?: string | null
+          referred_by_agent_id?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id?: string
