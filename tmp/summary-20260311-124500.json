@@ -1,0 +1,4 @@
+{
+    "summary": "Se implementó un Error Boundary global de forma poco invasiva envolviendo el componente raíz en main.tsx. Se diseñó una interfaz premium para los fallos y se dejó un mecanismo de diagnóstico temporal para verificación.",
+    "current_status": "ErrorBoundary funcionando. Esperando verificación visual del usuario mediante URL de error."
+}
