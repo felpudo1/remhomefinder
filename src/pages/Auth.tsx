@@ -46,7 +46,7 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, redirectByRole]);
+  }, [navigate, redirectByRole, isSigningUp]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
