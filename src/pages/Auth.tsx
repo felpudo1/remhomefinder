@@ -32,21 +32,21 @@ const Auth = () => {
   const [familyName, setFamilyName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading, signIn, signUp, redirectByRole } = useAuth();
+  const { loading, isSigningUp, signIn, signUp, redirectByRole } = useAuth();
 
   useEffect(() => {
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) redirectByRole(session.user.id);
+      if (session && !isSigningUp) redirectByRole(session.user.id);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) redirectByRole(session.user.id);
+      if (session && !isSigningUp) redirectByRole(session.user.id);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, redirectByRole]);
+  }, [navigate, redirectByRole, isSigningUp]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();

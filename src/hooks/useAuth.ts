@@ -11,6 +11,7 @@ import { loginSchema, registerSchema } from "@/lib/schemas/auth";
  */
 export const useAuth = () => {
     const [loading, setLoading] = useState(false);
+    const [isSigningUp, setIsSigningUp] = useState(false);
     const navigate = useNavigate();
     const { toast } = useToast();
 
@@ -60,7 +61,7 @@ export const useAuth = () => {
     }) => {
         const { email, password, confirmPassword, accountType, displayName, phone, agencyName, agencyPhone } = params;
         setLoading(true);
-
+        setIsSigningUp(true);
         try {
             // Validación con Zod
             const validation = registerSchema.safeParse(params);
@@ -156,6 +157,7 @@ export const useAuth = () => {
             return { success: false, error };
         } finally {
             setLoading(false);
+            setIsSigningUp(false);
         }
     };
 
@@ -193,6 +195,7 @@ export const useAuth = () => {
 
     return {
         loading,
+        isSigningUp,
         signIn,
         signUp,
         redirectByRole
