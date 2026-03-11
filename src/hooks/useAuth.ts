@@ -157,6 +157,7 @@ export const useAuth = () => {
             return { success: false, error };
         } finally {
             setLoading(false);
+            setIsSigningUp(false);
         }
     };
 
