@@ -351,7 +351,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       const payload = {
         agency_id: agencyId,
         title: form.title.trim(),
-        description: form.details || "",
+        description: form.aiSummary || form.details || "",
         url: url.trim(),
         price_rent: priceRent,
         price_expenses: priceExpenses,
@@ -363,9 +363,6 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
         rooms: Number(form.rooms) || 1,
         images: scrapedImages,
         listing_type: listingType,
-        ref: form.ref,
-        details: form.details,
-        ai_summary: form.aiSummary,
       };
 
       if (propertyToEdit) {
