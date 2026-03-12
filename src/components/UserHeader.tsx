@@ -26,7 +26,7 @@ export const UserHeader = ({
     const { isPremium } = useSubscription();
     const { data: profile } = useProfile();
 
-    const isReferred = !!profile?.referredByAgentId;
+    const isReferred = !!profile?.referredById;
 
     const StatusStar = () => (
         isPremium ? (
