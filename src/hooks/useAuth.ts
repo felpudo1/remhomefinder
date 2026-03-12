@@ -105,7 +105,7 @@ export const useAuth = () => {
 
                 // Intentar guardar perfil con reintentos para evitar race conditions
                 const upsertProfile = async (retries = 3) => {
-                    const referralId = sessionStorage.getItem("hf_referral_agent_id");
+                    const referralId = sessionStorage.getItem("hf_referral_id");
                     let lastError: unknown = null;
                     for (let i = 0; i < retries; i++) {
                         const { error: profileError } = await supabase.from("profiles").upsert({
@@ -113,7 +113,7 @@ export const useAuth = () => {
                             phone: phone,
                             display_name: displayName,
                             email: email,
-                            referred_by_agent_id: referralId,
+                            referred_by_id: referralId,
                             ...(accountType === ROLES.AGENCY ? { status: "pending" } : {}),
                         }, {
                             onConflict: "user_id"

@@ -27,7 +27,7 @@ export function UserReferralSection() {
             const { count, error } = await supabase
                 .from("profiles")
                 .select("*", { count: "exact", head: true })
-                .eq("referred_by_agent_id", profile.user_id);
+                .eq("referred_by_id", profile.user_id);
 
             if (error) throw error;
             return count || 0;
@@ -39,15 +39,47 @@ export function UserReferralSection() {
         ? `${window.location.origin}/auth?ref=${profile.user_id}`
         : "";
 
-    const copyToClipboard = () => {
-        if (!referralLink) return;
-        navigator.clipboard.writeText(referralLink);
-        setCopied(true);
-        toast({
-            title: "¡Link copiado!",
-            description: "Compartilo con tus amigos para que se registren.",
-        });
-        setTimeout(() => setCopied(false), 2000);
+    const copyToClipboard = async () => {
+        if (!referralLink) {
+            toast({
+                title: "Error",
+                description: "No se pudo generar el link. Intentá de nuevo.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(referralLink);
+            } else {
+                // Fallback para contextos no seguros o navegadores viejos
+                const textArea = document.createElement("textarea");
+                textArea.value = referralLink;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                textArea.remove();
+            }
+
+            setCopied(true);
+            toast({
+                title: "¡Link copiado! 🔗",
+                description: "Compartilo con tus amigos para que se registren.",
+            });
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Error al copiar:', err);
+            toast({
+                title: "Error al copiar",
+                description: "Por favor, copialo manualmente.",
+                variant: "destructive",
+            });
+        }
     };
 
     return (

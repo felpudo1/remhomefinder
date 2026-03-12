@@ -76,7 +76,7 @@ export function AdminUsuarios({ toast }: Props) {
             supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
             supabase.from("properties").select("user_id, source_marketplace_id").in("user_id", userIds),
             supabase.from("agencies").select("id, created_by").in("created_by", userIds),
-            supabase.from("profiles").select("user_id, referred_by_agent_id").in("referred_by_agent_id", userIds),
+            supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
         ]);
 
         const agencyIds = (agenciesRes.data || []).map(a => a.id);
@@ -122,8 +122,8 @@ export function AdminUsuarios({ toast }: Props) {
 
         const referralsCountMap: Record<string, number> = {};
         for (const r of referralsRes.data || []) {
-            if (r.referred_by_agent_id) {
-                referralsCountMap[r.referred_by_agent_id] = (referralsCountMap[r.referred_by_agent_id] || 0) + 1;
+            if (r.referred_by_id) {
+                referralsCountMap[r.referred_by_id] = (referralsCountMap[r.referred_by_id] || 0) + 1;
             }
         }
 

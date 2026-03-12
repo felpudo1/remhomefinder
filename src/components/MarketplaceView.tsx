@@ -22,7 +22,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const { data: marketplaceProperties = [], isLoading } = useMarketplaceProperties();
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
-  const referredAgentId = profile?.referredByAgentId;
+  const referredAgentId = profile?.referredById;
 
   const saveToList = useSaveToList();
   const { toast } = useToast();

@@ -13,7 +13,7 @@ export interface UserProfile {
     phone: string;
     email: string | null;
     status: UserStatus;
-    referredByAgentId: string | null;
+    referredById: string | null;
 }
 
 /**
@@ -34,7 +34,7 @@ export function useProfile() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("user_id, display_name, avatar_url, phone, status, referred_by_agent_id, email")
+                .select("user_id, display_name, avatar_url, phone, status, referred_by_id, email")
                 .eq("user_id", user.id)
                 .single();
 
@@ -48,7 +48,7 @@ export function useProfile() {
                 phone: data.phone || "",
                 email: data.email || null,
                 status: (data.status as UserStatus) || "active",
-                referredByAgentId: data.referred_by_agent_id || null,
+                referredById: data.referred_by_id || null,
             };
         },
         // Refrescar cuando el componente monta — status puede cambiar desde el admin

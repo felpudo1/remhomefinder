@@ -76,7 +76,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
             const { count, error } = await supabase
                 .from("profiles")
                 .select("*", { count: "exact", head: true })
-                .eq("referred_by_agent_id", agency.created_by);
+                .eq("referred_by_id", agency.created_by);
             if (error) throw error;
             return count || 0;
         },
@@ -132,14 +132,14 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
 
                 <div className="flex flex-wrap gap-2">
                     <div className="flex-1 min-w-[200px] h-10 bg-background border border-border rounded-xl px-3 flex items-center text-xs text-muted-foreground truncate">
-                        {`${window.location.origin}/?agente=${agency.created_by}`}
+                        {`${window.location.origin}/?ref=${agency.created_by}`}
                     </div>
                     <Button
                         variant="outline"
                         size="sm"
                         className="rounded-xl gap-2 h-10"
                         onClick={() => {
-                            const link = `${window.location.origin}/?agente=${agency.created_by}`;
+                            const link = `${window.location.origin}/?ref=${agency.created_by}`;
                             navigator.clipboard.writeText(link);
                             toast({ title: "Link copiado", description: "Ya podés pegarlo donde quieras." });
                         }}
@@ -151,7 +151,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                         size="sm"
                         className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm"
                         onClick={() => {
-                            const link = `${window.location.origin}/?agente=${agency.created_by}`;
+                            const link = `${window.location.origin}/?ref=${agency.created_by}`;
                             const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${link}`);
                             window.open(`https://wa.me/?text=${text}`, '_blank');
                         }}

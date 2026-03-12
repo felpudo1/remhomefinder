@@ -16,16 +16,16 @@ export const ReferralTracker = () => {
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
-        const agentId = params.get("agente");
+        const refId = params.get("ref") || params.get("agente");
 
-        if (agentId) {
-            console.log("💎 ReferralTracker: Capturado ID de agente:", agentId);
+        if (refId) {
+            console.log("💎 ReferralTracker: Capturado ID de referido:", refId);
 
             // 1. Guardar en sesión para futuros registros
-            sessionStorage.setItem("hf_referral_agent_id", agentId);
+            sessionStorage.setItem("hf_referral_id", refId);
 
             // 2. Si ya está logueado y no tiene referido, vincularlo ahora
-            if (profile && !profile.referredByAgentId) {
+            if (profile && !profile.referredById) {
                 const linkReferral = async () => {
                     try {
                         const { data: { user } } = await supabase.auth.getUser();
@@ -33,11 +33,11 @@ export const ReferralTracker = () => {
 
                         const { error } = await supabase
                             .from("profiles")
-                            .update({ referred_by_agent_id: agentId })
+                            .update({ referred_by_id: refId })
                             .eq("user_id", user.id);
 
                         if (error) throw error;
-                        console.log("💎 ReferralTracker: Perfil vinculado al agente exitosamente.");
+                        console.log("💎 ReferralTracker: Perfil vinculado exitosamente.");
                     } catch (err) {
                         console.error("💎 ReferralTracker: Error al vincular perfil:", err);
                     }
