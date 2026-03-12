@@ -73,19 +73,19 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       if (propertyToEdit) {
         setStep("manual");
         setScrapedImages(propertyToEdit.images || []);
-        setListingType(propertyToEdit.listing_type || "rent");
+        setListingType(propertyToEdit.listingType || propertyToEdit.listing_type || "rent");
         setForm({
           title: propertyToEdit.title || "",
-          priceRent: String(propertyToEdit.price_rent || ""),
-          priceExpenses: String(propertyToEdit.price_expenses || ""),
+          priceRent: String(propertyToEdit.priceRent || propertyToEdit.price_rent || ""),
+          priceExpenses: String(propertyToEdit.priceExpenses || propertyToEdit.price_expenses || ""),
           currency: propertyToEdit.currency || "UYU",
           neighborhood: propertyToEdit.neighborhood || "",
           city: propertyToEdit.city || "",
-          sqMeters: String(propertyToEdit.sq_meters || ""),
+          sqMeters: String(propertyToEdit.sqMeters || propertyToEdit.sq_meters || ""),
           rooms: String(propertyToEdit.rooms || ""),
-          aiSummary: propertyToEdit.ai_summary || "",
-          ref: propertyToEdit.ref || "",
-          details: propertyToEdit.details || "",
+          aiSummary: propertyToEdit.aiSummary || propertyToEdit.ai_summary || "",
+          ref: propertyToEdit.ref || propertyToEdit.ref || "",
+          details: propertyToEdit.details || propertyToEdit.description || "",
         });
         setUrl(propertyToEdit.url || "");
       } else {

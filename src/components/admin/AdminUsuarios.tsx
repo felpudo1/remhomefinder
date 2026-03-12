@@ -11,7 +11,9 @@ interface UserProfile {
     email: string | null;
     status: "active" | "pending" | "suspended" | "rejected";
     roles: string[];
-    property_count: number;
+    personal_count: number;
+    saved_count: number;
+    referral_count: number;
     plan_type: "free" | "premium";
 }
 
@@ -69,11 +71,21 @@ export function AdminUsuarios({ toast }: Props) {
             return;
         }
 
-        // Fetch roles and properties only for the current page users
-        const [rolesRes, propsRes] = await Promise.all([
+        // Fetch roles, properties, marketplace properties, agencies and referrals
+        const [rolesRes, propsRes, agenciesRes, referralsRes] = await Promise.all([
             supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
-            supabase.from("properties").select("user_id").in("user_id", userIds),
+            supabase.from("properties").select("user_id, source_marketplace_id").in("user_id", userIds),
+            supabase.from("agencies").select("id, created_by").in("created_by", userIds),
+            supabase.from("profiles").select("user_id, referred_by_agent_id").in("referred_by_agent_id", userIds),
         ]);
+
+        const agencyIds = (agenciesRes.data || []).map(a => a.id);
+        let marketplacePropsRes = { data: [] as any[] };
+
+        if (agencyIds.length > 0) {
+            const res = await supabase.from("marketplace_properties").select("agency_id").in("agency_id", agencyIds);
+            marketplacePropsRes = { data: res.data || [] };
+        }
 
         const roleMap: Record<string, string[]> = {};
         for (const r of rolesRes.data || []) {
@@ -81,9 +93,38 @@ export function AdminUsuarios({ toast }: Props) {
             roleMap[r.user_id].push(r.role);
         }
 
-        const propsCountMap: Record<string, number> = {};
+        const personalCountMap: Record<string, number> = {};
+        const savedCountMap: Record<string, number> = {};
+
         for (const p of propsRes.data || []) {
-            propsCountMap[p.user_id] = (propsCountMap[p.user_id] || 0) + 1;
+            if (p.source_marketplace_id) {
+                // Es una propiedad guardada del marketplace
+                savedCountMap[p.user_id] = (savedCountMap[p.user_id] || 0) + 1;
+            } else {
+                // Es una propiedad cargada manualmente
+                personalCountMap[p.user_id] = (personalCountMap[p.user_id] || 0) + 1;
+            }
+        }
+
+        // Map agency to creator user_id
+        const agencyToUserMap: Record<string, string> = {};
+        for (const a of agenciesRes.data || []) {
+            agencyToUserMap[a.id] = a.created_by;
+        }
+
+        // Add marketplace properties (agent publishes) to personal count
+        for (const mp of marketplacePropsRes.data || []) {
+            const userId = agencyToUserMap[mp.agency_id];
+            if (userId) {
+                personalCountMap[userId] = (personalCountMap[userId] || 0) + 1;
+            }
+        }
+
+        const referralsCountMap: Record<string, number> = {};
+        for (const r of referralsRes.data || []) {
+            if (r.referred_by_agent_id) {
+                referralsCountMap[r.referred_by_agent_id] = (referralsCountMap[r.referred_by_agent_id] || 0) + 1;
+            }
         }
 
         const userList: UserProfile[] = (profiles || []).map((p: any) => ({
@@ -92,7 +133,9 @@ export function AdminUsuarios({ toast }: Props) {
             email: p.email || "-",
             status: p.status || "active",
             roles: roleMap[p.user_id] || ["user"],
-            property_count: propsCountMap[p.user_id] || 0,
+            personal_count: personalCountMap[p.user_id] || 0,
+            saved_count: savedCountMap[p.user_id] || 0,
+            referral_count: referralsCountMap[p.user_id] || 0,
             plan_type: (p.plan_type as "free" | "premium") || "free",
         }));
 
@@ -162,7 +205,7 @@ export function AdminUsuarios({ toast }: Props) {
 
     return (
         <div className="space-y-2">
-            <div className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_1fr_1.2fr] gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
+            <div className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_1.8fr] gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
                 <button
                     onClick={() => handleSort('display_name')}
                     className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
@@ -185,11 +228,20 @@ export function AdminUsuarios({ toast }: Props) {
                     )}
                 </button>
                 <button
-                    onClick={() => handleSort('property_count')}
+                    onClick={() => handleSort('personal_count')}
                     className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
                 >
                     Propiedades
-                    {sortConfig.key === 'property_count' && (
+                    {sortConfig.key === 'personal_count' && (
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    )}
+                </button>
+                <button
+                    onClick={() => handleSort('referral_count')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                >
+                    Referidos
+                    {sortConfig.key === 'referral_count' && (
                         sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                     )}
                 </button>
@@ -214,7 +266,7 @@ export function AdminUsuarios({ toast }: Props) {
                 const isAdmin = user.roles.includes("admin");
 
                 return (
-                    <div key={user.user_id} className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_1fr_1.2fr] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+                    <div key={user.user_id} className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_1.8fr] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
                         <div className="flex items-center gap-2 min-w-0">
                             <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                             <span className="truncate text-foreground font-medium">{user.display_name}</span>
@@ -232,9 +284,25 @@ export function AdminUsuarios({ toast }: Props) {
                                     user.roles.includes("agency") ? "Agente" : "Usuario"}
                             </span>
                         </div>
+                        <div className="flex items-center gap-1.5">
+                            <span
+                                title="Propiedades propias/publicadas"
+                                className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-6 h-6 rounded-full text-[10px] font-bold shadow-sm"
+                            >
+                                {user.personal_count}
+                            </span>
+                            {!user.roles.includes("agency") && (
+                                <span
+                                    title="Propiedades guardadas del marketplace"
+                                    className="inline-flex items-center justify-center bg-orange-100 text-orange-700 w-6 h-6 rounded-full text-[10px] font-bold shadow-sm"
+                                >
+                                    {user.saved_count}
+                                </span>
+                            )}
+                        </div>
                         <div className="flex items-center">
-                            <span className="inline-flex items-center justify-center bg-primary/10 text-primary px-2 py-0.5 rounded-md text-xs font-semibold min-w-8">
-                                {user.property_count}
+                            <span className="inline-flex items-center justify-center bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold min-w-8">
+                                {user.referral_count}
                             </span>
                         </div>
                         <div>
@@ -243,10 +311,10 @@ export function AdminUsuarios({ toast }: Props) {
                                 {sc.label}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2 pr-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <Select value={user.plan_type} onValueChange={(v) => updatePlan(user.user_id, v as "free" | "premium")}>
                                 <SelectTrigger className={cn(
-                                    "h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider w-[90px]",
+                                    "h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider",
                                     user.plan_type === "premium" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted"
                                 )}>
                                     <SelectValue />
@@ -258,10 +326,10 @@ export function AdminUsuarios({ toast }: Props) {
                             </Select>
 
                             {isAdmin ? (
-                                <span className="text-xs text-muted-foreground w-[130px] text-center">—</span>
+                                <span className="text-xs text-muted-foreground text-center">—</span>
                             ) : (
                                 <Select value={user.status} onValueChange={(v) => updateStatus(user.user_id, v as UserProfile["status"])}>
-                                    <SelectTrigger className="h-8 rounded-xl text-xs w-[130px]">
+                                    <SelectTrigger className="h-8 rounded-xl text-xs">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>

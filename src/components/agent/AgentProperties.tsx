@@ -12,6 +12,8 @@ import { Agency } from "./AgentProfile";
 import { AGENT_PROPERTY_STATUSES, PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
+import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
+import { MarketplaceProperty } from "@/types/property";
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -23,6 +25,8 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
     const queryClient = useQueryClient();
     const [publishOpen, setPublishOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
+    const [selectedProperty, setSelectedProperty] = useState<MarketplaceProperty | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryIndex, setGalleryIndex] = useState(0);
@@ -39,7 +43,42 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 .eq("agency_id", agency.id)
                 .order("created_at", { ascending: false });
             if (error) throw error;
-            return data || [];
+            if (!data) return [];
+            return data.map((p: any): MarketplaceProperty => ({
+                id: p.id,
+                agencyId: p.agency_id,
+                agencyName: agency.name,
+                agentId: agency.created_by,
+                title: p.title,
+                description: p.description,
+                url: p.url,
+                priceRent: Number(p.price_rent),
+                priceExpenses: Number(p.price_expenses),
+                totalCost: Number(p.total_cost),
+                currency: p.currency,
+                neighborhood: p.neighborhood,
+                city: p.city || "",
+                sqMeters: Number(p.sq_meters),
+                rooms: p.rooms,
+                images: p.images || [],
+                status: p.status,
+                listingType: p.listing_type || "rent",
+                createdAt: new Date(p.created_at),
+                updatedAt: new Date(p.updated_at),
+            }));
+        },
+    });
+
+    const { data: referralCount = 0 } = useQuery({
+        queryKey: ["agency-referral-count", agency.created_by],
+        enabled: !!agency.created_by,
+        queryFn: async () => {
+            const { count, error } = await supabase
+                .from("profiles")
+                .select("*", { count: "exact", head: true })
+                .eq("referred_by_agent_id", agency.created_by);
+            if (error) throw error;
+            return count || 0;
         },
     });
 
@@ -78,6 +117,17 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                             Compartí tu link personalizado. Los clientes que se registren con él verán **tus propiedades arriba de todo** en el Marketplace.
                         </p>
                     </div>
+                    {referralCount > 0 && (
+                        <div className="flex flex-col items-end animate-in fade-in zoom-in duration-500">
+                            <Badge className="bg-primary text-primary-foreground hover:bg-primary px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-primary/20 flex gap-2 items-center">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-foreground"></span>
+                                </span>
+                                {referralCount} {referralCount === 1 ? 'Cliente vinculado' : 'Clientes vinculados'}
+                            </Badge>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -130,16 +180,20 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                 title={p.title}
                                 neighborhood={p.neighborhood}
                                 city={p.city}
-                                priceRent={p.price_rent}
-                                priceExpenses={p.price_expenses}
-                                totalCost={p.total_cost}
+                                priceRent={p.priceRent}
+                                priceExpenses={p.priceExpenses}
+                                totalCost={p.totalCost}
                                 currency={p.currency}
-                                sqMeters={p.sq_meters}
+                                sqMeters={p.sqMeters}
                                 rooms={p.rooms}
-                                images={p.images || []}
-                                listingType={p.listing_type}
+                                images={p.images}
+                                listingType={p.listingType}
+                                onClick={() => {
+                                    setSelectedProperty(p);
+                                    setIsDetailOpen(true);
+                                }}
                                 onImageClick={(index) => {
-                                    setGalleryImages(p.images || []);
+                                    setGalleryImages(p.images);
                                     setGalleryIndex(index);
                                     setIsGalleryOpen(true);
                                 }}
@@ -191,6 +245,12 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 agencyId={agency.id}
                 onPublished={() => queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] })}
                 propertyToEdit={propertyToEdit}
+            />
+
+            <MarketplacePropertyDetailModal
+                property={selectedProperty}
+                open={isDetailOpen}
+                onClose={() => setIsDetailOpen(false)}
             />
 
             <FullScreenGallery

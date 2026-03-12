@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
+import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
 import { useState } from "react";
 
 interface MarketplaceCardProps {
@@ -30,6 +31,7 @@ const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string }
 
 export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const overlay = STATUS_OVERLAY_CONFIG[property.status];
 
@@ -47,6 +49,7 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
         rooms={property.rooms}
         images={property.images}
         listingType={property.listingType}
+        onClick={() => setIsDetailOpen(true)}
         onImageClick={(index) => {
           setCurrentImgIndex(index);
           setIsGalleryOpen(true);
@@ -87,7 +90,10 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
             size="sm"
             variant={alreadySaved ? "secondary" : "default"}
             className="gap-1.5 rounded-lg"
-            onClick={() => onSave(property)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSave(property);
+            }}
             disabled={isSaving || alreadySaved}
           >
             <Bookmark className={`w-3.5 h-3.5 ${alreadySaved ? "fill-current" : ""}`} />
@@ -95,6 +101,13 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
           </Button>
         }
       />
+
+      <MarketplacePropertyDetailModal
+        property={property}
+        open={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+      />
+
       <FullScreenGallery
         images={property.images}
         isOpen={isGalleryOpen}

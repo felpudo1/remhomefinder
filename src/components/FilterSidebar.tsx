@@ -2,6 +2,7 @@ import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SlidersHorizontal, X, Search } from "lucide-react";
+import { UserReferralSection } from "@/components/UserReferralSection";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
@@ -139,6 +140,8 @@ export function FilterSidebar({
           ))}
         </div>
       </div>
+
+      <UserReferralSection />
     </div>
   );
 
