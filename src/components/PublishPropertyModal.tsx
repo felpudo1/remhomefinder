@@ -1,25 +1,28 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Sparkles, Link as LinkIcon, Plus, X, ImageIcon, Upload } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
+import { PropertyFormManual } from "./add-property/PropertyFormManual";
+import { ScraperInput } from "./add-property/ScraperInput";
+
+/** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 interface PublishPropertyModalProps {
   open: boolean;
@@ -33,23 +36,36 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"url" | "manual">("url");
+  const [step, setStep] = useState<"url" | "image-upload" | "manual">("url");
   const [url, setUrl] = useState("");
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [urlDuplicated, setUrlDuplicated] = useState(false);
+  const [cameFromImage, setCameFromImage] = useState(false);
+
+  // Image analysis state
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isAnalyzingUnified, setIsAnalyzingUnified] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const screenshotInputRef = useRef<HTMLInputElement>(null);
+  const unifiedImageRef = useRef<HTMLInputElement>(null);
 
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [form, setForm] = useState({
     title: "",
-    description: "",
     priceRent: "",
     priceExpenses: "",
     currency: "UYU",
     neighborhood: "",
+    city: "",
     sqMeters: "",
-    rooms: "1",
+    rooms: "",
+    aiSummary: "",
+    ref: "",
+    details: "",
   });
 
   useEffect(() => {
@@ -60,13 +76,16 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
         setListingType(propertyToEdit.listing_type || "rent");
         setForm({
           title: propertyToEdit.title || "",
-          description: propertyToEdit.description || "",
           priceRent: String(propertyToEdit.price_rent || ""),
           priceExpenses: String(propertyToEdit.price_expenses || ""),
-          currency: propertyToEdit.currency || "ARS",
+          currency: propertyToEdit.currency || "UYU",
           neighborhood: propertyToEdit.neighborhood || "",
+          city: propertyToEdit.city || "",
           sqMeters: String(propertyToEdit.sq_meters || ""),
-          rooms: String(propertyToEdit.rooms || "1"),
+          rooms: String(propertyToEdit.rooms || ""),
+          aiSummary: propertyToEdit.ai_summary || "",
+          ref: propertyToEdit.ref || "",
+          details: propertyToEdit.details || "",
         });
         setUrl(propertyToEdit.url || "");
       } else {
@@ -76,19 +95,25 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
         setListingType("rent");
         setForm({
           title: "",
-          description: "",
           priceRent: "",
           priceExpenses: "",
           currency: "UYU",
           neighborhood: "",
+          city: "",
           sqMeters: "",
-          rooms: "1",
+          rooms: "",
+          aiSummary: "",
+          ref: "",
+          details: "",
         });
+        setCameFromImage(false);
+        setScreenshotFile(null);
+        setScreenshotPreview(null);
       }
     }
   }, [open, propertyToEdit]);
 
-  // Auto-ajustar moneda según tipo de operación (solo en publicaciones nuevas)
+  // Auto-ajustar moneda según tipo de operación
   useEffect(() => {
     if (!propertyToEdit) {
       setForm((prev) => ({
@@ -102,7 +127,6 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
     if (!url.trim()) return;
     setIsLoading(true);
     try {
-      // Verificar si ya existe en el marketplace
       const { data: existing } = await supabase
         .from("marketplace_properties")
         .select("id")
@@ -119,24 +143,8 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
         body: { url: url.trim(), role: "agent" },
       });
 
-      // supabase.functions.invoke puts non-2xx response body into error.context
       if (error || !data?.success) {
-        let errorMsg = "No pudimos extraer datos automáticamente. Completá los datos manualmente.";
-        try {
-          const errBody = typeof error?.context === "string" ? JSON.parse(error.context) : error?.context;
-          if (errBody?.error === "MARKETPLACE_MANUAL" || errBody?.message) {
-            errorMsg = errBody.message || errorMsg;
-          } else if (data?.message) {
-            errorMsg = data.message;
-          } else if (data?.error && data.error !== "MARKETPLACE_MANUAL") {
-            errorMsg = data.error;
-          }
-        } catch {
-          if (data?.message) errorMsg = data.message;
-          else if (data?.error && data.error !== "MARKETPLACE_MANUAL") errorMsg = data.error;
-        }
-
-        sonnerToast.info(`📋 ${errorMsg}`);
+        sonnerToast.info("No pudimos extraer datos automáticamente. Completá los datos manualmente.");
         setStep("manual");
         setIsLoading(false);
         return;
@@ -146,15 +154,17 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       setScrapedImages(d.images || []);
       setForm({
         title: d.title || "",
-        description: d.aiSummary || "",
         priceRent: String(d.priceRent || ""),
         priceExpenses: String(d.priceExpenses || ""),
-        currency: d.currency || "ARS",
+        currency: d.currency || "UYU",
         neighborhood: d.neighborhood || "",
+        city: d.city || "",
         sqMeters: String(d.sqMeters || ""),
-        rooms: String(d.rooms || "1"),
+        rooms: String(d.rooms || ""),
+        aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
       });
-      // Aplicar el tipo de operación detectado por la IA
       if (d.listingType === "sale" || d.listingType === "rent") {
         setListingType(d.listingType);
       }
@@ -163,6 +173,130 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
     } catch (err) {
       console.error("Scrape error:", err);
       sonnerToast.error("Error al conectar con el servicio de scraping");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUnifiedImageAnalysis = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsAnalyzingUnified(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+
+      const uploadedUrls: string[] = [];
+      for (const file of Array.from(files).slice(0, 3)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `agencies/${agencyId}/captures/${safeUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("property-images").upload(path, file);
+        if (error) continue;
+        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      if (uploadedUrls.length === 0) {
+        sonnerToast.error("No se pudieron subir las imágenes.");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("extract-from-image", {
+        body: { imageUrls: uploadedUrls, role: "agent" },
+      });
+
+      if (error || !data?.success) {
+        sonnerToast.info("No pudimos extraer datos de las imágenes. Completá manualmente.");
+        setCameFromImage(true);
+        setStep("manual");
+        return;
+      }
+
+      const d = data.data;
+      setForm({
+        title: d.title || "",
+        priceRent: d.priceRent ? String(d.priceRent) : "",
+        priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
+        currency: d.currency || "UYU",
+        neighborhood: d.neighborhood || "",
+        city: d.city || "",
+        sqMeters: d.sqMeters ? String(d.sqMeters) : "",
+        rooms: d.rooms ? String(d.rooms) : "",
+        aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
+      });
+      if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
+      setScrapedImages(prev => [...prev, ...uploadedUrls]);
+      setCameFromImage(true);
+      setStep("manual");
+      sonnerToast.success("¡IA analizó tus fotos!");
+    } catch (err) {
+      console.error(err);
+      sonnerToast.error("Error al analizar imágenes");
+    } finally {
+      setIsAnalyzingUnified(false);
+    }
+  };
+
+  const handleScreenshotSelect = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file.type.startsWith("image/")) {
+      sonnerToast.error("Seleccioná una imagen");
+      return;
+    }
+    setScreenshotFile(file);
+    setScreenshotPreview(URL.createObjectURL(file));
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!screenshotFile) return;
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+
+      const ext = screenshotFile.name.split(".").pop() || "jpg";
+      const path = `agencies/${agencyId}/captures/${safeUUID()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, screenshotFile);
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+      const imageUrl = urlData.publicUrl;
+
+      const { data, error } = await supabase.functions.invoke("extract-from-image", {
+        body: { imageUrl, role: "agent" },
+      });
+
+      if (error || !data?.success) {
+        sonnerToast.info("No pudimos extraer datos de la imagen. Completá manualmente.");
+        setCameFromImage(true);
+        setStep("manual");
+        return;
+      }
+
+      const d = data.data;
+      setForm({
+        title: d.title || "",
+        priceRent: d.priceRent ? String(d.priceRent) : "",
+        priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
+        currency: d.currency || "UYU",
+        neighborhood: d.neighborhood || "",
+        city: d.city || "",
+        sqMeters: d.sqMeters ? String(d.sqMeters) : "",
+        rooms: d.rooms ? String(d.rooms) : "",
+        aiSummary: d.aiSummary || "",
+        ref: d.ref || "",
+        details: d.details || "",
+      });
+      if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
+      setScrapedImages(prev => [...prev, imageUrl]);
+      setCameFromImage(true);
+      setStep("manual");
+      sonnerToast.success("¡Datos extraídos de la imagen!");
+    } catch (err) {
+      console.error(err);
+      sonnerToast.error("Error al analizar la imagen");
     } finally {
       setIsLoading(false);
     }
@@ -198,8 +332,15 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const checkDuplicateUrl = async (urlToCheck: string) => {
+    if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
+    try {
+      const { data } = await supabase.from("marketplace_properties").select("id").eq("url", urlToCheck.trim()).limit(1);
+      setUrlDuplicated(!!(data && data.length > 0));
+    } catch { setUrlDuplicated(false); }
+  };
+
+  const handleSubmit = async () => {
     if (!form.title.trim()) return;
 
     setSaving(true);
@@ -210,17 +351,21 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       const payload = {
         agency_id: agencyId,
         title: form.title.trim(),
-        description: form.description.trim(),
+        description: form.details || "",
         url: url.trim(),
         price_rent: priceRent,
         price_expenses: priceExpenses,
         total_cost: priceRent + priceExpenses,
         currency: form.currency,
         neighborhood: form.neighborhood.trim(),
+        city: form.city.trim(),
         sq_meters: Number(form.sqMeters) || 0,
         rooms: Number(form.rooms) || 1,
         images: scrapedImages,
         listing_type: listingType,
+        ref: form.ref,
+        details: form.details,
+        ai_summary: form.aiSummary,
       };
 
       if (propertyToEdit) {
@@ -246,177 +391,67 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
     onClose();
   };
 
+  const isFormValid = form.title && form.neighborhood && form.priceRent && !urlDuplicated;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
-            {propertyToEdit ? "Editar Propiedad" : (step === "url" ? "Agregar Propiedad" : "Confirmar Publicación")}
+            {step === "url"
+              ? "Agregar Propiedad"
+              : step === "image-upload"
+                ? "Analizar captura de RRSS"
+                : (propertyToEdit ? "Editar Propiedad" : "Detalles de la Propiedad")}
           </DialogTitle>
         </DialogHeader>
 
-        {step === "url" ? (
-          <div className="space-y-5 py-2">
-            <div className="space-y-2">
-              {/* Label del input URL */}
-              <Label className="text-sm font-medium">Pegá la URL del aviso</Label>
-              <div className="relative">
-                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="url"
-                  placeholder="http://intocasas.com.uy/..."
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="pl-9 rounded-xl"
-                  onKeyDown={(e) => e.key === "Enter" && handleScrape()}
-                />
-              </div>
-              {/* Texto de ayuda */}
-              <p className="text-xs text-muted-foreground">
-                Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
-              </p>
-              {/* Advertencia sobre redes sociales */}
-              <p className="text-xs text-amber-600 font-medium">
-                Las publicaciones de MarketPlace, IG y RRSS hay que ingresarlas manualmente.
-              </p>
-            </div>
+        <ScraperInput
+          step={step}
+          url={url}
+          setUrl={setUrl}
+          isLoading={isLoading}
+          isAnalyzingUnified={isAnalyzingUnified}
+          handleScrape={handleScrape}
+          unifiedImageRef={unifiedImageRef}
+          handleUnifiedImageAnalysis={handleUnifiedImageAnalysis}
+          setStep={setStep}
+          screenshotInputRef={screenshotInputRef}
+          screenshotFile={screenshotFile}
+          screenshotPreview={screenshotPreview}
+          handleScreenshotSelect={handleScreenshotSelect}
+          setScreenshotFile={setScreenshotFile}
+          setScreenshotPreview={setScreenshotPreview}
+          handleAnalyzeImage={handleAnalyzeImage}
+          setCameFromImage={setCameFromImage}
+        />
 
-            {/* Botón principal de scraping */}
-            <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
-              {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" />Extraer datos de la publicación</>
-              )}
-            </Button>
-
-            {/* Separador */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-            </div>
-
-            {/* Botón manual */}
-            <Button variant="outline" onClick={() => setStep("manual")} className="w-full rounded-xl">
-              Agregar manualmente
-            </Button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 py-2">
-            {/* Tipo de operación */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo de operación</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant={listingType === "rent" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("rent")}>Alquiler</Button>
-                <Button type="button" variant={listingType === "sale" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setListingType("sale")}>Venta</Button>
-              </div>
-            </div>
-            {/* Galería de imágenes extraídas */}
-            {scrapedImages.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fotos ({scrapedImages.length})</Label>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                  {scrapedImages.map((img, i) => (
-                    <div key={i} className="relative shrink-0 group">
-                      <img
-                        src={img}
-                        alt=""
-                        className="w-24 h-20 rounded-xl object-cover border border-border"
-                        onError={(e) => (e.currentTarget.style.display = "none")}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setScrapedImages(prev => prev.filter((_, idx) => idx !== i))}
-                        className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  <div className="flex gap-2">
-                    <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="w-24 h-20 rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-muted/50 transition-colors"
-                    >
-                      {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      <span className="text-[10px] font-medium">Subir</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Título *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl h-10" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descripción</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Descripción detallada de la propiedad..."
-                className="rounded-xl resize-none min-h-[100px] text-sm leading-relaxed"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{listingType === "sale" ? "Precio de venta" : "Alquiler"}</Label>
-                <div className="relative">
-                  <Input type="number" value={form.priceRent} onChange={(e) => setForm({ ...form, priceRent: e.target.value })} placeholder="0" className="rounded-xl h-10" />
-                </div>
-              </div>
-              {listingType === "rent" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gastos comunes</Label>
-                  <Input type="number" value={form.priceExpenses} onChange={(e) => setForm({ ...form, priceExpenses: e.target.value })} placeholder="0" className="rounded-xl h-10" />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Moneda</Label>
-                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
-                  <SelectTrigger className="rounded-xl h-10"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UYU">$ Pesos</SelectItem>
-                    <SelectItem value="USD">U$S Dólares</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Barrio</Label>
-                <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl h-10" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">m² Totales</Label>
-                <Input type="number" value={form.sqMeters} onChange={(e) => setForm({ ...form, sqMeters: e.target.value })} placeholder="0" className="rounded-xl h-10" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ambientes</Label>
-                <Input type="number" value={form.rooms} onChange={(e) => setForm({ ...form, rooms: e.target.value })} placeholder="1" className="rounded-xl h-10" />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              {!propertyToEdit && (
-                <Button type="button" variant="outline" onClick={() => setStep("url")} className="flex-1 h-12 rounded-2xl">Atrás</Button>
-              )}
-              <Button type="submit" disabled={saving || !form.title.trim()} className="flex-1 h-12 rounded-2xl gap-2 shadow-lg shadow-primary/20">
-                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                {propertyToEdit ? "Guardar Cambios" : "Publicar Ahora"}
-              </Button>
-            </div>
-          </form>
+        {step === "manual" && (
+          <PropertyFormManual
+            form={form}
+            setForm={setForm}
+            listingType={listingType}
+            setListingType={setListingType}
+            cameFromImage={cameFromImage}
+            scrapedImages={scrapedImages}
+            setScrapedImages={setScrapedImages}
+            manualImageUrl={manualImageUrl}
+            setManualImageUrl={setManualImageUrl}
+            fileInputRef={fileInputRef}
+            handleFileUpload={handleFileUpload}
+            isUploading={isUploading}
+            url={url}
+            setUrl={setUrl}
+            urlDuplicated={urlDuplicated}
+            setUrlDuplicated={setUrlDuplicated}
+            checkDuplicateUrl={checkDuplicateUrl}
+            groups={[]}
+            selectedGroupId={null}
+            setSelectedGroupId={() => { }}
+            setStep={setStep}
+            handleSubmit={handleSubmit}
+            isFormValid={isFormValid && !saving}
+          />
         )}
       </DialogContent>
     </Dialog>
