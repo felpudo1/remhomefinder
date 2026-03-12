@@ -17,6 +17,7 @@ import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
 import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 
 type AgentTab = "propiedades" | "estadisticas" | "perfil";
 
@@ -37,6 +38,7 @@ const AgentDashboard = () => {
 
   // Perfil del usuario — status centralizado via useProfile
   const { data: profile } = useProfile();
+  const { isPremium } = useSubscription();
   const profileStatus: UserStatus = profile?.status ?? "pending";
 
   useEffect(() => {
@@ -87,6 +89,8 @@ const AgentDashboard = () => {
         handleLogout={handleLogout}
         activeGroupId={activeGroupId}
         setIsGroupsOpen={setIsGroupsOpen}
+        displayName={profile?.displayName}
+        isPremium={isPremium}
       />
 
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">

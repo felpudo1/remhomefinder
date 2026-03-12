@@ -1,4 +1,4 @@
-import { Building2, LogOut, Users } from "lucide-react";
+import { Home, LogOut, Users, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AgentHeaderProps {
@@ -10,6 +10,8 @@ interface AgentHeaderProps {
     handleLogout: () => void;
     activeGroupId: string | null;
     setIsGroupsOpen: (open: boolean) => void;
+    displayName?: string | null;
+    isPremium?: boolean;
 }
 
 export const AgentHeader = ({
@@ -21,17 +23,33 @@ export const AgentHeader = ({
     handleLogout,
     activeGroupId,
     setIsGroupsOpen,
+    displayName,
+    isPremium,
 }: AgentHeaderProps) => {
+    const StatusStar = () => (
+        isPremium ? (
+            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+        ) : (
+            <Star className="w-3 h-3 text-slate-400/50" />
+        )
+    );
+
     return (
         <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
             <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 md:w-8 md:h-8 bg-primary rounded-xl flex items-center justify-center shrink-0">
+                        <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
                     </div>
-                    <div>
-                        <h1 className="text-base font-semibold text-foreground">Panel Agente</h1>
-                        {userEmail && <p className="text-xs text-muted-foreground">{userEmail}</p>}
+                    <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
+                        {/* Identidad del Agente como subtexto */}
+                        <div className="flex items-center gap-1">
+                            <StatusStar />
+                            <span className="text-[11px] text-muted-foreground truncate max-w-[150px] leading-tight font-medium">
+                                {displayName || userEmail}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
