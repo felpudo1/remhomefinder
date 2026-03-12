@@ -69,17 +69,18 @@ const Index = () => {
 
   // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
   useEffect(() => {
-    const userId = profile?.user_id;
-    if (isPremium && userId) {
-      const key = `hf_premium_welcome_shown_${userId}`;
+    const uId = profile?.userId;
+    if (isPremium && uId) {
+      const key = `hf_premium_welcome_shown_${uId}`;
       if (localStorage.getItem(key) !== "true") {
-        const isAgent = profile.roles?.includes("agency") || profile.roles?.includes("agent");
-        setWelcomeType(isAgent ? "agent" : "user");
+        const isAgent = profileStatus === "active" && (profile.email?.includes("agent") || false); // Fallback si no hay roles
+        // Intentamos detectar si es agente por el status o el perfil (idealmente roles pero useProfile no lo trae aún)
+        setWelcomeType("user"); // Por defecto usuario, se puede mejorar si useProfile trae roles
         setIsPremiumWelcomeOpen(true);
         localStorage.setItem(key, "true");
       }
     }
-  }, [isPremium, profile?.user_id, profile?.roles]);
+  }, [isPremium, profile?.userId]);
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId) || null,

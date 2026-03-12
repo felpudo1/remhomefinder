@@ -43,105 +43,111 @@ export function AdminUsuarios({ toast }: Props) {
     useEffect(() => { fetchUsers(); }, [page, sortConfig]);
 
     const fetchUsers = async () => {
-        setLoading(true);
+        try {
+            setLoading(true);
 
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
+            const from = page * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
 
-        // Fetch profiles with pagination and count
-        const { data: profiles, error: profilesError, count } = await supabase
-            .from("profiles")
-            .select("user_id, display_name, email, status, plan_type", { count: "exact" })
-            .order(sortConfig.key === 'display_name' ? 'display_name' : 'user_id', {
-                ascending: sortConfig.direction === 'asc'
-            })
-            .range(from, to);
+            // Fetch profiles with pagination and count
+            const { data: profiles, error: profilesError, count } = await supabase
+                .from("profiles")
+                .select("user_id, display_name, email, status, plan_type", { count: "exact" })
+                .order(sortConfig.key === 'display_name' ? 'display_name' : 'user_id', {
+                    ascending: sortConfig.direction === 'asc'
+                })
+                .range(from, to);
 
-        if (profilesError) {
-            toast({ title: "Error al cargar usuarios", description: profilesError.message, variant: "destructive" });
+            if (profilesError) {
+                toast({ title: "Error al cargar usuarios", description: profilesError.message, variant: "destructive" });
+                setLoading(false);
+                return;
+            }
+
+            setTotalCount(count || 0);
+            const userIds = profiles.map(p => p.user_id);
+
+            if (userIds.length === 0) {
+                setUsers([]);
+                setLoading(false);
+                return;
+            }
+
+            // Fetch roles, properties, marketplace properties, agencies and referrals
+            const [rolesRes, propsRes, agenciesRes, referralsRes] = await Promise.all([
+                supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
+                supabase.from("properties").select("user_id, source_marketplace_id").in("user_id", userIds),
+                supabase.from("agencies").select("id, created_by").in("created_by", userIds),
+                supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
+            ]);
+
+            const agencyIds = (agenciesRes.data || []).map(a => a.id);
+            let marketplacePropsRes = { data: [] as any[] };
+
+            if (agencyIds.length > 0) {
+                const res = await supabase.from("marketplace_properties").select("agency_id").in("agency_id", agencyIds);
+                marketplacePropsRes = { data: res.data || [] };
+            }
+
+            const roleMap: Record<string, string[]> = {};
+            for (const r of rolesRes.data || []) {
+                if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
+                roleMap[r.user_id].push(r.role);
+            }
+
+            const personalCountMap: Record<string, number> = {};
+            const savedCountMap: Record<string, number> = {};
+
+            for (const p of propsRes.data || []) {
+                if (p.source_marketplace_id) {
+                    // Es una propiedad guardada del marketplace
+                    savedCountMap[p.user_id] = (savedCountMap[p.user_id] || 0) + 1;
+                } else {
+                    // Es una propiedad cargada manualmente
+                    personalCountMap[p.user_id] = (personalCountMap[p.user_id] || 0) + 1;
+                }
+            }
+
+            // Map agency to creator user_id
+            const agencyToUserMap: Record<string, string> = {};
+            for (const a of agenciesRes.data || []) {
+                agencyToUserMap[a.id] = a.created_by;
+            }
+
+            // Add marketplace properties (agent publishes) to personal count
+            for (const mp of marketplacePropsRes.data || []) {
+                const userId = agencyToUserMap[mp.agency_id];
+                if (userId) {
+                    personalCountMap[userId] = (personalCountMap[userId] || 0) + 1;
+                }
+            }
+
+            const referralsCountMap: Record<string, number> = {};
+            for (const r of referralsRes.data || []) {
+                if (r.referred_by_id) {
+                    referralsCountMap[r.referred_by_id] = (referralsCountMap[r.referred_by_id] || 0) + 1;
+                }
+            }
+
+            const userList: UserProfile[] = (profiles || []).map((p: any) => ({
+                user_id: p.user_id,
+                display_name: p.display_name || "Sin nombre",
+                email: p.email || "-",
+                status: p.status || "active",
+                roles: roleMap[p.user_id] || ["user"],
+                personal_count: personalCountMap[p.user_id] || 0,
+                saved_count: savedCountMap[p.user_id] || 0,
+                referral_count: referralsCountMap[p.user_id] || 0,
+                plan_type: (p.plan_type as "free" | "premium") || "free",
+            }));
+
+            setUsers(userList);
+        } catch (err: any) {
+            console.error("Critical error in fetchUsers:", err);
+            toast({ title: "Error fatal", description: "Ocurrió un error al procesar los datos de usuarios.", variant: "destructive" });
+        } finally {
             setLoading(false);
-            return;
         }
-
-        setTotalCount(count || 0);
-        const userIds = profiles.map(p => p.user_id);
-
-        if (userIds.length === 0) {
-            setUsers([]);
-            setLoading(false);
-            return;
-        }
-
-        // Fetch roles, properties, marketplace properties, agencies and referrals
-        const [rolesRes, propsRes, agenciesRes, referralsRes] = await Promise.all([
-            supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
-            supabase.from("properties").select("user_id, source_marketplace_id").in("user_id", userIds),
-            supabase.from("agencies").select("id, created_by").in("created_by", userIds),
-            supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
-        ]);
-
-        const agencyIds = (agenciesRes.data || []).map(a => a.id);
-        let marketplacePropsRes = { data: [] as any[] };
-
-        if (agencyIds.length > 0) {
-            const res = await supabase.from("marketplace_properties").select("agency_id").in("agency_id", agencyIds);
-            marketplacePropsRes = { data: res.data || [] };
-        }
-
-        const roleMap: Record<string, string[]> = {};
-        for (const r of rolesRes.data || []) {
-            if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
-            roleMap[r.user_id].push(r.role);
-        }
-
-        const personalCountMap: Record<string, number> = {};
-        const savedCountMap: Record<string, number> = {};
-
-        for (const p of propsRes.data || []) {
-            if (p.source_marketplace_id) {
-                // Es una propiedad guardada del marketplace
-                savedCountMap[p.user_id] = (savedCountMap[p.user_id] || 0) + 1;
-            } else {
-                // Es una propiedad cargada manualmente
-                personalCountMap[p.user_id] = (personalCountMap[p.user_id] || 0) + 1;
-            }
-        }
-
-        // Map agency to creator user_id
-        const agencyToUserMap: Record<string, string> = {};
-        for (const a of agenciesRes.data || []) {
-            agencyToUserMap[a.id] = a.created_by;
-        }
-
-        // Add marketplace properties (agent publishes) to personal count
-        for (const mp of marketplacePropsRes.data || []) {
-            const userId = agencyToUserMap[mp.agency_id];
-            if (userId) {
-                personalCountMap[userId] = (personalCountMap[userId] || 0) + 1;
-            }
-        }
-
-        const referralsCountMap: Record<string, number> = {};
-        for (const r of referralsRes.data || []) {
-            if (r.referred_by_id) {
-                referralsCountMap[r.referred_by_id] = (referralsCountMap[r.referred_by_id] || 0) + 1;
-            }
-        }
-
-        const userList: UserProfile[] = (profiles || []).map((p: any) => ({
-            user_id: p.user_id,
-            display_name: p.display_name || "Sin nombre",
-            email: p.email || "-",
-            status: p.status || "active",
-            roles: roleMap[p.user_id] || ["user"],
-            personal_count: personalCountMap[p.user_id] || 0,
-            saved_count: savedCountMap[p.user_id] || 0,
-            referral_count: referralsCountMap[p.user_id] || 0,
-            plan_type: (p.plan_type as "free" | "premium") || "free",
-        }));
-
-        setUsers(userList);
-        setLoading(false);
     };
 
     const handleSort = (key: keyof UserProfile) => {
@@ -268,8 +274,8 @@ export function AdminUsuarios({ toast }: Props) {
 
                     {/* Listado de Usuarios */}
                     {sortedUsers.map((user) => {
-                        const sc = STATUS_CONFIG[user.status];
-                        const StatusIcon = sc.icon;
+                        const sc = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
+                        const StatusIcon = sc.icon || CheckCircle;
                         const isAdmin = user.roles.includes("admin");
 
                         return (

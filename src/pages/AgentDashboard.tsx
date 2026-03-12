@@ -13,6 +13,7 @@ import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentHeader } from "@/components/AgentHeader";
+import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
 import { useProfile } from "@/hooks/useProfile";
@@ -30,6 +31,8 @@ const AgentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
+  const [isGroupsOpen, setIsGroupsOpen] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Perfil del usuario — status centralizado via useProfile
@@ -82,13 +85,15 @@ const AgentDashboard = () => {
         setActiveTab={(tab) => setActiveTab(tab)}
         tabs={TABS}
         handleLogout={handleLogout}
+        activeGroupId={activeGroupId}
+        setIsGroupsOpen={setIsGroupsOpen}
       />
 
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
         {agency ? (
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} />}
+              {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={activeGroupId} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
@@ -104,6 +109,13 @@ const AgentDashboard = () => {
           </div>
         )}
       </main>
+      <GroupsModal
+        open={isGroupsOpen}
+        onClose={() => setIsGroupsOpen(false)}
+        activeGroupId={activeGroupId}
+        onSelectGroup={setActiveGroupId}
+        isAgent={true}
+      />
       <Footer />
     </div>
   );

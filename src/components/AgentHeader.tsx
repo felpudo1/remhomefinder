@@ -1,4 +1,4 @@
-import { Building2, LogOut } from "lucide-react";
+import { Building2, LogOut, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AgentHeaderProps {
@@ -8,6 +8,8 @@ interface AgentHeaderProps {
     setActiveTab: (tab: any) => void;
     tabs: { id: string; label: string; icon: any }[];
     handleLogout: () => void;
+    activeGroupId: string | null;
+    setIsGroupsOpen: (open: boolean) => void;
 }
 
 export const AgentHeader = ({
@@ -17,6 +19,8 @@ export const AgentHeader = ({
     setActiveTab,
     tabs,
     handleLogout,
+    activeGroupId,
+    setIsGroupsOpen,
 }: AgentHeaderProps) => {
     return (
         <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
@@ -30,10 +34,22 @@ export const AgentHeader = ({
                         {userEmail && <p className="text-xs text-muted-foreground">{userEmail}</p>}
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-muted-foreground">
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Salir</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant={activeGroupId ? "default" : "outline"}
+                        size="sm"
+                        className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02]"
+                        onClick={() => setIsGroupsOpen(true)}
+                        title="Formar equipo / Mis grupos"
+                    >
+                        <Users className="w-4 h-4" />
+                        <span>Formar equipo</span>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-muted-foreground ml-1">
+                        <LogOut className="w-4 h-4" />
+                        <span className="hidden sm:inline">Salir</span>
+                    </Button>
+                </div>
             </div>
 
             {agencyStatus === "approved" && (
@@ -47,8 +63,8 @@ export const AgentHeader = ({
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive
-                                            ? "border-primary text-primary bg-primary/5"
-                                            : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                        ? "border-primary text-primary bg-primary/5"
+                                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                         }`}
                                 >
                                     <Icon className="w-4 h-4" />

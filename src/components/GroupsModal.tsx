@@ -16,9 +16,10 @@ interface GroupsModalProps {
   onClose: () => void;
   activeGroupId: string | null;
   onSelectGroup: (groupId: string | null) => void;
+  isAgent?: boolean;
 }
 
-export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: GroupsModalProps) {
+export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false }: GroupsModalProps) {
   const { groups, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
   const { toast } = useToast();
 
@@ -90,7 +91,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast({ title: "Código copiado", description: "Compartilo con tu familia para que se unan." });
+    toast({ title: "Código copiado", description: "Compartilo con tus colegas o familia para que se unan." });
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -209,7 +210,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Grupos Familiares
+            Mis Grupos / Equipos
           </DialogTitle>
         </DialogHeader>
 
@@ -262,7 +263,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
             <div className="space-y-2">
               <Label>Nombre del grupo</Label>
               <Input
-                placeholder="Ej: Familia González"
+                placeholder={isAgent ? "Ej: Equipo A" : "Ej: Familia González"}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="rounded-xl"
@@ -271,7 +272,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup }: Gro
             <div className="space-y-2">
               <Label>Descripción (opcional)</Label>
               <Input
-                placeholder="Buscando depto en Pocitos"
+                placeholder={isAgent ? "Ej: Zona 1" : "Ej: Buscando depto en Pocitos"}
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 className="rounded-xl"
