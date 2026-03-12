@@ -204,146 +204,152 @@ export function AdminUsuarios({ toast }: Props) {
     }
 
     return (
-        <div className="space-y-2">
-            <div className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_1.8fr] gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
-                <button
-                    onClick={() => handleSort('display_name')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
-                >
-                    Usuario
-                    {sortConfig.key === 'display_name' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                    )}
-                </button>
-                <div className="flex items-center gap-1 text-left font-bold">
-                    Email
-                </div>
-                <button
-                    onClick={() => handleSort('roles')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
-                >
-                    Rol
-                    {sortConfig.key === 'roles' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                    )}
-                </button>
-                <button
-                    onClick={() => handleSort('personal_count')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
-                >
-                    Propiedades
-                    {sortConfig.key === 'personal_count' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                    )}
-                </button>
-                <button
-                    onClick={() => handleSort('referral_count')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
-                >
-                    Referidos
-                    {sortConfig.key === 'referral_count' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                    )}
-                </button>
-                <button
-                    onClick={() => handleSort('status')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
-                >
-                    Estado
-                    {sortConfig.key === 'status' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                    )}
-                </button>
-                <div className="grid grid-cols-2 gap-2">
-                    <span>Plan</span>
-                    <span>Acción</span>
-                </div>
-            </div>
-
-            {sortedUsers.map((user) => {
-                const sc = STATUS_CONFIG[user.status];
-                const StatusIcon = sc.icon;
-                const isAdmin = user.roles.includes("admin");
-
-                return (
-                    <div key={user.user_id} className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_1.8fr] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                            <span className="truncate text-foreground font-medium">{user.display_name}</span>
-                        </div>
-                        <div className="min-w-0">
-                            <span className="truncate text-muted-foreground text-xs">{user.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Shield className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.roles.includes("admin") ? "bg-red-100 text-red-700" :
-                                user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
-                                    "bg-gray-100 text-gray-600"
-                                }`}>
-                                {user.roles.includes("admin") ? "Admin" :
-                                    user.roles.includes("agency") ? "Agente" : "Usuario"}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <span
-                                title="Propiedades propias/publicadas"
-                                className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-6 h-6 rounded-full text-[10px] font-bold shadow-sm"
-                            >
-                                {user.personal_count}
-                            </span>
-                            {!user.roles.includes("agency") && (
-                                <span
-                                    title="Propiedades guardadas del marketplace"
-                                    className="inline-flex items-center justify-center bg-orange-100 text-orange-700 w-6 h-6 rounded-full text-[10px] font-bold shadow-sm"
-                                >
-                                    {user.saved_count}
-                                </span>
+        <div className="space-y-4">
+            <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+                <div className="min-w-[1000px] space-y-2">
+                    {/* Encabezado de la Tabla */}
+                    <div className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_1.8fr] gap-4 px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border select-none">
+                        <button
+                            onClick={() => handleSort('display_name')}
+                            className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                        >
+                            Usuario
+                            {sortConfig.key === 'display_name' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             )}
+                        </button>
+                        <div className="flex items-center gap-1 text-left font-bold">
+                            Email
                         </div>
-                        <div className="flex items-center">
-                            <span className="inline-flex items-center justify-center bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold min-w-8">
-                                {user.referral_count}
-                            </span>
-                        </div>
-                        <div>
-                            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${sc.color}`}>
-                                <StatusIcon className="w-3 h-3" />
-                                {sc.label}
-                            </span>
-                        </div>
+                        <button
+                            onClick={() => handleSort('roles')}
+                            className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                        >
+                            Rol
+                            {sortConfig.key === 'roles' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => handleSort('personal_count')}
+                            className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                        >
+                            Propiedades
+                            {sortConfig.key === 'personal_count' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => handleSort('referral_count')}
+                            className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                        >
+                            Referidos
+                            {sortConfig.key === 'referral_count' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => handleSort('status')}
+                            className="flex items-center gap-1 hover:text-foreground transition-colors text-left font-bold"
+                        >
+                            Estado
+                            {sortConfig.key === 'status' && (
+                                sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            )}
+                        </button>
                         <div className="grid grid-cols-2 gap-2">
-                            <Select value={user.plan_type} onValueChange={(v) => updatePlan(user.user_id, v as "free" | "premium")}>
-                                <SelectTrigger className={cn(
-                                    "h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider",
-                                    user.plan_type === "premium" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted"
-                                )}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="free" className="text-[10px] font-bold uppercase tracking-wider">Free</SelectItem>
-                                    <SelectItem value="premium" className="text-[10px] font-bold uppercase tracking-wider">Premium</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {isAdmin ? (
-                                <span className="text-xs text-muted-foreground text-center">—</span>
-                            ) : (
-                                <Select value={user.status} onValueChange={(v) => updateStatus(user.user_id, v as UserProfile["status"])}>
-                                    <SelectTrigger className="h-8 rounded-xl text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="active"><span className="flex items-center gap-1.5"><CheckCircle className="w-3 h-3" /> Activo</span></SelectItem>
-                                        <SelectItem value="pending"><span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> Pendiente</span></SelectItem>
-                                        <SelectItem value="suspended"><span className="flex items-center gap-1.5"><Ban className="w-3 h-3" /> Suspendido</span></SelectItem>
-                                        <SelectItem value="rejected"><span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" /> Eliminado</span></SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
+                            <span>Plan</span>
+                            <span>Acción</span>
                         </div>
                     </div>
-                );
-            })}
+
+                    {/* Listado de Usuarios */}
+                    {sortedUsers.map((user) => {
+                        const sc = STATUS_CONFIG[user.status];
+                        const StatusIcon = sc.icon;
+                        const isAdmin = user.roles.includes("admin");
+
+                        return (
+                            <div key={user.user_id} className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_1.8fr] gap-4 px-4 py-3 rounded-xl hover:bg-muted/50 transition-colors items-center text-sm">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                                    <span className="truncate text-foreground font-medium">{user.display_name}</span>
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Shield className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.roles.includes("admin") ? "bg-red-100 text-red-700" :
+                                        user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
+                                            "bg-gray-100 text-gray-600"
+                                        }`}>
+                                        {user.roles.includes("admin") ? "Admin" :
+                                            user.roles.includes("agency") ? "Agente" : "Usuario"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span
+                                        title="Propiedades propias/publicadas"
+                                        className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-6 h-6 rounded-full text-[10px] font-bold shadow-sm"
+                                    >
+                                        {user.personal_count}
+                                    </span>
+                                    {!user.roles.includes("agency") && (
+                                        <span
+                                            title="Propiedades guardadas del marketplace"
+                                            className="inline-flex items-center justify-center bg-orange-100 text-orange-700 w-6 h-6 rounded-full text-[10px] font-bold shadow-sm"
+                                        >
+                                            {user.saved_count}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center">
+                                    <span className="inline-flex items-center justify-center bg-green-100 text-green-700 px-2 py-0.5 rounded-md text-xs font-semibold min-w-8">
+                                        {user.referral_count}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${sc.color}`}>
+                                        <StatusIcon className="w-3 h-3" />
+                                        {sc.label}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Select value={user.plan_type} onValueChange={(v) => updatePlan(user.user_id, v as "free" | "premium")}>
+                                        <SelectTrigger className={cn(
+                                            "h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider",
+                                            user.plan_type === "premium" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted"
+                                        )}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="free" className="text-[10px] font-bold uppercase tracking-wider">Free</SelectItem>
+                                            <SelectItem value="premium" className="text-[10px] font-bold uppercase tracking-wider">Premium</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {isAdmin ? (
+                                        <span className="text-xs text-muted-foreground text-center">—</span>
+                                    ) : (
+                                        <Select value={user.status} onValueChange={(v) => updateStatus(user.user_id, v as UserProfile["status"])}>
+                                            <SelectTrigger className="h-8 rounded-xl text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="active"><span className="flex items-center gap-1.5"><CheckCircle className="w-3 h-3" /> Activo</span></SelectItem>
+                                                <SelectItem value="pending"><span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> Pendiente</span></SelectItem>
+                                                <SelectItem value="suspended"><span className="flex items-center gap-1.5"><Ban className="w-3 h-3" /> Suspendido</span></SelectItem>
+                                                <SelectItem value="rejected"><span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" /> Eliminado</span></SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
             {/* Controles de Paginación */}
             <div className="flex items-center justify-between px-4 py-4 border-t border-border mt-4">
                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
