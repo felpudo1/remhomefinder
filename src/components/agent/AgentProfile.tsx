@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Clock, CheckCircle, Trash2, Ban } from "lucide-react";
+import { Mail, Phone, Clock, CheckCircle, Trash2, Ban, Star } from "lucide-react";
 import { UserStatus } from "@/types/property";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export interface Agency {
     id: string;
@@ -27,6 +28,7 @@ interface AgentProfileProps {
 }
 
 export const AgentProfile = ({ agency, profileStatus }: AgentProfileProps) => {
+    const { isPremium } = useSubscription();
     // Status viene siempre de profiles via useProfile — ya no hay agency.status
     const status = profileStatus ?? "active";
     const sc = statusConfig[status];
@@ -36,7 +38,14 @@ export const AgentProfile = ({ agency, profileStatus }: AgentProfileProps) => {
         <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                    <h2 className="text-xl font-semibold text-foreground">{agency.name}</h2>
+                    <div className="flex items-center gap-2">
+                        {isPremium ? (
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)] shrink-0" />
+                        ) : (
+                            <Star className="w-4 h-4 text-slate-400/50 shrink-0" />
+                        )}
+                        <h2 className="text-xl font-semibold text-foreground">{agency.name}</h2>
+                    </div>
                     {agency.contact_name && <p className="text-sm text-foreground/80">Contacto: {agency.contact_name}</p>}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         {agency.contact_email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{agency.contact_email}</span>}

@@ -370,6 +370,24 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
         if (error) throw error;
         toast({ title: "Actualizada", description: "La propiedad fue actualizada correctamente." });
       } else {
+        // Validación de seguridad (REGLA 2) - Verificar límite antes de insertar
+        const { count, error: countErr } = await supabase
+          .from("marketplace_properties")
+          .select("*", { count: "exact", head: true })
+          .eq("agency_id", agencyId);
+
+        if (countErr) throw countErr;
+
+        const { data: profile } = await supabase.from("profiles").select("plan_type").eq("user_id", (await supabase.auth.getUser()).data.user?.id).single();
+        const { data: config } = await supabase.from("system_config").select("value").eq("key", "agent_free_plan_publish_limit").maybeSingle();
+
+        const isPremium = profile?.plan_type === "premium";
+        const limit = parseInt(config?.value || "3");
+
+        if (!isPremium && count !== null && count >= limit) {
+          throw new Error(`Has alcanzado el límite de ${limit} publicaciones permitidas en el plan gratuito.`);
+        }
+
         const { error } = await supabase.from("marketplace_properties").insert(payload as any);
         if (error) throw error;
         toast({ title: "Publicada", description: "La propiedad fue publicada en el marketplace." });

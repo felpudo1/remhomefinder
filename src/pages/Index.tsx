@@ -63,16 +63,23 @@ const Index = () => {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
+  const [welcomeType, setWelcomeType] = useState<"user" | "agent">("user");
 
   const { canSaveMore, maxSaves, isPremium } = useSubscription();
 
-  // Notificación de Premium recién adquirido
+  // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
   useEffect(() => {
-    if (isPremium && localStorage.getItem(`hf_premium_welcome_shown_${userEmail}`) !== "true") {
-      setIsPremiumWelcomeOpen(true);
-      localStorage.setItem(`hf_premium_welcome_shown_${userEmail}`, "true");
+    const userId = profile?.user_id;
+    if (isPremium && userId) {
+      const key = `hf_premium_welcome_shown_${userId}`;
+      if (localStorage.getItem(key) !== "true") {
+        const isAgent = profile.roles?.includes("agency") || profile.roles?.includes("agent");
+        setWelcomeType(isAgent ? "agent" : "user");
+        setIsPremiumWelcomeOpen(true);
+        localStorage.setItem(key, "true");
+      }
     }
-  }, [isPremium, userEmail]);
+  }, [isPremium, profile?.user_id, profile?.roles]);
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId) || null,
@@ -332,6 +339,7 @@ const Index = () => {
             setActiveGroupId={setActiveGroupId}
             maxSaves={maxSaves}
             propertiesCount={properties.length}
+            welcomeType={welcomeType}
           />
 
           {activeGroupId && (

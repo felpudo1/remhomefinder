@@ -9,10 +9,12 @@ import { useEffect, useState } from "react";
 interface PremiumWelcomeModalProps {
     open: boolean;
     onClose: () => void;
+    type?: "user" | "agent";
 }
 
-export function PremiumWelcomeModal({ open, onClose }: PremiumWelcomeModalProps) {
+export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWelcomeModalProps) {
     const [showContent, setShowContent] = useState(false);
+    const isAgent = type === "agent";
 
     useEffect(() => {
         if (open) {
@@ -57,18 +59,25 @@ export function PremiumWelcomeModal({ open, onClose }: PremiumWelcomeModalProps)
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 animate-shimmer">Círculo Premium</span>!
                             </h2>
                             <p className="text-gray-300 text-sm font-medium px-4">
-                                Tu experiencia en HomeFinder ahora es ilimitada. Preparate para encontrar tu próximo hogar como un verdadero profesional.
+                                {isAgent
+                                    ? "Tu suscripción como Agente ha sido activada. Preparate para publicar sin límites y destacar tus propiedades como nunca."
+                                    : "Tu experiencia en HomeFinder ahora es ilimitada. Preparate para encontrar tu próximo hogar como un verdadero profesional."}
                             </p>
                         </div>
 
                         {/* Grid de Beneficios VIP */}
                         <div className={`grid grid-cols-2 gap-3 transition-all duration-700 delay-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
-                            {[
+                            {(isAgent ? [
+                                { icon: Zap, text: "Publicaciones Ilimitadas" },
+                                { icon: CheckCircle2, text: "Prioridad en Market" },
+                                { icon: Star, text: "Sello de Verificado" },
+                                { icon: Sparkles, text: "Soporte VIP" }
+                            ] : [
                                 { icon: Zap, text: "Lista Ilimitada" },
                                 { icon: CheckCircle2, text: "Sin Restricciones" },
                                 { icon: Star, text: "Acceso VIP" },
                                 { icon: Sparkles, text: "Tooltips Pro" }
-                            ].map((item, i) => (
+                            ]).map((item, i) => (
                                 <div key={i} className="flex items-center gap-2 bg-white/5 border border-white/10 p-2.5 rounded-2xl">
                                     <item.icon className="w-4 h-4 text-yellow-400 shrink-0" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-200">{item.text}</span>
@@ -90,7 +99,7 @@ export function PremiumWelcomeModal({ open, onClose }: PremiumWelcomeModalProps)
                 {/* Footer Discreto */}
                 <div className="bg-[#0f111a] p-4 text-center border-t border-white/5">
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">
-                        HomeFinder Premium &bull; Edición 2026
+                        {isAgent ? "Agencia Premium &bull; Elite Edition" : "HomeFinder Premium &bull; Edición 2026"}
                     </p>
                 </div>
             </DialogContent>

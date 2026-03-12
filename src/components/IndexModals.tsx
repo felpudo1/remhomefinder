@@ -42,6 +42,7 @@ interface IndexModalsProps {
     setActiveGroupId: (id: string | null) => void;
     maxSaves: number;
     propertiesCount: number;
+    welcomeType?: "user" | "agent";
 }
 
 /**
@@ -69,6 +70,7 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
     activeGroupId,
     setActiveGroupId,
     maxSaves,
+    welcomeType = "user",
 }) => {
     return (
         <>
@@ -106,12 +108,13 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
             <UpgradePlanModal
                 open={isUpgradeOpen}
                 onClose={() => setIsUpgradeOpen(false)}
-                maxSaves={maxSaves}
+                limit={maxSaves}
             />
 
             <PremiumWelcomeModal
                 open={isPremiumWelcomeOpen}
                 onClose={() => setIsPremiumWelcomeOpen(false)}
+                type={welcomeType}
             />
         </>
     );

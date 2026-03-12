@@ -11,10 +11,13 @@ import { CheckCircle2, Crown, Sparkles, Rocket } from "lucide-react";
 interface UpgradePlanModalProps {
     open: boolean;
     onClose: () => void;
-    maxSaves: number;
+    limit: number;
+    type?: "user" | "agent";
 }
 
-export function UpgradePlanModal({ open, onClose, maxSaves }: UpgradePlanModalProps) {
+export function UpgradePlanModal({ open, onClose, limit, type = "user" }: UpgradePlanModalProps) {
+    const isAgent = type === "agent";
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
@@ -30,10 +33,12 @@ export function UpgradePlanModal({ open, onClose, maxSaves }: UpgradePlanModalPr
                             Plan Premium
                         </div>
                         <DialogTitle className="text-3xl font-extrabold leading-tight">
-                            Alcanzaste el límite de tu lista
+                            {isAgent ? "Límite de publicaciones" : "Límite de tu lista"}
                         </DialogTitle>
                         <DialogDescription className="text-blue-100 text-sm font-medium">
-                            Actualmente podés tener hasta {maxSaves} propiedades en tu lista personal.
+                            {isAgent
+                                ? `Actualmente podés tener hasta ${limit} propiedades publicadas en el Marketplace.`
+                                : `Actualmente podés tener hasta ${limit} propiedades en tu lista personal.`}
                         </DialogDescription>
                     </div>
                 </div>
@@ -42,23 +47,39 @@ export function UpgradePlanModal({ open, onClose, maxSaves }: UpgradePlanModalPr
                 <div className="p-8 bg-card space-y-6">
                     <div className="space-y-4">
                         <p className="text-foreground/80 text-sm font-medium">
-                            Pasate a **Premium** para armar tu lista de deseos completa y acceder a herramientas avanzadas:
+                            Pasate a **Premium** para {isAgent ? "publicar sin restricciones" : "armar tu lista de deseos completa"} y acceder a herramientas avanzadas:
                         </p>
 
                         <ul className="space-y-3">
-                            {[
-                                "Guardados ilimitados en tu lista personal",
-                                "Estadísticas de evolución detalladas",
-                                "Scraping prioritario y sin límites diarios",
-                                "Soporte técnico preferencial",
-                            ].map((feature, i) => (
-                                <li key={i} className="flex items-center gap-3 text-sm text-foreground/70">
-                                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                    </div>
-                                    {feature}
-                                </li>
-                            ))}
+                            {isAgent ? (
+                                [
+                                    "Publicaciones ilimitadas en el Marketplace",
+                                    "Prioridad en los resultados de búsqueda",
+                                    "Estadísticas de visualización y contactos",
+                                    "Link de referido para fidelizar clientes",
+                                ].map((feature, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-sm text-foreground/70">
+                                        <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                                        </div>
+                                        {feature}
+                                    </li>
+                                ))
+                            ) : (
+                                [
+                                    "Guardados ilimitados en tu lista personal",
+                                    "Estadísticas de evolución detalladas",
+                                    "Scraping prioritario y sin límites diarios",
+                                    "Soporte técnico preferencial",
+                                ].map((feature, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-sm text-foreground/70">
+                                        <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                                        </div>
+                                        {feature}
+                                    </li>
+                                ))
+                            )}
                         </ul>
                     </div>
 
@@ -84,7 +105,7 @@ export function UpgradePlanModal({ open, onClose, maxSaves }: UpgradePlanModalPr
 
                 <div className="bg-muted/50 p-4 text-center border-t border-border">
                     <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                        Diseñado para buscadores exigentes.
+                        {isAgent ? "Hecho para agentes de alto vuelo." : "Diseñado para buscadores exigentes."}
                     </p>
                 </div>
             </DialogContent>

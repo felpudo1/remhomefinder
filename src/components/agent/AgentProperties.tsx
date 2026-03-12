@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,9 @@ import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
 import { MarketplaceProperty } from "@/types/property";
+import { useSubscription } from "@/hooks/useSubscription";
+import { UpgradePlanModal } from "@/components/UpgradePlanModal";
+import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -23,15 +26,31 @@ interface AgentPropertiesProps {
 export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
+
     const [publishOpen, setPublishOpen] = useState(false);
+    const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
     const [selectedProperty, setSelectedProperty] = useState<MarketplaceProperty | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryIndex, setGalleryIndex] = useState(0);
+    const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
 
     const isActive = profileStatus === "active";
+
+    // Bienvenida Premium para el Agente (REGLA 2: Validación estricta)
+    useEffect(() => {
+        const userId = agency.created_by;
+        if (isPremium && userId) {
+            const key = `hf_premium_welcome_shown_${userId}`;
+            if (localStorage.getItem(key) !== "true") {
+                setIsPremiumWelcomeOpen(true);
+                localStorage.setItem(key, "true");
+            }
+        }
+    }, [isPremium, agency.created_by]);
 
     const { data: agencyProperties = [], isLoading: propsLoading } = useQuery({
         queryKey: ["agency-marketplace-properties", agency.id],
@@ -69,6 +88,20 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         },
     });
 
+    const handleOpenPublish = () => {
+        if (!canAgentPublishMore(agencyProperties.length)) {
+            setIsUpgradeOpen(true);
+            return;
+        }
+        setPropertyToEdit(null);
+        setPublishOpen(true);
+    };
+
+    const handleEdit = (prop: any) => {
+        setPropertyToEdit(prop);
+        setPublishOpen(true);
+    };
+
     const { data: referralCount = 0 } = useQuery({
         queryKey: ["agency-referral-count", agency.created_by],
         enabled: !!agency.created_by,
@@ -100,7 +133,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <Home className="w-5 h-5" /> Mis Propiedades ({agencyProperties.length})
                 </h3>
-                <Button size="sm" className="gap-1.5" onClick={() => { setPropertyToEdit(null); setPublishOpen(true); }}>
+                <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
                     <Plus className="w-4 h-4" /> Publicar propiedad
                 </Button>
             </div>
@@ -207,7 +240,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                 }
                                 actions={
                                     <div className="flex gap-2 w-full">
-                                        <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1" onClick={() => { setPropertyToEdit(p); setPublishOpen(true); }}>
+                                        <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1" onClick={() => handleEdit(p)}>
                                             <Edit className="w-3 h-3" /> Editar
                                         </Button>
 
@@ -258,6 +291,19 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 isOpen={isGalleryOpen}
                 initialIndex={galleryIndex}
                 onClose={() => setIsGalleryOpen(false)}
+            />
+
+            <UpgradePlanModal
+                open={isUpgradeOpen}
+                onClose={() => setIsUpgradeOpen(false)}
+                limit={maxAgentPublishes}
+                type="agent"
+            />
+
+            <PremiumWelcomeModal
+                open={isPremiumWelcomeOpen}
+                onClose={() => setIsPremiumWelcomeOpen(false)}
+                type="agent"
             />
         </div>
     );

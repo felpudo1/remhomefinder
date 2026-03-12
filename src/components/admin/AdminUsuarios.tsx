@@ -34,6 +34,7 @@ export function AdminUsuarios({ toast }: Props) {
     const [page, setPage] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
     const PAGE_SIZE = 50;
+
     const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' }>({
         key: 'display_name',
         direction: 'asc'
@@ -176,6 +177,7 @@ export function AdminUsuarios({ toast }: Props) {
     const updatePlan = async (userId: string, newPlan: "free" | "premium") => {
         // Update optimista
         const previousUsers = users;
+        const targetUser = users.find(u => u.user_id === userId);
         setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, plan_type: newPlan } : u));
 
         const { error } = await supabase
@@ -188,6 +190,7 @@ export function AdminUsuarios({ toast }: Props) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } else {
             toast({ title: "Plan actualizado", description: `Usuario ahora es ${newPlan.toUpperCase()}.` });
+            fetchUsers();
         }
     };
 

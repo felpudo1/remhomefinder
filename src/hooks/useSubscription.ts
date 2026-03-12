@@ -4,12 +4,14 @@ import { useSystemConfig } from "./useSystemConfig";
 
 import {
     FREE_PLAN_SAVE_LIMIT_KEY,
-    FREE_PLAN_SAVE_LIMIT_DEFAULT
+    FREE_PLAN_SAVE_LIMIT_DEFAULT,
+    AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY,
+    AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT
 } from "@/lib/config-keys";
 
 /**
  * Hook centralizado para gestionar la suscripción y límites del usuario.
- * @returns { isPremium, maxSaves, canSaveMore, isLoading }
+ * @returns { isPremium, maxSaves, canSaveMore, maxAgentPublishes, canAgentPublishMore, isLoading }
  */
 export function useSubscription() {
     // 1. Obtener el perfil del usuario para saber su plan
@@ -30,22 +32,39 @@ export function useSubscription() {
         }
     });
 
-    // 2. Obtener el límite dinámico desde la configuración del sistema
-    const { value: saveLimitRaw, isLoading: isLoadingConfig } = useSystemConfig(
+    // 2. Obtener límites dinámicos desde la configuración del sistema
+    const { value: saveLimitRaw, isLoading: isLoadingSaveConfig } = useSystemConfig(
         FREE_PLAN_SAVE_LIMIT_KEY,
         FREE_PLAN_SAVE_LIMIT_DEFAULT
     );
 
+    const { value: publishLimitRaw, isLoading: isLoadingPublishConfig } = useSystemConfig(
+        AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY,
+        AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT
+    );
+
     const isPremium = profile?.plan_type === "premium";
+
+    // Límites para usuarios regulares
     const maxSaves = isPremium ? Infinity : parseInt(saveLimitRaw || FREE_PLAN_SAVE_LIMIT_DEFAULT);
 
+    // Límites para agentes/agencias
+    const maxAgentPublishes = isPremium ? Infinity : parseInt(publishLimitRaw || AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT);
+
     /**
-     * Verifica si el usuario puede guardar una propiedad más.
-     * @param currentCount El número actual de propiedades del usuario.
+     * Verifica si el usuario puede guardar una propiedad más. (Para usuarios regulares)
      */
     const canSaveMore = (currentCount: number) => {
         if (isPremium) return true;
         return currentCount < maxSaves;
+    };
+
+    /**
+     * Verifica si el agente puede publicar una propiedad más en el marketplace.
+     */
+    const canAgentPublishMore = (currentCount: number) => {
+        if (isPremium) return true;
+        return currentCount < maxAgentPublishes;
     };
 
     return {
@@ -53,6 +72,8 @@ export function useSubscription() {
         isPremium,
         maxSaves,
         canSaveMore,
-        isLoading: isLoadingProfile || isLoadingConfig
+        maxAgentPublishes,
+        canAgentPublishMore,
+        isLoading: isLoadingProfile || isLoadingSaveConfig || isLoadingPublishConfig
     };
 }
