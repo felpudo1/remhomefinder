@@ -30,8 +30,8 @@ const MENU_ITEMS: {
   icon: React.ElementType;
   description: string;
 }[] = [
-    { id: "agentes", label: "Agentes", icon: Building2, description: "Solicitudes y estado de agencias" },
-    { id: "usuarios", label: "Usuarios", icon: Users, description: "Todos los usuarios registrados" },
+    { id: "agentes", label: "Datos Users", icon: Building2, description: "Información completa de todos los usuarios y agentes" },
+    { id: "usuarios", label: "Consola", icon: Users, description: "Gestión rápida de roles y estados" },
     { id: "publicaciones", label: "Publicaciones", icon: FileText, description: "Todas las publicaciones guardadas por usuarios" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },

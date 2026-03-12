@@ -11,7 +11,8 @@ import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Loader2, Mail, CheckCircle2, Users, SlidersHorizontal, Store } from "lucide-react";
+import { Home, Plus, Loader2, Mail, CheckCircle2, Users, SlidersHorizontal, Store, X, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -64,23 +65,20 @@ const Index = () => {
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
   const [welcomeType, setWelcomeType] = useState<"user" | "agent">("user");
+  const [showRegWelcome, setShowRegWelcome] = useState(false);
+  const [dontShowRegAgain, setDontShowRegAgain] = useState(false);
 
   const { canSaveMore, maxSaves, isPremium } = useSubscription();
 
-  // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
   useEffect(() => {
-    const uId = profile?.userId;
-    if (isPremium && uId) {
-      const key = `hf_premium_welcome_shown_${uId}`;
-      if (localStorage.getItem(key) !== "true") {
-        const isAgent = profileStatus === "active" && (profile.email?.includes("agent") || false); // Fallback si no hay roles
-        // Intentamos detectar si es agente por el status o el perfil (idealmente roles pero useProfile no lo trae aún)
-        setWelcomeType("user"); // Por defecto usuario, se puede mejorar si useProfile trae roles
-        setIsPremiumWelcomeOpen(true);
-        localStorage.setItem(key, "true");
-      }
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("registered") === "true") {
+      const isHidden = localStorage.getItem("hf_reg_welcome_hidden") === "true";
+      if (!isHidden) setShowRegWelcome(true);
     }
-  }, [isPremium, profile?.userId]);
+  }, [location.search]);
+
+  // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId) || null,
@@ -195,28 +193,66 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Overlay de Verificación de Email */}
-      {isRegistered && !userEmail && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-xl" />
-          <div className="relative bg-card border border-border rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center animate-in fade-in zoom-in duration-300">
-            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
-              <Mail className="w-10 h-10 text-primary animate-pulse" />
+      {/* Overlay de Verificación de Email (Persistente y Manual) */}
+      {showRegWelcome && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-xl" onClick={() => setShowRegWelcome(false)} />
+          <div className="relative bg-card border border-border rounded-[2.5rem] p-10 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-8 text-center animate-in fade-in zoom-in duration-300">
+            <button
+              onClick={() => setShowRegWelcome(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-2 relative">
+              <Mail className="w-12 h-12 text-primary animate-pulse" />
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">¡Casi listo! 🚀</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Gracias por sumarte a <strong>HomeFinder</strong>. Confirmá tu cuenta para empezar.
+
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black text-foreground tracking-tight">¡Casi listo! 🚀</h2>
+              <p className="text-muted-foreground leading-relaxed font-medium">
+                Gracias por sumarte a <strong className="text-foreground">HomeFinder</strong>. Confirmá tu cuenta desde tu email para empezar.
               </p>
             </div>
-            <div className="bg-muted/50 rounded-2xl p-4 flex items-start gap-3 text-left">
-              <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <p className="text-sm text-foreground/80">Revisá tu bandeja de entrada para el enlace de confirmación.</p>
+
+            <div className="bg-muted/30 rounded-3xl p-6 flex items-start gap-4 text-left border border-border/50">
+              <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                <Mail className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                Te enviamos un enlace mágico. Si no lo ves, revisá en la carpeta de <strong>Spam</strong>.
+              </p>
             </div>
-            <div className="pt-4">
-              <Button className="w-full h-12 rounded-xl text-md font-medium" onClick={() => navigate(ROUTES.AUTH)}>
-                Volver al inicio de sesión
+
+            <div className="space-y-4 pt-2">
+              <Button
+                className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
+                onClick={() => {
+                  if (dontShowRegAgain) localStorage.setItem("hf_reg_welcome_hidden", "true");
+                  setShowRegWelcome(false);
+                }}
+              >
+                ¡Entendido, vamos! <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
+
+              <div className="flex items-center justify-center space-x-3">
+                <Checkbox
+                  id="dont-show-reg"
+                  checked={dontShowRegAgain}
+                  onCheckedChange={(checked) => setDontShowRegAgain(checked as boolean)}
+                  className="rounded-md border-muted-foreground/30"
+                />
+                <label
+                  htmlFor="dont-show-reg"
+                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                >
+                  No volver a mostrar
+                </label>
+              </div>
             </div>
           </div>
         </div>

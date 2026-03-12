@@ -1,84 +1,163 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
     Building2, Clock, Mail, Phone, Users, Loader2,
-    MapPin, FileText, ExternalLink
+    CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /**
- * Interface de agencia — sin campo status (fue movido a profiles.status,
- * gestionado desde el panel de Usuarios).
+ * Interface de registro maestro de usuario enriquecida.
  */
-interface Agency {
+interface UserMasterRecord {
     id: string;
-    name: string;
-    description: string;
-    contact_name?: string;
-    contact_email: string;
-    contact_phone: string;
-    contact_person_phone?: string;
-    logo_url?: string;
+    display_name: string;
+    email: string | null;
+    phone: string;
+    status: "active" | "pending" | "suspended" | "rejected";
+    plan_type: "free" | "premium";
     created_at: string;
-    created_by: string;
-    /** Cantidad de propiedades publicadas en el marketplace */
-    property_count?: number;
+    referred_by_id?: string | null;
+    referred_by_name?: string;
+    // Datos de agencia (opcionales)
+    agency_name?: string;
+    agency_logo?: string;
+    property_count: number;
 }
 
 interface Props {
     toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
 
+const STATUS_CONFIG = {
+    active: { label: "Activo", icon: CheckCircle, color: "bg-green-100 text-green-800" },
+    pending: { label: "Pendiente", icon: Clock, color: "bg-yellow-100 text-yellow-800" },
+    suspended: { label: "Suspendido", icon: Ban, color: "bg-orange-100 text-orange-800" },
+    rejected: { label: "Eliminado", icon: Trash2, color: "bg-red-100 text-red-800" },
+};
+
 /**
- * Panel de administración de agentes/agencias.
- * Muestra información detallada de cada agente.
- * La gestión de estados (activo/suspendido/etc.) se realiza desde el panel de Usuarios.
+ * Tablón Maestro de Datos de Usuarios y Agentes.
+ * Centraliza toda la información de contacto y negocio.
  */
 export function AdminAgencias({ toast }: Props) {
-    const [agencies, setAgencies] = useState<Agency[]>([]);
+    const [records, setRecords] = useState<UserMasterRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortConfig, setSortConfig] = useState<{ key: keyof UserMasterRecord; direction: 'asc' | 'desc' }>({
+        key: 'display_name',
+        direction: 'asc'
+    });
 
-    useEffect(() => { fetchAgencies(); }, []);
+    useEffect(() => { fetchRecords(); }, []);
 
-    const fetchAgencies = async () => {
-        setLoading(true);
+    const fetchRecords = async () => {
+        try {
+            setLoading(true);
 
-        // Traer agencias con sus datos completos
-        const { data: agencyData, error } = await supabase
-            .from("agencies")
-            .select("id, name, description, contact_name, contact_email, contact_phone, contact_person_phone, logo_url, created_at, created_by")
-            .order("created_at", { ascending: false });
+            // 1. Traer todos los perfiles (base del tablón maestro)
+            const { data: profiles, error: profileError } = await supabase
+                .from("profiles")
+                .select("user_id, display_name, email, phone, status, plan_type, created_at, referred_by_id")
+                .order("created_at", { ascending: false });
 
-        if (error) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
+            if (profileError) throw profileError;
+            if (!profiles || profiles.length === 0) {
+                setRecords([]);
+                setLoading(false);
+                return;
+            }
+
+            const userIds = profiles.map(p => p.user_id);
+
+            // 2. Traer agencias y referidores en paralelo
+            const [agenciesRes, propCountsRes, referrersRes] = await Promise.all([
+                supabase.from("agencies").select("name, logo_url, created_by, id").in("created_by", userIds),
+                supabase.from("marketplace_properties").select("agency_id"), // Para conteo rápido
+                supabase.from("profiles").select("user_id, display_name").in("user_id", [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))]),
+            ]);
+
+            // Mapeo de agencias
+            const agencyMap: Record<string, any> = {};
+            const agencyIds: string[] = [];
+            for (const a of agenciesRes.data || []) {
+                agencyMap[a.created_by] = a;
+                agencyIds.push(a.id);
+            }
+
+            // Conteo de propiedades por agencia
+            const countMap: Record<string, number> = {};
+            for (const p of propCountsRes.data || []) {
+                if (agencyIds.includes(p.agency_id)) {
+                    countMap[p.agency_id] = (countMap[p.agency_id] || 0) + 1;
+                }
+            }
+
+            // Mapeo de referidores
+            const referrerMap: Record<string, string> = {};
+            for (const r of referrersRes.data || []) referrerMap[r.user_id] = r.display_name;
+
+            // 3. Unificar todo
+            setRecords(profiles.map(p => {
+                const agency = agencyMap[p.user_id];
+                return {
+                    id: p.user_id,
+                    display_name: p.display_name,
+                    email: p.email,
+                    phone: p.phone,
+                    status: p.status as UserMasterRecord["status"],
+                    plan_type: p.plan_type as "free" | "premium",
+                    created_at: p.created_at,
+                    referred_by_id: p.referred_by_id,
+                    referred_by_name: p.referred_by_id ? referrerMap[p.referred_by_id] : undefined,
+                    agency_name: agency?.name,
+                    agency_logo: agency?.logo_url,
+                    property_count: agency ? (countMap[agency.id] || 0) : 0,
+                };
+            }));
+        } catch (err: any) {
+            console.error("Error fetchRecords:", err);
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        } finally {
             setLoading(false);
-            return;
         }
-
-        if (!agencyData || agencyData.length === 0) {
-            setAgencies([]);
-            setLoading(false);
-            return;
-        }
-
-        // Traer conteo de propiedades por agencia en paralelo
-        const agencyIds = agencyData.map(a => a.id);
-        const { data: propCounts } = await supabase
-            .from("marketplace_properties")
-            .select("agency_id")
-            .in("agency_id", agencyIds);
-
-        // Construir mapa de agency_id → cantidad de propiedades
-        const countMap: Record<string, number> = {};
-        for (const p of propCounts || []) {
-            countMap[p.agency_id] = (countMap[p.agency_id] || 0) + 1;
-        }
-
-        setAgencies(agencyData.map(a => ({
-            ...a,
-            property_count: countMap[a.id] || 0,
-        })));
-        setLoading(false);
     };
+
+    const handleSort = (key: keyof UserMasterRecord) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+        }));
+    };
+
+    const filteredRecords = useMemo(() => {
+        let result = [...records];
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(r =>
+                r.display_name.toLowerCase().includes(q) ||
+                (r.email?.toLowerCase().includes(q)) ||
+                r.agency_name?.toLowerCase().includes(q)
+            );
+        }
+
+        return result.sort((a, b) => {
+            const valA = (a[sortConfig.key] || "").toString().toLowerCase();
+            const valB = (b[sortConfig.key] || "").toString().toLowerCase();
+            const multiplier = sortConfig.direction === 'asc' ? 1 : -1;
+            return valA < valB ? -1 * multiplier : 1 * multiplier;
+        });
+    }, [records, searchQuery, sortConfig]);
+
+    const SortIcon = ({ field }: { field: keyof UserMasterRecord }) =>
+        sortConfig.key === field
+            ? sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+            : null;
 
     if (loading) {
         return (
@@ -88,82 +167,140 @@ export function AdminAgencias({ toast }: Props) {
         );
     }
 
-    if (agencies.length === 0) {
-        return (
-            <div className="text-center py-12 text-muted-foreground">
-                No hay agencias registradas aún.
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-3">
-            {/* Nota informativa sobre gestión de estados */}
-            <p className="text-xs text-muted-foreground pb-1">
-                💡 Para cambiar el estado de un agente (activo, suspendido, etc.) usá el panel de <strong>Usuarios</strong>.
-            </p>
+            {/* Buscador */}
+            <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                    placeholder="Buscar por nombre, email o agencia..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 h-9 rounded-xl text-sm"
+                />
+            </div>
 
-            {agencies.map((agency) => (
-                <div key={agency.id} className="border border-border rounded-xl p-5 bg-background flex flex-col sm:flex-row items-start gap-5">
-
-                    {/* Logo o ícono */}
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center border border-primary/20 overflow-hidden">
-                        {agency.logo_url
-                            ? <img src={agency.logo_url} alt={agency.name} className="w-full h-full object-cover" />
-                            : <Building2 className="w-6 h-6 text-primary" />
-                        }
-                    </div>
-
-                    <div className="flex-1 min-w-0 space-y-3">
-                        {/* Nombre y propiedades */}
-                        <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold text-foreground text-base">{agency.name}</h3>
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                                <Building2 className="w-3 h-3" />
-                                {agency.property_count} propiedad{agency.property_count !== 1 ? "es" : ""}
-                            </span>
-                        </div>
-
-                        {/* Descripción */}
-                        {agency.description && (
-                            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                                <FileText className="w-3 h-3 inline mr-1 opacity-60" />
-                                {agency.description}
-                            </p>
-                        )}
-
-                        {/* Grid de datos de contacto */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                            {agency.contact_name && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Users className="w-3.5 h-3.5 text-primary/60" />
-                                    <span>{agency.contact_name}</span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Mail className="w-3.5 h-3.5 text-primary/60" />
-                                <span className="truncate">{agency.contact_email}</span>
-                            </div>
-                            {agency.contact_phone && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Phone className="w-3.5 h-3.5 text-primary/60" />
-                                    <span>Empresa: {agency.contact_phone}</span>
-                                </div>
-                            )}
-                            {agency.contact_person_phone && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Phone className="w-3.5 h-3.5 text-primary/60" />
-                                    <span>Personal: {agency.contact_person_phone}</span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 pt-0.5">
-                                <Clock className="w-3 h-3" />
-                                <span>Registrada el {new Date(agency.created_at).toLocaleDateString("es-AR")}</span>
-                            </div>
-                        </div>
-                    </div>
+            {filteredRecords.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                    No se encontraron registros.
                 </div>
-            ))}
+            ) : (
+                <div className="overflow-x-auto -mx-2">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-[180px]">
+                                    <button onClick={() => handleSort('display_name')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider">
+                                        Usuario <SortIcon field="display_name" />
+                                    </button>
+                                </TableHead>
+                                <TableHead className="w-[180px]">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Contacto</span>
+                                </TableHead>
+                                <TableHead className="w-[80px]">
+                                    <button onClick={() => handleSort('created_at')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider">
+                                        Registro <SortIcon field="created_at" />
+                                    </button>
+                                </TableHead>
+                                <TableHead className="w-[130px]">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Agencia/Origen</span>
+                                </TableHead>
+                                <TableHead className="w-[60px] text-center">
+                                    <button onClick={() => handleSort('property_count')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider mx-auto">
+                                        Props <SortIcon field="property_count" />
+                                    </button>
+                                </TableHead>
+                                <TableHead className="w-[100px]">
+                                    <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider">
+                                        Estado <SortIcon field="status" />
+                                    </button>
+                                </TableHead>
+                                <TableHead className="w-[90px]">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Plan</span>
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredRecords.map((record) => {
+                                // Guarda de estado para evitar crash por datos corruptos
+                                const statusKey = record.status as keyof typeof STATUS_CONFIG;
+                                const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.active;
+                                const StatusIcon = statusCfg.icon || User;
+
+                                // Formateo seguro de fecha
+                                let formattedDate = "-";
+                                try {
+                                    if (record.created_at) {
+                                        const d = new Date(record.created_at);
+                                        if (!isNaN(d.getTime())) {
+                                            formattedDate = d.toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: '2-digit' });
+                                        }
+                                    }
+                                } catch (e) { console.error("Error formatting date:", e); }
+
+                                return (
+                                    <TableRow key={record.id} className="group">
+                                        <TableCell className="py-2 px-3">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden">
+                                                    {record.agency_logo
+                                                        ? <img src={record.agency_logo} alt={record.agency_name} className="w-full h-full object-cover" />
+                                                        : record.agency_name ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <User className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    }
+                                                </div>
+                                                <span className="truncate text-sm font-bold tracking-tight">{record.display_name}</span>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="py-2 px-3">
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="truncate text-[11px] font-semibold text-muted-foreground">{record.email || "-"}</span>
+                                                <span className="text-[10px] text-primary/70 flex items-center gap-1 font-bold">
+                                                    <Phone className="w-2.5 h-2.5" /> {record.phone || "-"}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="py-2 px-3">
+                                            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">
+                                                {formattedDate}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell className="py-2 px-3">
+                                            <span className="text-[10px] font-bold truncate max-w-[120px] block" title={record.agency_name || record.referred_by_name || "-"}>
+                                                {record.agency_name || record.referred_by_name || "-"}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell className="py-2 px-3 text-center">
+                                            <span className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-5 h-5 rounded-full text-[10px] font-bold">
+                                                {record.property_count}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell className="py-2 px-3">
+                                            <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase", statusCfg.color)}>
+                                                <StatusIcon className="w-3 h-3" />
+                                                {statusCfg.label}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell className="py-2 px-3">
+                                            <span className={cn(
+                                                "inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                                                record.plan_type === "premium" ? "bg-primary/10 text-primary border border-primary/20" : "bg-muted text-muted-foreground border border-transparent"
+                                            )}>
+                                                {record.plan_type}
+                                            </span>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
         </div>
     );
 }

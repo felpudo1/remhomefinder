@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown, Search } from "lucide-react";
+import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown, Search, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -17,12 +17,17 @@ interface UserProfile {
     user_id: string;
     display_name: string;
     email: string | null;
+    phone: string;
     status: "active" | "pending" | "suspended" | "rejected";
     roles: string[];
     personal_count: number;
     saved_count: number;
     referral_count: number;
     plan_type: "free" | "premium";
+    created_at: string;
+    referred_by_id?: string | null;
+    referred_by_name?: string;
+    agency_name?: string;
 }
 
 interface Props {
@@ -64,10 +69,8 @@ export function AdminUsuarios({ toast }: Props) {
 
             const { data: profiles, error: profilesError, count } = await supabase
                 .from("profiles")
-                .select("user_id, display_name, email, status, plan_type", { count: "exact" })
-                .order(sortConfig.key === 'display_name' ? 'display_name' : 'user_id', {
-                    ascending: sortConfig.direction === 'asc'
-                })
+                .select("user_id, display_name, email, status, plan_type, phone, created_at, referred_by_id", { count: "exact" })
+                .order(sortConfig.key, { ascending: sortConfig.direction === 'asc' })
                 .range(from, to);
 
             if (profilesError) {
@@ -85,11 +88,15 @@ export function AdminUsuarios({ toast }: Props) {
                 return;
             }
 
-            const [rolesRes, propsRes, agenciesRes, referralsRes] = await Promise.all([
+            // IDs de referidores únicos para buscar sus nombres
+            const referrerIds = [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))];
+
+            const [rolesRes, propsRes, agenciesRes, referralsRes, referrersNamesRes] = await Promise.all([
                 supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
                 supabase.from("properties").select("user_id, source_marketplace_id").in("user_id", userIds),
-                supabase.from("agencies").select("id, created_by").in("created_by", userIds),
+                supabase.from("agencies").select("id, created_by, name").in("created_by", userIds),
                 supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
+                supabase.from("profiles").select("user_id, display_name").in("user_id", referrerIds),
             ]);
 
             const agencyIds = (agenciesRes.data || []).map(a => a.id);
@@ -116,7 +123,12 @@ export function AdminUsuarios({ toast }: Props) {
             }
 
             const agencyToUserMap: Record<string, string> = {};
-            for (const a of agenciesRes.data || []) agencyToUserMap[a.id] = a.created_by;
+            const agencyNameMap: Record<string, string> = {};
+            for (const a of agenciesRes.data || []) {
+                agencyToUserMap[a.id] = a.created_by;
+                agencyNameMap[a.created_by] = a.name;
+            }
+
             for (const mp of marketplacePropsRes.data || []) {
                 const userId = agencyToUserMap[mp.agency_id];
                 if (userId) personalCountMap[userId] = (personalCountMap[userId] || 0) + 1;
@@ -127,16 +139,26 @@ export function AdminUsuarios({ toast }: Props) {
                 if (r.referred_by_id) referralsCountMap[r.referred_by_id] = (referralsCountMap[r.referred_by_id] || 0) + 1;
             }
 
+            const referrerNameMap: Record<string, string> = {};
+            for (const r of referrersNamesRes.data || []) {
+                referrerNameMap[r.user_id] = r.display_name;
+            }
+
             setUsers((profiles || []).map((p: any) => ({
                 user_id: p.user_id,
                 display_name: p.display_name || "Sin nombre",
                 email: p.email || "-",
+                phone: p.phone || "-",
                 status: p.status || "active",
                 roles: roleMap[p.user_id] || ["user"],
                 personal_count: personalCountMap[p.user_id] || 0,
                 saved_count: savedCountMap[p.user_id] || 0,
                 referral_count: referralsCountMap[p.user_id] || 0,
                 plan_type: (p.plan_type as "free" | "premium") || "free",
+                created_at: p.created_at,
+                referred_by_id: p.referred_by_id,
+                referred_by_name: p.referred_by_id ? referrerNameMap[p.referred_by_id] : undefined,
+                agency_name: agencyNameMap[p.user_id],
             })));
         } catch (err: any) {
             console.error("Critical error in fetchUsers:", err);
@@ -248,8 +270,8 @@ export function AdminUsuarios({ toast }: Props) {
                                             Usuario <SortIcon field="display_name" />
                                         </button>
                                     </TableHead>
-                                    <TableHead className="w-[180px]">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">Email</span>
+                                    <TableHead className="w-[120px]">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Agencia/Origen</span>
                                     </TableHead>
                                     <TableHead className="w-[80px]">
                                         <button onClick={() => handleSort('roles')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider">
@@ -274,15 +296,15 @@ export function AdminUsuarios({ toast }: Props) {
                                     <TableHead className="w-[90px]">
                                         <span className="text-[10px] font-bold uppercase tracking-wider">Plan</span>
                                     </TableHead>
-                                    <TableHead className="w-[140px]">
+                                    <TableHead className="w-[110px]">
                                         <span className="text-[10px] font-bold uppercase tracking-wider">Acciones</span>
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredUsers.map((user) => {
-                                    const sc = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
-                                    const StatusIcon = sc.icon;
+                                    const statusCfg = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
+                                    const StatusIcon = statusCfg.icon;
                                     const isAdmin = user.roles.includes("admin");
 
                                     return (
@@ -294,17 +316,19 @@ export function AdminUsuarios({ toast }: Props) {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <span className="truncate text-xs text-muted-foreground block max-w-[170px]">{user.email}</span>
+                                                <span className="text-[10px] font-bold truncate max-w-[110px] block" title={user.agency_name || user.referred_by_name || "-"}>
+                                                    {user.agency_name || user.referred_by_name || "-"}
+                                                </span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
                                                 <span className={cn(
                                                     "inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold",
                                                     user.roles.includes("admin") ? "bg-red-100 text-red-700" :
-                                                    user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
-                                                    "bg-muted text-muted-foreground"
+                                                        user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
+                                                            "bg-muted text-muted-foreground"
                                                 )}>
                                                     {user.roles.includes("admin") ? "Admin" :
-                                                     user.roles.includes("agency") ? "Agente" : "User"}
+                                                        user.roles.includes("agency") ? "Agente" : "User"}
                                                 </span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3 text-center">
@@ -323,9 +347,9 @@ export function AdminUsuarios({ toast }: Props) {
                                                 <span className="text-xs font-semibold text-green-700">{user.referral_count}</span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium", sc.color)}>
+                                                <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium", statusCfg.color)}>
                                                     <StatusIcon className="w-3 h-3" />
-                                                    {sc.label}
+                                                    {statusCfg.label}
                                                 </span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
