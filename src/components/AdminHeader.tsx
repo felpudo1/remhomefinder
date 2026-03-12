@@ -1,4 +1,4 @@
-import { Shield, LogOut, ArrowLeft } from "lucide-react";
+import { Home, LogOut, ArrowLeft, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminHeaderProps {
@@ -7,6 +7,9 @@ interface AdminHeaderProps {
     onGoBack: () => void;
     handleSignOut: () => void;
     menuItems: { id: string; label: string; icon: any }[];
+    userEmail?: string | null;
+    displayName?: string | null;
+    isPremium?: boolean;
 }
 
 export const AdminHeader = ({
@@ -15,19 +18,39 @@ export const AdminHeader = ({
     onGoBack,
     handleSignOut,
     menuItems,
+    userEmail,
+    displayName,
+    isPremium,
 }: AdminHeaderProps) => {
+    const StatusStar = () => (
+        isPremium ? (
+            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+        ) : (
+            <Star className="w-3 h-3 text-slate-400/50" />
+        )
+    );
+
     return (
-        <header className="border-b border-border bg-card sticky top-0 z-10">
+        <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
             <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={onGoBack}>
+                <div className="flex items-center gap-2 min-w-0">
+                    <Button variant="ghost" size="icon" onClick={onGoBack} className="shrink-0 -ml-2">
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <Shield className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 md:w-8 md:h-8 bg-primary rounded-xl flex items-center justify-center shrink-0">
+                            <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
                         </div>
-                        <h1 className="text-base font-semibold text-foreground">Panel de Administración</h1>
+                        <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
+                            {/* Identidad del Admin como subtexto */}
+                            <div className="flex items-center gap-1">
+                                <StatusStar />
+                                <span className="text-[11px] text-muted-foreground truncate max-w-[150px] leading-tight font-medium">
+                                    {displayName || userEmail || "Administrador"}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 text-muted-foreground">
@@ -47,8 +70,8 @@ export const AdminHeader = ({
                                 key={item.id}
                                 onClick={() => onNavigate(item.id)}
                                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive
-                                        ? "border-primary text-primary bg-primary/5"
-                                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                    ? "border-primary text-primary bg-primary/5"
+                                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                     }`}
                             >
                                 <Icon className="w-4 h-4" />

@@ -4,6 +4,17 @@ import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, Chev
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 interface UserProfile {
     user_id: string;
@@ -39,6 +50,12 @@ export function AdminUsuarios({ toast }: Props) {
         key: 'display_name',
         direction: 'asc'
     });
+
+    // Estados para el borrado físico
+    const [deletingUser, setDeletingUser] = useState<UserProfile | null>(null);
+    const [confirmDeleteSingle, setConfirmDeleteSingle] = useState("");
+    const [deleteReason, setDeleteReason] = useState("");
+    const [isActionInProgress, setIsActionInProgress] = useState(false);
 
     useEffect(() => { fetchUsers(); }, [page, sortConfig]);
 
@@ -200,6 +217,39 @@ export function AdminUsuarios({ toast }: Props) {
         }
     };
 
+    const handlePhysicalDelete = async (userId: string) => {
+        console.log("Iniciando borrado físico para:", userId);
+
+        // BORRADO OPTIMISTA (parecido a avisos)
+        const previousUsers = users;
+        setUsers(prev => prev.filter(u => u.user_id !== userId));
+        setDeletingUser(null);
+        setConfirmDeleteSingle("");
+        setDeleteReason("");
+
+        try {
+            setIsActionInProgress(true);
+            const { error } = await supabase.rpc("admin_physical_delete_user", { _user_id: userId });
+
+            if (error) {
+                console.error("Error RPC borrado físico:", error);
+                // Rollback si falla
+                setUsers(previousUsers);
+                toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
+            } else {
+                console.log("Borrado físico exitoso");
+                toast({ title: "Usuario eliminado", description: "El registro ha sido borrado físicamente de la base de datos." });
+                fetchUsers();
+            }
+        } catch (err: any) {
+            console.error("Excepción en handlePhysicalDelete:", err);
+            setUsers(previousUsers);
+            toast({ title: "Error fatal", description: err.message, variant: "destructive" });
+        } finally {
+            setIsActionInProgress(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center py-12">
@@ -266,9 +316,9 @@ export function AdminUsuarios({ toast }: Props) {
                                 sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             )}
                         </button>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <span>Plan</span>
-                            <span>Acción</span>
+                            <span className="col-span-2">Acciones</span>
                         </div>
                     </div>
 
@@ -324,7 +374,7 @@ export function AdminUsuarios({ toast }: Props) {
                                         {sc.label}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-[1fr_1fr_40px] gap-2 items-center">
                                     <Select value={user.plan_type} onValueChange={(v) => updatePlan(user.user_id, v as "free" | "premium")}>
                                         <SelectTrigger className={cn(
                                             "h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider",
@@ -338,9 +388,7 @@ export function AdminUsuarios({ toast }: Props) {
                                         </SelectContent>
                                     </Select>
 
-                                    {isAdmin ? (
-                                        <span className="text-xs text-muted-foreground text-center">—</span>
-                                    ) : (
+                                    {!isAdmin ? (
                                         <Select value={user.status} onValueChange={(v) => updateStatus(user.user_id, v as UserProfile["status"])}>
                                             <SelectTrigger className="h-8 rounded-xl text-xs">
                                                 <SelectValue />
@@ -352,6 +400,23 @@ export function AdminUsuarios({ toast }: Props) {
                                                 <SelectItem value="rejected"><span className="flex items-center gap-1.5"><Trash2 className="w-3 h-3" /> Eliminado</span></SelectItem>
                                             </SelectContent>
                                         </Select>
+                                    ) : (
+                                        <span className="text-center text-muted-foreground text-[10px] font-bold">ADMIN</span>
+                                    )}
+
+                                    {!isAdmin && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                                console.log("Click en borrar usuario:", user.display_name, user.user_id);
+                                                setDeletingUser(user);
+                                            }}
+                                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl"
+                                            title="BORRADO FÍSICO"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     )}
                                 </div>
                             </div>
@@ -359,6 +424,7 @@ export function AdminUsuarios({ toast }: Props) {
                     })}
                 </div>
             </div>
+
             {/* Controles de Paginación */}
             <div className="flex items-center justify-between px-4 py-4 border-t border-border mt-4">
                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
@@ -388,6 +454,57 @@ export function AdminUsuarios({ toast }: Props) {
                     </Button>
                 </div>
             </div>
+
+            <AlertDialog open={!!deletingUser} onOpenChange={(open) => {
+                if (!open) {
+                    setDeletingUser(null);
+                    setConfirmDeleteSingle("");
+                    setDeleteReason("");
+                }
+            }}>
+                <AlertDialogContent className="rounded-2xl border-2 border-red-100 shadow-2xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+                            <Trash2 className="w-5 h-5" />
+                            ¿Eliminar permanentemente?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-3">
+                            <p>Estás a punto de borrar a <strong>{deletingUser?.display_name}</strong>. Esta acción NO se puede deshacer.</p>
+
+                            <div className="space-y-2 pt-2">
+                                <p className="text-xs font-bold uppercase text-muted-foreground">Motivo de eliminación (Opcional)</p>
+                                <textarea
+                                    className="w-full min-h-[80px] p-3 rounded-xl border border-input text-sm resize-none focus-visible:ring-1 focus-visible:ring-ring bg-muted/30"
+                                    placeholder="Explica brevemente por qué eliminás esta cuenta..."
+                                    value={deleteReason}
+                                    onChange={(e) => setDeleteReason(e.target.value)}
+                                />
+                            </div>
+
+                            <p className="text-sm font-semibold pt-2">Escribe <span className="text-red-600 font-bold">ELIMINAR</span> para confirmar:</p>
+                            <Input
+                                value={confirmDeleteSingle}
+                                onChange={(e) => setConfirmDeleteSingle(e.target.value)}
+                                placeholder="Escribe ELIMINAR..."
+                                className="border-red-200 focus-visible:ring-red-500 rounded-xl"
+                            />
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel className="rounded-xl" disabled={isActionInProgress}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                if (deletingUser) handlePhysicalDelete(deletingUser.user_id);
+                            }}
+                            disabled={confirmDeleteSingle !== "ELIMINAR" || isActionInProgress}
+                            className="bg-red-600 hover:bg-red-700 rounded-xl text-white font-bold"
+                        >
+                            {isActionInProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : "ELIMINAR"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

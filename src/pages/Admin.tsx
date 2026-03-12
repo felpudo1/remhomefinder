@@ -17,6 +17,8 @@ import { AdminSystem } from "@/components/admin/AdminSystem";
 import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
+import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 
 type AdminSection = "agentes" | "usuarios" | "publicaciones" | "prompt" | "estadisticas" | "sistema";
 
@@ -50,6 +52,10 @@ const Admin = () => {
   const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: profile } = useProfile();
+  const { isPremium } = useSubscription();
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     // Redirect /admin to /admin/agentes
@@ -75,6 +81,7 @@ const Admin = () => {
       }
 
       setIsAdmin(true);
+      setUserEmail(user.email ?? null);
       setChecking(false);
     };
 
@@ -118,6 +125,9 @@ const Admin = () => {
         onGoBack={() => navigate(ROUTES.DASHBOARD)}
         handleSignOut={handleSignOut}
         menuItems={MENU_ITEMS}
+        userEmail={userEmail}
+        displayName={profile?.displayName}
+        isPremium={isPremium}
       />
 
       {/* Contenido principal */}
