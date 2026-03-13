@@ -101,6 +101,7 @@ const AgentDashboard = () => {
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={activeGroupId} />}
+              {activeTab === "equipo" && <AgentTeamProperties activeGroupId={activeGroupId} onOpenGroups={() => setIsGroupsOpen(true)} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
