@@ -127,6 +127,44 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         },
     });
 
+    // Shared status query: which properties are shared in which groups
+    const { data: sharedPropertyIds = new Set<string>() } = useQuery({
+        queryKey: ["agency-shared-ids", groups.map(g => g.id).join(","), agencyProperties.map(p => p.id).join(",")],
+        enabled: !activeGroupId && agencyProperties.length > 0 && groups.length > 0,
+        queryFn: async () => {
+            const groupIds = groups.map(g => g.id);
+            const propIds = agencyProperties.map(p => p.id);
+            if (groupIds.length === 0 || propIds.length === 0) return new Set<string>();
+
+            const { data, error } = await supabase
+                .from("agency_shared_properties")
+                .select("marketplace_property_id, group_id")
+                .in("group_id", groupIds)
+                .in("marketplace_property_id", propIds);
+
+            if (error) return new Set<string>();
+            return new Set((data || []).map((r: any) => `${r.marketplace_property_id}:${r.group_id}`));
+        },
+    });
+
+    const isSharedIn = (propId: string, groupId: string) => sharedPropertyIds.has(`${propId}:${groupId}`);
+
+    const handleShare = async (propId: string, groupId: string) => {
+        try {
+            await share({ marketplacePropertyId: propId, groupId });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
+        } catch {}
+    };
+
+    const handleUnshare = async (propId: string, groupId: string) => {
+        try {
+            await unshare({ marketplacePropertyId: propId, groupId });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
+        } catch {}
+    };
+
     const handleOpenPublish = () => {
         if (!canAgentPublishMore(agencyProperties.length)) {
             setIsUpgradeOpen(true);
