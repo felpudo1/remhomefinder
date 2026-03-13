@@ -46,6 +46,7 @@ export function AdminPublicaciones({ toast }: Props) {
       .from("properties")
       // El admin ve TODAS, incluyendo las ocultas
       .select("id, title, url, status, created_by_email, source_marketplace_id, listing_type, created_at, admin_hidden")
+      .is("source_marketplace_id", null) // 👈 Solo mostrar propiedades de usuarios (no compartidas por agentes)
       .order("created_at", { ascending: false });
 
     if (error) {

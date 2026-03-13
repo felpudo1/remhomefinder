@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { MarketplaceProperty } from "@/types/property";
 import {
     Dialog,
@@ -18,6 +19,17 @@ import {
 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
+import { useGroups } from "@/hooks/useGroups";
+import { useSaveToList } from "@/hooks/useSaveToList";
+import { useProperties } from "@/hooks/useProperties";
+import { Users, Loader2 } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface MarketplacePropertyDetailModalProps {
     property: MarketplaceProperty | null;
@@ -32,6 +44,33 @@ export function MarketplacePropertyDetailModal({
 }: MarketplacePropertyDetailModalProps) {
     const [activeImg, setActiveImg] = useState(0);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const { groups } = useGroups();
+    const { properties: userProperties } = useProperties();
+    const saveMutation = useSaveToList();
+    const queryClient = useQueryClient();
+
+    const bridgeProperty = userProperties.find(p => p.sourceMarketplaceId === property?.id);
+    const currentGroupId = bridgeProperty?.groupId || "none";
+
+    const handleGroupChange = async (groupId: string) => {
+        if (!property) return;
+        try {
+            await saveMutation.mutateAsync({ 
+                property, 
+                groupId: groupId === "none" ? null : groupId 
+            });
+            
+            // Invalidar queries para que se refleje el cambio en el listado del agente
+            queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] });
+            
+            toast({ 
+                title: groupId === "none" ? "Quitada del grupo" : "Compartida en grupo", 
+                description: groupId === "none" ? "La propiedad ya no es visible para el equipo." : "Tu equipo ahora puede ver esta publicación." 
+            });
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        }
+    };
 
     if (!property) return null;
 
@@ -168,6 +207,44 @@ export function MarketplacePropertyDetailModal({
                                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line font-medium italic">
                                     {property.description}
                                 </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Compartir en Equipo (REGLA 2: Reutilización de patrones) */}
+                    {groups.length > 0 && (
+                        <div className="pt-4 border-t border-border/50 space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-widest text-primary/80">
+                                <Users className="w-4 h-4" />
+                                Compartir en Equipo
+                            </div>
+                            <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-foreground">Visibilidad para el grupo</p>
+                                    <p className="text-xs text-muted-foreground">Elegí un grupo para que tus colegas vean esta publicación.</p>
+                                </div>
+                                <div className="w-full sm:w-[200px] relative">
+                                    {saveMutation.isPending && (
+                                        <div className="absolute -left-8 top-1/2 -translate-y-1/2">
+                                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                        </div>
+                                    )}
+                                    <Select
+                                        value={currentGroupId}
+                                        onValueChange={handleGroupChange}
+                                        disabled={saveMutation.isPending}
+                                    >
+                                        <SelectTrigger className="w-full h-10 border-border bg-background rounded-xl">
+                                            <SelectValue placeholder="Sin grupo" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Sin grupo</SelectItem>
+                                            {groups.map((g) => (
+                                                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         </div>
                     )}
