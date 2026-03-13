@@ -58,43 +58,9 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     }, [isPremium, agency.created_by]);
 
     const { data: agencyProperties = [], isLoading: propsLoading } = useQuery({
-        queryKey: ["agency-marketplace-properties", agency.id, activeGroupId],
+        queryKey: ["agency-marketplace-properties", agency.id],
         enabled: isActive,
         queryFn: async () => {
-            // Si hay un grupo activo, traemos las propiedades de ESE grupo (colaboración equipo)
-            if (activeGroupId) {
-                const { data, error } = await supabase
-                    .from("properties")
-                    .select("*")
-                    .eq("group_id", activeGroupId)
-                    .order("created_at", { ascending: false });
-
-                if (error) throw error;
-                return (data || []).map((p: any): MarketplaceProperty => ({
-                    id: p.id,
-                    agencyId: "", // Es propiedad de equipo, no necesariamente de agencia
-                    agencyName: "Propiedad de Equipo",
-                    agentId: p.user_id,
-                    title: p.title,
-                    description: p.ai_summary || p.details || "",
-                    url: p.url,
-                    priceRent: Number(p.price_rent),
-                    priceExpenses: Number(p.price_expenses),
-                    totalCost: Number(p.total_cost),
-                    currency: p.currency,
-                    neighborhood: p.neighborhood,
-                    city: p.city || "",
-                    sqMeters: Number(p.sq_meters),
-                    rooms: p.rooms,
-                    images: p.images || [],
-                    status: "active" as any, // Mapeo simple para la vista
-                    listingType: p.listing_type || "rent",
-                    createdAt: new Date(p.created_at),
-                    updatedAt: new Date(p.updated_at),
-                }));
-            }
-
-            // Si NO hay grupo activo, mostramos las de la AGENCIA (comportamiento normal)
             const { data, error } = await supabase
                 .from("marketplace_properties")
                 .select("*")
