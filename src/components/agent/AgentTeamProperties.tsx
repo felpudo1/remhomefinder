@@ -55,6 +55,9 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPr
           Todavía no hay propiedades compartidas en este equipo.<br />
           Compartí desde "Mis Propiedades" usando el botón de compartir.
         </p>
+        <Button variant="outline" size="sm" className="gap-2" onClick={onOpenGroups}>
+          <UserPlus className="w-4 h-4" /> Cambiar equipo
+        </Button>
       </div>
     );
   }

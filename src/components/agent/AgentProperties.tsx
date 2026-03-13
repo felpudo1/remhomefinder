@@ -114,21 +114,18 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     });
 
     const isSharedIn = (propId: string, groupId: string) => sharedPropertyIds.has(`${propId}:${groupId}`);
+    const activeGroup = activeGroupId ? groups.find((g) => g.id === activeGroupId) ?? null : null;
 
     const handleShare = async (propId: string, groupId: string) => {
-        try {
-            await share({ marketplacePropertyId: propId, groupId });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
-        } catch {}
+        await share({ marketplacePropertyId: propId, groupId });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
     };
 
     const handleUnshare = async (propId: string, groupId: string) => {
-        try {
-            await unshare({ marketplacePropertyId: propId, groupId });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
-        } catch {}
+        await unshare({ marketplacePropertyId: propId, groupId });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
     };
 
     const handleOpenPublish = () => {
@@ -331,30 +328,49 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                             </DropdownMenuContent>
                                         </DropdownMenu>
 
-                                        {/* Share with team button */}
+                                        {/* Share with team */}
                                         {groups.length > 0 && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs">
-                                                        <Share2 className="w-3 h-3" />
+                                            activeGroup ? (() => {
+                                                const sharedInActive = isSharedIn(p.id, activeGroup.id);
+                                                return (
+                                                    <Button
+                                                        size="sm"
+                                                        variant={sharedInActive ? "default" : "outline"}
+                                                        className="gap-1 rounded-lg text-xs"
+                                                        title={sharedInActive ? `Quitar de ${activeGroup.name}` : `Compartir en ${activeGroup.name}`}
+                                                        onClick={() => void (sharedInActive
+                                                            ? handleUnshare(p.id, activeGroup.id)
+                                                            : handleShare(p.id, activeGroup.id))}
+                                                    >
+                                                        {sharedInActive ? <X className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
                                                     </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    {groups.map(g => {
-                                                        const shared = isSharedIn(p.id, g.id);
-                                                        return (
-                                                            <DropdownMenuItem
-                                                                key={g.id}
-                                                                onClick={() => shared ? handleUnshare(p.id, g.id) : handleShare(p.id, g.id)}
-                                                                className="text-xs flex items-center gap-2"
-                                                            >
-                                                                {shared ? <X className="w-3 h-3 text-destructive" /> : <Share2 className="w-3 h-3 text-primary" />}
-                                                                {shared ? `Quitar de ${g.name}` : `Compartir en ${g.name}`}
-                                                            </DropdownMenuItem>
-                                                        );
-                                                    })}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                );
+                                            })() : (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs">
+                                                            <Share2 className="w-3 h-3" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        {groups.map(g => {
+                                                            const shared = isSharedIn(p.id, g.id);
+                                                            return (
+                                                                <DropdownMenuItem
+                                                                    key={g.id}
+                                                                    onSelect={() => {
+                                                                        void (shared ? handleUnshare(p.id, g.id) : handleShare(p.id, g.id));
+                                                                    }}
+                                                                    className="text-xs flex items-center gap-2"
+                                                                >
+                                                                    {shared ? <X className="w-3 h-3 text-destructive" /> : <Share2 className="w-3 h-3 text-primary" />}
+                                                                    {shared ? `Quitar de ${g.name}` : `Compartir en ${g.name}`}
+                                                                </DropdownMenuItem>
+                                                            );
+                                                        })}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )
                                         )}
                                     </div>
                                 }

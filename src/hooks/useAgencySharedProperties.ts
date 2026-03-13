@@ -99,6 +99,13 @@ export function useAgencySharedProperties(groupId: string | null) {
     },
   });
 
+  const getFriendlyErrorMessage = (err: any) => {
+    if (err?.code === "42501") {
+      return "No puede realizar este cambio. Póngase en contacto con el usuario que ingresó la publicación.";
+    }
+    return err?.message || "Ocurrió un error inesperado";
+  };
+
   const shareMutation = useMutation({
     mutationFn: async ({
       marketplacePropertyId,
@@ -129,8 +136,12 @@ export function useAgencySharedProperties(groupId: string | null) {
       queryClient.invalidateQueries({ queryKey });
       toast({ title: "Propiedad compartida con el equipo ✅" });
     },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    onError: (err: Error & { code?: string }) => {
+      toast({
+        title: "Error al compartir",
+        description: getFriendlyErrorMessage(err),
+        variant: "destructive",
+      });
     },
   });
 
@@ -153,6 +164,13 @@ export function useAgencySharedProperties(groupId: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       toast({ title: "Propiedad removida del equipo" });
+    },
+    onError: (err: Error & { code?: string }) => {
+      toast({
+        title: "Error al quitar compartido",
+        description: getFriendlyErrorMessage(err),
+        variant: "destructive",
+      });
     },
   });
 
