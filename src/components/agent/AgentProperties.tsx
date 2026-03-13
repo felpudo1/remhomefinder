@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users } from "lucide-react";
+import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users, Share2, X } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -16,6 +16,9 @@ import { MarketplacePropertyDetailModal } from "@/components/MarketplaceProperty
 import { MarketplaceProperty } from "@/types/property";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
+import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
+import { useGroups } from "@/hooks/useGroups";
+import { useAgencySharedProperties } from "@/hooks/useAgencySharedProperties";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 
 interface AgentPropertiesProps {
