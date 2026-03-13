@@ -1,76 +1,43 @@
+## Plan: Extracción de datos de propiedad desde imágenes (capturas de RRSS)
 
+### Concepto
 
-## Plan: Compartir propiedades entre agentes del mismo equipo (Opcion A)
+El usuario sube una captura de pantalla de una publicación de RRSS (IG, FB Marketplace, etc.) y la IA (Gemini con capacidad multimodal) analiza la imagen para extraer los datos de la propiedad. Luego se muestra el formulario manual pre-llenado con los datos detectados, permitiendo al usuario agregar hasta 2 fotos reales de la propiedad.
 
-### Resumen
-Crear una tabla puente `agency_shared_properties` que vincula `marketplace_properties` con `groups`. Agregar una nueva pestaña "Equipo" en el AgentDashboard que muestra las propiedades compartidas por todos los miembros del grupo activo. Agregar un botón "Compartir en equipo" en cada card de propiedad del agente.
+### Flujo de usuario
 
-### 1. Migración SQL
+1. En el modal "Agregar Propiedad" (paso `url`), el usuario hace click en **"Ingresar imágenes para analizar (IG, FB)"** (botón que ya existe visualmente en la captura).
+2. Se abre un nuevo paso `"image-upload"` donde puede subir 1 captura de pantalla del aviso.
+3. La imagen se sube a Supabase Storage (`property-images`) y se envía a una nueva Edge Function.
+4. La Edge Function usa **Gemini 2.5 Flash** (multimodal, ya disponible via `LOVABLE_API_KEY`) para analizar la imagen y extraer: título, precio, barrio, m², ambientes, tipo de operación, resumen.
+5. Se devuelven los datos y se pre-llena el formulario manual. En caso que no esten los datos, ya sea superficie o  cantidad de dormitorios o barrio o precio, esos datos se deja en blanco con la opcion que el user lo modifique
+6. En el formulario manual se muestra una sección destacada para **"Agregar fotos de la propiedad"** (hasta 3 fotos, subidas desde el dispositivo o por URL), ya que la IA no puede extraer fotos de la propiedad desde una captura.
 
-Nueva tabla `agency_shared_properties`:
-```sql
-CREATE TABLE public.agency_shared_properties (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  marketplace_property_id uuid NOT NULL REFERENCES marketplace_properties(id) ON DELETE CASCADE,
-  group_id uuid NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  shared_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(marketplace_property_id, group_id)
-);
+### Implementación
 
-ALTER TABLE public.agency_shared_properties ENABLE ROW LEVEL SECURITY;
-```
+**1. Nueva Edge Function: `supabase/functions/extract-from-image/index.ts**`
 
-RLS policies usando `is_group_member` (security definer existente):
-- **SELECT**: `is_group_member(auth.uid(), group_id)` -- miembros del grupo pueden ver
-- **INSERT**: `is_group_member(auth.uid(), group_id) AND shared_by = auth.uid()` -- solo miembros pueden compartir
-- **DELETE**: `shared_by = auth.uid() OR is_group_owner(auth.uid(), group_id)` -- autor o dueño del grupo pueden quitar
+- Recibe `{ imageUrl: string, role: string }`
+- Carga el prompt desde `app_settings` (reutiliza `getPromptFromDb`)
+- Llama a Gemini con la imagen como `image_url` en el mensaje + tool calling (mismo schema `extract_property_data`)
+- Retorna los datos estructurados
 
-### 2. Nueva pestaña "Equipo" en AgentDashboard
+**2. Modificar `AddPropertyModal.tsx**`
 
-- Agregar tab `{ id: "equipo", label: "Equipo", icon: Users }` al array `TABS`
-- Actualizar el tipo `AgentTab` para incluir `"equipo"`
-- Renderizar nuevo componente `AgentTeamProperties` cuando `activeTab === "equipo"`
-- La pestaña solo se muestra si hay un `activeGroupId` seleccionado; si no hay grupo activo, mostrar un mensaje invitando a seleccionar/crear uno
+- Agregar nuevo paso `"image-upload"` entre `url` y `manual`
+- Botón "Ingresar imágenes para analizar" en el paso `url` lleva a `image-upload`
+- En `image-upload`: input de archivo para la captura, preview, botón "Analizar con IA"
+- Al recibir resultados, pre-llena el form y pasa al paso `manual`
+- En el paso `manual`, cuando se viene de imagen, mostrar nota: "Agregá fotos reales de la propiedad"
 
-### 3. Nuevo componente `AgentTeamProperties`
+**3. Archivos a crear/modificar**
 
-**Props**: `activeGroupId: string | null`
+- `supabase/functions/extract-from-image/index.ts` (nueva)
+- `src/components/AddPropertyModal.tsx` (nuevo step + lógica)
 
-**Lógica**:
-- Query a `agency_shared_properties` filtrando por `group_id = activeGroupId`, con join a `marketplace_properties` para obtener los datos completos
-- Como Supabase JS no soporta joins directos entre tablas sin FK declarada en el cliente, hacer un query en dos pasos: primero los IDs compartidos, luego las propiedades
-- Mostrar las propiedades usando `PropertyCardBase` (read-only, sin botones de editar/estado)
-- Mostrar quién compartió cada propiedad (badge con nombre del agente)
+### Viabilidad
 
-### 4. Botón "Compartir en equipo" en AgentProperties
-
-- En cada `PropertyCardBase` dentro de la pestaña "Mis Propiedades", agregar un botón/icono "Compartir" junto a "Editar" y "Estado"
-- Al hacer click, si el agente pertenece a un solo grupo, compartir directo. Si pertenece a varios, mostrar un pequeño dropdown/select para elegir el grupo
-- Insertar en `agency_shared_properties` con `marketplace_property_id`, `group_id` y `shared_by`
-- Si ya está compartido en ese grupo, mostrar opción de "Dejar de compartir" (DELETE)
-- Usar `useGroups()` para obtener los grupos del agente
-
-### 5. Hook `useAgencySharedProperties`
-
-Nuevo hook en `src/hooks/useAgencySharedProperties.ts`:
-- Recibe `groupId: string | null`
-- Query `agency_shared_properties` por `group_id`, luego fetch de `marketplace_properties` por los IDs obtenidos
-- Enriquecer con `shared_by` -> nombre del agente desde `profiles`
-- Mutations para compartir (INSERT) y dejar de compartir (DELETE)
-
-### Archivos a crear/modificar
-
-| Archivo | Accion |
-|---|---|
-| Migracion SQL | Crear tabla + RLS |
-| `src/hooks/useAgencySharedProperties.ts` | Crear (hook) |
-| `src/components/agent/AgentTeamProperties.tsx` | Crear (componente pestaña Equipo) |
-| `src/pages/AgentDashboard.tsx` | Agregar tab "equipo" y renderizar componente |
-| `src/components/agent/AgentProperties.tsx` | Agregar botón "Compartir en equipo" en cada card |
-
-### Notas
-- No se toca la lógica de grupos de usuarios/familias (tabla `properties` + `group_id`)
-- El sistema de grupos (`groups` + `group_members`) se reutiliza tal cual, sin cambios
-- Las propiedades compartidas son read-only para los miembros que no son el autor original
-
+- Gemini 2.5 Flash soporta imágenes nativamente (multimodal) via la misma API gateway
+- `LOVABLE_API_KEY` ya está configurado
+- El bucket `property-images` ya existe para subir las capturas
+- No se necesitan nuevas dependencias ni connectors

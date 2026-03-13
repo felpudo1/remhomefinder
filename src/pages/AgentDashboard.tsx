@@ -6,12 +6,14 @@ import {
   Loader2,
   Home,
   BarChart3,
-  UserCircle
+  UserCircle,
+  Users
 } from "lucide-react";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
+import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
@@ -19,10 +21,11 @@ import { UserStatus } from "@/types/property";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AgentTab = "propiedades" | "estadisticas" | "perfil";
+type AgentTab = "propiedades" | "equipo" | "estadisticas" | "perfil";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
+  { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
   { id: "perfil", label: "Perfil", icon: UserCircle },
 ];
@@ -98,6 +101,7 @@ const AgentDashboard = () => {
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={activeGroupId} />}
+              {activeTab === "equipo" && <AgentTeamProperties activeGroupId={activeGroupId} onOpenGroups={() => setIsGroupsOpen(true)} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>

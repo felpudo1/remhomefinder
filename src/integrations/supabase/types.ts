@@ -88,6 +88,45 @@ export type Database = {
           },
         ]
       }
+      agency_shared_properties: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          marketplace_property_id: string
+          shared_by: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          marketplace_property_id: string
+          shared_by: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          marketplace_property_id?: string
+          shared_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_shared_properties_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_shared_properties_marketplace_property_id_fkey"
+            columns: ["marketplace_property_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           description: string | null

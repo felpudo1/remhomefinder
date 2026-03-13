@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users } from "lucide-react";
+import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users, Share2, X } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -17,6 +17,8 @@ import { MarketplaceProperty } from "@/types/property";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
+import { useGroups } from "@/hooks/useGroups";
+import { useAgencySharedProperties } from "@/hooks/useAgencySharedProperties";
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -28,7 +30,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
-
+    const { groups } = useGroups();
+    const { share, unshare, useSharedStatus } = useAgencySharedProperties(activeGroupId ?? null);
     const [publishOpen, setPublishOpen] = useState(false);
     const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
@@ -123,6 +126,44 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
             }));
         },
     });
+
+    // Shared status query: which properties are shared in which groups
+    const { data: sharedPropertyIds = new Set<string>() } = useQuery({
+        queryKey: ["agency-shared-ids", groups.map(g => g.id).join(","), agencyProperties.map(p => p.id).join(",")],
+        enabled: !activeGroupId && agencyProperties.length > 0 && groups.length > 0,
+        queryFn: async () => {
+            const groupIds = groups.map(g => g.id);
+            const propIds = agencyProperties.map(p => p.id);
+            if (groupIds.length === 0 || propIds.length === 0) return new Set<string>();
+
+            const { data, error } = await supabase
+                .from("agency_shared_properties")
+                .select("marketplace_property_id, group_id")
+                .in("group_id", groupIds)
+                .in("marketplace_property_id", propIds);
+
+            if (error) return new Set<string>();
+            return new Set((data || []).map((r: any) => `${r.marketplace_property_id}:${r.group_id}`));
+        },
+    });
+
+    const isSharedIn = (propId: string, groupId: string) => sharedPropertyIds.has(`${propId}:${groupId}`);
+
+    const handleShare = async (propId: string, groupId: string) => {
+        try {
+            await share({ marketplacePropertyId: propId, groupId });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
+        } catch {}
+    };
+
+    const handleUnshare = async (propId: string, groupId: string) => {
+        try {
+            await unshare({ marketplacePropertyId: propId, groupId });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
+        } catch {}
+    };
 
     const handleOpenPublish = () => {
         if (!canAgentPublishMore(agencyProperties.length)) {
@@ -324,6 +365,31 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                             </DropdownMenuContent>
                                         </DropdownMenu>
 
+                                        {/* Share with team button */}
+                                        {groups.length > 0 && !activeGroupId && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs">
+                                                        <Share2 className="w-3 h-3" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    {groups.map(g => {
+                                                        const shared = isSharedIn(p.id, g.id);
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={g.id}
+                                                                onClick={() => shared ? handleUnshare(p.id, g.id) : handleShare(p.id, g.id)}
+                                                                className="text-xs flex items-center gap-2"
+                                                            >
+                                                                {shared ? <X className="w-3 h-3 text-destructive" /> : <Share2 className="w-3 h-3 text-primary" />}
+                                                                {shared ? `Quitar de ${g.name}` : `Compartir en ${g.name}`}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </div>
                                 }
                             />
