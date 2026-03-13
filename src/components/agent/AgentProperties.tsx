@@ -96,7 +96,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     // Shared status query: which properties are shared in which groups
     const { data: sharedPropertyIds = new Set<string>() } = useQuery({
         queryKey: ["agency-shared-ids", groups.map(g => g.id).join(","), agencyProperties.map(p => p.id).join(",")],
-        enabled: !activeGroupId && agencyProperties.length > 0 && groups.length > 0,
+        enabled: agencyProperties.length > 0 && groups.length > 0,
         queryFn: async () => {
             const groupIds = groups.map(g => g.id);
             const propIds = agencyProperties.map(p => p.id);
