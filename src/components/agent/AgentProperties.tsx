@@ -365,6 +365,31 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                             </DropdownMenuContent>
                                         </DropdownMenu>
 
+                                        {/* Share with team button */}
+                                        {groups.length > 0 && !activeGroupId && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs">
+                                                        <Share2 className="w-3 h-3" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    {groups.map(g => {
+                                                        const shared = isSharedIn(p.id, g.id);
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={g.id}
+                                                                onClick={() => shared ? handleUnshare(p.id, g.id) : handleShare(p.id, g.id)}
+                                                                className="text-xs flex items-center gap-2"
+                                                            >
+                                                                {shared ? <X className="w-3 h-3 text-destructive" /> : <Share2 className="w-3 h-3 text-primary" />}
+                                                                {shared ? `Quitar de ${g.name}` : `Compartir en ${g.name}`}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </div>
                                 }
                             />
