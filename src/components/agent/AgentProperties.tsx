@@ -332,7 +332,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                         </DropdownMenu>
 
                                         {/* Share with team button */}
-                                        {groups.length > 0 && !activeGroupId && (
+                                        {groups.length > 0 && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs">
