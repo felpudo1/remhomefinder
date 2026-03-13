@@ -13,6 +13,7 @@ import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
+import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
