@@ -114,21 +114,18 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     });
 
     const isSharedIn = (propId: string, groupId: string) => sharedPropertyIds.has(`${propId}:${groupId}`);
+    const activeGroup = activeGroupId ? groups.find((g) => g.id === activeGroupId) ?? null : null;
 
     const handleShare = async (propId: string, groupId: string) => {
-        try {
-            await share({ marketplacePropertyId: propId, groupId });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
-        } catch {}
+        await share({ marketplacePropertyId: propId, groupId });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
     };
 
     const handleUnshare = async (propId: string, groupId: string) => {
-        try {
-            await unshare({ marketplacePropertyId: propId, groupId });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
-            queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
-        } catch {}
+        await unshare({ marketplacePropertyId: propId, groupId });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
+        queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
     };
 
     const handleOpenPublish = () => {
