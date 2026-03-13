@@ -19,7 +19,6 @@ import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 import { useGroups } from "@/hooks/useGroups";
 import { useAgencySharedProperties } from "@/hooks/useAgencySharedProperties";
-import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 
 interface AgentPropertiesProps {
     agency: Agency;
