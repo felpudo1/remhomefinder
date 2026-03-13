@@ -24,8 +24,8 @@ export const ReferralTracker = () => {
             // 1. Guardar en sesión para futuros registros
             sessionStorage.setItem("hf_referral_id", refId);
 
-            // 2. Si ya está logueado y no tiene referido, vincularlo ahora
-            if (profile && !profile.referredById) {
+            // 2. Si ya está logueado y no tiene referido, vincularlo ahora (evitar auto-referencia)
+            if (profile && !profile.referredById && refId !== profile.userId) {
                 const linkReferral = async () => {
                     try {
                         const { data: { user } } = await supabase.auth.getUser();

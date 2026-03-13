@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown, Search, Phone } from "lucide-react";
+import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown, Search, Phone, Star, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -313,12 +313,38 @@ export function AdminUsuarios({ toast }: Props) {
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                                                     <span className="truncate text-sm font-medium">{user.display_name}</span>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        {user.plan_type === "premium" ? (
+                                                            <span title="PREMIUM">
+                                                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                                            </span>
+                                                        ) : (
+                                                            <span title="FREE">
+                                                                <Star className="w-3 h-3 text-slate-300" />
+                                                            </span>
+                                                        )}
+                                                        {user.referred_by_id && (
+                                                            <span title="REFERENCIADO">
+                                                                <Medal className="w-3 h-3 text-blue-500" />
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <span className="text-[10px] font-bold truncate max-w-[110px] block" title={user.agency_name || user.referred_by_name || "-"}>
-                                                    {user.agency_name || user.referred_by_name || "-"}
-                                                </span>
+                                                <div className="flex flex-col min-w-0">
+                                                    {user.agency_name && (
+                                                        <span className="truncate text-[10px] font-bold text-foreground" title={`Agencia: ${user.agency_name}`}>
+                                                            {user.agency_name}
+                                                        </span>
+                                                    )}
+                                                    {user.referred_by_name && user.referred_by_id !== user.user_id && (
+                                                        <span className="truncate text-[9px] font-medium text-primary/70 italic" title={`Referido por: ${user.referred_by_name}`}>
+                                                            Ref: {user.referred_by_name}
+                                                        </span>
+                                                    )}
+                                                    {!user.agency_name && !user.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
+                                                </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
                                                 <span className={cn(

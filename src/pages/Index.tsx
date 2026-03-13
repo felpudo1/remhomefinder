@@ -79,6 +79,15 @@ const Index = () => {
   }, [location.search]);
 
   // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
+  useEffect(() => {
+    if (isPremium && profile?.userId) {
+      const key = `hf_premium_welcome_shown_${profile.userId}`;
+      if (localStorage.getItem(key) !== "true") {
+        setIsPremiumWelcomeOpen(true);
+        localStorage.setItem(key, "true");
+      }
+    }
+  }, [isPremium, profile?.userId]);
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId) || null,
@@ -215,7 +224,7 @@ const Index = () => {
             <div className="space-y-3">
               <h2 className="text-3xl font-black text-foreground tracking-tight">¡Casi listo! 🚀</h2>
               <p className="text-muted-foreground leading-relaxed font-medium">
-                Gracias por sumarte a <strong className="text-foreground">HomeFinder</strong>. Confirmá tu cuenta desde tu email para empezar.
+                Bienvenido a <strong className="text-foreground">HomeFinder</strong>. Donde la tecnología te ayuda a descubrir tu lugar en el mundo.
               </p>
             </div>
 
@@ -224,7 +233,7 @@ const Index = () => {
                 <Mail className="w-5 h-5 text-primary" />
               </div>
               <p className="text-sm text-foreground/80 leading-relaxed">
-                Te enviamos un enlace mágico. Si no lo ves, revisá en la carpeta de <strong>Spam</strong>.
+                Te enviamos un enlace mágico a tu correo electrónico. Si no lo ves, revisá en la carpeta de <strong>Spam</strong>.
               </p>
             </div>
 

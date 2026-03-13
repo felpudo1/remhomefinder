@@ -38,6 +38,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const isActive = profileStatus === "active";
 
@@ -150,6 +151,39 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         },
     });
 
+    const copyToClipboard = async () => {
+        const link = `${window.location.origin}/?ref=${agency.created_by}`;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(link);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = link;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                textArea.remove();
+            }
+            setCopied(true);
+            toast({
+                title: "¡Link copiado! 🔗",
+                description: "Ya podés pegarlo donde quieras.",
+            });
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Error al copiar:', err);
+            toast({
+                title: "Error al copiar",
+                description: "Por favor, copialo manualmente.",
+                variant: "destructive",
+            });
+        }
+    };
+
     const handleChangeStatus = async (id: string, newStatus: string) => {
         const { error } = await supabase.from("marketplace_properties").update({ status: newStatus as any }).eq("id", id);
         if (error) { toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" }); }
@@ -173,59 +207,50 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 </Button>
             </div>
 
-            {/* Nueva sección: Invitación de Clientes (Referidos) */}
-            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6 space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-primary">
-                            <Users className="w-5 h-5" />
-                            <h4 className="font-bold text-sm uppercase tracking-wider">Invitá a tus clientes</h4>
+            {/* Sección: Invitación de Clientes (Referidos) - Simplificada (REGLA 3) */}
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-5 space-y-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm text-foreground leading-tight">Invita clientes y obten beneficios</p>
+                        <div 
+                            className="px-2 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm cursor-help animate-in fade-in zoom-in"
+                            title="Clientes referenciados"
+                        >
+                            {referralCount} referidos
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-                            Compartí tu link personalizado. Los clientes que se registren con él verán **tus propiedades arriba de todo** en el Marketplace.
-                        </p>
                     </div>
-                    {referralCount > 0 && (
-                        <div className="flex flex-col items-end animate-in fade-in zoom-in duration-500">
-                            <Badge className="bg-primary text-primary-foreground hover:bg-primary px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-primary/20 flex gap-2 items-center">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-foreground"></span>
-                                </span>
-                                {referralCount} {referralCount === 1 ? 'Cliente vinculado' : 'Clientes vinculados'}
-                            </Badge>
-                        </div>
-                    )}
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                    <div className="flex-1 min-w-[200px] h-10 bg-background border border-border rounded-xl px-3 flex items-center text-xs text-muted-foreground truncate">
-                        {`${window.location.origin}/?ref=${agency.created_by}`}
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl gap-2 h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none"
+                            onClick={copyToClipboard}
+                        >
+                            {copied ? (
+                                <>
+                                    <Check className="w-4 h-4" /> Copiado
+                                </>
+                            ) : (
+                                <>
+                                    <Edit className="w-4 h-4" /> Copiar Link
+                                </>
+                            )}
+                        </Button>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm transition-all hover:scale-[1.02] flex-1 sm:flex-none"
+                            onClick={() => {
+                                const link = `${window.location.origin}/?ref=${agency.created_by}`;
+                                const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${link}`);
+                                window.open(`https://wa.me/?text=${text}`, '_blank');
+                            }}
+                        >
+                            <Users className="w-4 h-4" /> WhatsApp
+                        </Button>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-xl gap-2 h-10"
-                        onClick={() => {
-                            const link = `${window.location.origin}/?ref=${agency.created_by}`;
-                            navigator.clipboard.writeText(link);
-                            toast({ title: "Link copiado", description: "Ya podés pegarlo donde quieras." });
-                        }}
-                    >
-                        <Edit className="w-4 h-4" /> Copiar Link
-                    </Button>
-                    <Button
-                        variant="default"
-                        size="sm"
-                        className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm"
-                        onClick={() => {
-                            const link = `${window.location.origin}/?ref=${agency.created_by}`;
-                            const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${link}`);
-                            window.open(`https://wa.me/?text=${text}`, '_blank');
-                        }}
-                    >
-                        <Users className="w-4 h-4" /> Compartir por WhatsApp
-                    </Button>
                 </div>
             </div>
 

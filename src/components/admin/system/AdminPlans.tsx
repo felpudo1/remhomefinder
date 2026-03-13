@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY, AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT, FREE_PLAN_SAVE_LIMIT_KEY, FREE_PLAN_SAVE_LIMIT_DEFAULT } from "@/lib/config-keys";
+import { AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY, AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT, USER_FREE_PLAN_SAVE_LIMIT_KEY, USER_FREE_PLAN_SAVE_LIMIT_DEFAULT } from "@/lib/config-keys";
 
 /**
  * Componente para gestionar los límites de los clientes en el plan gratuito.
@@ -19,7 +19,7 @@ export const AdminPlans = () => {
         isLoading: isLoadingLimit,
         setValue: setSaveLimit,
         isSaving: isSavingLimit,
-    } = useSystemConfig(FREE_PLAN_SAVE_LIMIT_KEY, FREE_PLAN_SAVE_LIMIT_DEFAULT);
+    } = useSystemConfig(USER_FREE_PLAN_SAVE_LIMIT_KEY, USER_FREE_PLAN_SAVE_LIMIT_DEFAULT);
 
     // Límite de Agentes (Publishes)
     const {

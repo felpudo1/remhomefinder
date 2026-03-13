@@ -20,8 +20,8 @@ export const SUPPORT_PHONE_CONFIG_KEY = "support_phone";
 export const SUPPORT_PHONE_DEFAULT = "";
 
 // Límite de guardado para el plan gratuito
-export const FREE_PLAN_SAVE_LIMIT_KEY = "free_plan_save_limit";
-export const FREE_PLAN_SAVE_LIMIT_DEFAULT = "10";
+export const USER_FREE_PLAN_SAVE_LIMIT_KEY = "user_free_plan_save_limit";
+export const USER_FREE_PLAN_SAVE_LIMIT_DEFAULT = "10";
 
 // Límite de publicaciones en marketplace para agentes gratuitos
 export const AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY = "agent_free_plan_publish_limit";

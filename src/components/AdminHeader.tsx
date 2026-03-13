@@ -24,9 +24,13 @@ export const AdminHeader = ({
 }: AdminHeaderProps) => {
     const StatusStar = () => (
         isPremium ? (
-            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+            <span title="PREMIUM">
+                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+            </span>
         ) : (
-            <Star className="w-3 h-3 text-slate-400/50" />
+            <span title="FREE">
+                <Star className="w-3 h-3 text-slate-400/50" />
+            </span>
         )
     );
 

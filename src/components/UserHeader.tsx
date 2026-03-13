@@ -30,15 +30,21 @@ export const UserHeader = ({
 
     const StatusStar = () => (
         isPremium ? (
-            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+            <span title="PREMIUM">
+                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+            </span>
         ) : (
-            <Star className="w-3 h-3 text-slate-400/50" />
+            <span title="FREE">
+                <Star className="w-3 h-3 text-slate-400/50" />
+            </span>
         )
     );
 
     const ReferralMedal = () => (
         isReferred ? (
-            <Medal className="w-3 h-3 text-blue-500 animate-pulse" />
+            <span title="REFERENCIADO">
+                <Medal className="w-3 h-3 text-blue-500 animate-pulse" />
+            </span>
         ) : null
     );
     return (

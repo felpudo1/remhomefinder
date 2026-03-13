@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useSystemConfig } from "./useSystemConfig";
 
 import {
-    FREE_PLAN_SAVE_LIMIT_KEY,
-    FREE_PLAN_SAVE_LIMIT_DEFAULT,
+    USER_FREE_PLAN_SAVE_LIMIT_KEY,
+    USER_FREE_PLAN_SAVE_LIMIT_DEFAULT,
     AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY,
     AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT
 } from "@/lib/config-keys";
@@ -34,8 +34,8 @@ export function useSubscription() {
 
     // 2. Obtener límites dinámicos desde la configuración del sistema
     const { value: saveLimitRaw, isLoading: isLoadingSaveConfig } = useSystemConfig(
-        FREE_PLAN_SAVE_LIMIT_KEY,
-        FREE_PLAN_SAVE_LIMIT_DEFAULT
+        USER_FREE_PLAN_SAVE_LIMIT_KEY,
+        USER_FREE_PLAN_SAVE_LIMIT_DEFAULT
     );
 
     const { value: publishLimitRaw, isLoading: isLoadingPublishConfig } = useSystemConfig(
@@ -46,7 +46,7 @@ export function useSubscription() {
     const isPremium = profile?.plan_type === "premium";
 
     // Límites para usuarios regulares
-    const maxSaves = isPremium ? Infinity : parseInt(saveLimitRaw || FREE_PLAN_SAVE_LIMIT_DEFAULT);
+    const maxSaves = isPremium ? Infinity : parseInt(saveLimitRaw || USER_FREE_PLAN_SAVE_LIMIT_DEFAULT);
 
     // Límites para agentes/agencias
     const maxAgentPublishes = isPremium ? Infinity : parseInt(publishLimitRaw || AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT);

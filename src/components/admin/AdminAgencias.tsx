@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
     Building2, Clock, Mail, Phone, Users, Loader2,
-    CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User
+    CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User, Star, Medal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -249,6 +249,22 @@ export function AdminAgencias({ toast }: Props) {
                                                     }
                                                 </div>
                                                 <span className="truncate text-sm font-bold tracking-tight">{record.display_name}</span>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    {record.plan_type === "premium" ? (
+                                                        <span title="PREMIUM">
+                                                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                                        </span>
+                                                    ) : (
+                                                        <span title="FREE">
+                                                            <Star className="w-3 h-3 text-slate-300" />
+                                                        </span>
+                                                    )}
+                                                    {record.referred_by_id && (
+                                                        <span title="REFERENCIADO">
+                                                            <Medal className="w-3 h-3 text-blue-500" />
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </TableCell>
 
@@ -268,9 +284,19 @@ export function AdminAgencias({ toast }: Props) {
                                         </TableCell>
 
                                         <TableCell className="py-2 px-3">
-                                            <span className="text-[10px] font-bold truncate max-w-[120px] block" title={record.agency_name || record.referred_by_name || "-"}>
-                                                {record.agency_name || record.referred_by_name || "-"}
-                                            </span>
+                                            <div className="flex flex-col min-w-0">
+                                                {record.agency_name && (
+                                                    <span className="truncate text-[10px] font-bold text-foreground" title={`Agencia: ${record.agency_name}`}>
+                                                        {record.agency_name}
+                                                    </span>
+                                                )}
+                                                {record.referred_by_name && record.referred_by_id !== record.id && (
+                                                    <span className="truncate text-[9px] font-medium text-primary/70 italic" title={`Referido por: ${record.referred_by_name}`}>
+                                                        Ref: {record.referred_by_name}
+                                                    </span>
+                                                )}
+                                                {!record.agency_name && !record.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
+                                            </div>
                                         </TableCell>
 
                                         <TableCell className="py-2 px-3 text-center">

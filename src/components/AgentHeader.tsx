@@ -28,9 +28,13 @@ export const AgentHeader = ({
 }: AgentHeaderProps) => {
     const StatusStar = () => (
         isPremium ? (
-            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+            <span title="PREMIUM">
+                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+            </span>
         ) : (
-            <Star className="w-3 h-3 text-slate-400/50" />
+            <span title="FREE">
+                <Star className="w-3 h-3 text-slate-400/50" />
+            </span>
         )
     );
 
@@ -56,9 +60,10 @@ export const AgentHeader = ({
                     <Button
                         variant={activeGroupId ? "default" : "outline"}
                         size="sm"
-                        className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02]"
+                        disabled={agencyStatus !== "approved"}
+                        className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
                         onClick={() => setIsGroupsOpen(true)}
-                        title="Formar equipo / Mis grupos"
+                        title={agencyStatus === "approved" ? "Formar equipo / Mis grupos" : "Cuenta pendiente de activación"}
                     >
                         <Users className="w-4 h-4" />
                         <span>Formar equipo</span>
