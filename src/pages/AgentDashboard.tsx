@@ -21,10 +21,11 @@ import { UserStatus } from "@/types/property";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AgentTab = "propiedades" | "estadisticas" | "perfil";
+type AgentTab = "propiedades" | "equipo" | "estadisticas" | "perfil";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
+  { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
   { id: "perfil", label: "Perfil", icon: UserCircle },
 ];
