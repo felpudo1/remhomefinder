@@ -31,7 +31,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
-
+    const { groups } = useGroups();
+    const { share, unshare, useSharedStatus } = useAgencySharedProperties(activeGroupId ?? null);
     const [publishOpen, setPublishOpen] = useState(false);
     const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
