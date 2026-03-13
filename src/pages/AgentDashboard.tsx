@@ -6,7 +6,8 @@ import {
   Loader2,
   Home,
   BarChart3,
-  UserCircle
+  UserCircle,
+  Users
 } from "lucide-react";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
