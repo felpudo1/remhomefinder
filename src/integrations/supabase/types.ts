@@ -54,6 +54,13 @@ export type Database = {
             referencedRelation: "agent_publications"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agency_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       agent_publications: {
@@ -114,6 +121,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "property_insights_summary"
             referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "agent_publications_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -207,6 +221,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "family_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "family_comments_user_listing_id_fkey"
             columns: ["user_listing_id"]
             isOneToOne: false
@@ -271,6 +292,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -355,6 +383,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_leads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "partner_leads_user_listing_id_fkey"
             columns: ["user_listing_id"]
             isOneToOne: false
@@ -430,7 +465,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_id_fkey"
+            columns: ["referred_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -502,7 +545,15 @@ export type Database = {
           total_cost?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       property_reviews: {
         Row: {
@@ -550,6 +601,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "property_insights_summary"
             referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -616,6 +674,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "status_history_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "status_history_log_user_listing_id_fkey"
             columns: ["user_listing_id"]
             isOneToOne: false
@@ -675,6 +740,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "user_listings_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "user_listings_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -730,7 +802,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
     }
     Views: {
