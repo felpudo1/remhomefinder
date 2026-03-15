@@ -1,17 +1,13 @@
 /**
  * ARCHIVO: AdminPublicaciones.tsx
- * DESCRIPCIÓN: El gran cerebro del Administrador para controlar publicaciones.
- * Se encarga de pedir todos los datos de la base (avisos, fotos, votos, calificaciones)
- * y armar una lista maestra simplificada para que sea fácil analizar el mercado.
+ * Controla publicaciones del marketplace (agent_publications) y user_listings.
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Building2, Users } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserProperty, MktProperty, StatProperty, MarketplaceStatus } from "@/types/admin-publications";
+import { UserProperty, MktProperty, MarketplaceStatus } from "@/types/admin-publications";
 
 import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
 import { UsuariosTab } from "./publicaciones/UsuariosTab";
@@ -20,14 +16,11 @@ interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
 export function AdminPublicaciones({ toast }: Props) {
-  // Estado para propiedades de usuarios
   const [userProps, setUserProps] = useState<UserProperty[]>([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [deleteUserTarget, setDeleteUserTarget] = useState<UserProperty | null>(null);
 
-  // Estado para publicaciones del marketplace (agentes)
   const [mktProps, setMktProps] = useState<MktProperty[]>([]);
   const [loadingMkt, setLoadingMkt] = useState(true);
   const [deleteMktTarget, setDeleteMktTarget] = useState<MktProperty | null>(null);
@@ -37,132 +30,128 @@ export function AdminPublicaciones({ toast }: Props) {
     fetchMktProperties();
   }, []);
 
-  /**
-   * Carga las propiedades guardadas por usuarios (listado personal).
-   */
   const fetchUserProperties = async () => {
     setLoadingUser(true);
-    const { data, error } = await supabase
-      .from("properties")
-      // El admin ve TODAS, incluyendo las ocultas
-      .select("id, title, url, status, created_by_email, source_marketplace_id, listing_type, created_at, admin_hidden")
-      .is("source_marketplace_id", null) // 👈 Solo mostrar propiedades de usuarios (no compartidas por agentes)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("user_listings")
+        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, properties(id, title, source_url)")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      toast({ title: "Error al cargar propiedades de usuarios", description: error.message, variant: "destructive" });
-    } else {
-      setUserProps(data || []);
+      if (error) {
+        toast({ title: "Error al cargar listados de usuarios", description: error.message, variant: "destructive" });
+      } else {
+        setUserProps((data || []).map((d: any) => ({
+          id: d.id,
+          title: d.properties?.title || "Sin título",
+          url: d.properties?.source_url || "",
+          status: d.current_status,
+          created_by_email: "",
+          source_marketplace_id: d.source_publication_id,
+          listing_type: d.listing_type,
+          created_at: d.created_at,
+          admin_hidden: false,
+        })));
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
     setLoadingUser(false);
   };
 
-  /**
-   * Carga las publicaciones del marketplace (ingresadas por agentes).
-   */
   const fetchMktProperties = async () => {
     setLoadingMkt(true);
-    const { data, error } = await supabase
-      .from("marketplace_properties")
-      .select("id, title, url, status, listing_type, created_at, agencies(name)")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("agent_publications")
+        .select("id, status, listing_type, created_at, description, views_count, properties(title, source_url), organizations(name)")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      toast({ title: "Error al cargar publicaciones del marketplace", description: error.message, variant: "destructive" });
-    } else {
-      setMktProps(
-        (data || []).map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          url: p.url,
-          status: p.status,
-          listing_type: p.listing_type,
-          created_at: p.created_at,
-          agency_name: p.agencies?.name || "Agencia",
-        }))
-      );
+      if (error) {
+        toast({ title: "Error al cargar publicaciones del marketplace", description: error.message, variant: "destructive" });
+      } else {
+        setMktProps(
+          (data || []).map((p: any) => ({
+            id: p.id,
+            title: p.properties?.title || "Sin título",
+            url: p.properties?.source_url || "",
+            status: p.status as MarketplaceStatus,
+            listing_type: p.listing_type,
+            created_at: p.created_at,
+            agency_name: p.organizations?.name || "Agencia",
+          }))
+        );
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
     setLoadingMkt(false);
   };
 
-
-  /**
-   * Oculta o restaura una propiedad de usuario (soft delete).
-   * El usuario no verá la propiedad mientras admin_hidden = true.
-   */
   const toggleHideUserProperty = async (prop: UserProperty) => {
-    const newHidden = !prop.admin_hidden;
-    // Actualización optimista
-    setUserProps(p => p.map(pr => pr.id === prop.id ? { ...pr, admin_hidden: newHidden } : pr));
-
+    // In new schema, we delete the listing instead of hiding
     const { error } = await supabase
-      .from("properties")
-      .update({
-        admin_hidden: newHidden,
-        admin_hidden_at: newHidden ? new Date().toISOString() : null,
-      })
+      .from("user_listings")
+      .delete()
       .eq("id", prop.id);
 
     if (error) {
-      // Rollback
-      setUserProps(p => p.map(pr => pr.id === prop.id ? { ...pr, admin_hidden: !newHidden } : pr));
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: newHidden ? "Propiedad ocultada al usuario" : "Propiedad restaurada" });
+      setUserProps(p => p.filter(pr => pr.id !== prop.id));
+      toast({ title: "Listado eliminado" });
     }
   };
 
-  /**
-   * Elimina físicamente una propiedad del listado de un usuario (hard delete).
-   */
-  const deleteUserProperty = async (reason: string) => {
+  const deleteUserProperty = async (_reason: string) => {
     if (!deleteUserTarget) return;
     const id = deleteUserTarget.id;
     setUserProps(p => p.filter(prop => prop.id !== id));
     setDeleteUserTarget(null);
 
-    const { error } = await supabase.from("properties").delete().eq("id", id);
+    const { error } = await supabase.from("user_listings").delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
       fetchUserProperties();
     } else {
-      toast({ title: "Propiedad eliminada permanentemente" });
+      toast({ title: "Listado eliminado permanentemente" });
     }
   };
 
-  /**
-   * Cambia el estado de una publicación del marketplace.
-   * El trigger trg_sync_marketplace_to_properties propagará el cambio
-   * automáticamente a todas las copias en properties de los usuarios.
-   */
   const updateMktStatus = async (prop: MktProperty, newStatus: MarketplaceStatus) => {
     const prev = mktProps;
-    // Actualización optimista
     setMktProps(p => p.map(pr => pr.id === prop.id ? { ...pr, status: newStatus } : pr));
 
+    // Map MarketplaceStatus to agent_pub_status enum
+    const statusMap: Record<MarketplaceStatus, string> = {
+      active: "disponible",
+      paused: "pausado",
+      sold: "vendido",
+      reserved: "reservado",
+      rented: "alquilado",
+      deleted: "eliminado",
+    };
+
     const { error } = await supabase
-      .from("marketplace_properties")
-      .update({ status: newStatus } as any)
+      .from("agent_publications")
+      .update({ status: statusMap[newStatus] as any })
       .eq("id", prop.id);
 
     if (error) {
-      setMktProps(prev); // rollback
+      setMktProps(prev);
       toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Estado actualizado", description: "El cambio se propagará a los listados de usuarios." });
+      toast({ title: "Estado actualizado" });
     }
   };
 
-  /**
-   * Elimina una publicación del marketplace (la borra de la BD del agente).
-   */
-  const deleteMktProperty = async (reason: string) => {
+  const deleteMktProperty = async (_reason: string) => {
     if (!deleteMktTarget) return;
     const id = deleteMktTarget.id;
     setMktProps(p => p.filter(prop => prop.id !== id));
     setDeleteMktTarget(null);
 
-    const { error } = await supabase.from("marketplace_properties").delete().eq("id", id);
+    const { error } = await supabase.from("agent_publications").delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
       fetchMktProperties();
@@ -171,12 +160,8 @@ export function AdminPublicaciones({ toast }: Props) {
     }
   };
 
-
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Tabs defaultValue="marketplace" className="w-full">
-      {/* TabsList responsive */}
       <TabsList className="mb-6 bg-muted rounded-xl p-1 h-auto w-full grid grid-cols-2">
         <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
           <Building2 className="w-4 h-4 shrink-0" />
@@ -190,7 +175,6 @@ export function AdminPublicaciones({ toast }: Props) {
         </TabsTrigger>
       </TabsList>
 
-      {/* ── TAB 1: Publicaciones del marketplace (agentes) ── */}
       <MarketplaceTab
         mktProps={mktProps}
         loadingMkt={loadingMkt}
@@ -200,7 +184,6 @@ export function AdminPublicaciones({ toast }: Props) {
         deleteMktProperty={deleteMktProperty}
       />
 
-      {/* ── TAB 2: Propiedades de usuarios (listado personal) ── */}
       <UsuariosTab
         userProps={userProps}
         loadingUser={loadingUser}
