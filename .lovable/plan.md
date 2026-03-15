@@ -1,46 +1,43 @@
+## Plan: Extracción de datos de propiedad desde imágenes (capturas de RRSS)
 
+### Concepto
 
-# Solución definitiva: Columna `is_personal` en `organizations`
+El usuario sube una captura de pantalla de una publicación de RRSS (IG, FB Marketplace, etc.) y la IA (Gemini con capacidad multimodal) analiza la imagen para extraer los datos de la propiedad. Luego se muestra el formulario manual pre-llenado con los datos detectados, permitiendo al usuario agregar hasta 2 fotos reales de la propiedad.
 
-## El problema raíz
+### Flujo de usuario
 
-El trigger `handle_new_user_profile` crea una organización automática por cada usuario nuevo. Esto es **necesario** porque toda la arquitectura RLS depende de `org_id` (listings, comments, reviews, etc.). Sin esa org, el usuario no puede hacer nada.
+1. En el modal "Agregar Propiedad" (paso `url`), el usuario hace click en **"Ingresar imágenes para analizar (IG, FB)"** (botón que ya existe visualmente en la captura).
+2. Se abre un nuevo paso `"image-upload"` donde puede subir 1 captura de pantalla del aviso.
+3. La imagen se sube a Supabase Storage (`property-images`) y se envía a una nueva Edge Function.
+4. La Edge Function usa **Gemini 2.5 Flash** (multimodal, ya disponible via `LOVABLE_API_KEY`) para analizar la imagen y extraer: título, precio, barrio, m², ambientes, tipo de operación, resumen.
+5. Se devuelven los datos y se pre-llena el formulario manual. En caso que no esten los datos, ya sea superficie o  cantidad de dormitorios o barrio o precio, esos datos se deja en blanco con la opcion que el user lo modifique
+6. En el formulario manual se muestra una sección destacada para **"Agregar fotos de la propiedad"** (hasta 3 fotos, subidas desde el dispositivo o por URL), ya que la IA no puede extraer fotos de la propiedad desde una captura.
 
-Pero mostrarla como "grupo" en la UI es incorrecto. No es un grupo que el usuario creó conscientemente.
+### Implementación
 
-## La solución senior: `is_personal` flag
+**1. Nueva Edge Function: `supabase/functions/extract-from-image/index.ts**`
 
-Agregar una columna `is_personal BOOLEAN DEFAULT false` a `organizations`. La org auto-creada se marca como `true`. La UI la filtra.
+- Recibe `{ imageUrl: string, role: string }`
+- Carga el prompt desde `app_settings` (reutiliza `getPromptFromDb`)
+- Llama a Gemini con la imagen como `image_url` en el mensaje + tool calling (mismo schema `extract_property_data`)
+- Retorna los datos estructurados
 
-### Por qué es la mejor opción
+**2. Modificar `AddPropertyModal.tsx**`
 
-1. **No rompe nada**: RLS sigue funcionando, listings siguen teniendo org_id, cascades intactos
-2. **Semántica clara**: Distingue org técnica (personal workspace) de grupos reales creados por el usuario
-3. **Un solo cambio de esquema** + un ajuste al trigger + un filtro en el frontend
-4. **Escalable**: Si mañana querés mostrar "Mi espacio personal" como sección separada, ya tenés la data
+- Agregar nuevo paso `"image-upload"` entre `url` y `manual`
+- Botón "Ingresar imágenes para analizar" en el paso `url` lleva a `image-upload`
+- En `image-upload`: input de archivo para la captura, preview, botón "Analizar con IA"
+- Al recibir resultados, pre-llena el form y pasa al paso `manual`
+- En el paso `manual`, cuando se viene de imagen, mostrar nota: "Agregá fotos reales de la propiedad"
 
-### Cambios concretos
+**3. Archivos a crear/modificar**
 
-**1. Migración SQL** (3 statements):
-- `ALTER TABLE organizations ADD COLUMN is_personal BOOLEAN NOT NULL DEFAULT false`
-- `UPDATE organizations SET is_personal = true` para las orgs existentes donde el usuario es owner y la org tiene tipo `family` y solo 1 miembro (el creador)
-- Modificar el trigger `handle_new_user_profile` para que haga `INSERT INTO organizations (..., is_personal) VALUES (..., true)` cuando crea la org automática para usuarios tipo `user`
+- `supabase/functions/extract-from-image/index.ts` (nueva)
+- `src/components/AddPropertyModal.tsx` (nuevo step + lógica)
 
-**2. Frontend** — `useGroups.ts`:
-- Agregar `.eq("is_personal", false)` al query de organizaciones, o filtrar en el map. Así la org personal nunca aparece en "Mis Grupos"
+### Viabilidad
 
-**3. Frontend** — `usePropertyQueries.ts` / `usePropertyMutations.ts`:
-- No cambia nada. Siguen usando `org_id` de `user_listings` que viene por RLS. La org personal sigue siendo la org por defecto para guardar propiedades.
-
-**4. Frontend** — `AddPropertyModal` y cualquier lugar que necesite el `org_id` por defecto:
-- Crear un helper o query que obtenga la org personal del usuario (`is_personal = true`) para usarla como default al agregar propiedades sin grupo activo.
-
-### Resumen de archivos tocados
-
-```text
-supabase/migrations/  → Nueva migración (ALTER + UPDATE + ALTER FUNCTION)
-src/hooks/useGroups.ts → Filtrar is_personal = false
-```
-
-No se toca RLS, no se tocan policies, no se rompe el flujo de registro. Cambio limpio y definitivo.
-
+- Gemini 2.5 Flash soporta imágenes nativamente (multimodal) via la misma API gateway
+- `LOVABLE_API_KEY` ya está configurado
+- El bucket `property-images` ya existe para subir las capturas
+- No se necesitan nuevas dependencias ni connectors
