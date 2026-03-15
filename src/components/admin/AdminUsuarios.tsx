@@ -220,13 +220,21 @@ export function AdminUsuarios({ toast }: Props) {
 
     const handlePhysicalDelete = async (userId: string) => {
         const previousUsers = users;
+        // Guardar reason ANTES de limpiar el estado
+        const reason = deleteReason.trim();
         setUsers(prev => prev.filter(u => u.user_id !== userId));
         setDeletingUser(null);
         setConfirmDeleteSingle("");
         setDeleteReason("");
         try {
             setIsActionInProgress(true);
-            const { error } = await supabase.rpc("admin_physical_delete_user" as any, { _user_id: userId });
+            // Obtener el admin que ejecuta la acción para el log de auditoría
+            const { data: { user: adminUser } } = await supabase.auth.getUser();
+            const { error } = await supabase.rpc("admin_physical_delete_user" as any, {
+                _user_id: userId,
+                _reason: reason,
+                _deleted_by: adminUser?.id,
+            });
             if (error) {
                 setUsers(previousUsers);
                 toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
@@ -483,11 +491,14 @@ export function AdminUsuarios({ toast }: Props) {
                             <p>Estás a punto de eliminar <strong>permanentemente</strong> al usuario <strong>{deletingUser?.display_name}</strong> ({deletingUser?.email}).</p>
                             <p className="text-destructive font-semibold">Esta acción NO se puede deshacer. Se borrarán todos sus datos: propiedades, comentarios, calificaciones, membresías y su registro de autenticación.</p>
                             <div className="pt-2">
-                                <label className="text-xs font-medium">Motivo (opcional):</label>
+                                {/* Motivo obligatorio: el botón no se habilita sin él */}
+                                <label className="text-xs font-medium">
+                                    Motivo <span className="text-destructive">*</span>
+                                </label>
                                 <Input
                                     value={deleteReason}
                                     onChange={(e) => setDeleteReason(e.target.value)}
-                                    placeholder="Ej: cuenta duplicada, spam..."
+                                    placeholder="Ej: cuenta duplicada, spam, solicitud del usuario..."
                                     className="mt-1 text-sm"
                                 />
                             </div>
@@ -505,7 +516,7 @@ export function AdminUsuarios({ toast }: Props) {
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isActionInProgress}>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
-                            disabled={confirmDeleteSingle !== "ELIMINAR" || isActionInProgress}
+                            disabled={confirmDeleteSingle !== "ELIMINAR" || isActionInProgress || !deleteReason.trim()}
                             onClick={() => deletingUser && handlePhysicalDelete(deletingUser.user_id)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >

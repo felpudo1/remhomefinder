@@ -106,8 +106,30 @@ export function AdminPublicaciones({ toast }: Props) {
   const deleteUserProperty = async (_reason: string) => {
     if (!deleteUserTarget) return;
     const id = deleteUserTarget.id;
+    const title = deleteUserTarget.title;
     setUserProps(p => p.filter(prop => prop.id !== id));
     setDeleteUserTarget(null);
+
+    // Obtener el admin que ejecuta la acción para el log de auditoría
+    const { data: { user: adminUser } } = await supabase.auth.getUser();
+
+    // Registrar en auditoría ANTES de borrar — si falla el log el borrado no ocurre
+    const { error: auditError } = await supabase
+      .from("publication_deletion_audit_log" as any)
+      .insert({
+        pub_id: id,
+        pub_type: "user_listing",
+        title: title,
+        org_name: null,
+        status_before: deleteUserTarget.status,
+        reason: _reason || "Sin motivo especificado",
+        deleted_by: adminUser?.id,
+      });
+
+    if (auditError) {
+      toast({ title: "Error al registrar auditoría", description: auditError.message, variant: "destructive" });
+      return; // No borrar si falla el log
+    }
 
     const { error } = await supabase.from("user_listings").delete().eq("id", id);
     if (error) {
@@ -148,8 +170,32 @@ export function AdminPublicaciones({ toast }: Props) {
   const deleteMktProperty = async (_reason: string) => {
     if (!deleteMktTarget) return;
     const id = deleteMktTarget.id;
+    const title = deleteMktTarget.title;
+    const orgName = deleteMktTarget.orgName;
+    const statusBefore = deleteMktTarget.status;
     setMktProps(p => p.filter(prop => prop.id !== id));
     setDeleteMktTarget(null);
+
+    // Obtener el admin que ejecuta la acción para el log de auditoría
+    const { data: { user: adminUser } } = await supabase.auth.getUser();
+
+    // Registrar en auditoría ANTES de borrar — si falla el log el borrado no ocurre
+    const { error: auditError } = await supabase
+      .from("publication_deletion_audit_log" as any)
+      .insert({
+        pub_id: id,
+        pub_type: "marketplace",
+        title: title,
+        org_name: orgName || null,
+        status_before: statusBefore,
+        reason: _reason || "Sin motivo especificado",
+        deleted_by: adminUser?.id,
+      });
+
+    if (auditError) {
+      toast({ title: "Error al registrar auditoría", description: auditError.message, variant: "destructive" });
+      return; // No borrar si falla el log
+    }
 
     const { error } = await supabase.from("agent_publications").delete().eq("id", id);
     if (error) {

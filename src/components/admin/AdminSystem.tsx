@@ -3,6 +3,8 @@ import { AdminPlans } from "./system/AdminPlans";
 import { AdminSupport } from "./system/AdminSupport";
 import { AdminVideoConfig } from "./system/AdminVideoConfig";
 import { AdminButtons } from "./system/AdminButtons";
+import { AdminAuditLog } from "./system/AdminAuditLog";
+import { Separator } from "@/components/ui/separator";
 
 /**
  * Componente principal del panel de administración del sistema.
@@ -27,6 +29,11 @@ export function AdminSystem() {
 
             {/* Configuración de Botones de Interfaz */}
             <AdminButtons />
+
+            <Separator className="my-2" />
+
+            {/* Panel de auditoría de acciones críticas — solo lectura */}
+            <AdminAuditLog />
         </div>
     );
 }
