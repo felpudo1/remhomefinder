@@ -91,13 +91,39 @@ export function AdminUsuarios({ toast }: Props) {
 
             const referrerIds = [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))];
 
-            const [rolesRes, listingsRes, orgsRes, referralsRes, referrersNamesRes] = await Promise.all([
+            // Obtenemos membresías de cada usuario para luego buscar la agencia a la que pertenecen
+            const [rolesRes, listingsRes, membershipsRes, referralsRes, referrersNamesRes] = await Promise.all([
                 supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
                 supabase.from("user_listings").select("added_by, source_publication_id").in("added_by", userIds),
-                supabase.from("organizations").select("id, created_by, name, type").eq("type", "agency_team" as any).in("created_by", userIds),
+                supabase.from("organization_members").select("user_id, org_id").in("user_id", userIds),
                 supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
                 supabase.from("profiles").select("user_id, display_name").in("user_id", referrerIds),
             ]);
+
+            // Buscar nombres de agencias (agency_team, no personal) para las orgs encontradas
+            const membershipOrgIds = [...new Set((membershipsRes.data || []).map((m) => m.org_id))];
+            const orgNameMap: Record<string, string> = {};
+            if (membershipOrgIds.length > 0) {
+                const { data: agencyOrgs } = await supabase
+                    .from("organizations")
+                    .select("id, name")
+                    .eq("type", "agency_team" as any)
+                    .eq("is_personal", false)
+                    .in("id", membershipOrgIds);
+
+                // Mapa: org_id -> nombre de agencia
+                const agencyOrgById: Record<string, string> = {};
+                for (const o of agencyOrgs || []) {
+                    agencyOrgById[o.id] = o.name;
+                }
+
+                // Mapa final: user_id -> nombre de su agencia (primera encontrada)
+                for (const m of membershipsRes.data || []) {
+                    if (agencyOrgById[m.org_id] && !orgNameMap[m.user_id]) {
+                        orgNameMap[m.user_id] = agencyOrgById[m.org_id];
+                    }
+                }
+            }
 
             const roleMap: Record<string, string[]> = {};
             for (const r of rolesRes.data || []) {
@@ -115,10 +141,7 @@ export function AdminUsuarios({ toast }: Props) {
                 }
             }
 
-            const orgNameMap: Record<string, string> = {};
-            for (const o of orgsRes.data || []) {
-                orgNameMap[o.created_by] = o.name;
-            }
+            // orgNameMap ya fue construido arriba con la lógica de membresías
 
             const referralsCountMap: Record<string, number> = {};
             for (const r of referralsRes.data || []) {

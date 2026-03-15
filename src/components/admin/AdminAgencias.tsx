@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
     Building2, Clock, Mail, Phone, Users, Loader2,
-    CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User, Star, Medal
+    CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User, Star, Medal, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -44,6 +44,8 @@ export function AdminAgencias({ toast }: Props) {
         key: 'display_name',
         direction: 'asc'
     });
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => { fetchRecords(); }, []);
 
@@ -156,14 +158,28 @@ export function AdminAgencias({ toast }: Props) {
 
     return (
         <div className="space-y-3">
-            <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar por nombre, email u organización..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-9 rounded-xl text-sm"
-                />
+            <div className="flex items-center gap-2">
+                <div className="relative max-w-sm flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar por nombre, email u organización..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 h-9 rounded-xl text-sm"
+                    />
+                </div>
+                {/* Botón para refrescar la lista manualmente */}
+                <button
+                    title="Refrescar datos"
+                    onClick={async () => {
+                        setIsRefreshing(true);
+                        await fetchRecords();
+                        setIsRefreshing(false);
+                    }}
+                    className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border"
+                >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
             </div>
 
             {filteredRecords.length === 0 ? (

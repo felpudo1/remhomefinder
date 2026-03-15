@@ -81,8 +81,8 @@ export const useAuth = () => {
                         name: displayName,
                         phone: phone,
                         account_type: accountType,
-                        org_name: orgName?.trim() || '',
-                        org_phone: orgPhone?.trim() || '',
+                        agency_name: orgName?.trim() || '',
+                        agency_phone: orgPhone?.trim() || '',
                     }
                 }
             });
@@ -98,8 +98,8 @@ export const useAuth = () => {
                         name: displayName,
                         phone: phone,
                         account_type: accountType,
-                        org_name: orgName?.trim() || '',
-                        org_phone: orgPhone?.trim() || '',
+                        agency_name: orgName?.trim() || '',
+                        agency_phone: orgPhone?.trim() || '',
                     },
                 });
 
