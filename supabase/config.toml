@@ -1,10 +1,1 @@
-project_id = "kgoynhisjssxvulgrsaf"
-
-[functions.scrape-property]
-verify_jwt = false
-
-[functions.find-user-by-email]
-verify_jwt = false
-
-[functions.extract-from-image]
-verify_jwt = false
+project_id = "ktayllrmzoocgxhwyurv"
