@@ -115,7 +115,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     // Registrar en auditoría ANTES de borrar — si falla el log el borrado no ocurre
     const { error: auditError } = await supabase
-      .from("publication_deletion_audit_log" as any)
+      .from("publication_deletion_audit_log")
       .insert({
         pub_id: id,
         pub_type: "user_listing",
@@ -181,7 +181,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     // Registrar en auditoría ANTES de borrar — si falla el log el borrado no ocurre
     const { error: auditError } = await supabase
-      .from("publication_deletion_audit_log" as any)
+      .from("publication_deletion_audit_log")
       .insert({
         pub_id: id,
         pub_type: "marketplace",

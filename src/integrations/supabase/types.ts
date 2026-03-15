@@ -199,6 +199,45 @@ export type Database = {
           },
         ]
       }
+      deletion_audit_log: {
+        Row: {
+          deleted_at: string | null
+          deleted_by: string
+          deleted_user_id: string
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          plan_type: string | null
+          reason: string
+          status_before: string | null
+        }
+        Insert: {
+          deleted_at?: string | null
+          deleted_by: string
+          deleted_user_id: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          plan_type?: string | null
+          reason: string
+          status_before?: string | null
+        }
+        Update: {
+          deleted_at?: string | null
+          deleted_by?: string
+          deleted_user_id?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          plan_type?: string | null
+          reason?: string
+          status_before?: string | null
+        }
+        Relationships: []
+      }
       family_comments: {
         Row: {
           author: string
@@ -655,6 +694,42 @@ export type Database = {
           },
         ]
       }
+      publication_deletion_audit_log: {
+        Row: {
+          deleted_at: string | null
+          deleted_by: string
+          id: string
+          org_name: string | null
+          pub_id: string | null
+          pub_type: string | null
+          reason: string
+          status_before: string | null
+          title: string | null
+        }
+        Insert: {
+          deleted_at?: string | null
+          deleted_by: string
+          id?: string
+          org_name?: string | null
+          pub_id?: string | null
+          pub_type?: string | null
+          reason: string
+          status_before?: string | null
+          title?: string | null
+        }
+        Update: {
+          deleted_at?: string | null
+          deleted_by?: string
+          id?: string
+          org_name?: string | null
+          pub_id?: string | null
+          pub_type?: string | null
+          reason?: string
+          status_before?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       status_history_log: {
         Row: {
           changed_by: string
@@ -911,10 +986,12 @@ export type Database = {
       }
     }
     Functions: {
-      admin_physical_delete_user: {
-        Args: { _user_id: string }
-        Returns: undefined
-      }
+      admin_physical_delete_user:
+        | { Args: { _user_id: string }; Returns: undefined }
+        | {
+            Args: { _deleted_by: string; _reason: string; _user_id: string }
+            Returns: undefined
+          }
       admin_update_profile_status: {
         Args: {
           _status: Database["public"]["Enums"]["user_status"]
