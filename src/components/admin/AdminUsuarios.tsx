@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown, Search, Phone, Star, Medal } from "lucide-react";
+import { User, Shield, Loader2, CheckCircle, Clock, Ban, Trash2, ChevronUp, ChevronDown, Search, Phone, Star, Medal, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ export function AdminUsuarios({ toast }: Props) {
     const [confirmDeleteSingle, setConfirmDeleteSingle] = useState("");
     const [deleteReason, setDeleteReason] = useState("");
     const [isActionInProgress, setIsActionInProgress] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => { fetchUsers(); }, [page, sortConfig]);
 
@@ -281,7 +282,21 @@ export function AdminUsuarios({ toast }: Props) {
                                         <span className="text-[10px] font-bold uppercase tracking-wider">Plan</span>
                                     </TableHead>
                                     <TableHead className="w-[110px]">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">Acciones</span>
+                                        <div className="flex items-center justify-between w-full">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">Acciones</span>
+                                            {/* Botón para refrescar la lista de usuarios manualmente */}
+                                            <button
+                                                title="Refrescar datos"
+                                                onClick={async () => {
+                                                    setIsRefreshing(true);
+                                                    await fetchUsers();
+                                                    setIsRefreshing(false);
+                                                }}
+                                                className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                            >
+                                                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                            </button>
+                                        </div>
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
