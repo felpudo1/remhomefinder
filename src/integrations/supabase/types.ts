@@ -964,7 +964,7 @@ export type Database = {
       currency_code: "USD" | "ARS" | "UYU" | "CLP"
       listing_type: "rent" | "sale"
       org_role: "owner" | "agent" | "member" | "system_admin_delegate"
-      org_type: "family" | "agency_team"
+      org_type: "family" | "agency_team" | "sub_team"
       user_listing_status:
         | "ingresado"
         | "contactado"
@@ -1112,7 +1112,7 @@ export const Constants = {
       currency_code: ["USD", "ARS", "UYU", "CLP"],
       listing_type: ["rent", "sale"],
       org_role: ["owner", "agent", "member", "system_admin_delegate"],
-      org_type: ["family", "agency_team"],
+      org_type: ["family", "agency_team", "sub_team"],
       user_listing_status: [
         "ingresado",
         "contactado",
