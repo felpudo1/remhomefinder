@@ -400,6 +400,15 @@ export function AdminUsuarios({ toast }: Props) {
                                                                     <SelectItem value="premium">Premium</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                className="h-6 w-6 p-0 rounded-lg"
+                                                                title="Borrar físicamente"
+                                                                onClick={() => setDeletingUser(user)}
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
                                                         </>
                                                     )}
                                                 </div>
@@ -426,6 +435,48 @@ export function AdminUsuarios({ toast }: Props) {
                     )}
                 </>
             )}
+
+            {/* Modal de confirmación de borrado físico */}
+            <AlertDialog open={!!deletingUser} onOpenChange={(open) => { if (!open) { setDeletingUser(null); setConfirmDeleteSingle(""); setDeleteReason(""); } }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-destructive">⚠️ Borrado físico permanente</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                            <p>Estás a punto de eliminar <strong>permanentemente</strong> al usuario <strong>{deletingUser?.display_name}</strong> ({deletingUser?.email}).</p>
+                            <p className="text-destructive font-semibold">Esta acción NO se puede deshacer. Se borrarán todos sus datos: propiedades, comentarios, calificaciones, membresías y su registro de autenticación.</p>
+                            <div className="pt-2">
+                                <label className="text-xs font-medium">Motivo (opcional):</label>
+                                <Input
+                                    value={deleteReason}
+                                    onChange={(e) => setDeleteReason(e.target.value)}
+                                    placeholder="Ej: cuenta duplicada, spam..."
+                                    className="mt-1 text-sm"
+                                />
+                            </div>
+                            <div className="pt-2">
+                                <label className="text-xs font-medium">Escribí <strong>ELIMINAR</strong> para confirmar:</label>
+                                <Input
+                                    value={confirmDeleteSingle}
+                                    onChange={(e) => setConfirmDeleteSingle(e.target.value)}
+                                    placeholder="ELIMINAR"
+                                    className="mt-1 text-sm"
+                                />
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isActionInProgress}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={confirmDeleteSingle !== "ELIMINAR" || isActionInProgress}
+                            onClick={() => deletingUser && handlePhysicalDelete(deletingUser.user_id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isActionInProgress ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                            Eliminar permanentemente
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
