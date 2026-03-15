@@ -1,37 +1,43 @@
+## Plan: Extracción de datos de propiedad desde imágenes (capturas de RRSS)
 
+### Concepto
 
-## Plan: Separar visualmente la org principal de agencia en GroupsModal
+El usuario sube una captura de pantalla de una publicación de RRSS (IG, FB Marketplace, etc.) y la IA (Gemini con capacidad multimodal) analiza la imagen para extraer los datos de la propiedad. Luego se muestra el formulario manual pre-llenado con los datos detectados, permitiendo al usuario agregar hasta 2 fotos reales de la propiedad.
 
-### Cambios
+### Flujo de usuario
 
-**1. `src/hooks/useGroups.ts`** — Exponer el campo `type` en la interfaz `Group` y en el query:
+1. En el modal "Agregar Propiedad" (paso `url`), el usuario hace click en **"Ingresar imágenes para analizar (IG, FB)"** (botón que ya existe visualmente en la captura).
+2. Se abre un nuevo paso `"image-upload"` donde puede subir 1 captura de pantalla del aviso.
+3. La imagen se sube a Supabase Storage (`property-images`) y se envía a una nueva Edge Function.
+4. La Edge Function usa **Gemini 2.5 Flash** (multimodal, ya disponible via `LOVABLE_API_KEY`) para analizar la imagen y extraer: título, precio, barrio, m², ambientes, tipo de operación, resumen.
+5. Se devuelven los datos y se pre-llena el formulario manual. En caso que no esten los datos, ya sea superficie o  cantidad de dormitorios o barrio o precio, esos datos se deja en blanco con la opcion que el user lo modifique
+6. En el formulario manual se muestra una sección destacada para **"Agregar fotos de la propiedad"** (hasta 3 fotos, subidas desde el dispositivo o por URL), ya que la IA no puede extraer fotos de la propiedad desde una captura.
 
-- Agregar `type: string` a la interfaz `Group`
-- Mapear `o.type` en el return del queryFn
-- Crear una segunda query (o retornar separado) para la org principal de agencia: filtrar donde `type = 'agency_team'` en lugar de excluirla. Alternativamente, hacer un solo query sin filtro `is_personal` y separar en el hook:
-  - `agencyOrg`: la org con `type === 'agency_team'` (puede ser `null`)
-  - `groups`: las demás orgs con `is_personal === false` y `type !== 'agency_team'`
-- Retornar `{ groups, agencyOrg, ... }`
+### Implementación
 
-**2. `src/components/GroupsModal.tsx`** — Cuando `isAgent = true`, mostrar sección fija "Mi Agencia" arriba:
+**1. Nueva Edge Function: `supabase/functions/extract-from-image/index.ts**`
 
-- Extraer `agencyOrg` del hook `useGroups`
-- Si `isAgent && agencyOrg`:
-  - Renderizar una sección fija arriba del tab "Mis grupos" con:
-    - Nombre de la agencia con icono diferenciado (Building2)
-    - Código de invitación con botón copiar
-    - Contador de miembros (clickeable para ver detalle)
-    - Sin botón "Abandonar" ni "Eliminar"
-  - Un separador visual, luego la lista normal de sub-equipos debajo
-- Ajustar micro-copy cuando `isAgent`: "Mis Equipos" en lugar de "Mis Grupos", "Crear equipo" en lugar de "Crear grupo", placeholders adaptados
+- Recibe `{ imageUrl: string, role: string }`
+- Carga el prompt desde `app_settings` (reutiliza `getPromptFromDb`)
+- Llama a Gemini con la imagen como `image_url` en el mensaje + tool calling (mismo schema `extract_property_data`)
+- Retorna los datos estructurados
 
-**3. Detail view** — Si el grupo abierto es la org `agency_team`:
-- No mostrar botón "Abandonar grupo"
-- Mostrar label "Organización principal" en la cabecera
+**2. Modificar `AddPropertyModal.tsx**`
 
-### Archivos tocados
-- `src/hooks/useGroups.ts` — agregar `type` a `Group`, retornar `agencyOrg` separado
-- `src/components/GroupsModal.tsx` — sección fija agencia + micro-copy adaptado
+- Agregar nuevo paso `"image-upload"` entre `url` y `manual`
+- Botón "Ingresar imágenes para analizar" en el paso `url` lleva a `image-upload`
+- En `image-upload`: input de archivo para la captura, preview, botón "Analizar con IA"
+- Al recibir resultados, pre-llena el form y pasa al paso `manual`
+- En el paso `manual`, cuando se viene de imagen, mostrar nota: "Agregá fotos reales de la propiedad"
 
-No hay cambios de DB ni migraciones.
+**3. Archivos a crear/modificar**
 
+- `supabase/functions/extract-from-image/index.ts` (nueva)
+- `src/components/AddPropertyModal.tsx` (nuevo step + lógica)
+
+### Viabilidad
+
+- Gemini 2.5 Flash soporta imágenes nativamente (multimodal) via la misma API gateway
+- `LOVABLE_API_KEY` ya está configurado
+- El bucket `property-images` ya existe para subir las capturas
+- No se necesitan nuevas dependencias ni connectors
