@@ -400,6 +400,15 @@ export function AdminUsuarios({ toast }: Props) {
                                                                     <SelectItem value="premium">Premium</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                className="h-6 w-6 p-0 rounded-lg"
+                                                                title="Borrar físicamente"
+                                                                onClick={() => setDeletingUser(user)}
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </Button>
                                                         </>
                                                     )}
                                                 </div>
