@@ -908,6 +908,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_physical_delete_user: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       admin_update_profile_status: {
         Args: {
           _status: Database["public"]["Enums"]["user_status"]
