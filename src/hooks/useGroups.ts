@@ -76,13 +76,21 @@ export function useGroups() {
   const agencyOrg = data?.agencyOrg ?? null;
 
   const createGroupMutation = useMutation({
-    mutationFn: async ({ name, description }: { name: string; description: string }) => {
+    mutationFn: async ({ name, description, parentOrgId }: { name: string; description: string; parentOrgId?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
+      const orgType = parentOrgId ? "sub_team" : "family";
+
       const { data, error } = await supabase
         .from("organizations")
-        .insert({ name, description, type: "family" as any, created_by: user.id })
+        .insert({
+          name,
+          description,
+          type: orgType as any,
+          created_by: user.id,
+          ...(parentOrgId ? { parent_id: parentOrgId } : {}),
+        })
         .select()
         .single();
 
