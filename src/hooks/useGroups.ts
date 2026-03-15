@@ -9,6 +9,7 @@ export interface Group {
   created_by: string;
   invite_code: string;
   created_at: string;
+  type: string;
 }
 
 export interface GroupMember {
@@ -24,18 +25,18 @@ export interface GroupMember {
 /**
  * Hook para gestionar organizaciones (antes "groups").
  * Usa organizations + organization_members.
+ * Retorna `groups` (sub-equipos / familias) y `agencyOrg` (org principal de agencia, si existe).
  */
 export function useGroups() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: groups = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["groups"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      if (!user) return { groups: [] as Group[], agencyOrg: null as Group | null };
 
-      // Get orgs where user is a member (RLS handles visibility)
       const { data: memberships, error: memError } = await supabase
         .from("organization_members")
         .select("org_id")
@@ -44,7 +45,7 @@ export function useGroups() {
       if (memError) throw memError;
 
       const orgIds = memberships?.map((m) => m.org_id) || [];
-      if (orgIds.length === 0) return [];
+      if (orgIds.length === 0) return { groups: [] as Group[], agencyOrg: null as Group | null };
 
       const { data: orgs, error: orgError } = await supabase
         .from("organizations")
@@ -54,16 +55,25 @@ export function useGroups() {
 
       if (orgError) throw orgError;
 
-      return (orgs || []).map((o): Group => ({
+      const allOrgs = (orgs || []).map((o): Group => ({
         id: o.id,
         name: o.name,
         description: o.description || "",
         created_by: o.created_by,
         invite_code: o.invite_code,
         created_at: o.created_at,
+        type: o.type,
       }));
+
+      const agencyOrg = allOrgs.find((o) => o.type === "agency_team") || null;
+      const groups = allOrgs.filter((o) => o.type !== "agency_team");
+
+      return { groups, agencyOrg };
     },
   });
+
+  const groups = data?.groups ?? [];
+  const agencyOrg = data?.agencyOrg ?? null;
 
   const createGroupMutation = useMutation({
     mutationFn: async ({ name, description }: { name: string; description: string }) => {
@@ -84,11 +94,11 @@ export function useGroups() {
         role: "owner" as any,
       });
 
-      return { id: data.id, name: data.name, description: data.description, created_by: data.created_by, invite_code: data.invite_code, created_at: data.created_at } as Group;
+      return { id: data.id, name: data.name, description: data.description, created_by: data.created_by, invite_code: data.invite_code, created_at: data.created_at, type: data.type } as Group;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
-      toast({ title: "Grupo creado", description: "Tu grupo familiar fue creado exitosamente." });
+      toast({ title: "Grupo creado", description: "Tu grupo fue creado exitosamente." });
     },
   });
 
@@ -209,6 +219,7 @@ export function useGroups() {
 
   return {
     groups,
+    agencyOrg,
     loading: isLoading,
     createGroup: createGroupMutation.mutateAsync,
     joinGroup: joinGroupMutation.mutateAsync,
