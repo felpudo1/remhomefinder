@@ -317,6 +317,7 @@ export type Database = {
           description: string
           id: string
           invite_code: string
+          is_personal: boolean
           name: string
           parent_id: string | null
           plan_type: string
@@ -329,6 +330,7 @@ export type Database = {
           description?: string
           id?: string
           invite_code?: string
+          is_personal?: boolean
           name: string
           parent_id?: string | null
           plan_type?: string
@@ -341,6 +343,7 @@ export type Database = {
           description?: string
           id?: string
           invite_code?: string
+          is_personal?: boolean
           name?: string
           parent_id?: string | null
           plan_type?: string
