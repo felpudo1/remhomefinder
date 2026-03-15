@@ -1,0 +1,39 @@
+-- PASO 1: Limpiar todo el esquema viejo
+DROP TABLE IF EXISTS public.agency_shared_properties CASCADE;
+DROP TABLE IF EXISTS public.property_views_log CASCADE;
+DROP TABLE IF EXISTS public.property_ratings CASCADE;
+DROP TABLE IF EXISTS public.property_comments CASCADE;
+DROP TABLE IF EXISTS public.agency_members CASCADE;
+DROP TABLE IF EXISTS public.group_members CASCADE;
+DROP TABLE IF EXISTS public.marketplace_properties CASCADE;
+DROP TABLE IF EXISTS public.properties CASCADE;
+DROP TABLE IF EXISTS public.agencies CASCADE;
+DROP TABLE IF EXISTS public.groups CASCADE;
+DROP TABLE IF EXISTS public.system_config CASCADE;
+DROP TABLE IF EXISTS public.app_settings CASCADE;
+DROP TABLE IF EXISTS public.user_roles CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+DROP FUNCTION IF EXISTS public.has_role CASCADE;
+DROP FUNCTION IF EXISTS public.is_group_member CASCADE;
+DROP FUNCTION IF EXISTS public.is_group_owner CASCADE;
+DROP FUNCTION IF EXISTS public.find_group_by_invite_code CASCADE;
+DROP FUNCTION IF EXISTS public.admin_update_profile_status CASCADE;
+DROP FUNCTION IF EXISTS public.admin_physical_delete_user CASCADE;
+DROP FUNCTION IF EXISTS public.increment_property_views CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_user_profile CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_user_role CASCADE;
+DROP FUNCTION IF EXISTS public.handle_user_email_sync CASCADE;
+DROP FUNCTION IF EXISTS public.update_updated_at_column CASCADE;
+DROP FUNCTION IF EXISTS public.sync_marketplace_to_properties CASCADE;
+DROP FUNCTION IF EXISTS public.sync_marketplace_delete_to_properties CASCADE;
+DROP FUNCTION IF EXISTS public.assign_agency_role_on_create CASCADE;
+DROP FUNCTION IF EXISTS public.get_agency_dashboard_stats CASCADE;
+DROP FUNCTION IF EXISTS public.get_agency_performance_detailed CASCADE;
+
+DROP TYPE IF EXISTS public.app_role CASCADE;
+DROP TYPE IF EXISTS public.user_status CASCADE;
+DROP TYPE IF EXISTS public.listing_type CASCADE;
+DROP TYPE IF EXISTS public.marketplace_property_status CASCADE;
+DROP TYPE IF EXISTS public.property_status CASCADE;
+DROP TYPE IF EXISTS public.agency_status CASCADE;
