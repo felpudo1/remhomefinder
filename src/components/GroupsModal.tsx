@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useGroups, Group, GroupMember } from "@/hooks/useGroups";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft, X,
+  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft, X, Building2,
 } from "lucide-react";
 
 interface GroupsModalProps {
@@ -20,7 +21,7 @@ interface GroupsModalProps {
 }
 
 export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false }: GroupsModalProps) {
-  const { groups, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
+  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<string>("groups");
@@ -36,6 +37,10 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
+  // Agency members (for inline display)
+  const [agencyMembers, setAgencyMembers] = useState<GroupMember[]>([]);
+  const [loadingAgencyMembers, setLoadingAgencyMembers] = useState(false);
+
   useEffect(() => {
     if (open) {
       supabase.auth.getUser().then(({ data }) => {
@@ -46,6 +51,22 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
       setTab("groups");
     }
   }, [open]);
+
+  // Fetch agency members when modal opens and isAgent
+  useEffect(() => {
+    if (open && isAgent && agencyOrg) {
+      setLoadingAgencyMembers(true);
+      fetchMembers(agencyOrg.id)
+        .then(setAgencyMembers)
+        .catch(() => setAgencyMembers([]))
+        .finally(() => setLoadingAgencyMembers(false));
+    }
+  }, [open, isAgent, agencyOrg?.id]);
+
+  // Micro-copy helpers
+  const groupLabel = isAgent ? "equipo" : "grupo";
+  const groupLabelPlural = isAgent ? "Equipos" : "Grupos";
+  const groupLabelPluralLower = isAgent ? "equipos" : "grupos";
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -105,6 +126,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   };
 
+  const isAgencyTeamDetail = detailGroup?.type === "agency_team";
+
   // Detail view
   if (detailGroup) {
     const isOwner = detailGroup.created_by === currentUserId;
@@ -117,11 +140,20 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               <button onClick={() => setDetailGroup(null)} className="text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="w-4 h-4" />
               </button>
+              {isAgencyTeamDetail && <Building2 className="w-4 h-4 text-primary" />}
               {detailGroup.name}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
+            {isAgencyTeamDetail && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  Organización principal
+                </span>
+              </div>
+            )}
+
             {detailGroup.description && (
               <p className="text-sm text-muted-foreground">{detailGroup.description}</p>
             )}
@@ -180,23 +212,27 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                   onClose();
                 }}
               >
-                {activeGroupId === detailGroup.id ? "Grupo activo ✓" : "Ver propiedades del grupo"}
+                {activeGroupId === detailGroup.id ? `${isAgent ? "Equipo" : "Grupo"} activo ✓` : `Ver propiedades del ${groupLabel}`}
               </Button>
-              <Button
-                variant="ghost"
-                className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
-                onClick={async () => {
-                  try {
-                    await leaveGroup(detailGroup.id);
-                    setDetailGroup(null);
-                  } catch (e: any) {
-                    toast({ title: "Error", description: e.message, variant: "destructive" });
-                  }
-                }}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Abandonar grupo
-              </Button>
+
+              {/* Hide abandon button for agency_team org */}
+              {!isAgencyTeamDetail && (
+                <Button
+                  variant="ghost"
+                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
+                  onClick={async () => {
+                    try {
+                      await leaveGroup(detailGroup.id);
+                      setDetailGroup(null);
+                    } catch (e: any) {
+                      toast({ title: "Error", description: e.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Abandonar {groupLabel}
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -210,13 +246,59 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Mis Grupos / Equipos
+            {isAgent ? "Mi Agencia / Equipos" : "Mis Grupos / Equipos"}
           </DialogTitle>
         </DialogHeader>
 
+        {/* Fixed agency section for agents */}
+        {isAgent && agencyOrg && (
+          <div className="space-y-3">
+            <button
+              onClick={() => openDetail(agencyOrg)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                activeGroupId === agencyOrg.id
+                  ? "border-primary bg-primary/5"
+                  : "border-primary/20 bg-primary/[0.02] hover:border-primary/40"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium truncate">{agencyOrg.name}</p>
+                  <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full shrink-0">
+                    Principal
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {loadingAgencyMembers ? "Cargando..." : `${agencyMembers.length} miembros`}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyCode(agencyOrg.invite_code);
+                  }}
+                  title="Copiar código de invitación"
+                >
+                  <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                </Button>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </button>
+
+            <Separator />
+          </div>
+        )}
+
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="groups">Mis grupos</TabsTrigger>
+            <TabsTrigger value="groups">Mis {groupLabelPluralLower}</TabsTrigger>
             <TabsTrigger value="create">Crear</TabsTrigger>
             <TabsTrigger value="join">Unirme</TabsTrigger>
           </TabsList>
@@ -230,7 +312,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
             ) : groups.length === 0 ? (
               <div className="text-center py-8 space-y-2 text-muted-foreground">
                 <Users className="w-10 h-10 mx-auto opacity-30" />
-                <p className="text-sm">No pertenecés a ningún grupo</p>
+                <p className="text-sm">No tenés {groupLabelPluralLower} adicionales</p>
                 <p className="text-xs">Creá uno o unite con un código de invitación</p>
               </div>
             ) : (
@@ -261,9 +343,9 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
           {/* Create */}
           <TabsContent value="create" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label>Nombre del grupo</Label>
+              <Label>Nombre del {groupLabel}</Label>
               <Input
-                placeholder={isAgent ? "Ej: Equipo A" : "Ej: Familia González"}
+                placeholder={isAgent ? "Ej: Equipo Zona Sur" : "Ej: Familia González"}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="rounded-xl"
@@ -272,7 +354,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
             <div className="space-y-2">
               <Label>Descripción (opcional)</Label>
               <Input
-                placeholder={isAgent ? "Ej: Zona 1" : "Ej: Buscando depto en Pocitos"}
+                placeholder={isAgent ? "Ej: Equipo de ventas zona 1" : "Ej: Buscando depto en Pocitos"}
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 className="rounded-xl"
@@ -280,7 +362,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
             </div>
             <Button onClick={handleCreate} disabled={creating || !newName.trim()} className="w-full rounded-xl">
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-              Crear grupo
+              Crear {groupLabel}
             </Button>
           </TabsContent>
 
@@ -297,7 +379,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
             </div>
             <Button onClick={handleJoin} disabled={joining || !inviteCode.trim()} className="w-full rounded-xl">
               {joining ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-              Unirme al grupo
+              Unirme al {groupLabel}
             </Button>
           </TabsContent>
         </Tabs>
