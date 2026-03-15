@@ -23,9 +23,9 @@ export function useMarketplaceProperties() {
         const p = pub.properties || {};
         return {
           id: pub.id,
-          agencyId: pub.org_id,
-          agencyName: pub.organizations?.name || "Agencia",
-          agentId: pub.organizations?.created_by || null,
+          orgId: pub.org_id,
+          orgName: pub.organizations?.name || "Organización",
+          agentId: pub.organizations?.created_by || "",
           title: p.title || pub.description || "",
           description: pub.description || "",
           url: p.source_url || "",

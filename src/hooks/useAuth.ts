@@ -56,10 +56,10 @@ export const useAuth = () => {
         accountType: "user" | "agency";
         displayName: string;
         phone: string;
-        agencyName?: string;
-        agencyPhone?: string;
+        orgName?: string;
+        orgPhone?: string;
     }) => {
-        const { email, password, confirmPassword, accountType, displayName, phone, agencyName, agencyPhone } = params;
+        const { email, password, confirmPassword, accountType, displayName, phone, orgName, orgPhone } = params;
         setLoading(true);
         setIsSigningUp(true);
         try {
@@ -81,8 +81,8 @@ export const useAuth = () => {
                         name: displayName,
                         phone: phone,
                         account_type: accountType,
-                        agency_name: agencyName?.trim() || '',
-                        agency_phone: agencyPhone?.trim() || '',
+                        org_name: orgName?.trim() || '',
+                        org_phone: orgPhone?.trim() || '',
                     }
                 }
             });
@@ -98,8 +98,8 @@ export const useAuth = () => {
                         name: displayName,
                         phone: phone,
                         account_type: accountType,
-                        agency_name: agencyName?.trim() || '',
-                        agency_phone: agencyPhone?.trim() || '',
+                        org_name: orgName?.trim() || '',
+                        org_phone: orgPhone?.trim() || '',
                     },
                 });
 

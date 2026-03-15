@@ -78,7 +78,7 @@ export function AdminPublicaciones({ toast }: Props) {
             status: p.status as MarketplaceStatus,
             listing_type: p.listing_type,
             created_at: p.created_at,
-            agency_name: p.organizations?.name || "Agencia",
+            orgName: p.organizations?.name || "Organización",
           }))
         );
       }

@@ -47,7 +47,7 @@ export const AdminPlans = () => {
     const handleSavePublishLimit = async () => {
         try {
             await setPublishLimit(publishDraft.trim());
-            toast({ title: "Límite guardado", description: "El cambio se aplicará a todas las agencias Free de inmediato." });
+            toast({ title: "Límite guardado", description: "El cambio se aplicará a todas las organizaciones Free de inmediato." });
         } catch (error: any) {
             toast({ title: "Error al guardar límite", description: error.message, variant: "destructive" });
         }
@@ -100,7 +100,7 @@ export const AdminPlans = () => {
                     <h3 className="font-semibold text-foreground text-sm">Límite de Publicación (Agentes)</h3>
                 </div>
                 <p className="text-xs text-muted-foreground pl-6">
-                    Ajustá el límite de propiedades que una **Agencia** con plan **Free** puede publicar en el marketplace.
+                    Ajustá el límite de propiedades que una **Organización** con plan **Free** puede publicar en el marketplace.
                 </p>
 
                 <div className="flex gap-2 pl-6 max-w-sm">

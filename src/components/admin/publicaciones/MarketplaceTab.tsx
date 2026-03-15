@@ -43,7 +43,7 @@ export function MarketplaceTab({
                     <div className="hidden lg:block">
                         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
                             <span>Título</span>
-                            <span>Agencia</span>
+                            <span>Organización</span>
                             <span>Operación</span>
                             <span>Estado actual</span>
                             <span>Cambiar estado</span>
@@ -61,7 +61,7 @@ export function MarketplaceTab({
                                             </a>
                                         )}
                                     </div>
-                                    <span className="text-xs text-muted-foreground min-w-[100px] truncate">{prop.agency_name}</span>
+                                    <span className="text-xs text-muted-foreground min-w-[100px] truncate">{prop.orgName}</span>
                                     <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
                                         {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
                                     </Badge>
@@ -99,7 +99,7 @@ export function MarketplaceTab({
                                                     </a>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-muted-foreground block mt-0.5">{prop.agency_name}</span>
+                                            <span className="text-xs text-muted-foreground block mt-0.5">{prop.orgName}</span>
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
                                             <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">

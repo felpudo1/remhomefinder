@@ -28,8 +28,8 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>("user");
-  const [agencyName, setAgencyName] = useState("");
-  const [agencyPhone, setAgencyPhone] = useState("");
+  const [orgName, setOrgName] = useState("");
+  const [orgPhone, setOrgPhone] = useState("");
   const [userPhone, setUserPhone] = useState("");
   const [familyName, setFamilyName] = useState("");
   const navigate = useNavigate();
@@ -62,10 +62,10 @@ const Auth = () => {
         password,
         confirmPassword, // Pasado para validación Zod
         accountType,
-        displayName: familyName.trim() || agencyName.trim(),
+        displayName: familyName.trim() || orgName.trim(),
         phone: userPhone.trim(),
-        agencyName: agencyName.trim(),
-        agencyPhone: agencyPhone.trim()
+        orgName: orgName.trim(),
+        orgPhone: orgPhone.trim()
       });
     }
   };
@@ -161,15 +161,15 @@ const Auth = () => {
               {!isLogin && accountType === "agency" &&
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="agencyName">Nombre de la agencia</Label>
+                    <Label htmlFor="orgName">Nombre de la organización</Label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
-                        id="agencyName"
+                        id="orgName"
                         type="text"
-                        placeholder="Agencia Ejemplo S.A."
-                        value={agencyName}
-                        onChange={(e) => setAgencyName(e.target.value)}
+                        placeholder="Organización Ejemplo S.A."
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
                         className="pl-9 h-11 rounded-xl"
                         required />
 
@@ -217,15 +217,15 @@ const Auth = () => {
               {/* Teléfono empresa (solo agencias) */}
               {!isLogin && accountType === "agency" &&
                 <div className="space-y-2">
-                  <Label htmlFor="agencyPhone">Teléfono empresa</Label>
+                  <Label htmlFor="orgPhone">Teléfono empresa</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="agencyPhone"
+                      id="orgPhone"
                       type="tel"
                       placeholder="+598 2 123 4567"
-                      value={agencyPhone}
-                      onChange={(e) => setAgencyPhone(e.target.value)}
+                      value={orgPhone}
+                      onChange={(e) => setOrgPhone(e.target.value)}
                       className="pl-9 h-11 rounded-xl" />
                   </div>
                 </div>

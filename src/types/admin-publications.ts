@@ -34,7 +34,7 @@ export interface MktProperty {
     status: MarketplaceStatus;
     listing_type: "rent" | "sale";
     created_at: string;
-    agency_name?: string;
+    orgName?: string;
 }
 
 /**

@@ -67,7 +67,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.neighborhood.toLowerCase().includes(q) ||
-          p.agencyName.toLowerCase().includes(q) ||
+          p.orgName.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q)
       );
     }
@@ -156,7 +156,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         <div className="max-w-md relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por título, barrio o agencia..."
+            placeholder="Buscar por título, barrio u organización..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-10 rounded-xl bg-muted border-0 text-sm"
@@ -171,7 +171,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           <div className="text-center py-20 text-muted-foreground">
             <Store className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p className="font-medium">No hay propiedades en el HFMarket</p>
-            <p className="text-sm mt-1">Las agencias aún no publicaron propiedades.</p>
+            <p className="text-sm mt-1">Las organizaciones aún no publicaron propiedades.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -55,9 +55,9 @@ export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved
 
 export interface MarketplaceProperty {
   id: string;
-  agencyId: string;
-  agencyName: string;
-  agentId: string | null;
+  orgId: string;
+  orgName: string;
+  agentId: string;
   title: string;
   description: string;
   url: string;

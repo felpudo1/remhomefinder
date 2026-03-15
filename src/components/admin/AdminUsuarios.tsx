@@ -27,7 +27,7 @@ interface UserProfile {
     created_at: string;
     referred_by_id?: string | null;
     referred_by_name?: string;
-    agency_name?: string;
+    orgName?: string;
 }
 
 interface Props {
@@ -114,9 +114,9 @@ export function AdminUsuarios({ toast }: Props) {
                 }
             }
 
-            const agencyNameMap: Record<string, string> = {};
+            const orgNameMap: Record<string, string> = {};
             for (const o of orgsRes.data || []) {
-                agencyNameMap[o.created_by] = o.name;
+                orgNameMap[o.created_by] = o.name;
             }
 
             const referralsCountMap: Record<string, number> = {};
@@ -143,7 +143,7 @@ export function AdminUsuarios({ toast }: Props) {
                 created_at: p.created_at,
                 referred_by_id: p.referred_by_id,
                 referred_by_name: p.referred_by_id ? referrerNameMap[p.referred_by_id] : undefined,
-                agency_name: agencyNameMap[p.user_id],
+                orgName: orgNameMap[p.user_id],
             })));
         } catch (err: any) {
             console.error("Critical error in fetchUsers:", err);
@@ -255,7 +255,7 @@ export function AdminUsuarios({ toast }: Props) {
                                         </button>
                                     </TableHead>
                                     <TableHead className="w-[120px]">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">Agencia/Origen</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Organización/Origen</span>
                                     </TableHead>
                                     <TableHead className="w-[80px]">
                                         <button onClick={() => handleSort('roles')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider">
@@ -311,9 +311,9 @@ export function AdminUsuarios({ toast }: Props) {
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
                                                 <div className="flex flex-col min-w-0">
-                                                    {user.agency_name && (
-                                                        <span className="truncate text-[10px] font-bold text-foreground" title={`Agencia: ${user.agency_name}`}>
-                                                            {user.agency_name}
+                                                    {user.orgName && (
+                                                        <span className="truncate text-[10px] font-bold text-foreground" title={`Organización: ${user.orgName}`}>
+                                                            {user.orgName}
                                                         </span>
                                                     )}
                                                     {user.referred_by_name && user.referred_by_id !== user.user_id && (
@@ -321,7 +321,7 @@ export function AdminUsuarios({ toast }: Props) {
                                                             Ref: {user.referred_by_name}
                                                         </span>
                                                     )}
-                                                    {!user.agency_name && !user.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
+                                                    {!user.orgName && !user.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">

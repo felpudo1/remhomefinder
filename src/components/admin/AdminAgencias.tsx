@@ -20,7 +20,7 @@ interface UserMasterRecord {
     created_at: string;
     referred_by_id?: string | null;
     referred_by_name?: string;
-    agency_name?: string;
+    orgName?: string;
     agency_logo?: string;
     property_count: number;
 }
@@ -103,7 +103,7 @@ export function AdminAgencias({ toast }: Props) {
                     created_at: p.created_at,
                     referred_by_id: p.referred_by_id,
                     referred_by_name: p.referred_by_id ? referrerMap[p.referred_by_id] : undefined,
-                    agency_name: org?.name,
+                    orgName: org?.name,
                     property_count: org ? (countMap[org.id] || 0) : 0,
                 };
             }));
@@ -129,7 +129,7 @@ export function AdminAgencias({ toast }: Props) {
             result = result.filter(r =>
                 r.display_name.toLowerCase().includes(q) ||
                 (r.email?.toLowerCase().includes(q)) ||
-                r.agency_name?.toLowerCase().includes(q)
+                r.orgName?.toLowerCase().includes(q)
             );
         }
 
@@ -159,7 +159,7 @@ export function AdminAgencias({ toast }: Props) {
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar por nombre, email o agencia..."
+                    placeholder="Buscar por nombre, email u organización..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 h-9 rounded-xl text-sm"
@@ -189,7 +189,7 @@ export function AdminAgencias({ toast }: Props) {
                                     </button>
                                 </TableHead>
                                 <TableHead className="w-[130px]">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Agencia/Origen</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Organización/Origen</span>
                                 </TableHead>
                                 <TableHead className="w-[60px] text-center">
                                     <button onClick={() => handleSort('property_count')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider mx-auto">
@@ -227,7 +227,7 @@ export function AdminAgencias({ toast }: Props) {
                                         <TableCell className="py-2 px-3">
                                             <div className="flex items-center gap-1.5 min-w-0">
                                                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden">
-                                                    {record.agency_name ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <User className="w-3.5 h-3.5 text-muted-foreground" />}
+                                                    {record.orgName ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <User className="w-3.5 h-3.5 text-muted-foreground" />}
                                                 </div>
                                                 <span className="truncate text-sm font-bold tracking-tight">{record.display_name}</span>
                                                 <div className="flex items-center gap-1 shrink-0">
@@ -255,9 +255,9 @@ export function AdminAgencias({ toast }: Props) {
                                         </TableCell>
                                         <TableCell className="py-2 px-3">
                                             <div className="flex flex-col min-w-0">
-                                                {record.agency_name && (
-                                                    <span className="truncate text-[10px] font-bold text-foreground" title={`Agencia: ${record.agency_name}`}>
-                                                        {record.agency_name}
+                                                {record.orgName && (
+                                                    <span className="truncate text-[10px] font-bold text-foreground" title={`Organización: ${record.orgName}`}>
+                                                        {record.orgName}
                                                     </span>
                                                 )}
                                                 {record.referred_by_name && record.referred_by_id !== record.id && (
@@ -265,7 +265,7 @@ export function AdminAgencias({ toast }: Props) {
                                                         Ref: {record.referred_by_name}
                                                     </span>
                                                 )}
-                                                {!record.agency_name && !record.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
+                                                {!record.orgName && !record.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-2 px-3 text-center">

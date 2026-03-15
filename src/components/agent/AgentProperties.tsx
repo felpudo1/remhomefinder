@@ -70,8 +70,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 const p = pub.properties || {};
                 return {
                     id: pub.id,
-                    agencyId: pub.org_id,
-                    agencyName: pub.organizations?.name || agency.name,
+                    orgId: pub.org_id,
+                    orgName: pub.organizations?.name || agency.name,
                     agentId: agency.created_by,
                     title: p.title || "",
                     description: pub.description || "",
@@ -268,7 +268,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
             <PublishPropertyModal
                 open={publishOpen}
                 onClose={() => { setPublishOpen(false); setPropertyToEdit(null); }}
-                agencyId={agency.id}
+                orgId={agency.id}
                 onPublished={() => queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] })}
                 propertyToEdit={propertyToEdit}
             />

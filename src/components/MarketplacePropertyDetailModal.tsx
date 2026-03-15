@@ -156,7 +156,7 @@ export function MarketplacePropertyDetailModal({
                         <div className="flex items-center gap-1.5 mt-2">
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                                 <Building2 className="w-3 h-3" />
-                                {property.agencyName}
+                                {property.orgName}
                             </span>
                         </div>
                     </div>

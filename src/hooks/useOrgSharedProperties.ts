@@ -11,10 +11,10 @@ export interface SharedMarketplaceProperty extends MarketplaceProperty {
 }
 
 /**
- * Hook para ver las publicaciones del equipo de agencia.
+ * Hook para ver las publicaciones del equipo de la organización.
  * En el nuevo esquema, las publicaciones son de la org (agent_publications).
  */
-export function useAgencySharedProperties(orgId: string | null) {
+export function useOrgSharedProperties(orgId: string | null) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -48,8 +48,8 @@ export function useAgencySharedProperties(orgId: string | null) {
         const p = pub.properties || {};
         return {
           id: pub.id,
-          agencyId: pub.org_id,
-          agencyName: pub.organizations?.name || "",
+          orgId: pub.org_id,
+          orgName: pub.organizations?.name || "",
           agentId: pub.published_by,
           title: p.title || "",
           description: pub.description || "",

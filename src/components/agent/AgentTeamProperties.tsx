@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
-import { useAgencySharedProperties, SharedMarketplaceProperty } from "@/hooks/useAgencySharedProperties";
+import { useOrgSharedProperties, SharedMarketplaceProperty } from "@/hooks/useOrgSharedProperties";
 import { MarketplaceProperty } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { useState } from "react";
@@ -15,7 +15,7 @@ interface AgentTeamPropertiesProps {
 }
 
 export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPropertiesProps) => {
-  const { sharedProperties, isLoading } = useAgencySharedProperties(activeGroupId);
+  const { sharedProperties, isLoading } = useOrgSharedProperties(activeGroupId);
   const [selectedProperty, setSelectedProperty] = useState<MarketplaceProperty | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);

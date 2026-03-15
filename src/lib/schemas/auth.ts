@@ -19,19 +19,19 @@ export const registerSchema = z.object({
     displayName: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
     phone: z.string().min(8, "El teléfono no es válido."),
     accountType: z.enum(["user", "agency"]),
-    agencyName: z.string().optional(),
-    agencyPhone: z.string().optional(),
+    orgName: z.string().optional(),
+    orgPhone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden.",
     path: ["confirmPassword"],
 }).refine((data) => {
     if (data.accountType === "agency") {
-        return !!data.agencyName && data.agencyName.trim().length > 0;
+        return !!data.orgName && data.orgName.trim().length > 0;
     }
     return true;
 }, {
-    message: "El nombre de la agencia es obligatorio para agentes.",
-    path: ["agencyName"],
+    message: "El nombre de la organización es obligatorio para agentes.",
+    path: ["orgName"],
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

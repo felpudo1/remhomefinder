@@ -27,12 +27,12 @@ function safeUUID(): string {
 interface PublishPropertyModalProps {
   open: boolean;
   onClose: () => void;
-  agencyId: string; // This is now the org_id
+  orgId: string;
   onPublished: () => void;
   propertyToEdit?: any;
 }
 
-export function PublishPropertyModal({ open, onClose, agencyId, onPublished, propertyToEdit }: PublishPropertyModalProps) {
+export function PublishPropertyModal({ open, onClose, orgId, onPublished, propertyToEdit }: PublishPropertyModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -170,7 +170,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       const uploadedUrls: string[] = [];
       for (const file of Array.from(files).slice(0, 3)) {
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `agencies/${agencyId}/captures/${safeUUID()}.${ext}`;
+        const path = `organizations/${orgId}/captures/${safeUUID()}.${ext}`;
         const { error } = await supabase.storage.from("property-images").upload(path, file);
         if (error) continue;
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
@@ -226,7 +226,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       if (!user) { sonnerToast.error("Debés estar logueado"); return; }
 
       const ext = screenshotFile.name.split(".").pop() || "jpg";
-      const path = `agencies/${agencyId}/captures/${safeUUID()}.${ext}`;
+      const path = `organizations/${orgId}/captures/${safeUUID()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, screenshotFile);
       if (uploadErr) throw uploadErr;
 
@@ -275,7 +275,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `agencies/${agencyId}/${crypto.randomUUID()}.${ext}`;
+        const path = `organizations/${orgId}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabase.storage.from("property-images").upload(path, file);
         if (error) { console.error("Upload error:", error); continue; }
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
@@ -354,7 +354,7 @@ export function PublishPropertyModal({ open, onClose, agencyId, onPublished, pro
           .from("agent_publications")
           .insert({
             property_id: prop.id,
-            org_id: agencyId,
+            org_id: orgId,
             listing_type: listingType as any,
             description: form.aiSummary || form.details || "",
             published_by: user.id,
