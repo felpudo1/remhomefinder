@@ -66,7 +66,29 @@ export function useGroups() {
       }));
 
       const agencyOrg = allOrgs.find((o) => o.type === "agency_team") || null;
-      const groups = allOrgs.filter((o) => o.type !== "agency_team");
+
+      // Also fetch sub_teams parented to agencyOrg
+      let subTeams: Group[] = [];
+      if (agencyOrg) {
+        const { data: subOrgs } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("parent_id", agencyOrg.id)
+          .eq("type", "sub_team" as any);
+
+        subTeams = (subOrgs || []).map((o): Group => ({
+          id: o.id,
+          name: o.name,
+          description: o.description || "",
+          created_by: o.created_by,
+          invite_code: o.invite_code,
+          created_at: o.created_at,
+          type: o.type,
+        }));
+      }
+
+      const familyGroups = allOrgs.filter((o) => o.type !== "agency_team" && o.type !== "sub_team");
+      const groups = [...familyGroups, ...subTeams];
 
       return { groups, agencyOrg };
     },
