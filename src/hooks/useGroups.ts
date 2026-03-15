@@ -66,7 +66,29 @@ export function useGroups() {
       }));
 
       const agencyOrg = allOrgs.find((o) => o.type === "agency_team") || null;
-      const groups = allOrgs.filter((o) => o.type !== "agency_team");
+
+      // Also fetch sub_teams parented to agencyOrg
+      let subTeams: Group[] = [];
+      if (agencyOrg) {
+        const { data: subOrgs } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("parent_id", agencyOrg.id)
+          .eq("type", "sub_team" as any);
+
+        subTeams = (subOrgs || []).map((o): Group => ({
+          id: o.id,
+          name: o.name,
+          description: o.description || "",
+          created_by: o.created_by,
+          invite_code: o.invite_code,
+          created_at: o.created_at,
+          type: o.type,
+        }));
+      }
+
+      const familyGroups = allOrgs.filter((o) => o.type !== "agency_team" && o.type !== "sub_team");
+      const groups = [...familyGroups, ...subTeams];
 
       return { groups, agencyOrg };
     },
@@ -76,13 +98,21 @@ export function useGroups() {
   const agencyOrg = data?.agencyOrg ?? null;
 
   const createGroupMutation = useMutation({
-    mutationFn: async ({ name, description }: { name: string; description: string }) => {
+    mutationFn: async ({ name, description, parentOrgId }: { name: string; description: string; parentOrgId?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
+      const orgType = parentOrgId ? "sub_team" : "family";
+
       const { data, error } = await supabase
         .from("organizations")
-        .insert({ name, description, type: "family" as any, created_by: user.id })
+        .insert({
+          name,
+          description,
+          type: orgType as any,
+          created_by: user.id,
+          ...(parentOrgId ? { parent_id: parentOrgId } : {}),
+        })
         .select()
         .single();
 

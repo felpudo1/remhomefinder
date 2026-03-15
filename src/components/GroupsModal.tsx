@@ -72,7 +72,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await createGroup({ name: newName.trim(), description: newDesc.trim() });
+      await createGroup({ name: newName.trim(), description: newDesc.trim(), ...(isAgent && agencyOrg ? { parentOrgId: agencyOrg.id } : {}) });
       setNewName("");
       setNewDesc("");
       setTab("groups");

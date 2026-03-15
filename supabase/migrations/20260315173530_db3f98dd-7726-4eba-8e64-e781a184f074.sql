@@ -1,0 +1,1 @@
+ALTER TYPE public.org_type ADD VALUE IF NOT EXISTS 'sub_team';
