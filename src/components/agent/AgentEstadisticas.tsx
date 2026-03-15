@@ -1,15 +1,13 @@
 /**
- * ARCHIVO: AgentEstadisticas.tsx
- * DESCRIPCIÓN: Panel de control para el Agente Inmobiliario.
- * Aquí el agente puede ver qué tan populares son sus avisos, cuánta gente los guardó, 
- * cuántos clics (vistas) tienen y cuál es su Tasa de Conversión (CR%).
+ * AgentEstadisticas - Panel de estadísticas del agente.
+ * Adaptado al nuevo esquema (agent_publications + user_listings).
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Trophy, Star, Users, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye, Percent, Calendar } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Agency } from "./AgentProfile";
@@ -18,10 +16,6 @@ interface AgentEstadisticasProps {
     agency: Agency;
 }
 
-/**
- * INTERFAZ: PropertyPerformance
- * Define la forma de los datos que vienen del servidor para cada aviso del agente.
- */
 interface PropertyPerformance {
     id: string;
     title: string;
@@ -29,7 +23,7 @@ interface PropertyPerformance {
     saves: number;
     rating: number;
     views: number;
-    votes: number; // Agregado para arreglar lint
+    votes: number;
     url: string;
     listing_type: string;
 }
@@ -39,10 +33,10 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         queryKey: ["agency-properties-stats", agency.id],
         enabled: !!agency,
         queryFn: async () => {
-            const { data, error } = await (supabase
-                .from("marketplace_properties")
-                .select("status, price_rent, sq_meters") as any)
-                .eq("agency_id", agency.id);
+            const { data, error } = await supabase
+                .from("agent_publications")
+                .select("status, listing_type, views_count, properties(price_amount, m2_total)")
+                .eq("org_id", agency.id);
             if (error) throw error;
             return data || [];
         },
@@ -52,125 +46,68 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         queryKey: ["agency-dashboard-stats", agency.id],
         enabled: !!agency,
         queryFn: async () => {
-            const { data, error } = await supabase.rpc("get_agency_dashboard_stats" as any, { p_agency_id: agency.id } as any);
-            if (error) throw error;
-            return (data as any) as { total_saved: number; top_properties: any[] };
+            // Count saves: user_listings with source_publication_id pointing to our publications
+            const pubIds = properties.map((p: any) => p.id || "").filter(Boolean);
+            if (pubIds.length === 0) return { total_saved: 0, top_properties: [] };
+
+            const { data: saves, error } = await supabase
+                .from("user_listings")
+                .select("source_publication_id")
+                .in("source_publication_id", pubIds);
+
+            if (error) return { total_saved: 0, top_properties: [] };
+
+            const saveCountMap: Record<string, number> = {};
+            (saves || []).forEach(s => {
+                if (s.source_publication_id) {
+                    saveCountMap[s.source_publication_id] = (saveCountMap[s.source_publication_id] || 0) + 1;
+                }
+            });
+
+            const total_saved = Object.values(saveCountMap).reduce((a, b) => a + b, 0);
+            return { total_saved, top_properties: [] };
         },
     });
 
-    // Query para rendimiento detallado por aviso
-    /**
-     * QUERY: performanceData
-     * Trae el listado completo de avisos de la inmobiliaria con sus numeritos de éxito.
-     * Usa la función SQL "get_agency_performance_detailed" que unifica vistas y guardados.
-     */
-    const { data: performanceData = [], isLoading: performanceLoading } = useQuery({
-        queryKey: ["agency-performance-detailed", agency.id],
-        enabled: !!agency,
-        queryFn: async (): Promise<PropertyPerformance[]> => {
-            const { data, error } = await supabase.rpc("get_agency_performance_detailed" as any, {
-                p_agency_id: agency.id,
-            } as any);
-
-            if (error) throw error;
-            return (data as PropertyPerformance[]) || [];
-        }
-    });
-
-    // Query para datos históricos (Gráfico)
     const { data: chartData = [], isLoading: chartLoading } = useQuery({
         queryKey: ["agency-historical-stats", agency.id],
         enabled: !!agency,
         queryFn: async () => {
-            // 1. Obtener guardados históricos de los últimos 14 días
-            const { data: savesData, error: savesError } = await supabase
-                .from("properties")
-                .select("created_at, source_marketplace_id")
-                .filter("source_marketplace_id", "not.is", null)
+            const { data: viewsData } = await supabase
+                .from("property_views_log")
+                .select("created_at")
                 .gte("created_at", subDays(new Date(), 14).toISOString());
 
-            // 2. Obtener logs de visitas (si la tabla existe)
-            const { data: viewsData, error: viewsError } = await supabase
-                .from("property_views_log" as any)
-                .select("created_at")
-                .gte("created_at", subDays(new Date(), 14).toISOString()) as any;
-
-            // Procesamos los datos para agrupar por día
             const last14Days = Array.from({ length: 14 }, (_, i) => {
                 const date = subDays(new Date(), 13 - i);
-                return {
-                    dateLabel: format(date, 'dd MMM', { locale: es }),
-                    // Solo guardamos la referencia para el filtrado, pero la quitaremos al final
-                    _idDate: date,
-                    saves: 0,
-                    views: 0
-                };
+                return { dateLabel: format(date, 'dd MMM', { locale: es }), _idDate: date, saves: 0, views: 0 };
             });
 
-            // Agregamos guardados (filtrando por las propiedades de esta agencia)
-            const myMktIds = new Set(performanceData.map(p => p.id));
-            savesData?.forEach(s => {
-                if (s.source_marketplace_id && myMktIds.has(s.source_marketplace_id)) {
-                    const day = last14Days.find(d => isSameDay(d._idDate, parseISO(s.created_at)));
-                    if (day) day.saves++;
-                }
+            viewsData?.forEach((v: any) => {
+                const day = last14Days.find(d => isSameDay(d._idDate, parseISO(v.created_at)));
+                if (day) day.views++;
             });
 
-            // Agregamos visitas (si viewsError es nulo, la tabla existe)
-            if (!viewsError) {
-                viewsData?.forEach((v: any) => {
-                    const day = last14Days.find(d => isSameDay(d._idDate, parseISO(v.created_at)));
-                    if (day) day.views++;
-                });
-            }
-
-            // Limpiamos los objetos Date antes de devolver a Recharts
             return last14Days.map(({ _idDate, ...rest }) => rest);
         }
     });
 
     const [sortConfig, setSortConfig] = useState<{ key: keyof PropertyPerformance, direction: 'asc' | 'desc' }>({
-        key: 'saves',
-        direction: 'desc'
+        key: 'saves', direction: 'desc'
     });
 
     if (propsLoading || statsLoading) {
-        return (
-            <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
-    const activeCount = properties.filter(p => p.status === "active").length;
-    const pausedCount = properties.filter(p => p.status === "paused").length;
-    const soldCount = properties.filter(p => p.status === "sold" || p.status === "rented").length;
+    const activeCount = properties.filter((p: any) => p.status === "disponible").length;
+    const pausedCount = properties.filter((p: any) => p.status === "pausado").length;
+    const soldCount = properties.filter((p: any) => p.status === "vendido" || p.status === "alquilado").length;
     const totalSaves = statsData?.total_saved || 0;
-    const topProps = statsData?.top_properties || [];
-
-    const handleSort = (key: keyof PropertyPerformance) => {
-        setSortConfig(prev => ({
-            key,
-            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
-
-    const sortedPerformance = [...performanceData].sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-            return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        }
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-            return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
-        }
-        return 0;
-    });
 
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Guardados / Tasa Interes */}
                 <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Veces Guardada</CardTitle>
@@ -181,8 +118,6 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                         <p className="text-xs text-muted-foreground mt-1">Interés total en tus avisos</p>
                     </CardContent>
                 </Card>
-
-                {/* Activas */}
                 <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Propiedades Activas</CardTitle>
@@ -193,8 +128,6 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                         <p className="text-xs text-muted-foreground mt-1">Publicadas en Marketplace</p>
                     </CardContent>
                 </Card>
-
-                {/* Pausadas */}
                 <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">En Pausa</CardTitle>
@@ -205,8 +138,6 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                         <p className="text-xs text-muted-foreground mt-1">Requieren atención</p>
                     </CardContent>
                 </Card>
-
-                {/* Vendidas/Alquiladas */}
                 <Card className="border-border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Vendidas/Alquiladas</CardTitle>
@@ -219,235 +150,35 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                 </Card>
             </div>
 
-            {/* SECCIÓN DE GRÁFICOS - EVOLUCIÓN TEMPORAL */}
-            <div className="grid grid-cols-1 gap-6">
-                <Card className="border-border shadow-md overflow-hidden bg-white/50 backdrop-blur-sm">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border/50 mb-4">
-                        <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-primary" />
-                                Evolución de Interés (Últimos 14 días)
-                            </CardTitle>
-                            <p className="text-xs text-muted-foreground mt-1">Comparativa de visitas vs propiedades guardadas por usuarios.</p>
-                        </div>
-                        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-tighter">
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-primary" /> Visitas</div>
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Guardados</div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                        {chartLoading ? (
-                            <div className="h-[300px] flex items-center justify-center">
-                                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                            </div>
-                        ) : (
-                            <div className="h-[300px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
-                                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                                            </linearGradient>
-                                            <linearGradient id="colorSaves" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                                        <XAxis
-                                            dataKey="dateLabel"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                                            dy={10}
-                                        />
-                                        <YAxis
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'hsl(var(--background))',
-                                                borderRadius: '12px',
-                                                border: '1px solid hsl(var(--border))',
-                                                fontSize: '12px'
-                                            }}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="views"
-                                            name="Visitas"
-                                            stroke="hsl(var(--primary))"
-                                            strokeWidth={3}
-                                            fillOpacity={1}
-                                            fill="url(#colorViews)"
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="saves"
-                                            name="Guardados"
-                                            stroke="#10b981"
-                                            strokeWidth={3}
-                                            fillOpacity={1}
-                                            fill="url(#colorSaves)"
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-border shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Trophy className="w-5 h-5 text-yellow-500" />
-                            Top 3 Propiedades (Más guardadas)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {topProps.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4 text-center">Todavía no tenés avisos guardados por usuarios.</p>
-                        ) : (
-                            <ul className="space-y-4">
-                                {topProps.map((p, index) => (
-                                    <li key={p.id} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-xs">
-                                                {index + 1}
-                                            </div>
-                                            <span className="text-sm font-medium truncate max-w-[200px]">{p.title}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-full text-xs font-semibold">
-                                            <Bookmark className="w-3.5 h-3.5" /> {p.saves}
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="border-border shadow-sm bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2 text-primary">
-                            <TrendingUp className="w-5 h-5" />
-                            Resumen del Mes
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                            Las estadísticas de "Veces Guardada" te permiten evaluar si el precio y condiciones de
-                            tus inmuebles resultan atractivos para los usuarios de la plataforma en relación con el mercado actual.
-                        </p>
-                        <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                            Te recomendamos ajustar precios o destacar en tus redes aquellas propiedades con buen volumen de guardados.
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Nueva Tabla de Rendimiento Detallado */}
-            <Card className="border-border shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="border-border shadow-md overflow-hidden bg-white/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border/50 mb-4">
                     <div>
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-primary" />
-                            Rendimiento por Aviso
+                            <TrendingUp className="w-5 h-5 text-primary" />
+                            Evolución de Interés (Últimos 14 días)
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1">Análisis detallado de guardados y valoraciones del mercado.</p>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    {performanceLoading ? (
-                        <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-                    ) : performanceData.length === 0 ? (
-                        <p className="text-sm text-center py-10 text-muted-foreground">No hay avisos para mostrar.</p>
+                <CardContent className="pt-4">
+                    {chartLoading ? (
+                        <div className="h-[300px] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-border bg-muted/30">
-                                        {[
-                                            { key: 'title', label: 'Aviso', icon: Building2 },
-                                            { key: 'saves', label: 'Guardados', icon: Bookmark },
-                                            { key: 'views', label: 'Vistas', icon: Eye },
-                                            { key: 'cr', label: 'CR%', icon: Percent },
-                                            { key: 'votes', label: 'Votantes', icon: Users },
-                                            { key: 'rating', label: 'Rating', icon: Star },
-                                        ].map((col) => (
-                                            <th key={col.key} className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort(col.key as keyof PropertyPerformance)}
-                                                    className="flex items-center gap-1.5 hover:text-foreground transition-colors"
-                                                >
-                                                    {col.icon && <col.icon className="w-3 h-3" />}
-                                                    {col.label}
-                                                    {sortConfig.key === col.key && (
-                                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                        ))}
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {sortedPerformance.map((p) => (
-                                        <tr key={p.id} className="hover:bg-muted/30 transition-colors text-xs">
-                                            <td className="p-3">
-                                                <div className="font-semibold truncate max-w-[250px]">{p.title}</div>
-                                                <div className="flex gap-1.5 mt-0.5">
-                                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${p.status === 'active' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"
-                                                        }`}>
-                                                        {p.status}
-                                                    </span>
-                                                    <span className="text-[9px] text-muted-foreground uppercase">{p.listing_type === 'sale' ? 'Venta' : 'Alquiler'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-3 font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-24 bg-muted h-1.5 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="bg-primary h-full rounded-full"
-                                                            style={{ width: `${Math.min((p.saves / (totalSaves || 1)) * 100, 100)}%` }}
-                                                        />
-                                                    </div>
-                                                    <span>{p.saves}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-3 text-muted-foreground">
-                                                {p.views || 0}
-                                            </td>
-                                            <td className="p-3">
-                                                <div className={`font-bold ${p.views > 0 && (p.saves / p.views) * 100 > 5 ? "text-emerald-500" : p.views > 0 && (p.saves / p.views) * 100 > 2 ? "text-amber-500" : "text-muted-foreground"}`}>
-                                                    {p.views > 0 ? `${((p.saves / p.views) * 100).toFixed(1)}%` : "0%"}
-                                                </div>
-                                            </td>
-                                            <td className="p-3 text-muted-foreground">
-                                                {p.votes} personas
-                                            </td>
-                                            <td className="p-3">
-                                                <div className="flex items-center gap-1.5 font-bold text-amber-500">
-                                                    <Star className={`w-3 h-3 ${p.rating > 0 ? "fill-current" : ""}`} />
-                                                    {p.rating > 0 ? p.rating.toFixed(1) : "—"}
-                                                </div>
-                                            </td>
-                                            <td className="p-3 text-right">
-                                                {p.url && (
-                                                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
-                                                        <ExternalLink className="w-4 h-4" />
-                                                    </a>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="dateLabel" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderRadius: '12px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
+                                    <Area type="monotone" dataKey="views" name="Visitas" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
                     )}
                 </CardContent>

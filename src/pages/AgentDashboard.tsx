@@ -2,12 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  Building2,
-  Loader2,
-  Home,
-  BarChart3,
-  UserCircle,
-  Users
+  Building2, Loader2, Home, BarChart3, UserCircle, Users
 } from "lucide-react";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
@@ -39,7 +34,6 @@ const AgentDashboard = () => {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Perfil del usuario — status centralizado via useProfile
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
   const profileStatus: UserStatus = profile?.status ?? "pending";
@@ -53,15 +47,29 @@ const AgentDashboard = () => {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
 
-      // Solo fetch de agency — el profile status lo maneja useProfile
-      const { data: agencies, error: agencyErr } = await supabase
-        .from("agencies")
+      // Get agency org
+      const { data: orgs, error: orgErr } = await supabase
+        .from("organizations")
         .select("*")
         .eq("created_by", user.id)
+        .eq("type", "agency_team" as any)
         .limit(1);
 
-      if (agencyErr) console.error(agencyErr.message);
-      else if (agencies && agencies.length > 0) setAgency(agencies[0] as Agency);
+      if (orgErr) console.error(orgErr.message);
+      else if (orgs && orgs.length > 0) {
+        const org = orgs[0];
+        // Map organization to Agency interface
+        setAgency({
+          id: org.id,
+          name: org.name,
+          contact_name: profile?.displayName || "",
+          contact_email: user.email || "",
+          contact_phone: profile?.phone || "",
+          logo_url: "",
+          created_by: org.created_by,
+          created_at: org.created_at,
+        } as Agency);
+      }
 
       setLoading(false);
     };
@@ -78,7 +86,6 @@ const AgentDashboard = () => {
     );
   }
 
-  // Map profile status to the UI status used by AgentHeader
   const effectiveStatus = profileStatus === "active" ? "approved" : profileStatus;
 
   return (
