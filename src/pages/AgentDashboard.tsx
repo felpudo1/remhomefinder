@@ -65,7 +65,8 @@ const AgentDashboard = () => {
           contact_name: profile?.displayName || "",
           contact_email: user.email || "",
           contact_phone: profile?.phone || "",
-          logo_url: "",
+          contact_person_phone: "",
+          description: org.description || "",
           created_by: org.created_by,
           created_at: org.created_at,
         } as Agency);

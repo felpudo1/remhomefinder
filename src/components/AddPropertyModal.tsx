@@ -421,7 +421,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     setIsCheckingUrl(true);
     try {
-      const { data } = await supabase.from("properties").select("id").eq("url", urlToCheck.trim()).limit(1);
+      const { data } = await supabase.from("properties").select("id").eq("source_url", urlToCheck.trim()).limit(1);
       setUrlDuplicated(!!(data && data.length > 0));
     } catch { setUrlDuplicated(false); }
     finally { setIsCheckingUrl(false); }

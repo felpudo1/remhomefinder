@@ -282,11 +282,11 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
             <FullScreenGallery
                 images={galleryImages}
                 initialIndex={galleryIndex}
-                open={isGalleryOpen}
+                isOpen={isGalleryOpen}
                 onClose={() => setIsGalleryOpen(false)}
             />
 
-            <UpgradePlanModal open={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
+            <UpgradePlanModal open={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} limit={maxAgentPublishes} type="agent" />
             <PremiumWelcomeModal open={isPremiumWelcomeOpen} onClose={() => setIsPremiumWelcomeOpen(false)} />
         </div>
     );
