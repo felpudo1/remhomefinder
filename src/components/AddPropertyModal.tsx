@@ -257,7 +257,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       const { data: existing } = await supabase
         .from("properties")
         .select("id")
-        .eq("url", url.trim())
+        .eq("source_url", url.trim())
         .limit(1);
       if (existing && existing.length > 0) {
         toast.error("Esta publicación ya fue ingresada anteriormente.");

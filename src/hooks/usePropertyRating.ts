@@ -3,14 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 /**
- * Hook para gestionar el sistema de estrellas (REGLA 2)
- * Se encarga de la persistencia en Supabase y la lógica de promedios.
+ * Hook para gestionar el sistema de estrellas (property_reviews).
+ * Usa organizations + organization_members en lugar de groups.
  */
 export function usePropertyRating(propertyId: string, groupId: string | null) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    // 1. Obtener la calificación del usuario actual y el promedio del grupo
     const { data: ratingsData, isLoading } = useQuery({
         queryKey: ["property-rating", propertyId, groupId],
         enabled: !!propertyId && !!groupId,
@@ -18,27 +17,28 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            // 1. Obtenemos todos los votos del grupo para esta propiedad
-            const { data: ratings, error: ratingsError } = await (supabase
-                .from("property_ratings" as any)
-                .select("*") as any)
+            // We need the actual property_id (not listing ID). 
+            // If propertyId is a listing ID, we need to resolve it.
+            // For now, query property_reviews by property_id and org_id
+            const { data: ratings, error: ratingsError } = await supabase
+                .from("property_reviews")
+                .select("*")
                 .eq("property_id", propertyId)
-                .eq("group_id", groupId);
+                .eq("org_id", groupId);
 
             if (ratingsError) throw ratingsError;
 
-            // 2. Obtenemos el total de integrantes del grupo
             const { count: groupMembersCount, error: groupError } = await supabase
-                .from("group_members")
+                .from("organization_members")
                 .select("*", { count: 'exact', head: true })
-                .eq("group_id", groupId);
+                .eq("org_id", groupId);
 
             if (groupError) throw groupError;
 
-            const userVote = ratings.find((r) => r.user_id === user.id)?.rating || 0;
-            const totalVotes = ratings.length;
+            const userVote = ratings?.find((r) => r.user_id === user.id)?.rating || 0;
+            const totalVotes = ratings?.length || 0;
             const averageRating = totalVotes > 0
-                ? ratings.reduce((acc, curr) => acc + curr.rating, 0) / totalVotes
+                ? ratings!.reduce((acc, curr) => acc + curr.rating, 0) / totalVotes
                 : 0;
 
             return {
@@ -51,21 +51,19 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
         },
     });
 
-    // 2. Mutación para guardar/actualizar el voto
     const rateMutation = useMutation({
         mutationFn: async (newRating: number) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user || !groupId) throw new Error("Acceso denegado");
 
-            // Usar upsert basado en el UNIQUE(property_id, user_id)
-            const { error } = await (supabase
-                .from("property_ratings" as any) as any)
+            const { error } = await supabase
+                .from("property_reviews")
                 .upsert({
                     property_id: propertyId,
                     user_id: user.id,
-                    group_id: groupId,
+                    org_id: groupId,
                     rating: newRating,
-                });
+                }, { onConflict: "property_id,user_id" });
 
             if (error) throw error;
         },
@@ -74,10 +72,8 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             toast({ title: "¡Voto registrado!", description: "Tu familia podrá ver tu opinión. ⭐" });
         },
         onError: (error: any) => {
-            // REGLA 3: Solo lo solicitado - Mensaje amigable en lugar de error técnico
             const isDuplicate = error.code === "23505" ||
-                error.message?.includes("unique constraint") ||
-                error.message?.includes("property_ratings_property_id_user_id_key");
+                error.message?.includes("unique constraint");
 
             toast({
                 title: "Error al votar",

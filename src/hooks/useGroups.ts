@@ -21,6 +21,10 @@ export interface GroupMember {
   email?: string;
 }
 
+/**
+ * Hook para gestionar organizaciones (antes "groups").
+ * Usa organizations + organization_members.
+ */
 export function useGroups() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -31,42 +35,32 @@ export function useGroups() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // Get groups where user is a member
+      // Get orgs where user is a member (RLS handles visibility)
       const { data: memberships, error: memError } = await supabase
-        .from("group_members")
-        .select("group_id")
+        .from("organization_members")
+        .select("org_id")
         .eq("user_id", user.id);
 
       if (memError) throw memError;
 
-      const groupIds = memberships?.map((m) => m.group_id) || [];
+      const orgIds = memberships?.map((m) => m.org_id) || [];
+      if (orgIds.length === 0) return [];
 
-      // Also get groups created by user (owner might not be in members yet)
-      const { data: ownedGroups, error: ownError } = await supabase
-        .from("groups")
+      const { data: orgs, error: orgError } = await supabase
+        .from("organizations")
         .select("*")
-        .eq("created_by", user.id);
+        .in("id", orgIds);
 
-      if (ownError) throw ownError;
+      if (orgError) throw orgError;
 
-      let allGroups: Group[] = (ownedGroups as Group[]) || [];
-
-      if (groupIds.length > 0) {
-        const { data: memberGroups, error: grpError } = await supabase
-          .from("groups")
-          .select("*")
-          .in("id", groupIds);
-
-        if (grpError) throw grpError;
-
-        // Merge without duplicates
-        const existingIds = new Set(allGroups.map((g) => g.id));
-        (memberGroups || []).forEach((g) => {
-          if (!existingIds.has(g.id)) allGroups.push(g as Group);
-        });
-      }
-
-      return allGroups;
+      return (orgs || []).map((o): Group => ({
+        id: o.id,
+        name: o.name,
+        description: o.description || "",
+        created_by: o.created_by,
+        invite_code: o.invite_code,
+        created_at: o.created_at,
+      }));
     },
   });
 
@@ -76,21 +70,20 @@ export function useGroups() {
       if (!user) throw new Error("No autenticado");
 
       const { data, error } = await supabase
-        .from("groups")
-        .insert({ name, description, created_by: user.id })
+        .from("organizations")
+        .insert({ name, description, type: "family" as any, created_by: user.id })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Add creator as member with 'owner' role
-      await supabase.from("group_members").insert({
-        group_id: data.id,
+      await supabase.from("organization_members").insert({
+        org_id: data.id,
         user_id: user.id,
-        role: "owner",
+        role: "owner" as any,
       });
 
-      return data as Group;
+      return { id: data.id, name: data.name, description: data.description, created_by: data.created_by, invite_code: data.invite_code, created_at: data.created_at } as Group;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
@@ -103,32 +96,30 @@ export function useGroups() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
-      // Find group by invite code using security definer function
-      const { data: foundGroups, error: findError } = await supabase
-        .rpc("find_group_by_invite_code", { _code: inviteCode });
+      const { data: foundOrgs, error: findError } = await supabase
+        .rpc("find_org_by_invite_code", { _code: inviteCode });
 
       if (findError) throw findError;
-      if (!foundGroups || foundGroups.length === 0) {
+      if (!foundOrgs || foundOrgs.length === 0) {
         throw new Error("Código de invitación inválido");
       }
 
-      const group = foundGroups[0];
+      const org = foundOrgs[0];
 
-      // Join the group
       const { error: joinError } = await supabase
-        .from("group_members")
-        .insert({ group_id: group.id, user_id: user.id, role: "member" });
+        .from("organization_members")
+        .insert({ org_id: org.id, user_id: user.id, role: "member" as any });
 
       if (joinError) {
         if (joinError.code === "23505") throw new Error("Ya sos miembro de este grupo");
         throw joinError;
       }
 
-      return group;
+      return org;
     },
-    onSuccess: (group) => {
+    onSuccess: (org) => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
-      toast({ title: "¡Te uniste!", description: `Ahora sos parte de "${group.name}".` });
+      toast({ title: "¡Te uniste!", description: `Ahora sos parte de "${org.name}".` });
     },
   });
 
@@ -138,9 +129,9 @@ export function useGroups() {
       if (!user) throw new Error("No autenticado");
 
       const { error } = await supabase
-        .from("group_members")
+        .from("organization_members")
         .delete()
-        .eq("group_id", groupId)
+        .eq("org_id", groupId)
         .eq("user_id", user.id);
 
       if (error) throw error;
@@ -154,7 +145,7 @@ export function useGroups() {
 
   const deleteGroupMutation = useMutation({
     mutationFn: async (groupId: string) => {
-      const { error } = await supabase.from("groups").delete().eq("id", groupId);
+      const { error } = await supabase.from("organizations").delete().eq("id", groupId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -167,9 +158,9 @@ export function useGroups() {
   const removeMemberMutation = useMutation({
     mutationFn: async ({ groupId, userId }: { groupId: string; userId: string }) => {
       const { error } = await supabase
-        .from("group_members")
+        .from("organization_members")
         .delete()
-        .eq("group_id", groupId)
+        .eq("org_id", groupId)
         .eq("user_id", userId);
 
       if (error) throw error;
@@ -182,13 +173,12 @@ export function useGroups() {
 
   const fetchMembers = async (groupId: string): Promise<GroupMember[]> => {
     const { data, error } = await supabase
-      .from("group_members")
+      .from("organization_members")
       .select("*")
-      .eq("group_id", groupId);
+      .eq("org_id", groupId);
 
     if (error) throw error;
 
-    // Enrich with profile display names
     const userIds = (data || []).map((m) => m.user_id);
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
@@ -198,12 +188,22 @@ export function useGroups() {
 
       const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.display_name]));
       return (data || []).map((m) => ({
-        ...m,
+        id: m.id,
+        group_id: m.org_id,
+        user_id: m.user_id,
+        role: m.role,
+        created_at: m.created_at,
         display_name: profileMap.get(m.user_id) || "Usuario",
       })) as GroupMember[];
     }
 
-    return (data || []) as GroupMember[];
+    return (data || []).map((m) => ({
+      id: m.id,
+      group_id: m.org_id,
+      user_id: m.user_id,
+      role: m.role,
+      created_at: m.created_at,
+    })) as GroupMember[];
   };
 
   return {

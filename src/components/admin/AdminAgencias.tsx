@@ -8,12 +8,8 @@ import { cn } from "@/lib/utils";
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-/**
- * Interface de registro maestro de usuario enriquecida.
- */
 interface UserMasterRecord {
     id: string;
     display_name: string;
@@ -24,7 +20,6 @@ interface UserMasterRecord {
     created_at: string;
     referred_by_id?: string | null;
     referred_by_name?: string;
-    // Datos de agencia (opcionales)
     agency_name?: string;
     agency_logo?: string;
     property_count: number;
@@ -41,10 +36,6 @@ const STATUS_CONFIG = {
     rejected: { label: "Eliminado", icon: Trash2, color: "bg-red-100 text-red-800" },
 };
 
-/**
- * Tablón Maestro de Datos de Usuarios y Agentes.
- * Centraliza toda la información de contacto y negocio.
- */
 export function AdminAgencias({ toast }: Props) {
     const [records, setRecords] = useState<UserMasterRecord[]>([]);
     const [loading, setLoading] = useState(true);
@@ -60,7 +51,6 @@ export function AdminAgencias({ toast }: Props) {
         try {
             setLoading(true);
 
-            // 1. Traer todos los perfiles (base del tablón maestro)
             const { data: profiles, error: profileError } = await supabase
                 .from("profiles")
                 .select("user_id, display_name, email, phone, status, plan_type, created_at, referred_by_id")
@@ -75,36 +65,34 @@ export function AdminAgencias({ toast }: Props) {
 
             const userIds = profiles.map(p => p.user_id);
 
-            // 2. Traer agencias y referidores en paralelo
-            const [agenciesRes, propCountsRes, referrersRes] = await Promise.all([
-                supabase.from("agencies").select("name, logo_url, created_by, id").in("created_by", userIds),
-                supabase.from("marketplace_properties").select("agency_id"), // Para conteo rápido
+            // Get organizations (agency_team type) and publication counts
+            const [orgsRes, pubCountsRes, referrersRes] = await Promise.all([
+                supabase.from("organizations").select("id, name, created_by, type").eq("type", "agency_team" as any),
+                supabase.from("agent_publications").select("org_id"),
                 supabase.from("profiles").select("user_id, display_name").in("user_id", [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))]),
             ]);
 
-            // Mapeo de agencias
-            const agencyMap: Record<string, any> = {};
-            const agencyIds: string[] = [];
-            for (const a of agenciesRes.data || []) {
-                agencyMap[a.created_by] = a;
-                agencyIds.push(a.id);
+            // Map orgs to users
+            const orgMap: Record<string, any> = {};
+            const orgIds: string[] = [];
+            for (const o of orgsRes.data || []) {
+                orgMap[o.created_by] = o;
+                orgIds.push(o.id);
             }
 
-            // Conteo de propiedades por agencia
+            // Count publications per org
             const countMap: Record<string, number> = {};
-            for (const p of propCountsRes.data || []) {
-                if (agencyIds.includes(p.agency_id)) {
-                    countMap[p.agency_id] = (countMap[p.agency_id] || 0) + 1;
+            for (const p of pubCountsRes.data || []) {
+                if (orgIds.includes(p.org_id)) {
+                    countMap[p.org_id] = (countMap[p.org_id] || 0) + 1;
                 }
             }
 
-            // Mapeo de referidores
             const referrerMap: Record<string, string> = {};
             for (const r of referrersRes.data || []) referrerMap[r.user_id] = r.display_name;
 
-            // 3. Unificar todo
             setRecords(profiles.map(p => {
-                const agency = agencyMap[p.user_id];
+                const org = orgMap[p.user_id];
                 return {
                     id: p.user_id,
                     display_name: p.display_name,
@@ -115,9 +103,8 @@ export function AdminAgencias({ toast }: Props) {
                     created_at: p.created_at,
                     referred_by_id: p.referred_by_id,
                     referred_by_name: p.referred_by_id ? referrerMap[p.referred_by_id] : undefined,
-                    agency_name: agency?.name,
-                    agency_logo: agency?.logo_url,
-                    property_count: agency ? (countMap[agency.id] || 0) : 0,
+                    agency_name: org?.name,
+                    property_count: org ? (countMap[org.id] || 0) : 0,
                 };
             }));
         } catch (err: any) {
@@ -169,7 +156,6 @@ export function AdminAgencias({ toast }: Props) {
 
     return (
         <div className="space-y-3">
-            {/* Buscador */}
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -222,12 +208,10 @@ export function AdminAgencias({ toast }: Props) {
                         </TableHeader>
                         <TableBody>
                             {filteredRecords.map((record) => {
-                                // Guarda de estado para evitar crash por datos corruptos
                                 const statusKey = record.status as keyof typeof STATUS_CONFIG;
                                 const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.active;
                                 const StatusIcon = statusCfg.icon || User;
 
-                                // Formateo seguro de fecha
                                 let formattedDate = "-";
                                 try {
                                     if (record.created_at) {
@@ -243,31 +227,21 @@ export function AdminAgencias({ toast }: Props) {
                                         <TableCell className="py-2 px-3">
                                             <div className="flex items-center gap-1.5 min-w-0">
                                                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden">
-                                                    {record.agency_logo
-                                                        ? <img src={record.agency_logo} alt={record.agency_name} className="w-full h-full object-cover" />
-                                                        : record.agency_name ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <User className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    }
+                                                    {record.agency_name ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <User className="w-3.5 h-3.5 text-muted-foreground" />}
                                                 </div>
                                                 <span className="truncate text-sm font-bold tracking-tight">{record.display_name}</span>
                                                 <div className="flex items-center gap-1 shrink-0">
                                                     {record.plan_type === "premium" ? (
-                                                        <span title="PREMIUM">
-                                                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                        </span>
+                                                        <span title="PREMIUM"><Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /></span>
                                                     ) : (
-                                                        <span title="FREE">
-                                                            <Star className="w-3 h-3 text-slate-300" />
-                                                        </span>
+                                                        <span title="FREE"><Star className="w-3 h-3 text-slate-300" /></span>
                                                     )}
                                                     {record.referred_by_id && (
-                                                        <span title="REFERENCIADO">
-                                                            <Medal className="w-3 h-3 text-blue-500" />
-                                                        </span>
+                                                        <span title="REFERENCIADO"><Medal className="w-3 h-3 text-blue-500" /></span>
                                                     )}
                                                 </div>
                                             </div>
                                         </TableCell>
-
                                         <TableCell className="py-2 px-3">
                                             <div className="flex flex-col min-w-0">
                                                 <span className="truncate text-[11px] font-semibold text-muted-foreground">{record.email || "-"}</span>
@@ -276,13 +250,9 @@ export function AdminAgencias({ toast }: Props) {
                                                 </span>
                                             </div>
                                         </TableCell>
-
                                         <TableCell className="py-2 px-3">
-                                            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">
-                                                {formattedDate}
-                                            </span>
+                                            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{formattedDate}</span>
                                         </TableCell>
-
                                         <TableCell className="py-2 px-3">
                                             <div className="flex flex-col min-w-0">
                                                 {record.agency_name && (
@@ -298,20 +268,17 @@ export function AdminAgencias({ toast }: Props) {
                                                 {!record.agency_name && !record.referred_by_name && <span className="text-[10px] text-muted-foreground">-</span>}
                                             </div>
                                         </TableCell>
-
                                         <TableCell className="py-2 px-3 text-center">
                                             <span className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-5 h-5 rounded-full text-[10px] font-bold">
                                                 {record.property_count}
                                             </span>
                                         </TableCell>
-
                                         <TableCell className="py-2 px-3">
                                             <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase", statusCfg.color)}>
                                                 <StatusIcon className="w-3 h-3" />
                                                 {statusCfg.label}
                                             </span>
                                         </TableCell>
-
                                         <TableCell className="py-2 px-3">
                                             <span className={cn(
                                                 "inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",

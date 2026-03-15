@@ -1,22 +1,27 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { mapDbToProperty } from "@/lib/mappers/propertyMappers";
+import { Property, PropertyComment } from "@/types/property";
+import { resolveImages } from "@/lib/mappers/propertyMappers";
 
 /**
- * Hook especializado para la lectura de propiedades.
- * Maneja la subscripción en tiempo real y la cache de TanStack Query.
+ * Hook para leer user_listings + properties + family_comments del usuario autenticado.
+ * Adaptado al nuevo esquema (organizations + user_listings).
  */
 export function usePropertyQueries() {
     const queryClient = useQueryClient();
 
-    // Suscripción en tiempo real (Real-time)
     useEffect(() => {
         const channel = supabase
             .channel("properties_queries_realtime")
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "property_comments" },
+                { event: "*", schema: "public", table: "family_comments" },
+                () => queryClient.invalidateQueries({ queryKey: ["properties"] })
+            )
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "user_listings" },
                 () => queryClient.invalidateQueries({ queryKey: ["properties"] })
             )
             .on(
@@ -34,36 +39,106 @@ export function usePropertyQueries() {
     const query = useQuery({
         queryKey: ["properties"],
         queryFn: async () => {
-            // 1. Obtener propiedades
-            const { data: props, error: propsError } = await supabase
-                .from("properties")
-                .select("*")
-                // Excluir propiedades ocultadas por el administrador (soft delete)
-                .eq("admin_hidden", false)
+            // 1. Get user listings (includes org_id filter via RLS)
+            const { data: listings, error: listingsError } = await supabase
+                .from("user_listings")
+                .select("*, properties(*)")
                 .order("created_at", { ascending: false });
 
-            if (propsError) throw propsError;
-            if (!props) return [];
+            if (listingsError) throw listingsError;
+            if (!listings || listings.length === 0) return [];
 
-            const propertyIds = props.map((p) => p.id);
+            const listingIds = listings.map((l) => l.id);
 
-            // 2. Obtener comentarios asociados
+            // 2. Get family comments for these listings
             let allComments: any[] = [];
-            if (propertyIds.length > 0) {
+            if (listingIds.length > 0) {
                 const { data: commentsData, error: commentsError } = await supabase
-                    .from("property_comments")
+                    .from("family_comments")
                     .select("*")
-                    .in("property_id", propertyIds)
+                    .in("user_listing_id", listingIds)
                     .order("created_at", { ascending: true });
 
                 if (commentsError) throw commentsError;
                 allComments = commentsData || [];
             }
 
-            // 3. Mapear datos a modelo UI
-            return props.map((p) =>
-                mapDbToProperty(p, allComments.filter((c) => c.property_id === p.id))
-            );
+            // 3. Map to UI model
+            return listings.map((listing): Property => {
+                const p = listing.properties as any;
+                if (!p) {
+                    // Fallback if join fails
+                    return {
+                        id: listing.id,
+                        url: "",
+                        title: "Sin datos",
+                        priceRent: 0,
+                        priceExpenses: 0,
+                        totalCost: 0,
+                        currency: "USD",
+                        neighborhood: "",
+                        city: "",
+                        sqMeters: 0,
+                        rooms: 0,
+                        status: listing.current_status as any || "ingresado",
+                        images: [],
+                        aiSummary: "",
+                        createdByEmail: "",
+                        comments: [],
+                        createdAt: new Date(listing.created_at),
+                        deletedReason: "",
+                        deletedByEmail: "",
+                        discardedReason: "",
+                        discardedByEmail: "",
+                        statusChangedByEmail: "",
+                        listingType: listing.listing_type || "rent",
+                        ref: "",
+                        details: "",
+                        sourceMarketplaceId: listing.source_publication_id || null,
+                    };
+                }
+
+                const comments = allComments
+                    .filter((c) => c.user_listing_id === listing.id)
+                    .map((c): PropertyComment => ({
+                        id: c.id,
+                        author: c.author || "Anónimo",
+                        avatar: c.avatar || "",
+                        text: c.text || "",
+                        createdAt: new Date(c.created_at),
+                    }));
+
+                return {
+                    id: listing.id, // Use listing ID as the main ID for UI operations
+                    url: p.source_url || "",
+                    title: p.title,
+                    priceRent: Number(p.price_amount),
+                    priceExpenses: Number(p.price_expenses),
+                    totalCost: Number(p.total_cost),
+                    currency: p.currency || "USD",
+                    neighborhood: p.neighborhood || "",
+                    city: p.city || "",
+                    sqMeters: Number(p.m2_total),
+                    rooms: p.rooms || 0,
+                    status: (listing.current_status as any) || "ingresado",
+                    images: resolveImages(p.images as string[] | null),
+                    aiSummary: p.details || "",
+                    createdByEmail: "",
+                    comments,
+                    createdAt: new Date(listing.created_at),
+                    deletedReason: "",
+                    deletedByEmail: "",
+                    discardedReason: "",
+                    discardedByEmail: "",
+                    statusChangedByEmail: "",
+                    statusChangedAt: listing.updated_at ? new Date(listing.updated_at) : null,
+                    groupId: listing.org_id || null,
+                    sourceMarketplaceId: listing.source_publication_id || null,
+                    listingType: (listing.listing_type as "rent" | "sale") || "rent",
+                    ref: p.ref || "",
+                    details: p.details || "",
+                };
+            });
         },
     });
 

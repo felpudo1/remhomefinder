@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 
 /**
- * Hook especializado para las mutaciones de propiedades (escritura).
+ * Hook para mutaciones: insertar propiedades + user_listings,
+ * cambiar estado via status_history_log, agregar family_comments.
  */
 export function usePropertyMutations() {
     const queryClient = useQueryClient();
 
-    // 1. Agregar Propiedad
+    // 1. Agregar Propiedad (properties + user_listings)
     const addPropertyMutation = useMutation({
         mutationFn: async (form: {
             url: string;
@@ -30,95 +31,134 @@ export function usePropertyMutations() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
 
-            const insertData: any = {
-                user_id: user.id,
-                url: form.url || "",
-                title: form.title,
-                price_rent: form.priceRent,
-                price_expenses: form.priceExpenses,
-                total_cost: form.priceRent + form.priceExpenses,
-                currency: form.currency,
-                neighborhood: form.neighborhood,
-                city: form.city || "",
-                sq_meters: form.sqMeters,
-                rooms: form.rooms,
-                ai_summary: form.aiSummary,
-                created_by_email: user.email || "",
-                images: form.images || [],
-                listing_type: (form.listingType as "rent" | "sale") || "rent",
-                group_id: form.groupId || null,
-                ref: form.ref || "",
-                details: form.details || "",
-            };
+            // Get user's org
+            let orgId = form.groupId;
+            if (!orgId) {
+                const { data: membership } = await supabase
+                    .from("organization_members")
+                    .select("org_id")
+                    .eq("user_id", user.id)
+                    .limit(1)
+                    .maybeSingle();
+                orgId = membership?.org_id || null;
+            }
+            if (!orgId) throw new Error("No pertenecés a ninguna organización");
 
-            const { data, error } = await supabase
+            // Insert into properties (physical metadata)
+            const { data: prop, error: propError } = await supabase
                 .from("properties")
-                .insert(insertData)
+                .insert({
+                    source_url: form.url || null,
+                    title: form.title,
+                    price_amount: form.priceRent,
+                    price_expenses: form.priceExpenses,
+                    total_cost: form.priceRent + form.priceExpenses,
+                    currency: form.currency as any,
+                    neighborhood: form.neighborhood,
+                    city: form.city || "",
+                    m2_total: form.sqMeters,
+                    rooms: form.rooms,
+                    images: form.images || [],
+                    created_by: user.id,
+                    ref: form.ref || "",
+                    details: form.aiSummary || form.details || "",
+                })
                 .select()
                 .single();
 
-            if (error) throw error;
-            return data;
+            if (propError) throw propError;
+
+            // Insert into user_listings (tracking)
+            const { data: listing, error: listingError } = await supabase
+                .from("user_listings")
+                .insert({
+                    property_id: prop.id,
+                    org_id: orgId,
+                    listing_type: (form.listingType as "rent" | "sale") || "rent",
+                    added_by: user.id,
+                })
+                .select()
+                .single();
+
+            if (listingError) throw listingError;
+            return listing;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["properties"] });
         },
     });
 
-    // 2. Actualizar Estado de Propiedad
+    // 2. Actualizar Estado via status_history_log
     const updateStatusMutation = useMutation({
         mutationFn: async ({
-            id,
+            id, // This is now the user_listing ID
             status,
             deletedReason,
             coordinatedDate,
             groupId,
-            contactedName
+            contactedName,
         }: {
             id: string;
             status: PropertyStatus;
             deletedReason?: string;
             coordinatedDate?: string | null;
             groupId?: string | null;
-            contactedName?: string
+            contactedName?: string;
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
 
-            // Datos de actualización con tipado estricto
-            const updateData: any = {
-                status,
-                status_changed_by: user.id,
-                status_changed_by_email: user.email || ""
+            // Map old status names to new enum values
+            const statusMap: Record<string, string> = {
+                ingresado: "ingresado",
+                contacted: "contactado",
+                coordinated: "visita_coordinada",
+                visited: "visitado",
+                discarded: "descartado",
+                a_analizar: "a_analizar",
             };
 
-            if (groupId !== undefined) updateData.group_id = groupId;
-            if (status === "coordinated" && coordinatedDate) updateData.coordinated_date = coordinatedDate;
-            if (status === "contacted" && contactedName !== undefined) updateData.contacted_name = contactedName;
-            if (status === "eliminado") {
-                updateData.deleted_reason = deletedReason || "";
-                updateData.deleted_by_email = user.email || "";
-            }
-            if (status === "discarded") {
-                updateData.discarded_reason = deletedReason || "";
-                updateData.discarded_by_email = user.email || "";
-            }
+            const newStatus = statusMap[status] || status;
 
-            const { data, error } = await supabase
-                .from("properties")
-                .update(updateData)
+            // Get current status
+            const { data: listing } = await supabase
+                .from("user_listings")
+                .select("current_status")
                 .eq("id", id)
-                .select();
+                .single();
+
+            // Build event metadata
+            const eventMetadata: any = {};
+            if (deletedReason) eventMetadata.reason = deletedReason;
+            if (coordinatedDate) eventMetadata.coordinated_date = coordinatedDate;
+            if (contactedName) eventMetadata.contacted_name = contactedName;
+
+            // Insert into status_history_log (trigger auto-updates user_listings.current_status)
+            const { error } = await supabase
+                .from("status_history_log")
+                .insert({
+                    user_listing_id: id,
+                    old_status: listing?.current_status || null,
+                    new_status: newStatus as any,
+                    changed_by: user.id,
+                    event_metadata: eventMetadata,
+                });
 
             if (error) throw error;
-            if (!data || data.length === 0) throw new Error("Acción no permitida");
+
+            // Update org if groupId changed
+            if (groupId !== undefined) {
+                await supabase
+                    .from("user_listings")
+                    .update({ org_id: groupId } as any)
+                    .eq("id", id);
+            }
 
             return { id, status };
         },
         onMutate: async ({ id, status }) => {
             await queryClient.cancelQueries({ queryKey: ["properties"] });
             const previousProperties = queryClient.getQueryData<Property[]>(["properties"]);
-
             if (previousProperties) {
                 queryClient.setQueryData<Property[]>(
                     ["properties"],
@@ -127,7 +167,7 @@ export function usePropertyMutations() {
             }
             return { previousProperties };
         },
-        onError: (err, variables, context) => {
+        onError: (_err, _variables, context) => {
             if (context?.previousProperties) {
                 queryClient.setQueryData(["properties"], context.previousProperties);
             }
@@ -137,10 +177,10 @@ export function usePropertyMutations() {
         },
     });
 
-    // 3. Agregar Comentario
+    // 3. Agregar Comentario (family_comments)
     const addCommentMutation = useMutation({
         mutationFn: async ({
-            propertyId,
+            propertyId, // This is actually the user_listing ID now
             comment,
         }: {
             propertyId: string;
@@ -149,8 +189,8 @@ export function usePropertyMutations() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
 
-            const { data, error } = await supabase.from("property_comments").insert({
-                property_id: propertyId,
+            const { data, error } = await supabase.from("family_comments").insert({
+                user_listing_id: propertyId,
                 user_id: user.id,
                 author: comment.author,
                 avatar: comment.avatar,

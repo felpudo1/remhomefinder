@@ -88,23 +88,15 @@ export function AdminUsuarios({ toast }: Props) {
                 return;
             }
 
-            // IDs de referidores únicos para buscar sus nombres
             const referrerIds = [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))];
 
-            const [rolesRes, propsRes, agenciesRes, referralsRes, referrersNamesRes] = await Promise.all([
+            const [rolesRes, listingsRes, orgsRes, referralsRes, referrersNamesRes] = await Promise.all([
                 supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
-                supabase.from("properties").select("user_id, source_marketplace_id").in("user_id", userIds),
-                supabase.from("agencies").select("id, created_by, name").in("created_by", userIds),
+                supabase.from("user_listings").select("added_by, source_publication_id").in("added_by", userIds),
+                supabase.from("organizations").select("id, created_by, name, type").eq("type", "agency_team" as any).in("created_by", userIds),
                 supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
                 supabase.from("profiles").select("user_id, display_name").in("user_id", referrerIds),
             ]);
-
-            const agencyIds = (agenciesRes.data || []).map(a => a.id);
-            let marketplacePropsRes = { data: [] as any[] };
-            if (agencyIds.length > 0) {
-                const res = await supabase.from("marketplace_properties").select("agency_id").in("agency_id", agencyIds);
-                marketplacePropsRes = { data: res.data || [] };
-            }
 
             const roleMap: Record<string, string[]> = {};
             for (const r of rolesRes.data || []) {
@@ -114,24 +106,17 @@ export function AdminUsuarios({ toast }: Props) {
 
             const personalCountMap: Record<string, number> = {};
             const savedCountMap: Record<string, number> = {};
-            for (const p of propsRes.data || []) {
-                if (p.source_marketplace_id) {
-                    savedCountMap[p.user_id] = (savedCountMap[p.user_id] || 0) + 1;
+            for (const l of listingsRes.data || []) {
+                if (l.source_publication_id) {
+                    savedCountMap[l.added_by] = (savedCountMap[l.added_by] || 0) + 1;
                 } else {
-                    personalCountMap[p.user_id] = (personalCountMap[p.user_id] || 0) + 1;
+                    personalCountMap[l.added_by] = (personalCountMap[l.added_by] || 0) + 1;
                 }
             }
 
-            const agencyToUserMap: Record<string, string> = {};
             const agencyNameMap: Record<string, string> = {};
-            for (const a of agenciesRes.data || []) {
-                agencyToUserMap[a.id] = a.created_by;
-                agencyNameMap[a.created_by] = a.name;
-            }
-
-            for (const mp of marketplacePropsRes.data || []) {
-                const userId = agencyToUserMap[mp.agency_id];
-                if (userId) personalCountMap[userId] = (personalCountMap[userId] || 0) + 1;
+            for (const o of orgsRes.data || []) {
+                agencyNameMap[o.created_by] = o.name;
             }
 
             const referralsCountMap: Record<string, number> = {};
@@ -217,7 +202,7 @@ export function AdminUsuarios({ toast }: Props) {
         setDeleteReason("");
         try {
             setIsActionInProgress(true);
-            const { error } = await supabase.rpc("admin_physical_delete_user", { _user_id: userId });
+            const { error } = await supabase.rpc("admin_physical_delete_user" as any, { _user_id: userId });
             if (error) {
                 setUsers(previousUsers);
                 toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
@@ -244,7 +229,6 @@ export function AdminUsuarios({ toast }: Props) {
 
     return (
         <div className="space-y-3">
-            {/* Buscador */}
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -315,18 +299,12 @@ export function AdminUsuarios({ toast }: Props) {
                                                     <span className="truncate text-sm font-medium">{user.display_name}</span>
                                                     <div className="flex items-center gap-1 shrink-0">
                                                         {user.plan_type === "premium" ? (
-                                                            <span title="PREMIUM">
-                                                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                            </span>
+                                                            <span title="PREMIUM"><Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /></span>
                                                         ) : (
-                                                            <span title="FREE">
-                                                                <Star className="w-3 h-3 text-slate-300" />
-                                                            </span>
+                                                            <span title="FREE"><Star className="w-3 h-3 text-slate-300" /></span>
                                                         )}
                                                         {user.referred_by_id && (
-                                                            <span title="REFERENCIADO">
-                                                                <Medal className="w-3 h-3 text-blue-500" />
-                                                            </span>
+                                                            <span title="REFERENCIADO"><Medal className="w-3 h-3 text-blue-500" /></span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -347,78 +325,82 @@ export function AdminUsuarios({ toast }: Props) {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <span className={cn(
-                                                    "inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold",
-                                                    user.roles.includes("admin") ? "bg-red-100 text-red-700" :
-                                                        user.roles.includes("agency") ? "bg-blue-100 text-blue-700" :
-                                                            "bg-muted text-muted-foreground"
-                                                )}>
-                                                    {user.roles.includes("admin") ? "Admin" :
-                                                        user.roles.includes("agency") ? "Agente" : "User"}
-                                                </span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {user.roles.map(r => (
+                                                        <span key={r} className={cn(
+                                                            "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase",
+                                                            r === 'admin' ? "bg-amber-100 text-amber-800" :
+                                                                r === 'agency' ? "bg-purple-100 text-purple-800" :
+                                                                    "bg-blue-50 text-blue-700"
+                                                        )}>
+                                                            {r === 'admin' ? '🛡️' : r === 'agency' ? '🏢' : '👤'} {r}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3 text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <span title="Propias" className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-5 h-5 rounded-full text-[10px] font-bold">
+                                                <div className="flex flex-col items-center gap-0.5">
+                                                    <span className="inline-flex items-center justify-center bg-blue-100 text-blue-700 w-5 h-5 rounded-full text-[10px] font-bold">
                                                         {user.personal_count}
                                                     </span>
-                                                    {!user.roles.includes("agency") && (
-                                                        <span title="Guardadas" className="inline-flex items-center justify-center bg-orange-100 text-orange-700 w-5 h-5 rounded-full text-[10px] font-bold">
-                                                            {user.saved_count}
-                                                        </span>
+                                                    {user.saved_count > 0 && (
+                                                        <span className="text-[8px] text-muted-foreground">+{user.saved_count} mkt</span>
                                                     )}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-2 px-3 text-center">
-                                                <span className="text-xs font-semibold text-green-700">{user.referral_count}</span>
+                                                <span className={cn(
+                                                    "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
+                                                    user.referral_count > 0 ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                                                )}>
+                                                    {user.referral_count}
+                                                </span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium", statusCfg.color)}>
+                                                <span className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase", statusCfg.color)}>
                                                     <StatusIcon className="w-3 h-3" />
                                                     {statusCfg.label}
                                                 </span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <Select value={user.plan_type} onValueChange={(v) => updatePlan(user.user_id, v as "free" | "premium")}>
-                                                    <SelectTrigger className={cn(
-                                                        "h-7 rounded-lg text-[10px] font-bold uppercase w-[80px]",
-                                                        user.plan_type === "premium" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted"
-                                                    )}>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="free" className="text-[10px] font-bold uppercase">Free</SelectItem>
-                                                        <SelectItem value="premium" className="text-[10px] font-bold uppercase">Premium</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                <span className={cn(
+                                                    "inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                                                    user.plan_type === "premium" ? "bg-primary/10 text-primary border border-primary/20" : "bg-muted text-muted-foreground border border-transparent"
+                                                )}>
+                                                    {user.plan_type}
+                                                </span>
                                             </TableCell>
                                             <TableCell className="py-2 px-3">
-                                                <div className="flex items-center gap-1">
-                                                    {!isAdmin ? (
-                                                        <Select value={user.status} onValueChange={(v) => updateStatus(user.user_id, v as UserProfile["status"])}>
-                                                            <SelectTrigger className="h-7 rounded-lg text-[10px] w-[100px]">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="active"><span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Activo</span></SelectItem>
-                                                                <SelectItem value="pending"><span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Pendiente</span></SelectItem>
-                                                                <SelectItem value="suspended"><span className="flex items-center gap-1"><Ban className="w-3 h-3" /> Suspendido</span></SelectItem>
-                                                                <SelectItem value="rejected"><span className="flex items-center gap-1"><Trash2 className="w-3 h-3" /> Eliminado</span></SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold text-muted-foreground w-[100px] text-center">ADMIN</span>
-                                                    )}
+                                                <div className="flex gap-1">
                                                     {!isAdmin && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => setDeletingUser(user)}
-                                                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                                                            title="Borrado físico"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </Button>
+                                                        <>
+                                                            <Select
+                                                                value={user.status}
+                                                                onValueChange={(val) => updateStatus(user.user_id, val as UserProfile["status"])}
+                                                            >
+                                                                <SelectTrigger className="h-6 text-[10px] w-[80px] rounded-lg">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="active">Activo</SelectItem>
+                                                                    <SelectItem value="pending">Pendiente</SelectItem>
+                                                                    <SelectItem value="suspended">Suspendido</SelectItem>
+                                                                    <SelectItem value="rejected">Eliminado</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Select
+                                                                value={user.plan_type}
+                                                                onValueChange={(val) => updatePlan(user.user_id, val as "free" | "premium")}
+                                                            >
+                                                                <SelectTrigger className="h-6 text-[10px] w-[70px] rounded-lg">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="free">Free</SelectItem>
+                                                                    <SelectItem value="premium">Premium</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </>
                                                     )}
                                                 </div>
                                             </TableCell>
@@ -429,67 +411,21 @@ export function AdminUsuarios({ toast }: Props) {
                         </Table>
                     </div>
 
-                    {/* Paginación */}
-                    <div className="flex items-center justify-between pt-2 border-t border-border">
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                            {searchQuery ? `${filteredUsers.length} resultados` : `${users.length} de ${totalCount}`}
-                        </span>
-                        {!searchQuery && (
+                    {totalCount > PAGE_SIZE && (
+                        <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
+                            <span>Mostrando {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, totalCount)} de {totalCount}</span>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="h-7 rounded-lg px-3 text-xs">
+                                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)} className="h-7 text-xs rounded-lg">
                                     Anterior
                                 </Button>
-                                <span className="flex items-center px-2 text-xs font-bold text-primary bg-primary/10 rounded-lg h-7">{page + 1}</span>
-                                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="h-7 rounded-lg px-3 text-xs">
+                                <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= totalCount} onClick={() => setPage(p => p + 1)} className="h-7 text-xs rounded-lg">
                                     Siguiente
                                 </Button>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </>
             )}
-
-            {/* Dialog de borrado físico */}
-            <AlertDialog open={!!deletingUser} onOpenChange={(open) => {
-                if (!open) { setDeletingUser(null); setConfirmDeleteSingle(""); setDeleteReason(""); }
-            }}>
-                <AlertDialogContent className="rounded-2xl border-2 border-red-100 shadow-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-red-600 flex items-center gap-2">
-                            <Trash2 className="w-5 h-5" /> ¿Eliminar permanentemente?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-3">
-                            <p>Estás a punto de borrar a <strong>{deletingUser?.display_name}</strong>. Esta acción NO se puede deshacer.</p>
-                            <div className="space-y-2 pt-2">
-                                <p className="text-xs font-bold uppercase text-muted-foreground">Motivo (opcional)</p>
-                                <textarea
-                                    className="w-full min-h-[60px] p-3 rounded-xl border border-input text-sm resize-none focus-visible:ring-1 focus-visible:ring-ring bg-muted/30"
-                                    placeholder="Motivo de eliminación..."
-                                    value={deleteReason}
-                                    onChange={(e) => setDeleteReason(e.target.value)}
-                                />
-                            </div>
-                            <p className="text-sm font-semibold pt-2">Escribe <span className="text-red-600 font-bold">ELIMINAR</span> para confirmar:</p>
-                            <Input
-                                value={confirmDeleteSingle}
-                                onChange={(e) => setConfirmDeleteSingle(e.target.value)}
-                                placeholder="ELIMINAR"
-                                className="border-red-200 focus-visible:ring-red-500 rounded-xl"
-                            />
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="gap-2">
-                        <AlertDialogCancel className="rounded-xl" disabled={isActionInProgress}>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={(e) => { e.preventDefault(); if (deletingUser) handlePhysicalDelete(deletingUser.user_id); }}
-                            disabled={confirmDeleteSingle !== "ELIMINAR" || isActionInProgress}
-                            className="bg-red-600 hover:bg-red-700 rounded-xl text-white font-bold"
-                        >
-                            {isActionInProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : "ELIMINAR"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 }

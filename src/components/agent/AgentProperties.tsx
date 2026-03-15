@@ -18,7 +18,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 import { useGroups } from "@/hooks/useGroups";
-import { useAgencySharedProperties } from "@/hooks/useAgencySharedProperties";
+import { resolveImages } from "@/lib/mappers/propertyMappers";
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -31,7 +31,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const queryClient = useQueryClient();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
     const { groups } = useGroups();
-    const { share, unshare, useSharedStatus } = useAgencySharedProperties(activeGroupId ?? null);
     const [publishOpen, setPublishOpen] = useState(false);
     const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
@@ -45,7 +44,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
 
     const isActive = profileStatus === "active";
 
-    // Bienvenida Premium para el Agente (REGLA 2: Validación estricta)
     useEffect(() => {
         const userId = agency.created_by;
         if (isPremium && userId) {
@@ -62,71 +60,39 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         enabled: isActive,
         queryFn: async () => {
             const { data, error } = await supabase
-                .from("marketplace_properties")
-                .select("*")
-                .eq("agency_id", agency.id)
+                .from("agent_publications")
+                .select("*, properties(*), organizations(name)")
+                .eq("org_id", agency.id)
                 .order("created_at", { ascending: false });
             if (error) throw error;
             if (!data) return [];
-            return data.map((p: any): MarketplaceProperty => ({
-                id: p.id,
-                agencyId: p.agency_id,
-                agencyName: agency.name,
-                agentId: agency.created_by,
-                title: p.title,
-                description: p.description,
-                url: p.url,
-                priceRent: Number(p.price_rent),
-                priceExpenses: Number(p.price_expenses),
-                totalCost: Number(p.total_cost),
-                currency: p.currency,
-                neighborhood: p.neighborhood,
-                city: p.city || "",
-                sqMeters: Number(p.sq_meters),
-                rooms: p.rooms,
-                images: p.images || [],
-                status: p.status,
-                listingType: p.listing_type || "rent",
-                createdAt: new Date(p.created_at),
-                updatedAt: new Date(p.updated_at),
-            }));
+            return data.map((pub: any): MarketplaceProperty => {
+                const p = pub.properties || {};
+                return {
+                    id: pub.id,
+                    agencyId: pub.org_id,
+                    agencyName: pub.organizations?.name || agency.name,
+                    agentId: agency.created_by,
+                    title: p.title || "",
+                    description: pub.description || "",
+                    url: p.source_url || "",
+                    priceRent: Number(p.price_amount || 0),
+                    priceExpenses: Number(p.price_expenses || 0),
+                    totalCost: Number(p.total_cost || 0),
+                    currency: p.currency || "USD",
+                    neighborhood: p.neighborhood || "",
+                    city: p.city || "",
+                    sqMeters: Number(p.m2_total || 0),
+                    rooms: p.rooms || 0,
+                    images: resolveImages(p.images || []),
+                    status: pub.status,
+                    listingType: pub.listing_type || "rent",
+                    createdAt: new Date(pub.created_at),
+                    updatedAt: new Date(pub.updated_at),
+                };
+            });
         },
     });
-
-    // Shared status query: which properties are shared in which groups
-    const { data: sharedPropertyIds = new Set<string>() } = useQuery({
-        queryKey: ["agency-shared-ids", groups.map(g => g.id).join(","), agencyProperties.map(p => p.id).join(",")],
-        enabled: agencyProperties.length > 0 && groups.length > 0,
-        queryFn: async () => {
-            const groupIds = groups.map(g => g.id);
-            const propIds = agencyProperties.map(p => p.id);
-            if (groupIds.length === 0 || propIds.length === 0) return new Set<string>();
-
-            const { data, error } = await supabase
-                .from("agency_shared_properties")
-                .select("marketplace_property_id, group_id")
-                .in("group_id", groupIds)
-                .in("marketplace_property_id", propIds);
-
-            if (error) return new Set<string>();
-            return new Set((data || []).map((r: any) => `${r.marketplace_property_id}:${r.group_id}`));
-        },
-    });
-
-    const isSharedIn = (propId: string, groupId: string) => sharedPropertyIds.has(`${propId}:${groupId}`);
-    const activeGroup = activeGroupId ? groups.find((g) => g.id === activeGroupId) ?? null : null;
-
-    const handleShare = async (propId: string, groupId: string) => {
-        await share({ marketplacePropertyId: propId, groupId });
-        queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
-        queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
-    };
-
-    const handleUnshare = async (propId: string, groupId: string) => {
-        await unshare({ marketplacePropertyId: propId, groupId });
-        queryClient.invalidateQueries({ queryKey: ["agency-shared-ids"] });
-        queryClient.invalidateQueries({ queryKey: ["agency-shared-properties"] });
-    };
 
     const handleOpenPublish = () => {
         if (!canAgentPublishMore(agencyProperties.length)) {
@@ -165,7 +131,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 textArea.value = link;
                 textArea.style.position = "fixed";
                 textArea.style.left = "-9999px";
-                textArea.style.top = "0";
                 document.body.appendChild(textArea);
                 textArea.focus();
                 textArea.select();
@@ -173,30 +138,23 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 textArea.remove();
             }
             setCopied(true);
-            toast({
-                title: "¡Link copiado! 🔗",
-                description: "Ya podés pegarlo donde quieras.",
-            });
+            toast({ title: "¡Link copiado! 🔗", description: "Ya podés pegarlo donde quieras." });
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error('Error al copiar:', err);
-            toast({
-                title: "Error al copiar",
-                description: "Por favor, copialo manualmente.",
-                variant: "destructive",
-            });
+            toast({ title: "Error al copiar", description: "Por favor, copialo manualmente.", variant: "destructive" });
         }
     };
 
+    // Map agent_pub_status values for status changes
     const handleChangeStatus = async (id: string, newStatus: string) => {
-        const { error } = await supabase.from("marketplace_properties").update({ status: newStatus as any }).eq("id", id);
+        const { error } = await supabase.from("agent_publications").update({ status: newStatus as any }).eq("id", id);
         if (error) { toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" }); }
         else {
-            toast({ title: "Estado actualizado", description: `La propiedad ahora está ${PROPERTY_STATUS_LABELS[newStatus]}` });
+            toast({ title: "Estado actualizado", description: `La propiedad ahora está ${PROPERTY_STATUS_LABELS[newStatus] || newStatus}` });
             queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] });
         }
     };
-
 
     if (!isActive) return null;
 
@@ -211,47 +169,26 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 </Button>
             </div>
 
-            {/* Sección: Invitación de Clientes (Referidos) - Simplificada (REGLA 3) */}
             <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-5 space-y-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <p className="font-bold text-sm text-foreground leading-tight">Invita clientes y obten beneficios</p>
-                        <div 
-                            className="px-2 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm cursor-help animate-in fade-in zoom-in"
-                            title="Clientes referenciados"
-                        >
+                        <div className="px-2 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm cursor-help animate-in fade-in zoom-in" title="Clientes referenciados">
                             {referralCount} referidos
                         </div>
                     </div>
                 </div>
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-xl gap-2 h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none"
-                            onClick={copyToClipboard}
-                        >
-                            {copied ? (
-                                <>
-                                    <Check className="w-4 h-4" /> Copiado
-                                </>
-                            ) : (
-                                <>
-                                    <Edit className="w-4 h-4" /> Copiar Link
-                                </>
-                            )}
+                        <Button variant="outline" size="sm" className="rounded-xl gap-2 h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none" onClick={copyToClipboard}>
+                            {copied ? (<><Check className="w-4 h-4" /> Copiado</>) : (<><Edit className="w-4 h-4" /> Copiar Link</>)}
                         </Button>
-                        <Button
-                            variant="default"
-                            size="sm"
-                            className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm transition-all hover:scale-[1.02] flex-1 sm:flex-none"
+                        <Button variant="default" size="sm" className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm transition-all hover:scale-[1.02] flex-1 sm:flex-none"
                             onClick={() => {
                                 const link = `${window.location.origin}/?ref=${agency.created_by}`;
                                 const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${link}`);
                                 window.open(`https://wa.me/?text=${text}`, '_blank');
-                            }}
-                        >
+                            }}>
                             <Users className="w-4 h-4" /> WhatsApp
                         </Button>
                     </div>
@@ -267,7 +204,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {agencyProperties.map((p: any) => {
-                        const availableStatuses = p.listing_type === 'sale'
+                        const availableStatuses = p.listingType === 'sale'
                             ? AGENT_PROPERTY_STATUSES.SALE
                             : AGENT_PROPERTY_STATUSES.RENT;
 
@@ -285,20 +222,14 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                 rooms={p.rooms}
                                 images={p.images}
                                 listingType={p.listingType}
-                                onClick={() => {
-                                    setSelectedProperty(p);
-                                    setIsDetailOpen(true);
-                                }}
-                                onImageClick={(index) => {
-                                    setGalleryImages(p.images);
-                                    setGalleryIndex(index);
-                                    setIsGalleryOpen(true);
-                                }}
+                                onClick={() => { setSelectedProperty(p); setIsDetailOpen(true); }}
+                                onImageClick={(index) => { setGalleryImages(p.images); setGalleryIndex(index); setIsGalleryOpen(true); }}
                                 statusOverlay={
-                                    <Badge variant="outline" className={`text-xs font-bold border-none ${p.status === 'active' ? 'bg-green-500/90 text-white' :
-                                        p.status === 'paused' ? 'bg-yellow-500/90 text-white' :
-                                            'bg-blue-600/90 text-white'
-                                        }`}>
+                                    <Badge variant="outline" className={`text-xs font-bold border-none ${
+                                        p.status === 'disponible' ? 'bg-green-500/90 text-white' :
+                                        p.status === 'pausado' ? 'bg-yellow-500/90 text-white' :
+                                        'bg-blue-600/90 text-white'
+                                    }`}>
                                         {PROPERTY_STATUS_LABELS[p.status] || p.status}
                                     </Badge>
                                 }
@@ -307,7 +238,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                         <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1" onClick={() => handleEdit(p)}>
                                             <Edit className="w-3 h-3" /> Editar
                                         </Button>
-
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1">
@@ -327,62 +257,17 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                                 ))}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-
-                                        {/* Share with team */}
-                                        {groups.length > 0 && (
-                                            activeGroup ? (() => {
-                                                const sharedInActive = isSharedIn(p.id, activeGroup.id);
-                                                return (
-                                                    <Button
-                                                        size="sm"
-                                                        variant={sharedInActive ? "default" : "outline"}
-                                                        className="gap-1 rounded-lg text-xs"
-                                                        title={sharedInActive ? `Quitar de ${activeGroup.name}` : `Compartir en ${activeGroup.name}`}
-                                                        onClick={() => void (sharedInActive
-                                                            ? handleUnshare(p.id, activeGroup.id)
-                                                            : handleShare(p.id, activeGroup.id))}
-                                                    >
-                                                        {sharedInActive ? <X className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
-                                                    </Button>
-                                                );
-                                            })() : (
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs">
-                                                            <Share2 className="w-3 h-3" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        {groups.map(g => {
-                                                            const shared = isSharedIn(p.id, g.id);
-                                                            return (
-                                                                <DropdownMenuItem
-                                                                    key={g.id}
-                                                                    onSelect={() => {
-                                                                        void (shared ? handleUnshare(p.id, g.id) : handleShare(p.id, g.id));
-                                                                    }}
-                                                                    className="text-xs flex items-center gap-2"
-                                                                >
-                                                                    {shared ? <X className="w-3 h-3 text-destructive" /> : <Share2 className="w-3 h-3 text-primary" />}
-                                                                    {shared ? `Quitar de ${g.name}` : `Compartir en ${g.name}`}
-                                                                </DropdownMenuItem>
-                                                            );
-                                                        })}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            )
-                                        )}
                                     </div>
                                 }
                             />
-                        )
+                        );
                     })}
                 </div>
             )}
 
             <PublishPropertyModal
                 open={publishOpen}
-                onClose={() => setPublishOpen(false)}
+                onClose={() => { setPublishOpen(false); setPropertyToEdit(null); }}
                 agencyId={agency.id}
                 onPublished={() => queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] })}
                 propertyToEdit={propertyToEdit}
@@ -396,23 +281,13 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
 
             <FullScreenGallery
                 images={galleryImages}
-                isOpen={isGalleryOpen}
                 initialIndex={galleryIndex}
+                open={isGalleryOpen}
                 onClose={() => setIsGalleryOpen(false)}
             />
 
-            <UpgradePlanModal
-                open={isUpgradeOpen}
-                onClose={() => setIsUpgradeOpen(false)}
-                limit={maxAgentPublishes}
-                type="agent"
-            />
-
-            <PremiumWelcomeModal
-                open={isPremiumWelcomeOpen}
-                onClose={() => setIsPremiumWelcomeOpen(false)}
-                type="agent"
-            />
+            <UpgradePlanModal open={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
+            <PremiumWelcomeModal open={isPremiumWelcomeOpen} onClose={() => setIsPremiumWelcomeOpen(false)} />
         </div>
     );
 };
