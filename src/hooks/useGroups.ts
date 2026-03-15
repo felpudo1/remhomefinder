@@ -49,7 +49,8 @@ export function useGroups() {
       const { data: orgs, error: orgError } = await supabase
         .from("organizations")
         .select("*")
-        .in("id", orgIds);
+        .in("id", orgIds)
+        .eq("is_personal", false);
 
       if (orgError) throw orgError;
 
