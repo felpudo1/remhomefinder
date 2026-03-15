@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useGroups, Group, GroupMember } from "@/hooks/useGroups";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft, X, Building2,
+  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft, X, Building2, Network,
 } from "lucide-react";
 
 interface GroupsModalProps {
@@ -325,11 +326,16 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                     : "border-border hover:border-primary/30 bg-background"
                     }`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4 text-primary" />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${g.type === "sub_team" ? "bg-accent/15" : "bg-primary/10"}`}>
+                    {g.type === "sub_team" ? <Network className="w-4 h-4 text-accent-foreground" /> : <Users className="w-4 h-4 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{g.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium truncate">{g.name}</p>
+                      <Badge variant={g.type === "sub_team" ? "secondary" : "outline"} className="text-[10px] px-1.5 py-0 shrink-0">
+                        {g.type === "sub_team" ? "Equipo" : "Grupo"}
+                      </Badge>
+                    </div>
                     {g.description && (
                       <p className="text-xs text-muted-foreground truncate">{g.description}</p>
                     )}
