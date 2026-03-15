@@ -14,116 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
-      agencies: {
+      agency_comments: {
         Row: {
-          contact_email: string
-          contact_name: string
-          contact_person_phone: string
-          contact_phone: string
-          created_at: string
-          created_by: string
-          description: string
-          id: string
-          logo_url: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          contact_email?: string
-          contact_name?: string
-          contact_person_phone?: string
-          contact_phone?: string
-          created_at?: string
-          created_by: string
-          description?: string
-          id?: string
-          logo_url?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          contact_email?: string
-          contact_name?: string
-          contact_person_phone?: string
-          contact_phone?: string
-          created_at?: string
-          created_by?: string
-          description?: string
-          id?: string
-          logo_url?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      agency_members: {
-        Row: {
-          agency_id: string
+          agent_pub_id: string
+          author: string
           created_at: string
           id: string
-          role: string
+          text: string
           user_id: string
         }
         Insert: {
-          agency_id: string
+          agent_pub_id: string
+          author?: string
           created_at?: string
           id?: string
-          role?: string
+          text: string
           user_id: string
         }
         Update: {
-          agency_id?: string
+          agent_pub_id?: string
+          author?: string
           created_at?: string
           id?: string
-          role?: string
+          text?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "agency_members_agency_id_fkey"
-            columns: ["agency_id"]
+            foreignKeyName: "agency_comments_agent_pub_id_fkey"
+            columns: ["agent_pub_id"]
             isOneToOne: false
-            referencedRelation: "agencies"
+            referencedRelation: "agent_deserter_insights"
+            referencedColumns: ["publication_id"]
+          },
+          {
+            foreignKeyName: "agency_comments_agent_pub_id_fkey"
+            columns: ["agent_pub_id"]
+            isOneToOne: false
+            referencedRelation: "agent_publications"
             referencedColumns: ["id"]
           },
         ]
       }
-      agency_shared_properties: {
+      agent_publications: {
         Row: {
           created_at: string
-          group_id: string
+          description: string
           id: string
-          marketplace_property_id: string
-          shared_by: string
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          org_id: string
+          property_id: string
+          published_by: string
+          status: Database["public"]["Enums"]["agent_pub_status"]
+          updated_at: string
+          views_count: number
         }
         Insert: {
           created_at?: string
-          group_id: string
+          description?: string
           id?: string
-          marketplace_property_id: string
-          shared_by: string
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          org_id: string
+          property_id: string
+          published_by: string
+          status?: Database["public"]["Enums"]["agent_pub_status"]
+          updated_at?: string
+          views_count?: number
         }
         Update: {
           created_at?: string
-          group_id?: string
+          description?: string
           id?: string
-          marketplace_property_id?: string
-          shared_by?: string
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          org_id?: string
+          property_id?: string
+          published_by?: string
+          status?: Database["public"]["Enums"]["agent_pub_status"]
+          updated_at?: string
+          views_count?: number
         }
         Relationships: [
           {
-            foreignKeyName: "agency_shared_properties_group_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: "agent_publications_org_id_fkey"
+            columns: ["org_id"]
             isOneToOne: false
-            referencedRelation: "groups"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "agency_shared_properties_marketplace_property_id_fkey"
-            columns: ["marketplace_property_id"]
+            foreignKeyName: "agent_publications_property_id_fkey"
+            columns: ["property_id"]
             isOneToOne: false
-            referencedRelation: "marketplace_properties"
+            referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_publications_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_insights_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -151,39 +141,140 @@ export type Database = {
         }
         Relationships: []
       }
-      group_members: {
+      attribute_scores: {
         Row: {
-          created_at: string
-          group_id: string
+          attribute_id: string
+          history_log_id: string
           id: string
-          role: string
-          user_id: string
+          score: number
         }
         Insert: {
-          created_at?: string
-          group_id: string
+          attribute_id: string
+          history_log_id: string
           id?: string
-          role?: string
-          user_id: string
+          score: number
         }
         Update: {
-          created_at?: string
-          group_id?: string
+          attribute_id?: string
+          history_log_id?: string
           id?: string
-          role?: string
-          user_id?: string
+          score?: number
         }
         Relationships: [
           {
-            foreignKeyName: "group_members_group_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: "attribute_scores_attribute_id_fkey"
+            columns: ["attribute_id"]
             isOneToOne: false
-            referencedRelation: "groups"
+            referencedRelation: "feedback_attributes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attribute_scores_history_log_id_fkey"
+            columns: ["history_log_id"]
+            isOneToOne: false
+            referencedRelation: "status_history_log"
             referencedColumns: ["id"]
           },
         ]
       }
-      groups: {
+      family_comments: {
+        Row: {
+          author: string
+          avatar: string
+          created_at: string
+          id: string
+          text: string
+          user_id: string
+          user_listing_id: string
+        }
+        Insert: {
+          author?: string
+          avatar?: string
+          created_at?: string
+          id?: string
+          text: string
+          user_id: string
+          user_listing_id: string
+        }
+        Update: {
+          author?: string
+          avatar?: string
+          created_at?: string
+          id?: string
+          text?: string
+          user_id?: string
+          user_listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_comments_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_attributes: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_system_delegate: boolean
+          org_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_system_delegate?: boolean
+          org_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_system_delegate?: boolean
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
         Row: {
           created_at: string
           created_by: string
@@ -191,6 +282,9 @@ export type Database = {
           id: string
           invite_code: string
           name: string
+          parent_id: string | null
+          plan_type: string
+          type: Database["public"]["Enums"]["org_type"]
           updated_at: string
         }
         Insert: {
@@ -200,6 +294,9 @@ export type Database = {
           id?: string
           invite_code?: string
           name: string
+          parent_id?: string | null
+          plan_type?: string
+          type: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
         Update: {
@@ -209,83 +306,89 @@ export type Database = {
           id?: string
           invite_code?: string
           name?: string
+          parent_id?: string | null
+          plan_type?: string
+          type?: Database["public"]["Enums"]["org_type"]
           updated_at?: string
-        }
-        Relationships: []
-      }
-      marketplace_properties: {
-        Row: {
-          agency_id: string
-          city: string
-          created_at: string
-          currency: string
-          description: string
-          id: string
-          images: string[]
-          listing_type: Database["public"]["Enums"]["listing_type"]
-          neighborhood: string
-          price_expenses: number
-          price_rent: number
-          rooms: number
-          sq_meters: number
-          status: Database["public"]["Enums"]["marketplace_property_status"]
-          title: string
-          total_cost: number
-          updated_at: string
-          url: string
-          views_count: number | null
-        }
-        Insert: {
-          agency_id: string
-          city?: string
-          created_at?: string
-          currency?: string
-          description?: string
-          id?: string
-          images?: string[]
-          listing_type?: Database["public"]["Enums"]["listing_type"]
-          neighborhood?: string
-          price_expenses?: number
-          price_rent?: number
-          rooms?: number
-          sq_meters?: number
-          status?: Database["public"]["Enums"]["marketplace_property_status"]
-          title: string
-          total_cost?: number
-          updated_at?: string
-          url?: string
-          views_count?: number | null
-        }
-        Update: {
-          agency_id?: string
-          city?: string
-          created_at?: string
-          currency?: string
-          description?: string
-          id?: string
-          images?: string[]
-          listing_type?: Database["public"]["Enums"]["listing_type"]
-          neighborhood?: string
-          price_expenses?: number
-          price_rent?: number
-          rooms?: number
-          sq_meters?: number
-          status?: Database["public"]["Enums"]["marketplace_property_status"]
-          title?: string
-          total_cost?: number
-          updated_at?: string
-          url?: string
-          views_count?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "marketplace_properties_agency_id_fkey"
-            columns: ["agency_id"]
+            foreignKeyName: "organizations_parent_id_fkey"
+            columns: ["parent_id"]
             isOneToOne: false
-            referencedRelation: "agencies"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_leads: {
+        Row: {
+          created_at: string
+          id: string
+          partner_id: string
+          status: string
+          user_id: string
+          user_listing_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner_id: string
+          status?: string
+          user_id: string
+          user_listing_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner_id?: string
+          status?: string
+          user_id?: string
+          user_listing_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_leads_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_leads_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          active: boolean
+          contact_info: Json
+          created_at: string
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          active?: boolean
+          contact_info?: Json
+          created_at?: string
+          id?: string
+          name: string
+          type?: string
+        }
+        Update: {
+          active?: boolean
+          contact_info?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -331,219 +434,122 @@ export type Database = {
       }
       properties: {
         Row: {
-          admin_hidden: boolean
-          admin_hidden_at: string | null
-          admin_hidden_by: string | null
-          ai_summary: string
+          address: string
           city: string
-          contacted_name: string | null
-          coordinated_date: string | null
           created_at: string
-          created_by_email: string
-          currency: string
-          deleted_by_email: string | null
-          deleted_reason: string | null
+          created_by: string
+          currency: Database["public"]["Enums"]["currency_code"]
           details: string
-          discarded_by_email: string | null
-          discarded_reason: string | null
-          group_id: string | null
           id: string
           images: string[]
-          listing_type: Database["public"]["Enums"]["listing_type"]
-          marketplace_status:
-            | Database["public"]["Enums"]["marketplace_property_status"]
-            | null
+          lat: number | null
+          lng: number | null
+          m2_total: number
           neighborhood: string
+          price_amount: number
           price_expenses: number
-          price_rent: number
+          raw_ai_data: Json | null
           ref: string
           rooms: number
-          source_marketplace_id: string | null
-          sq_meters: number
-          status: Database["public"]["Enums"]["property_status"]
-          status_changed_by: string | null
-          status_changed_by_email: string | null
+          source_url: string | null
           title: string
           total_cost: number
           updated_at: string
-          url: string
-          user_id: string
-          views_count: number | null
         }
         Insert: {
-          admin_hidden?: boolean
-          admin_hidden_at?: string | null
-          admin_hidden_by?: string | null
-          ai_summary?: string
+          address?: string
           city?: string
-          contacted_name?: string | null
-          coordinated_date?: string | null
           created_at?: string
-          created_by_email?: string
-          currency?: string
-          deleted_by_email?: string | null
-          deleted_reason?: string | null
+          created_by: string
+          currency?: Database["public"]["Enums"]["currency_code"]
           details?: string
-          discarded_by_email?: string | null
-          discarded_reason?: string | null
-          group_id?: string | null
           id?: string
           images?: string[]
-          listing_type?: Database["public"]["Enums"]["listing_type"]
-          marketplace_status?:
-            | Database["public"]["Enums"]["marketplace_property_status"]
-            | null
+          lat?: number | null
+          lng?: number | null
+          m2_total?: number
           neighborhood?: string
+          price_amount?: number
           price_expenses?: number
-          price_rent?: number
+          raw_ai_data?: Json | null
           ref?: string
           rooms?: number
-          source_marketplace_id?: string | null
-          sq_meters?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          status_changed_by?: string | null
-          status_changed_by_email?: string | null
+          source_url?: string | null
           title: string
           total_cost?: number
           updated_at?: string
-          url?: string
-          user_id: string
-          views_count?: number | null
         }
         Update: {
-          admin_hidden?: boolean
-          admin_hidden_at?: string | null
-          admin_hidden_by?: string | null
-          ai_summary?: string
+          address?: string
           city?: string
-          contacted_name?: string | null
-          coordinated_date?: string | null
           created_at?: string
-          created_by_email?: string
-          currency?: string
-          deleted_by_email?: string | null
-          deleted_reason?: string | null
+          created_by?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
           details?: string
-          discarded_by_email?: string | null
-          discarded_reason?: string | null
-          group_id?: string | null
           id?: string
           images?: string[]
-          listing_type?: Database["public"]["Enums"]["listing_type"]
-          marketplace_status?:
-            | Database["public"]["Enums"]["marketplace_property_status"]
-            | null
+          lat?: number | null
+          lng?: number | null
+          m2_total?: number
           neighborhood?: string
+          price_amount?: number
           price_expenses?: number
-          price_rent?: number
+          raw_ai_data?: Json | null
           ref?: string
           rooms?: number
-          source_marketplace_id?: string | null
-          sq_meters?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          status_changed_by?: string | null
-          status_changed_by_email?: string | null
+          source_url?: string | null
           title?: string
           total_cost?: number
           updated_at?: string
-          url?: string
-          user_id?: string
-          views_count?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "properties_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "properties_source_marketplace_id_fkey"
-            columns: ["source_marketplace_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_properties"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      property_comments: {
+      property_reviews: {
         Row: {
-          author: string
-          avatar: string
           created_at: string
           id: string
+          org_id: string
           property_id: string
-          text: string
+          rating: number
           user_id: string
         }
         Insert: {
-          author: string
-          avatar?: string
           created_at?: string
           id?: string
+          org_id: string
           property_id: string
-          text: string
+          rating: number
           user_id: string
         }
         Update: {
-          author?: string
-          avatar?: string
           created_at?: string
           id?: string
+          org_id?: string
           property_id?: string
-          text?: string
+          rating?: number
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "property_comments_property_id_fkey"
+            foreignKeyName: "property_reviews_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_reviews_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      property_ratings: {
-        Row: {
-          created_at: string | null
-          group_id: string | null
-          id: string
-          property_id: string | null
-          rating: number | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          group_id?: string | null
-          id?: string
-          property_id?: string | null
-          rating?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          group_id?: string | null
-          id?: string
-          property_id?: string | null
-          rating?: number | null
-          user_id?: string | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "property_ratings_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "property_ratings_property_id_fkey"
+            foreignKeyName: "property_reviews_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
+            referencedRelation: "property_insights_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -563,7 +569,60 @@ export type Database = {
           id?: string
           property_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "property_views_log_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_views_log_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_insights_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
+      status_history_log: {
+        Row: {
+          changed_by: string
+          created_at: string
+          event_metadata: Json
+          id: string
+          new_status: Database["public"]["Enums"]["user_listing_status"]
+          old_status: Database["public"]["Enums"]["user_listing_status"] | null
+          user_listing_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          event_metadata?: Json
+          id?: string
+          new_status: Database["public"]["Enums"]["user_listing_status"]
+          old_status?: Database["public"]["Enums"]["user_listing_status"] | null
+          user_listing_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          event_metadata?: Json
+          id?: string
+          new_status?: Database["public"]["Enums"]["user_listing_status"]
+          old_status?: Database["public"]["Enums"]["user_listing_status"] | null
+          user_listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_history_log_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_config: {
         Row: {
@@ -579,6 +638,78 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      user_listings: {
+        Row: {
+          added_by: string
+          created_at: string
+          current_status: Database["public"]["Enums"]["user_listing_status"]
+          id: string
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          org_id: string
+          property_id: string
+          source_publication_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          current_status?: Database["public"]["Enums"]["user_listing_status"]
+          id?: string
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          org_id: string
+          property_id: string
+          source_publication_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          current_status?: Database["public"]["Enums"]["user_listing_status"]
+          id?: string
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          org_id?: string
+          property_id?: string
+          source_publication_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_listings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_listings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_listings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_insights_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "user_listings_source_publication_id_fkey"
+            columns: ["source_publication_id"]
+            isOneToOne: false
+            referencedRelation: "agent_deserter_insights"
+            referencedColumns: ["publication_id"]
+          },
+          {
+            foreignKeyName: "user_listings_source_publication_id_fkey"
+            columns: ["source_publication_id"]
+            isOneToOne: false
+            referencedRelation: "agent_publications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -603,13 +734,92 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      agent_deserter_insights: {
+        Row: {
+          agency_org_id: string | null
+          discard_count: number | null
+          event_metadata: Json | null
+          new_status: Database["public"]["Enums"]["user_listing_status"] | null
+          publication_id: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_publications_org_id_fkey"
+            columns: ["agency_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_private_rating: {
+        Row: {
+          avg_rating: number | null
+          org_id: string | null
+          property_id: string | null
+          total_votes: number | null
+          votes_detail: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_reviews_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_reviews_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_reviews_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_insights_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
+      property_insights_summary: {
+        Row: {
+          attribute_name: string | null
+          avg_score: number | null
+          property_id: string | null
+          title: string | null
+          total_scores: number | null
+        }
+        Relationships: []
+      }
+      public_global_rating: {
+        Row: {
+          avg_rating: number | null
+          property_id: string | null
+          total_votes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_reviews_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_reviews_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_insights_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
     }
     Functions: {
-      admin_physical_delete_user: {
-        Args: { _user_id: string }
-        Returns: undefined
-      }
       admin_update_profile_status: {
         Args: {
           _status: Database["public"]["Enums"]["user_status"]
@@ -617,30 +827,13 @@ export type Database = {
         }
         Returns: undefined
       }
-      find_group_by_invite_code: {
+      find_org_by_invite_code: {
         Args: { _code: string }
         Returns: {
           description: string
           id: string
           name: string
-        }[]
-      }
-      get_agency_dashboard_stats: {
-        Args: { p_agency_id: string }
-        Returns: Json
-      }
-      get_agency_performance_detailed: {
-        Args: { p_agency_id: string }
-        Returns: {
-          id: string
-          listing_type: string
-          rating: number
-          saves: number
-          status: string
-          title: string
-          url: string
-          views: number
-          votes: number
+          type: Database["public"]["Enums"]["org_type"]
         }[]
       }
       has_role: {
@@ -651,38 +844,39 @@ export type Database = {
         Returns: boolean
       }
       increment_property_views: {
-        Args: { p_is_marketplace: boolean; p_property_id: string }
+        Args: { p_is_publication?: boolean; p_property_id: string }
         Returns: undefined
       }
-      is_group_member: {
-        Args: { _group_id: string; _user_id: string }
+      is_org_member: {
+        Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
-      is_group_owner: {
-        Args: { _group_id: string; _user_id: string }
+      is_org_owner: {
+        Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      is_system_delegate: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      agency_status: "pending" | "approved" | "rejected" | "suspended"
-      app_role: "user" | "agency" | "admin"
-      listing_type: "rent" | "sale"
-      marketplace_property_status:
-        | "active"
-        | "paused"
-        | "sold"
-        | "reserved"
-        | "rented"
-        | "deleted"
-      property_status:
-        | "contacted"
-        | "coordinated"
-        | "visited"
-        | "discarded"
-        | "ingresado"
-        | "a_analizar"
+      agent_pub_status:
+        | "disponible"
+        | "reservado"
+        | "vendido"
+        | "alquilado"
         | "eliminado"
-        | "eliminado_agencia"
+        | "pausado"
+      app_role: "admin" | "agency" | "user"
+      currency_code: "USD" | "ARS" | "UYU" | "CLP"
+      listing_type: "rent" | "sale"
+      org_role: "owner" | "agent" | "member" | "system_admin_delegate"
+      org_type: "family" | "agency_team"
+      user_listing_status:
+        | "ingresado"
+        | "contactado"
+        | "visita_coordinada"
+        | "visitado"
+        | "a_analizar"
+        | "descartado"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
     CompositeTypes: {
@@ -811,26 +1005,26 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      agency_status: ["pending", "approved", "rejected", "suspended"],
-      app_role: ["user", "agency", "admin"],
-      listing_type: ["rent", "sale"],
-      marketplace_property_status: [
-        "active",
-        "paused",
-        "sold",
-        "reserved",
-        "rented",
-        "deleted",
-      ],
-      property_status: [
-        "contacted",
-        "coordinated",
-        "visited",
-        "discarded",
-        "ingresado",
-        "a_analizar",
+      agent_pub_status: [
+        "disponible",
+        "reservado",
+        "vendido",
+        "alquilado",
         "eliminado",
-        "eliminado_agencia",
+        "pausado",
+      ],
+      app_role: ["admin", "agency", "user"],
+      currency_code: ["USD", "ARS", "UYU", "CLP"],
+      listing_type: ["rent", "sale"],
+      org_role: ["owner", "agent", "member", "system_admin_delegate"],
+      org_type: ["family", "agency_team"],
+      user_listing_status: [
+        "ingresado",
+        "contactado",
+        "visita_coordinada",
+        "visitado",
+        "a_analizar",
+        "descartado",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
     },
