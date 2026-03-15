@@ -1,1 +1,0 @@
-ALTER TABLE properties ADD COLUMN IF NOT EXISTS status_changed_by_email text DEFAULT '';

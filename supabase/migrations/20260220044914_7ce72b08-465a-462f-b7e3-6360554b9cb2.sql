@@ -1,1 +1,0 @@
-ALTER TABLE public.property_shares ADD COLUMN shared_email TEXT DEFAULT '';

@@ -1,1 +1,0 @@
-ALTER TABLE properties ADD COLUMN IF NOT EXISTS coordinated_date timestamptz DEFAULT NULL;
