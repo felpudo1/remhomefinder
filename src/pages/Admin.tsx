@@ -110,6 +110,7 @@ const Admin = () => {
       case "agentes": return <AdminAgencias toast={toast} />;
       case "usuarios": return <AdminUsuarios toast={toast} />;
       case "publicaciones": return <AdminPublicaciones toast={toast} />;
+      case "grupos": return <AdminGrupos toast={toast} />;
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;
