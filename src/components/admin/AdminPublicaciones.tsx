@@ -8,6 +8,7 @@ import { Loader2, Building2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProperty, MktProperty, MarketplaceStatus } from "@/types/admin-publications";
+import type { AgentPubStatus } from "@/types/supabase";
 
 import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
 import { UsuariosTab } from "./publicaciones/UsuariosTab";
@@ -55,8 +56,8 @@ export function AdminPublicaciones({ toast }: Props) {
           property_id: d.property_id,
         })));
       }
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     }
     setLoadingUser(false);
   };
@@ -84,8 +85,8 @@ export function AdminPublicaciones({ toast }: Props) {
           }))
         );
       }
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     }
     setLoadingMkt(false);
   };
@@ -99,7 +100,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     const { error } = await supabase
       .from("user_listings")
-      .update({ admin_hidden: newHiddenState } as any)
+      .update({ admin_hidden: newHiddenState })
       .eq("id", prop.id);
 
     if (error) {
@@ -187,7 +188,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     const { error } = await supabase
       .from("agent_publications")
-      .update({ status: statusMap[newStatus] as any })
+      .update({ status: statusMap[newStatus] as AgentPubStatus })
       .eq("id", prop.id);
 
     if (error) {

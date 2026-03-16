@@ -14,6 +14,7 @@ import { AgentTeamLinks } from "@/components/agent/AgentTeamLinks";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
+import type { OrgType } from "@/types/supabase";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
@@ -57,7 +58,7 @@ const AgentDashboard = () => {
         .from("organizations")
         .select("*")
         .eq("created_by", user.id)
-        .eq("type", "agency_team" as any)
+        .eq("type", "agency_team" satisfies OrgType)
         .limit(1);
 
       if (orgErr) console.error(orgErr.message);

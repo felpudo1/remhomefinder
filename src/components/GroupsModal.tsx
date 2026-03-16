@@ -78,8 +78,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
       setNewName("");
       setNewDesc("");
       setTab("groups");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -92,8 +92,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
       await joinGroup(inviteCode.trim());
       setInviteCode("");
       setTab("groups");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     } finally {
       setJoining(false);
     }
@@ -123,8 +123,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
       await removeMember({ groupId: detailGroup.id, userId });
       const m = await fetchMembers(detailGroup.id);
       setMembers(m);
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     }
   };
 
@@ -214,8 +214,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                               await toggleMemberActive(m.id, checked);
                               const updated = await fetchMembers(detailGroup.id);
                               setMembers(updated);
-                            } catch (e: any) {
-                              toast({ title: "Error", description: e.message, variant: "destructive" });
+                            } catch (e: unknown) {
+                              toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
                             }
                           }}
                           className="scale-75"
@@ -259,8 +259,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                       try {
                         await leaveGroup(detailGroup.id);
                         setDetailGroup(null);
-                      } catch (e: any) {
-                        toast({ title: "Error", description: e.message, variant: "destructive" });
+                      } catch (e: unknown) {
+                        toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
                       }
                     }}
                   >
@@ -278,8 +278,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                           await deleteGroup(detailGroup.id);
                           setDetailGroup(null);
                           onClose();
-                        } catch (e: any) {
-                          toast({ title: "Error", description: e.message, variant: "destructive" });
+                        } catch (e: unknown) {
+                          toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
                         }
                       }}
                     >

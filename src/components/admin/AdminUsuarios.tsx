@@ -12,6 +12,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { OrgType } from "@/types/supabase";
 
 interface UserProfile {
     user_id: string;
@@ -107,7 +108,7 @@ export function AdminUsuarios({ toast }: Props) {
                 const { data: agencyOrgs } = await supabase
                     .from("organizations")
                     .select("id, name")
-                    .eq("type", "agency_team" as any)
+                    .eq("type", "agency_team" satisfies OrgType)
                     .eq("is_personal", false)
                     .in("id", membershipOrgIds);
 
@@ -169,7 +170,7 @@ export function AdminUsuarios({ toast }: Props) {
                 referred_by_name: p.referred_by_id ? referrerNameMap[p.referred_by_id] : undefined,
                 orgName: orgNameMap[p.user_id],
             })));
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Critical error in fetchUsers:", err);
             toast({ title: "Error fatal", description: "Ocurrió un error al procesar los datos de usuarios.", variant: "destructive" });
         } finally {
@@ -230,7 +231,7 @@ export function AdminUsuarios({ toast }: Props) {
             setIsActionInProgress(true);
             // Obtener el admin que ejecuta la acción para el log de auditoría
             const { data: { user: adminUser } } = await supabase.auth.getUser();
-            const { error } = await supabase.rpc("admin_physical_delete_user" as any, {
+            const { error } = await supabase.rpc("admin_physical_delete_user", {
                 _user_id: userId,
                 _reason: reason,
                 _deleted_by: adminUser?.id,
@@ -242,9 +243,9 @@ export function AdminUsuarios({ toast }: Props) {
                 toast({ title: "Usuario eliminado", description: "El registro ha sido borrado físicamente de la base de datos." });
                 fetchUsers();
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             setUsers(previousUsers);
-            toast({ title: "Error fatal", description: err.message, variant: "destructive" });
+            toast({ title: "Error fatal", description: err instanceof Error ? err.message : "Error desconocido", variant: "destructive" });
         } finally {
             setIsActionInProgress(false);
         }

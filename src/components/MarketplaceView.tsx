@@ -122,8 +122,8 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     try {
       await saveToList.mutateAsync({ property });
       toast({ title: "¡Guardada!", description: `"${property.title}" fue agregada a tu listado.` });
-    } catch (e: any) {
-      toast({ title: "Error", description: e?.message || "No se pudo guardar", variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
     } finally {
       setSavingId(null);
     }

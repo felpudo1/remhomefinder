@@ -99,8 +99,8 @@ export function AdminGrupos({ toast }: Props) {
       } else {
         setOrgs([]);
       }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
     }
     setLoading(false);
   };
@@ -130,8 +130,8 @@ export function AdminGrupos({ toast }: Props) {
       toast({ title: "Grupo eliminado", description: `"${deleteTarget.name}" fue eliminado.` });
       setDeleteTarget(null);
       fetchOrgs();
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     } finally {
       setDeleting(false);
     }

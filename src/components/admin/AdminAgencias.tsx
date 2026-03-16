@@ -9,6 +9,7 @@ import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import type { OrgType } from "@/types/supabase";
 
 interface UserMasterRecord {
     id: string;
@@ -69,7 +70,7 @@ export function AdminAgencias({ toast }: Props) {
 
             // Get organizations (agency_team type) and publication counts
             const [orgsRes, pubCountsRes, referrersRes] = await Promise.all([
-                supabase.from("organizations").select("id, name, created_by, type").eq("type", "agency_team" as any),
+                supabase.from("organizations").select("id, name, created_by, type").eq("type", "agency_team" satisfies OrgType),
                 supabase.from("agent_publications").select("org_id"),
                 supabase.from("profiles").select("user_id, display_name").in("user_id", [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))]),
             ]);
@@ -109,9 +110,9 @@ export function AdminAgencias({ toast }: Props) {
                     property_count: org ? (countMap[org.id] || 0) : 0,
                 };
             }));
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error fetchRecords:", err);
-            toast({ title: "Error", description: err.message, variant: "destructive" });
+            toast({ title: "Error", description: err instanceof Error ? err.message : "Error desconocido", variant: "destructive" });
         } finally {
             setLoading(false);
         }

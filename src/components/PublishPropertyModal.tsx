@@ -11,6 +11,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { PropertyFormManual } from "./add-property/PropertyFormManual";
 import { ScraperInput } from "./add-property/ScraperInput";
+import type { DbListingType, CurrencyCode } from "@/types/supabase";
 
 /** Genera un UUID compatible con contextos no seguros */
 function safeUUID(): string {
@@ -319,7 +320,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           .from("agent_publications")
           .update({
             description: form.aiSummary || form.details || "",
-            listing_type: listingType as any,
+            listing_type: listingType as DbListingType,
           })
           .eq("id", propertyToEdit.id);
 
@@ -335,7 +336,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
             price_amount: priceRent,
             price_expenses: priceExpenses,
             total_cost: priceRent + priceExpenses,
-            currency: form.currency as any,
+            currency: form.currency as CurrencyCode,
             neighborhood: form.neighborhood.trim(),
             city: form.city.trim(),
             m2_total: Number(form.sqMeters) || 0,
@@ -355,7 +356,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           .insert({
             property_id: prop.id,
             org_id: orgId,
-            listing_type: listingType as any,
+            listing_type: listingType as DbListingType,
             description: form.aiSummary || form.details || "",
             published_by: user.id,
           });
@@ -366,8 +367,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
 
       handleClose();
       onPublished();
-    } catch (e: any) {
-      toast({ title: "Error", description: e?.message || "No se pudo guardar la propiedad", variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar la propiedad", variant: "destructive" });
     } finally {
       setSaving(false);
     }

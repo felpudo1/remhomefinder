@@ -65,7 +65,7 @@ export function AdminEstadisticas() {
             const userStats = { total: 0, active: 0, pending: 0, suspended: 0, rejected: 0 };
             let adminsCount = 0;
 
-            profilesRes.data?.forEach((p: any) => {
+            profilesRes.data?.forEach((p) => {
                 const roles = roleMap[p.user_id] || [];
                 const status = p.status;
 
@@ -93,7 +93,7 @@ export function AdminEstadisticas() {
             const { data: pubData } = await supabase.from("agent_publications").select("status");
 
             const propStats = { active: 0, paused: 0, closed: 0 };
-            pubData?.forEach((p: any) => {
+            pubData?.forEach((p) => {
                 if (p.status === 'disponible') propStats.active++;
                 else if (p.status === 'pausado') propStats.paused++;
                 else if (['vendido', 'alquilado'].includes(p.status)) propStats.closed++;
@@ -128,9 +128,9 @@ export function AdminEstadisticas() {
                 },
                 admins: adminsCount,
             });
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error("Error en dashboard stats:", e);
-            toast({ title: "Error al cargar dashboard", description: e.message, variant: "destructive" });
+            toast({ title: "Error al cargar dashboard", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
         } finally {
             setLoading(false);
         }
@@ -171,9 +171,9 @@ export function AdminEstadisticas() {
             });
 
             const unified: StatProperty[] = [
-                ...pubData.map((pub: any) => {
-                    const p = pub.properties || {};
-                    const stats = ratingsMap[pub.property_id];
+                ...pubData.map((pub) => {
+                    const p = (pub as any).properties || {};
+                    const stats = ratingsMap[(pub as any).property_id];
                     return {
                         id: pub.id,
                         title: p.title || "",
@@ -194,9 +194,9 @@ export function AdminEstadisticas() {
                         url: p.source_url || "",
                     };
                 }),
-                ...listingsData.map((listing: any) => {
-                    const p = listing.properties || {};
-                    const stats = ratingsMap[listing.property_id];
+                ...listingsData.map((listing) => {
+                    const p = (listing as any).properties || {};
+                    const stats = ratingsMap[(listing as any).property_id];
                     return {
                         id: listing.id,
                         title: p.title || "",
@@ -221,8 +221,8 @@ export function AdminEstadisticas() {
 
             setStatProps(unified);
             setTotalUnifiedCount((pubRes.count || 0) + (listingsRes.count || 0));
-        } catch (e: any) {
-            toast({ title: "Error en estadísticas", description: e.message, variant: "destructive" });
+        } catch (e: unknown) {
+            toast({ title: "Error en estadísticas", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
         } finally {
             setLoadingStats(false);
         }

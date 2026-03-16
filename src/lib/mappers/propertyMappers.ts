@@ -1,4 +1,4 @@
-import { Property, PropertyStatus, PropertyComment, MarketplacePropertyStatus } from "@/types/property";
+import { Property, PropertyStatus, PropertyComment, MarketplacePropertyStatus, ListingType } from "@/types/property";
 
 import defaultHouse1 from "@/assets/default-house-1.jpg";
 import defaultHouse2 from "@/assets/default-house-2.jpg";
@@ -112,7 +112,7 @@ export function mapDbToProperty(db: any, comments: any[]): Property {
         groupId: db.group_id || db.org_id || null,
         sourceMarketplaceId: db.source_marketplace_id || db.source_publication_id || null,
         marketplaceStatus: db.marketplace_status as MarketplacePropertyStatus | null ?? null,
-        listingType: (db.listing_type as "rent" | "sale") || "rent",
+        listingType: (db.listing_type as ListingType) || "rent",
         ref: db.ref || "",
         details: db.details || "",
     };

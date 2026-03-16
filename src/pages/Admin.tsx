@@ -124,7 +124,7 @@ const Admin = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <AdminHeader
         activeSection={activeSection}
-        onNavigate={(sec) => navigate(ROUTES.ADMIN_SECTION(sec as any))}
+        onNavigate={(sec) => navigate(ROUTES.ADMIN_SECTION(sec))}
         onGoBack={() => navigate(ROUTES.DASHBOARD)}
         handleSignOut={handleSignOut}
         menuItems={MENU_ITEMS}

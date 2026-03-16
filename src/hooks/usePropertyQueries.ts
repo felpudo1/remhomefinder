@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyComment } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
+import type { UserListingStatus, DbListingType } from "@/types/supabase";
 
 /**
  * Hook para leer user_listings + properties + family_comments del usuario autenticado.
@@ -81,7 +82,7 @@ export function usePropertyQueries() {
                         city: "",
                         sqMeters: 0,
                         rooms: 0,
-                        status: listing.current_status as any || "ingresado",
+                        status: (listing.current_status as UserListingStatus) || "ingresado",
                         images: [],
                         aiSummary: "",
                         createdByEmail: "",
@@ -121,7 +122,7 @@ export function usePropertyQueries() {
                     city: p.city || "",
                     sqMeters: Number(p.m2_total),
                     rooms: p.rooms || 0,
-                    status: (listing.current_status as any) || "ingresado",
+                    status: (listing.current_status as UserListingStatus) || "ingresado",
                     images: resolveImages(p.images as string[] | null),
                     aiSummary: p.details || "",
                     createdByEmail: "",
@@ -135,7 +136,7 @@ export function usePropertyQueries() {
                     statusChangedAt: listing.updated_at ? new Date(listing.updated_at) : null,
                     groupId: listing.org_id || null,
                     sourceMarketplaceId: listing.source_publication_id || null,
-                    listingType: (listing.listing_type as "rent" | "sale") || "rent",
+                    listingType: (listing.listing_type as DbListingType) || "rent",
                     ref: p.ref || "",
                     details: p.details || "",
                 };

@@ -96,18 +96,19 @@ const Index = () => {
 
   const permissionDeniedMsg = "No puede realizar este cambio. Póngase en contacto con el usuario que ingresó la publicación.";
 
-  const isPermissionError = (e: any) => {
-    const msg = e?.message?.toLowerCase() || "";
+  const isPermissionError = (e: unknown) => {
+    if (!(e instanceof Error)) return false;
+    const msg = e.message.toLowerCase();
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
   const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => {
     try {
       await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName);
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",
-        description: isPermissionError(e) ? permissionDeniedMsg : e.message,
+        description: isPermissionError(e) ? permissionDeniedMsg : (e instanceof Error ? e.message : "Error desconocido"),
         variant: "destructive",
       });
     }
@@ -116,10 +117,10 @@ const Index = () => {
   const handleAddComment = async (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => {
     try {
       await addComment(id, comment);
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",
-        description: isPermissionError(e) ? permissionDeniedMsg : e.message,
+        description: isPermissionError(e) ? permissionDeniedMsg : (e instanceof Error ? e.message : "Error desconocido"),
         variant: "destructive",
       });
     }
@@ -131,8 +132,8 @@ const Index = () => {
       setIsAddOpen(false);
       setIsAddZenRowsOpen(false);
       toast({ title: "Éxito", description: "Propiedad agregada correctamente" });
-    } catch (e: any) {
-      toast({ title: "Error", description: e?.message || "Error desconocido", variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     }
   };
 
@@ -186,13 +187,13 @@ const Index = () => {
       case "newest": result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
       case "oldest": result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break;
     }
-    result.sort((a, b) => (a.status === "discarded" ? 1 : 0) - (b.status === "discarded" ? 1 : 0));
+    result.sort((a, b) => (a.status === "descartado" ? 1 : 0) - (b.status === "descartado" ? 1 : 0));
     return result;
   }, [properties, selectedStatuses, sortBy, searchQuery, activeGroupId]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
-      ingresado: 0, contacted: 0, coordinated: 0, visited: 0, discarded: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0
+      ingresado: 0, contactado: 0, visita_coordinada: 0, visitado: 0, descartado: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0
     };
     properties.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status]++; });
     return counts;

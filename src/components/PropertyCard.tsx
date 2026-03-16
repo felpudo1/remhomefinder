@@ -72,11 +72,11 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const handleStatusChange = (val: string) => {
     if (val === "eliminado") {
       setShowDeleteConfirm(true);
-    } else if (val === "discarded") {
+    } else if (val === "descartado") {
       setShowDiscardConfirm(true);
-    } else if (val === "coordinated") {
+    } else if (val === "visita_coordinada") {
       setShowCoordinatedConfirm(true);
-    } else if (val === "contacted") {
+    } else if (val === "contactado") {
       setShowContactedConfirm(true);
     } else {
       onStatusChange(property.id, val as PropertyStatus);
@@ -84,7 +84,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   };
 
   const isEliminated = property.status === "eliminado";
-  const isDiscarded = property.status === "discarded";
+  const isDiscarded = property.status === "descartado";
   const isAgentDeleted = property.status === "eliminado_agencia";
 
   return (
@@ -135,13 +135,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                     {property.statusChangedAt && <span>{formatDateTime(property.statusChangedAt)}</span>}
                   </span>
                 )}
-                {property.status === "coordinated" && property.coordinatedDate && (
+                {property.status === "visita_coordinada" && property.coordinatedDate && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
                     <CalendarIcon className="w-3 h-3" />
                     Visita: {formatDateTime(property.coordinatedDate)}
                   </span>
                 )}
-                {property.status === "contacted" && property.contactedName && (
+                {property.status === "contactado" && property.contactedName && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
                     Contacto: {property.contactedName}
                   </span>
@@ -332,7 +332,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => onStatusChange(property.id, "discarded", discardReason)}
+                    onClick={() => onStatusChange(property.id, "descartado", discardReason)}
                     className="bg-status-discarded text-white hover:bg-status-discarded/90"
                   >
                     Descartar
@@ -363,7 +363,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   <AlertDialogAction
                     onClick={() => {
                       const isoDate = coordinatedDateTime ? new Date(coordinatedDateTime).toISOString() : null;
-                      onStatusChange(property.id, "coordinated", undefined, isoDate);
+                      onStatusChange(property.id, "visita_coordinada", undefined, isoDate);
                     }}
                     className="bg-status-coordinated text-white hover:bg-status-coordinated/90"
                   >
@@ -394,7 +394,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
-                      onStatusChange(property.id, "contacted", undefined, undefined, undefined, contactedName);
+                      onStatusChange(property.id, "contactado", undefined, undefined, undefined, contactedName);
                     }}
                     className="bg-status-contacted text-white hover:bg-status-contacted/90"
                   >

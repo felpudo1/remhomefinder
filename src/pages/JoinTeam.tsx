@@ -5,6 +5,7 @@ import { Building2, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/lib/constants";
+import type { OrgRole } from "@/types/supabase";
 
 type JoinState = "loading" | "confirm" | "joining" | "success" | "error" | "already_member";
 
@@ -64,14 +65,14 @@ const JoinTeam = () => {
       const { error } = await supabase.from("organization_members").insert({
         org_id: orgId,
         user_id: user.id,
-        role: "member" as any,
+        role: "member" satisfies OrgRole,
       });
 
       if (error) throw error;
       setState("success");
       setTimeout(() => navigate(ROUTES.AGENCY), 2000);
-    } catch (e: any) {
-      setErrorMsg(e.message);
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : "Error desconocido");
       setState("error");
     }
   };

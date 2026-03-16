@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { OrgType, OrgRole } from "@/types/supabase";
 
 export interface Group {
   id: string;
@@ -75,7 +76,7 @@ export function useGroups() {
           .from("organizations")
           .select("*")
           .eq("parent_id", agencyOrg.id)
-          .eq("type", "sub_team" as any);
+          .eq("type", "sub_team" satisfies OrgType);
 
         subTeams = (subOrgs || []).map((o): Group => ({
           id: o.id,
@@ -110,7 +111,7 @@ export function useGroups() {
         .insert({
           name,
           description,
-          type: orgType as any,
+          type: orgType as OrgType,
           created_by: user.id,
           ...(parentOrgId ? { parent_id: parentOrgId } : {}),
         })
@@ -122,7 +123,7 @@ export function useGroups() {
       const { error: memberError } = await supabase.from("organization_members").insert({
         org_id: data.id,
         user_id: user.id,
-        role: "owner" as any,
+        role: "owner" satisfies OrgRole,
       });
 
       if (memberError) {
@@ -155,7 +156,7 @@ export function useGroups() {
 
       const { error: joinError } = await supabase
         .from("organization_members")
-        .insert({ org_id: org.id, user_id: user.id, role: "member" as any });
+        .insert({ org_id: org.id, user_id: user.id, role: "member" satisfies OrgRole });
 
       if (joinError) {
         if (joinError.code === "23505") throw new Error("Ya sos miembro de este grupo");
@@ -241,7 +242,7 @@ export function useGroups() {
         role: m.role,
         created_at: m.created_at,
         display_name: profileMap.get(m.user_id) || "Usuario",
-        is_active: (m as any).is_active ?? true,
+        is_active: m.is_active ?? true,
       })) as GroupMember[];
     }
 
@@ -251,14 +252,14 @@ export function useGroups() {
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
-      is_active: (m as any).is_active ?? true,
+      is_active: m.is_active ?? true,
     })) as GroupMember[];
   };
 
   const toggleMemberActive = async (memberId: string, isActive: boolean) => {
     const { error } = await supabase
       .from("organization_members")
-      .update({ is_active: isActive } as any)
+      .update({ is_active: isActive })
       .eq("id", memberId);
     if (error) throw error;
   };

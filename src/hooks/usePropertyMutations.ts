@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
+import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
 
 /**
  * Hook para mutaciones: insertar propiedades + user_listings,
@@ -53,7 +54,7 @@ export function usePropertyMutations() {
                     price_amount: form.priceRent,
                     price_expenses: form.priceExpenses,
                     total_cost: form.priceRent + form.priceExpenses,
-                    currency: form.currency as any,
+                    currency: form.currency as CurrencyCode,
                     neighborhood: form.neighborhood,
                     city: form.city || "",
                     m2_total: form.sqMeters,
@@ -139,7 +140,7 @@ export function usePropertyMutations() {
                 .insert({
                     user_listing_id: id,
                     old_status: listing?.current_status || null,
-                    new_status: newStatus as any,
+                    new_status: newStatus as UserListingStatus,
                     changed_by: user.id,
                     event_metadata: eventMetadata,
                 });
@@ -150,7 +151,7 @@ export function usePropertyMutations() {
             if (groupId !== undefined) {
                 await supabase
                     .from("user_listings")
-                    .update({ org_id: groupId } as any)
+                    .update({ org_id: groupId })
                     .eq("id", id);
             }
 

@@ -63,7 +63,7 @@ export function AdminAuditLog() {
         setLoadingUsers(true);
         try {
             const { data, error } = await supabase
-                .from("deletion_audit_log" as any)
+                .from("deletion_audit_log")
                 .select("*")
                 .order("deleted_at", { ascending: false })
                 .limit(200);
@@ -89,7 +89,7 @@ export function AdminAuditLog() {
                 ...r,
                 deleted_by_name: adminNameMap[r.deleted_by] || r.deleted_by,
             })));
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Error fetching user deletion log:", err);
         } finally {
             setLoadingUsers(false);
@@ -104,7 +104,7 @@ export function AdminAuditLog() {
         setLoadingPubs(true);
         try {
             const { data, error } = await supabase
-                .from("publication_deletion_audit_log" as any)
+                .from("publication_deletion_audit_log")
                 .select("*")
                 .order("deleted_at", { ascending: false })
                 .limit(200);
@@ -129,7 +129,7 @@ export function AdminAuditLog() {
                 ...r,
                 deleted_by_name: adminNameMap[r.deleted_by] || r.deleted_by,
             })));
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Error fetching publication deletion log:", err);
         } finally {
             setLoadingPubs(false);
