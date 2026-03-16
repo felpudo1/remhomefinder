@@ -92,6 +92,12 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPr
               setGalleryIndex(index);
               setIsGalleryOpen(true);
             }}
+            topOverlay={
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-md">
+                <Users className="w-3 h-3" />
+                Compartido por <span className="font-medium">{p.sharedByName}</span>
+              </span>
+            }
             statusOverlay={
               <Badge
                 variant="outline"
@@ -105,11 +111,6 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPr
               >
                 {PROPERTY_STATUS_LABELS[p.status] || p.status}
               </Badge>
-            }
-            subImageContent={
-              <div className="px-4 pt-2 text-xs text-muted-foreground">
-                Compartido por <span className="font-medium text-foreground">{p.sharedByName}</span>
-              </div>
             }
           />
         ))}

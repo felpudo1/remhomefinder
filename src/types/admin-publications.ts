@@ -60,4 +60,6 @@ export interface StatProperty {
     url: string;
     views_count?: number; // Cuántos clics recibió
     cr?: number; // Tasa de éxito (Conversion Rate)
+    /** Motivos de descarte: atributo y cuántas veces fue seleccionado (ej: Precio: 5, Humedad: 3) */
+    discardReasons?: { name: string; count: number }[];
 }

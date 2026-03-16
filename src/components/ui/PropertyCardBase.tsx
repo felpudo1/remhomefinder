@@ -74,7 +74,7 @@ export function PropertyCardBase({
 
     return (
         <div
-            className={`bg-card rounded-2xl overflow-hidden card-shadow hover:card-shadow-hover transition-all duration-300 cursor-pointer group animate-fade-in ${className}`}
+            className={`bg-card rounded-2xl overflow-hidden border-[4px] border-foreground/40 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-fade-in ${className}`}
             onClick={onClick}
         >
             {/* Sección de Imagen */}

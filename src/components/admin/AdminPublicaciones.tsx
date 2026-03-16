@@ -43,19 +43,30 @@ export function AdminPublicaciones({ toast }: Props) {
     try {
       const { data, error } = await supabase
         .from("user_listings")
-        // Se incluye admin_hidden para poder mostrar el estado en el panel del admin
-        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, property_id, properties(id, title, source_url)")
+        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, property_id, added_by, properties(id, title, source_url)")
         .order("created_at", { ascending: false });
 
       if (error) {
         toast({ title: "Error al cargar listados de usuarios", description: error.message, variant: "destructive" });
       } else {
-        setUserProps((data || []).map((d: any) => ({
+        const listings = data || [];
+        const addedByIds = [...new Set(listings.map((d: { added_by?: string }) => d.added_by).filter(Boolean))];
+        let addedByMap: Record<string, string> = {};
+        if (addedByIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, email")
+            .in("user_id", addedByIds);
+          profilesData?.forEach((pr) => {
+            addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario";
+          });
+        }
+        setUserProps(listings.map((d: any) => ({
           id: d.id,
           title: d.properties?.title || "Sin título",
           url: d.properties?.source_url || "",
           status: d.current_status,
-          created_by_email: "",
+          created_by_email: addedByMap[d.added_by || ""] || "—",
           source_marketplace_id: d.source_publication_id,
           listing_type: d.listing_type,
           created_at: d.created_at,

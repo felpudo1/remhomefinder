@@ -106,7 +106,84 @@ export function usePropertyQueries() {
                 }
             }
 
-            // 4. Obtener coordinated_date y changed_by de status_history_log para listings en estado "visita_coordinada"
+            // 4. Obtener changed_by de status_history_log para listings en estado "descartado"
+            const descartadoListingIds = listings.filter((l) => l.current_status === "descartado").map((l) => l.id);
+            let discardedByMap: Record<string, string> = {};
+            if (descartadoListingIds.length > 0) {
+                const { data: descartadoLogs } = await supabase
+                    .from("status_history_log")
+                    .select("user_listing_id, changed_by")
+                    .in("user_listing_id", descartadoListingIds)
+                    .eq("new_status", "descartado")
+                    .order("created_at", { ascending: false });
+                const seen = new Set<string>();
+                const changedByIds: string[] = [];
+                descartadoLogs?.forEach((log) => {
+                    if (seen.has(log.user_listing_id)) return;
+                    seen.add(log.user_listing_id);
+                    if (log.changed_by) {
+                        discardedByMap[log.user_listing_id] = log.changed_by;
+                        changedByIds.push(log.changed_by);
+                    }
+                });
+                const uniqueChangedByIds = [...new Set(changedByIds)];
+                if (uniqueChangedByIds.length > 0) {
+                    const { data: changerProfiles } = await supabase
+                        .from("profiles")
+                        .select("user_id, display_name")
+                        .in("user_id", uniqueChangedByIds);
+                    const changerNameByUserId: Record<string, string> = {};
+                    changerProfiles?.forEach((pr) => {
+                        changerNameByUserId[pr.user_id] = pr.display_name || "Usuario";
+                    });
+                    Object.keys(discardedByMap).forEach((listingId) => {
+                        const userId = discardedByMap[listingId];
+                        discardedByMap[listingId] = changerNameByUserId[userId] || userId;
+                    });
+                }
+            }
+
+            // 5. Obtener changed_by y reason de status_history_log para listings en estado "eliminado"
+            const eliminadoListingIds = listings.filter((l) => l.current_status === "eliminado").map((l) => l.id);
+            let deletedByMap: Record<string, string> = {};
+            let deletedReasonMap: Record<string, string> = {};
+            if (eliminadoListingIds.length > 0) {
+                const { data: eliminadoLogs } = await supabase
+                    .from("status_history_log")
+                    .select("user_listing_id, event_metadata, changed_by")
+                    .in("user_listing_id", eliminadoListingIds)
+                    .eq("new_status", "eliminado")
+                    .order("created_at", { ascending: false });
+                const seen = new Set<string>();
+                const changedByIds: string[] = [];
+                eliminadoLogs?.forEach((log) => {
+                    if (seen.has(log.user_listing_id)) return;
+                    seen.add(log.user_listing_id);
+                    const meta = log.event_metadata as { reason?: string } | null;
+                    if (meta?.reason) deletedReasonMap[log.user_listing_id] = meta.reason;
+                    if (log.changed_by) {
+                        deletedByMap[log.user_listing_id] = log.changed_by;
+                        changedByIds.push(log.changed_by);
+                    }
+                });
+                const uniqueChangedByIds = [...new Set(changedByIds)];
+                if (uniqueChangedByIds.length > 0) {
+                    const { data: changerProfiles } = await supabase
+                        .from("profiles")
+                        .select("user_id, display_name")
+                        .in("user_id", uniqueChangedByIds);
+                    const changerNameByUserId: Record<string, string> = {};
+                    changerProfiles?.forEach((pr) => {
+                        changerNameByUserId[pr.user_id] = pr.display_name || "Usuario";
+                    });
+                    Object.keys(deletedByMap).forEach((listingId) => {
+                        const userId = deletedByMap[listingId];
+                        deletedByMap[listingId] = changerNameByUserId[userId] || userId;
+                    });
+                }
+            }
+
+            // 6. Obtener coordinated_date y changed_by de status_history_log para listings en estado "visita_coordinada"
             const coordinadaListingIds = listings.filter((l) => l.current_status === "visita_coordinada").map((l) => l.id);
             let coordinatedDateMap: Record<string, Date> = {};
             let coordinatedByMap: Record<string, string> = {};
@@ -149,7 +226,7 @@ export function usePropertyQueries() {
                 }
             }
 
-            // 5. Get family comments for these listings
+            // 7. Get family comments for these listings
             let allComments: any[] = [];
             if (listingIds.length > 0) {
                 const { data: commentsData, error: commentsError } = await supabase
@@ -162,7 +239,7 @@ export function usePropertyQueries() {
                 allComments = commentsData || [];
             }
 
-            // 5. Map to UI model
+            // 8. Map to UI model
             return listings.map((listing): Property => {
                 const p = listing.properties as any;
                 if (!p) {
@@ -186,10 +263,10 @@ export function usePropertyQueries() {
                         createdByEmail: addedByMap[listing.added_by] || "",
                         comments: [],
                         createdAt: new Date(listing.created_at),
-                        deletedReason: "",
-                        deletedByEmail: "",
+                        deletedReason: deletedReasonMap[listing.id] || "",
+                        deletedByEmail: deletedByMap[listing.id] || "",
                         discardedReason: "",
-                        discardedByEmail: "",
+                        discardedByEmail: discardedByMap[listing.id] || "",
                         statusChangedByEmail: "",
                         contactedName: contactedNameMap[listing.id] || undefined,
                         contactedBy: contactedByMap[listing.id] || undefined,
@@ -232,10 +309,10 @@ export function usePropertyQueries() {
                     createdByEmail: addedByMap[listing.added_by] || "",
                     comments,
                     createdAt: new Date(listing.created_at),
-                    deletedReason: "",
-                    deletedByEmail: "",
+                    deletedReason: deletedReasonMap[listing.id] || "",
+                    deletedByEmail: deletedByMap[listing.id] || "",
                     discardedReason: "",
-                    discardedByEmail: "",
+                    discardedByEmail: discardedByMap[listing.id] || "",
                     statusChangedByEmail: "",
                     statusChangedAt: listing.updated_at ? new Date(listing.updated_at) : null,
                     contactedName: contactedNameMap[listing.id] || undefined,

@@ -49,9 +49,9 @@
     --status-discarded: 4 86% 58%;
     --status-discarded-bg: 4 86% 97%;
 
-    /* Shadows */
-    --shadow-card: 0 1px 3px 0 hsl(220 20% 12% / 0.06), 0 4px 16px 0 hsl(220 20% 12% / 0.06);
-    --shadow-card-hover: 0 4px 8px 0 hsl(220 20% 12% / 0.08), 0 12px 32px 0 hsl(220 20% 12% / 0.1);
+    /* Shadows — más pronunciadas para que los avisos destaquen */
+    --shadow-card: 0 2px 8px 0 hsl(220 20% 12% / 0.08), 0 8px 24px 0 hsl(220 20% 12% / 0.08);
+    --shadow-card-hover: 0 8px 16px 0 hsl(220 20% 12% / 0.1), 0 16px 40px 0 hsl(220 20% 12% / 0.12);
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;

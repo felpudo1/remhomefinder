@@ -10,7 +10,7 @@ import { usePropertyMutations } from "./usePropertyMutations";
  *   - properties: lista de propiedades del usuario (desde Supabase, tabla properties).
  *   - loading, error: estado de la query de listado.
  *   - addProperty: agrega una propiedad (ej. tras scraping o formulario).
- *   - updateStatus(id, status, ...): actualiza estado de una propiedad (y opcionales deletedReason, coordinatedDate, groupId, contactedName).
+ *   - updateStatus(id, status, ...): actualiza estado de una propiedad (y opcionales deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds).
  *   - addComment(id, comment): agrega un comentario a una propiedad.
  *   - refetch: fuerza refetch del listado.
  *
@@ -34,8 +34,10 @@ export function useProperties() {
       deletedReason?: string,
       coordinatedDate?: string | null,
       groupId?: string | null,
-      contactedName?: string
-    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName }),
+      contactedName?: string,
+      discardedAttributeIds?: string[],
+      prosAndCons?: { positiveIds: string[]; negativeIds: string[] }
+    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addComment({ propertyId: id, comment }),
     refetch,

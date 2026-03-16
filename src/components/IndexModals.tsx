@@ -12,6 +12,7 @@ interface IndexModalsProps {
     isDetailOpen: boolean;
     setIsDetailOpen: (open: boolean) => void;
     currentUserEmail: string | null;
+    currentUserDisplayName?: string | null;
 
     // Handlers de propiedad
     onStatusChange: (
@@ -20,7 +21,9 @@ interface IndexModalsProps {
         deletedReason?: string,
         coordinatedDate?: string | null,
         groupId?: string | null,
-        contactedName?: string
+        contactedName?: string,
+        discardedAttributeIds?: string[],
+        prosAndCons?: { positiveIds: string[]; negativeIds: string[] }
     ) => Promise<void>;
     onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;
     onAddProperty: (form: any) => Promise<void>;
@@ -54,6 +57,7 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
     isDetailOpen,
     setIsDetailOpen,
     currentUserEmail,
+    currentUserDisplayName,
     onStatusChange,
     onAddComment,
     onAddProperty,
@@ -81,6 +85,7 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
                 onStatusChange={onStatusChange}
                 onAddComment={onAddComment}
                 currentUserEmail={currentUserEmail}
+                currentUserDisplayName={currentUserDisplayName}
             />
 
             <AddPropertyModal

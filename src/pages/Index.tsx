@@ -11,7 +11,7 @@ import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Loader2, Mail, CheckCircle2, Users, SlidersHorizontal, Store, X, ChevronRight } from "lucide-react";
+import { Home, Plus, Loader2, Mail, CheckCircle2, Users, SlidersHorizontal, Store, X, ChevronRight, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -33,7 +33,7 @@ type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
+  const { properties, loading, addProperty, updateStatus, addComment, refetch } = useProperties();
   const { data: marketplaceProperties = [] } = useMarketplaceProperties();
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -78,8 +78,15 @@ const Index = () => {
   const [welcomeType, setWelcomeType] = useState<"user" | "agent">("user");
   const [showRegWelcome, setShowRegWelcome] = useState(false);
   const [dontShowRegAgain, setDontShowRegAgain] = useState(false);
+  const [isRefreshingList, setIsRefreshingList] = useState(false);
 
   const { canSaveMore, maxSaves, isPremium } = useSubscription();
+
+  const handleRefreshProperties = async () => {
+    setIsRefreshingList(true);
+    await refetch();
+    setIsRefreshingList(false);
+  };
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -113,15 +120,25 @@ const Index = () => {
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
-  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => {
+  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: { positiveIds: string[]; negativeIds: string[] }) => {
     try {
-      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName);
+      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons);
     } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error desconocido";
+      const isEnumError = /enum|invalid.*firme_candidato|invalid.*posible_interes|user_listing_status/i.test(msg);
+      const isRequiredField = /requerido|required/i.test(msg);
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",
-        description: isPermissionError(e) ? permissionDeniedMsg : (e instanceof Error ? e.message : "Error desconocido"),
+        description: isPermissionError(e)
+          ? permissionDeniedMsg
+          : isEnumError
+            ? "Los estados Firme candidato y Posible interés requieren ejecutar la migración de la base de datos. Contactá al administrador."
+            : isRequiredField
+              ? "Error al guardar. Si el problema persiste, ejecutá la migración: pnpm supabase db push"
+              : msg,
         variant: "destructive",
       });
+      throw e; // Re-lanzar para que el modal no se cierre en caso de error
     }
   };
 
@@ -204,7 +221,7 @@ const Index = () => {
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
-      ingresado: 0, contactado: 0, visita_coordinada: 0, visitado: 0, descartado: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0
+      ingresado: 0, contactado: 0, visita_coordinada: 0, visitado: 0, descartado: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0, firme_candidato: 0, posible_interes: 0
     };
     properties.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status]++; });
     return counts;
@@ -332,9 +349,19 @@ const Index = () => {
                       onMobileClose={() => setIsMobileFiltersOpen(false)}
                     />
                     <main className="flex-1 min-w-0">
-                      <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades ({filteredAndSorted.length})</h1>
-                        <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
+                      <div className="mb-6 flex items-start justify-between gap-4">
+                        <div>
+                          <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades ({filteredAndSorted.length})</h1>
+                          <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
+                        </div>
+                        <button
+                          onClick={handleRefreshProperties}
+                          disabled={loading || isRefreshingList}
+                          className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+                          title="Refrescar listado"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${isRefreshingList ? "animate-spin" : ""}`} />
+                        </button>
                       </div>
                       {loading ? (
                         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
@@ -380,6 +407,7 @@ const Index = () => {
             isDetailOpen={isDetailOpen}
             setIsDetailOpen={setIsDetailOpen}
             currentUserEmail={userEmail}
+            currentUserDisplayName={profile?.displayName}
             onStatusChange={handleStatusChange}
             onAddComment={handleAddComment}
             onAddProperty={handleAddProperty}

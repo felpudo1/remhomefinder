@@ -60,4 +60,20 @@ export const PROPERTY_STATUS_LABELS: Record<string, string> = {
     sold: "Vendida",
     deleted: "Eliminada",
     eliminado_agencia: "Finalizado por Agencia",
+    // agent_pub_status (marketplace)
+    disponible: "Disponible",
+    pausado: "Pausada",
+    reservado: "Reservada",
+    vendido: "Vendida",
+    alquilado: "Alquilada",
+    eliminado: "Eliminada",
+    // user_listing_status (personal)
+    ingresado: "Ingresado",
+    contactado: "Contactado",
+    visita_coordinada: "Visita coordinada",
+    visitado: "Visitado",
+    a_analizar: "A analizar",
+    descartado: "Descartado",
+    firme_candidato: "Firme Candidato",
+    posible_interes: "Posible Interés",
 };

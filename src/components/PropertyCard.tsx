@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, XCircle, ExternalLink, CalendarIcon, Building2, Users } from "lucide-react";
+import { Trash2, XCircle, ExternalLink, CalendarIcon, CalendarPlus, Building2, Users } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,16 +29,52 @@ import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { usePropertyRating } from "@/hooks/usePropertyRating";
 import { StarRating } from "@/components/ui/StarRating";
+import { useFeedbackAttributes } from "@/hooks/useFeedbackAttributes";
+import { Checkbox } from "@/components/ui/checkbox";
+
+/** Pros = score 5, contras = score 1 en attribute_scores */
+export interface ProsAndConsAttributeIds {
+  positiveIds: string[];
+  negativeIds: string[];
+}
 
 interface PropertyCardProps {
   property: Property;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: ProsAndConsAttributeIds) => void;
   onClick: () => void;
   ownerEmail?: string | null;
 }
 
 function formatDateTime(date: Date): string {
   return format(date, "dd/MM/yyyy HH:mm");
+}
+
+/** Formato YYYY-MM-DDTHH:mm para input datetime-local (hora local). */
+function toDatetimeLocalString(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Genera URL de Google Calendar para agregar el evento. Formato: YYYYMMDDTHHmmss (local). */
+function buildGoogleCalendarUrl(title: string, startDate: Date, details?: string, location?: string): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = startDate.getFullYear();
+  const m = pad(startDate.getMonth() + 1);
+  const d = pad(startDate.getDate());
+  const h = pad(startDate.getHours());
+  const min = pad(startDate.getMinutes());
+  const sec = pad(startDate.getSeconds());
+  const start = `${y}${m}${d}T${h}${min}${sec}`;
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+  const end = `${endDate.getFullYear()}${pad(endDate.getMonth() + 1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}${pad(endDate.getSeconds())}`;
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${start}/${end}`,
+  });
+  if (details) params.set("details", details);
+  if (location) params.set("location", location);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 const MARKETPLACE_STATUS_OVERLAY: Record<string, { label: string; className: string } | null> = {
@@ -54,7 +90,12 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-  const [discardReason, setDiscardReason] = useState("");
+  const [selectedAttributeIds, setSelectedAttributeIds] = useState<string[]>([]);
+  const [showProsConsConfirm, setShowProsConsConfirm] = useState(false);
+  const [pendingProsConsStatus, setPendingProsConsStatus] = useState<"firme_candidato" | "posible_interes" | null>(null);
+  const [selectedPositiveIds, setSelectedPositiveIds] = useState<string[]>([]);
+  const [selectedNegativeIds, setSelectedNegativeIds] = useState<string[]>([]);
+  const { data: feedbackAttributes = [] } = useFeedbackAttributes();
   const [showCoordinatedConfirm, setShowCoordinatedConfirm] = useState(false);
   const [coordinatedDateTime, setCoordinatedDateTime] = useState("");
   const [showContactedConfirm, setShowContactedConfirm] = useState(false);
@@ -78,6 +119,11 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
       setShowCoordinatedConfirm(true);
     } else if (val === "contactado") {
       setShowContactedConfirm(true);
+    } else if (val === "firme_candidato" || val === "posible_interes") {
+      setPendingProsConsStatus(val);
+      setSelectedPositiveIds([]);
+      setSelectedNegativeIds([]);
+      setShowProsConsConfirm(true);
     } else {
       onStatusChange(property.id, val as PropertyStatus);
     }
@@ -116,6 +162,12 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         }
         topOverlay={
           <>
+            {property.groupId && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-md">
+                <Users className="w-3 h-3" />
+                Compartido por {ownerEmail || property.createdByEmail}
+              </span>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}
             >
@@ -180,25 +232,47 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 totalVotes={totalVotes}
                 totalGroupMembers={totalGroupMembers}
                 onRate={rate}
+                readonly={isDiscarded}
               />
             </div>
           )
         }
         subImageContent={
           <div className="px-4 pt-2 space-y-1">
-            {/* Fila 1: Ingresado por (izq) + Tipo operación (der) */}
+            {/* Fila 1: Ingresado por / De agencia (izq) + Badge Alquiler/Venta (der). Si visita_coordinada: botón calendario + badge en el mismo renglón */}
             <div className="flex items-center justify-between gap-2">
-              {property.sourceMarketplaceId ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
-                  <Building2 className="w-3 h-3" />
-                  De agencia
-                </span>
-              ) : ownerEmail ? (
-                <span className="text-[11px] text-muted-foreground">
-                  Ingresado por {ownerEmail}
-                </span>
-              ) : <span />}
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${property.listingType === "sale"
+              {property.status === "visita_coordinada" && property.coordinatedDate ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const location = [property.neighborhood, property.city].filter(Boolean).join(", ") || undefined;
+                    const url = buildGoogleCalendarUrl(
+                      `Visita: ${property.title}`,
+                      property.coordinatedDate!,
+                      property.url ? `Publicación: ${property.url}` : undefined,
+                      location
+                    );
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  }}
+                  className="flex-1 min-w-0 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-colors touch-manipulation"
+                >
+                  <CalendarPlus className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Agregar visita al calendario</span>
+                </button>
+              ) : (
+                property.sourceMarketplaceId ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
+                    <Building2 className="w-3 h-3" />
+                    De agencia
+                  </span>
+                ) : ownerEmail ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    Ingresado por {ownerEmail}
+                  </span>
+                ) : <span />
+              )}
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide shrink-0 ${property.listingType === "sale"
                 ? "bg-accent/15 text-accent-foreground"
                 : "bg-primary/10 text-primary"
                 }`}>
@@ -206,15 +280,6 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </span>
             </div>
 
-            {/* Fila 2: Badge de compartido — solo visible cuando la prop está en un grupo familiar */}
-            {property.groupId && (
-              <div className="flex justify-end">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
-                  <Users className="w-3 h-3" />
-                  Compartido por {ownerEmail || property.createdByEmail}
-                </span>
-              </div>
-            )}
           </div>
         }
         extraBodyContent={
@@ -287,9 +352,10 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][])
-                  .filter(([key]) => key !== "eliminado")
-                  .map(([key, cfg]) => (
+                {(
+                  (["ingresado", "contactado", "visita_coordinada", "firme_candidato", "posible_interes", "descartado"] as PropertyStatus[])
+                  .map((key) => [key, STATUS_CONFIG[key]] as const)
+                ).map(([key, cfg]) => (
                     <SelectItem key={key} value={key} className="text-xs">
                       <span className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
@@ -333,28 +399,106 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </AlertDialogContent>
             </AlertDialog>
 
-            <AlertDialog open={showDiscardConfirm} onOpenChange={(open) => { setShowDiscardConfirm(open); if (!open) setDiscardReason(""); }}>
+            <AlertDialog open={showDiscardConfirm} onOpenChange={(open) => { setShowDiscardConfirm(open); if (!open) setSelectedAttributeIds([]); }}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>¿Descartar esta propiedad?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    La propiedad "{property.title}" será marcada como descartada. Indicá el motivo del descarte.
+                    Lamentamos que la propiedad "{property.title}" no haya colmado tus expectativas. Por suerte quedan cientos de posibilidades dentro del Market en la aplicación. Podrías darnos una última ayuda marcando los items que no fueron de tu agrado?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <Textarea
-                  placeholder="Motivo del descarte..."
-                  value={discardReason}
-                  onChange={(e) => setDiscardReason(e.target.value)}
-                  className="resize-none text-sm min-h-[80px] rounded-xl"
-                />
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-2">
+                  {feedbackAttributes.map((attr) => (
+                    <label
+                      key={attr.id}
+                      className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedAttributeIds.includes(attr.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedAttributeIds((prev) =>
+                            checked ? [...prev, attr.id] : prev.filter((id) => id !== attr.id)
+                          );
+                        }}
+                      />
+                      <span className="text-sm font-medium text-foreground">{attr.name}</span>
+                    </label>
+                  ))}
+                </div>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => onStatusChange(property.id, "descartado", discardReason)}
+                    onClick={() => onStatusChange(property.id, "descartado", undefined, undefined, undefined, undefined, selectedAttributeIds)}
                     className="bg-status-discarded text-white hover:bg-status-discarded/90"
                   >
                     Descartar
                   </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showProsConsConfirm} onOpenChange={(open) => { setShowProsConsConfirm(open); if (!open) { setPendingProsConsStatus(null); setSelectedPositiveIds([]); setSelectedNegativeIds([]); } }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{pendingProsConsStatus === "firme_candidato" ? "Firme candidato" : "Posible interés"}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Contanos qué te gustó y qué podría mejorar de "{property.title}". Nos ayuda a mejorar las recomendaciones.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">¿Qué te gustó?</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                      {feedbackAttributes.map((attr) => (
+                        <label key={attr.id} className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+                          <Checkbox
+                            checked={selectedPositiveIds.includes(attr.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedPositiveIds((prev) => checked ? [...prev, attr.id] : prev.filter((id) => id !== attr.id));
+                            }}
+                          />
+                          <span className="text-sm font-medium text-foreground">{attr.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">¿Qué no te gustó o podría mejorar?</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                      {feedbackAttributes.map((attr) => (
+                        <label key={attr.id} className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors">
+                          <Checkbox
+                            checked={selectedNegativeIds.includes(attr.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedNegativeIds((prev) => checked ? [...prev, attr.id] : prev.filter((id) => id !== attr.id));
+                            }}
+                          />
+                          <span className="text-sm font-medium text-foreground">{attr.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <Button
+                    type="button"
+                    className={pendingProsConsStatus === "firme_candidato" ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-amber-600 text-white hover:bg-amber-700"}
+                    onClick={async () => {
+                      if (!pendingProsConsStatus) return;
+                      try {
+                        await onStatusChange(property.id, pendingProsConsStatus, undefined, undefined, undefined, undefined, undefined, { positiveIds: selectedPositiveIds, negativeIds: selectedNegativeIds });
+                        setShowProsConsConfirm(false);
+                        setPendingProsConsStatus(null);
+                        setSelectedPositiveIds([]);
+                        setSelectedNegativeIds([]);
+                      } catch {
+                        // Error ya mostrado en toast; el modal permanece abierto
+                      }
+                    }}
+                  >
+                    Confirmar
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -364,7 +508,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 <AlertDialogHeader>
                   <AlertDialogTitle>Coordinar visita</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Seleccioná la fecha y hora de la visita coordinada para "{property.title}".
+                    Seleccioná la fecha y hora de la visita coordinada para "{property.title}". La fecha debe ser posterior a hoy.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2">
@@ -373,20 +517,23 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                     type="datetime-local"
                     value={coordinatedDateTime}
                     onChange={(e) => setCoordinatedDateTime(e.target.value)}
+                    min={toDatetimeLocalString(new Date())}
                     className="rounded-xl"
                   />
                 </div>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
+                  <Button
+                    type="button"
+                    disabled={!coordinatedDateTime.trim() || new Date(coordinatedDateTime) <= new Date()}
                     onClick={() => {
                       const isoDate = coordinatedDateTime ? new Date(coordinatedDateTime).toISOString() : null;
                       onStatusChange(property.id, "visita_coordinada", undefined, isoDate);
                     }}
-                    className="bg-status-coordinated text-white hover:bg-status-coordinated/90"
+                    className="bg-status-coordinated text-white hover:bg-status-coordinated/90 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Confirmar visita
-                  </AlertDialogAction>
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

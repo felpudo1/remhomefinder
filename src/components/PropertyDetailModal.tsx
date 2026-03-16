@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   MapPin,
@@ -47,9 +46,10 @@ interface PropertyDetailModalProps {
   property: Property | null;
   open: boolean;
   onClose: () => void;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string) => void;
+  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: { positiveIds: string[]; negativeIds: string[] }) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
   currentUserEmail?: string | null;
+  currentUserDisplayName?: string | null;
 }
 
 
@@ -61,18 +61,12 @@ export function PropertyDetailModal({
   onStatusChange,
   onAddComment,
   currentUserEmail,
+  currentUserDisplayName,
 }: PropertyDetailModalProps) {
   const { groups } = useGroups();
   const [activeImg, setActiveImg] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [commentAuthor, setCommentAuthor] = useState(currentUserEmail || "Me");
-
-  useEffect(() => {
-    if (open && currentUserEmail) {
-      setCommentAuthor(currentUserEmail);
-    }
-  }, [open, currentUserEmail]);
 
   /**
    * EFECTO DE VISTAS: 
@@ -126,9 +120,10 @@ export function PropertyDetailModal({
    */
   const handleAddComment = () => {
     if (!commentText.trim()) return;
+    const author = currentUserDisplayName || currentUserEmail || "Me";
     onAddComment(property.id, {
-      author: commentAuthor,
-      avatar: commentAuthor[0],
+      author,
+      avatar: author[0],
       text: commentText.trim(),
     });
     setCommentText("");
@@ -375,15 +370,6 @@ export function PropertyDetailModal({
 
             {/* Add comment */}
             <div className="space-y-2 pt-2 border-t border-border">
-              <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Comentar como:</span>
-                <Input
-                  className="h-7 text-xs w-[180px] border-border bg-muted text-muted-foreground"
-                  value={commentAuthor}
-                  readOnly
-                  placeholder="Tu email"
-                />
-              </div>
               <Textarea
                 placeholder="Compartí tu opinión sobre esta propiedad..."
                 value={commentText}

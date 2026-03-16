@@ -61,12 +61,22 @@ export function StarRating({
             )}
             onClick={(e) => e.stopPropagation()}
         >
-            {/* Sección Tu Voto */}
-            {!readonly && (
-                <div className="space-y-1">
-                    <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Tu calificación</div>
-                    <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
+            {/* Sección Tu Voto — en readonly se muestra sin interacción */}
+            <div className="space-y-1">
+                <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Tu calificación</div>
+                <div className="flex items-center gap-1">
+                    {readonly ? (
+                        [1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                                key={star}
+                                className={cn(
+                                    "w-4 h-4",
+                                    star <= rating ? "fill-yellow-400 text-yellow-400" : "text-white/20 fill-transparent"
+                                )}
+                            />
+                        ))
+                    ) : (
+                        [1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
                                 onMouseEnter={() => setHoverRating(star)}
@@ -83,10 +93,10 @@ export function StarRating({
                                     )}
                                 />
                             </button>
-                        ))}
-                    </div>
+                        ))
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* Sección Promedio Familiar */}
             {(totalVotes > 0 || readonly) && (

@@ -1,6 +1,6 @@
 export type ListingType = "rent" | "sale";
 
-export type PropertyStatus = "ingresado" | "contactado" | "visita_coordinada" | "visitado" | "descartado" | "a_analizar" | "eliminado" | "eliminado_agencia";
+export type PropertyStatus = "ingresado" | "contactado" | "visita_coordinada" | "visitado" | "descartado" | "a_analizar" | "eliminado" | "eliminado_agencia" | "firme_candidato" | "posible_interes";
 
 /** Estado del perfil de usuario en la plataforma (tabla profiles.status) */
 export type UserStatus = "active" | "pending" | "suspended" | "rejected";
@@ -118,6 +118,18 @@ export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: strin
     color: "text-purple-700",
     bg: "bg-purple-100",
     dot: "bg-purple-500",
+  },
+  firme_candidato: {
+    label: "Firme Candidato",
+    color: "text-emerald-700",
+    bg: "bg-emerald-100",
+    dot: "bg-emerald-500",
+  },
+  posible_interes: {
+    label: "Posible Interés",
+    color: "text-amber-700",
+    bg: "bg-amber-100",
+    dot: "bg-amber-500",
   },
   eliminado: {
     label: "Eliminado",

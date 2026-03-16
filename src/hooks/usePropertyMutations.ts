@@ -98,6 +98,8 @@ export function usePropertyMutations() {
             coordinatedDate,
             groupId,
             contactedName,
+            discardedAttributeIds,
+            prosAndCons,
         }: {
             id: string;
             status: PropertyStatus;
@@ -105,6 +107,8 @@ export function usePropertyMutations() {
             coordinatedDate?: string | null;
             groupId?: string | null;
             contactedName?: string;
+            discardedAttributeIds?: string[];
+            prosAndCons?: { positiveIds: string[]; negativeIds: string[] };
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
@@ -135,7 +139,7 @@ export function usePropertyMutations() {
             if (contactedName) eventMetadata.contacted_name = contactedName;
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)
-            const { error } = await supabase
+            const { data: insertedLog, error } = await supabase
                 .from("status_history_log")
                 .insert({
                     user_listing_id: id,
@@ -143,9 +147,41 @@ export function usePropertyMutations() {
                     new_status: newStatus as UserListingStatus,
                     changed_by: user.id,
                     event_metadata: eventMetadata,
-                });
+                })
+                .select("id")
+                .single();
 
             if (error) throw error;
+
+            // Si hay motivos de descarte, insertar en attribute_scores (score=1 indica motivo seleccionado)
+            if (insertedLog?.id && discardedAttributeIds?.length) {
+                const rows = discardedAttributeIds.map((attribute_id) => ({
+                    history_log_id: insertedLog.id,
+                    attribute_id,
+                    score: 1,
+                }));
+                const { error: scoresError } = await supabase.from("attribute_scores").insert(rows);
+                if (scoresError) throw scoresError;
+            }
+
+            // Si hay pros/contras (firme_candidato, posible_interes): score 5 = positivo, score 1 = negativo
+            if (insertedLog?.id && prosAndCons) {
+                const positiveRows = prosAndCons.positiveIds.map((attribute_id) => ({
+                    history_log_id: insertedLog.id,
+                    attribute_id,
+                    score: 5,
+                }));
+                const negativeRows = prosAndCons.negativeIds.map((attribute_id) => ({
+                    history_log_id: insertedLog.id,
+                    attribute_id,
+                    score: 1,
+                }));
+                const allRows = [...positiveRows, ...negativeRows];
+                if (allRows.length > 0) {
+                    const { error: scoresError } = await supabase.from("attribute_scores").insert(allRows);
+                    if (scoresError) throw scoresError;
+                }
+            }
 
             // Update org if groupId changed
             if (groupId !== undefined) {
