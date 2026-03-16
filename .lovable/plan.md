@@ -1,88 +1,43 @@
+## Plan: Extracción de datos de propiedad desde imágenes (capturas de RRSS)
 
+### Concepto
 
-## Diagnóstico
+El usuario sube una captura de pantalla de una publicación de RRSS (IG, FB Marketplace, etc.) y la IA (Gemini con capacidad multimodal) analiza la imagen para extraer los datos de la propiedad. Luego se muestra el formulario manual pre-llenado con los datos detectados, permitiendo al usuario agregar hasta 2 fotos reales de la propiedad.
 
-Hay **dos problemas** que causan que el grupo se cree pero no aparezca:
+### Flujo de usuario
 
-### 1. Error silencioso en la inserción de membresía (useGroups.ts, línea 121-125)
+1. En el modal "Agregar Propiedad" (paso `url`), el usuario hace click en **"Ingresar imágenes para analizar (IG, FB)"** (botón que ya existe visualmente en la captura).
+2. Se abre un nuevo paso `"image-upload"` donde puede subir 1 captura de pantalla del aviso.
+3. La imagen se sube a Supabase Storage (`property-images`) y se envía a una nueva Edge Function.
+4. La Edge Function usa **Gemini 2.5 Flash** (multimodal, ya disponible via `LOVABLE_API_KEY`) para analizar la imagen y extraer: título, precio, barrio, m², ambientes, tipo de operación, resumen.
+5. Se devuelven los datos y se pre-llena el formulario manual. En caso que no esten los datos, ya sea superficie o  cantidad de dormitorios o barrio o precio, esos datos se deja en blanco con la opcion que el user lo modifique
+6. En el formulario manual se muestra una sección destacada para **"Agregar fotos de la propiedad"** (hasta 3 fotos, subidas desde el dispositivo o por URL), ya que la IA no puede extraer fotos de la propiedad desde una captura.
 
-```typescript
-await supabase.from("organization_members").insert({
-  org_id: data.id,
-  user_id: user.id,
-  role: "owner" as any,
-});
-```
+### Implementación
 
-El resultado del `insert` no se captura ni se valida. Si falla (y falla, ver punto 2), el código sigue adelante y muestra el toast de éxito.
+**1. Nueva Edge Function: `supabase/functions/extract-from-image/index.ts**`
 
-### 2. RLS bloquea la inserción como "owner"
+- Recibe `{ imageUrl: string, role: string }`
+- Carga el prompt desde `app_settings` (reutiliza `getPromptFromDb`)
+- Llama a Gemini con la imagen como `image_url` en el mensaje + tool calling (mismo schema `extract_property_data`)
+- Retorna los datos estructurados
 
-La política INSERT de `organization_members` es:
+**2. Modificar `AddPropertyModal.tsx**`
 
-```sql
-WITH CHECK (
-  (user_id = auth.uid()) AND (role = 'member') AND (is_system_delegate = false)
-)
-```
+- Agregar nuevo paso `"image-upload"` entre `url` y `manual`
+- Botón "Ingresar imágenes para analizar" en el paso `url` lleva a `image-upload`
+- En `image-upload`: input de archivo para la captura, preview, botón "Analizar con IA"
+- Al recibir resultados, pre-llena el form y pasa al paso `manual`
+- En el paso `manual`, cuando se viene de imagen, mostrar nota: "Agregá fotos reales de la propiedad"
 
-Solo permite `role = 'member'`. El insert con `role: "owner"` viola RLS silenciosamente (retorna error, pero nadie lo lee).
+**3. Archivos a crear/modificar**
 
-### 3. Query filtra grupos personales
+- `supabase/functions/extract-from-image/index.ts` (nueva)
+- `src/components/AddPropertyModal.tsx` (nuevo step + lógica)
 
-La query principal filtra con `.eq("is_personal", false)`, pero los grupos family nuevos se crean sin especificar `is_personal`, por lo que toman el default `false`. Esto no es problema actualmente, pero vale verificar que no cambie.
+### Viabilidad
 
----
-
-## Plan de corrección
-
-### A. Migración SQL: permitir auto-asignarse como "owner" al crear org
-
-Modificar la política INSERT de `organization_members` para permitir que el creador de la organización se inserte como `owner`:
-
-```sql
-DROP POLICY "Users can join orgs" ON public.organization_members;
-
-CREATE POLICY "Users can join orgs" ON public.organization_members
-FOR INSERT TO authenticated
-WITH CHECK (
-  user_id = auth.uid()
-  AND is_system_delegate = false
-  AND (
-    role = 'member'
-    OR (role = 'owner' AND EXISTS (
-      SELECT 1 FROM public.organizations
-      WHERE id = org_id AND created_by = auth.uid()
-    ))
-  )
-);
-```
-
-Esto permite `owner` solo si el usuario es el `created_by` de la organización.
-
-### B. useGroups.ts: validar error de membresía
-
-Cambiar líneas 121-125 para capturar y lanzar el error:
-
-```typescript
-const { error: memberError } = await supabase
-  .from("organization_members")
-  .insert({
-    org_id: data.id,
-    user_id: user.id,
-    role: "owner" as any,
-  });
-
-if (memberError) {
-  // Limpiar la org huérfana
-  await supabase.from("organizations").delete().eq("id", data.id);
-  throw new Error("No se pudo crear la membresía del grupo.");
-}
-```
-
-Si la membresía falla, se borra la organización recién creada y se lanza error, evitando el toast de éxito.
-
----
-
-Son dos cambios: una migración SQL y una edición en `useGroups.ts`.
-
+- Gemini 2.5 Flash soporta imágenes nativamente (multimodal) via la misma API gateway
+- `LOVABLE_API_KEY` ya está configurado
+- El bucket `property-images` ya existe para subir las capturas
+- No se necesitan nuevas dependencias ni connectors

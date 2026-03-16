@@ -118,11 +118,16 @@ export function useGroups() {
 
       if (error) throw error;
 
-      await supabase.from("organization_members").insert({
+      const { error: memberError } = await supabase.from("organization_members").insert({
         org_id: data.id,
         user_id: user.id,
         role: "owner" as any,
       });
+
+      if (memberError) {
+        await supabase.from("organizations").delete().eq("id", data.id);
+        throw new Error("No se pudo crear la membresía del grupo.");
+      }
 
       return { id: data.id, name: data.name, description: data.description, created_by: data.created_by, invite_code: data.invite_code, created_at: data.created_at, type: data.type } as Group;
     },
