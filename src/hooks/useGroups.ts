@@ -20,6 +20,7 @@ export interface GroupMember {
   created_at: string;
   display_name?: string;
   email?: string;
+  is_active?: boolean;
 }
 
 /**
