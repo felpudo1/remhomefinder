@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Shield, Building2, Users, Bot, BarChart3,
-  LogOut, ArrowLeft, Loader2, Settings, FileText
+  Building2, Users, Bot, BarChart3,
+  Settings, FileText
 } from "lucide-react";
-import { ROUTES, ROLES } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
 
 import { AdminAgencias } from "@/components/admin/AdminAgencias";
 import { AdminUsuarios } from "@/components/admin/AdminUsuarios";
