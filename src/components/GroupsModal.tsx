@@ -332,18 +332,20 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                 </p>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCopyCode(agencyOrg.invite_code);
-                  }}
-                  title="Copiar código de invitación"
-                >
-                  <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                </Button>
+                {currentUserId === agencyOrg.created_by && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyCode(`${window.location.origin}/join/${agencyOrg.invite_code}`);
+                    }}
+                    title="Copiar link de oficina"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                  </Button>
+                )}
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             </button>
