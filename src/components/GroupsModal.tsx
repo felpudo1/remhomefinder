@@ -197,12 +197,30 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               ) : (
                 <div className="space-y-1.5">
                   {members.map((m) => (
-                    <div key={m.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border group/member">
+                    <div key={m.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border group/member ${m.is_active === false ? "opacity-50" : ""}`}>
                       <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
                         {(m.display_name || "U")[0].toUpperCase()}
                       </div>
                       <span className="text-sm flex-1 truncate">{m.display_name || "Usuario"}</span>
+                      {m.is_active === false && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">Pausado</Badge>
+                      )}
                       {m.role === "owner" && <Crown className="w-3.5 h-3.5 text-amber-500" />}
+                      {isOwner && m.user_id !== currentUserId && isAgencyTeamDetail && (
+                        <Switch
+                          checked={m.is_active !== false}
+                          onCheckedChange={async (checked) => {
+                            try {
+                              await toggleMemberActive(m.id, checked);
+                              const updated = await fetchMembers(detailGroup.id);
+                              setMembers(updated);
+                            } catch (e: any) {
+                              toast({ title: "Error", description: e.message, variant: "destructive" });
+                            }
+                          }}
+                          className="scale-75"
+                        />
+                      )}
                       {isOwner && m.user_id !== currentUserId && (
                         <button
                           onClick={() => handleRemoveMember(m.user_id)}
