@@ -23,7 +23,7 @@ interface GroupsModalProps {
 }
 
 export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false }: GroupsModalProps) {
-  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
+  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember, toggleMemberActive } = useGroups();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<string>("groups");
