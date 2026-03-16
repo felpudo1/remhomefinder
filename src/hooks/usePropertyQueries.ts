@@ -51,7 +51,7 @@ export function usePropertyQueries() {
             if (!listings || listings.length === 0) return [];
 
             const listingIds = listings.map((l) => l.id);
-            const addedByIds = [...new Set(listings.map((l) => l.added_by).filter(Boolean))];
+            const addedByIds = [...new Set(listings.map((l: any) => l.added_by as string).filter(Boolean))];
 
             // 2. Obtener emails/nombres de quienes ingresaron cada listing (added_by -> profiles)
             let addedByMap: Record<string, string> = {};
