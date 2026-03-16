@@ -99,7 +99,7 @@ function StatsTable({
     loadingStats: boolean;
     sortConfig: { key: keyof StatProperty; direction: 'asc' | 'desc' };
     handleSort: (key: keyof StatProperty) => void;
-    baseCols: { key: string; label: string; icon?: React.ComponentType }[];
+    baseCols: { key: string; label: string; icon?: React.ComponentType<{ className?: string }> }[];
     isMarketplace: boolean;
     page: number;
     setPage: (page: number | ((p: number) => number)) => void;
