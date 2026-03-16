@@ -36,7 +36,7 @@ export function AdminPublicaciones({ toast }: Props) {
       const { data, error } = await supabase
         .from("user_listings")
         // Se incluye admin_hidden para poder mostrar el estado en el panel del admin
-        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, properties(id, title, source_url)")
+        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, property_id, properties(id, title, source_url)")
         .order("created_at", { ascending: false });
 
       if (error) {
