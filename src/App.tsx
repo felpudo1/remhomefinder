@@ -49,6 +49,8 @@ const App = () => (
             <Route path={ROUTES.ADMIN_SECTION_PATH} element={<Admin />} />
             <Route path={ROUTES.AGENCY} element={<AgentDashboard />} />
             <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
+            <Route path={ROUTES.JOIN_TEAM_PATH} element={<JoinTeam />} />
+            <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

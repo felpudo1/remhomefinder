@@ -40,6 +40,16 @@ export function useAuthRedirect() {
 
                 const roleSet = new Set(roles?.map((r) => r.role) ?? []);
 
+                // Check for returnTo parameter first (e.g., from /join/:code)
+                const returnTo = new URLSearchParams(location.search).get("returnTo");
+                if (returnTo && location.pathname === ROUTES.AUTH) {
+                    navigate(returnTo);
+                    return;
+                }
+
+                // Skip redirect for /join/* and /ref/* routes
+                if (location.pathname.startsWith("/join/") || location.pathname.startsWith("/ref/")) return;
+
                 if (roleSet.has(ROLES.ADMIN) && location.pathname !== ROUTES.ADMIN) {
                     navigate(ROUTES.ADMIN);
                 } else if (roleSet.has(ROLES.AGENCY) && location.pathname !== ROUTES.AGENCY) {
