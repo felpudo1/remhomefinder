@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Building2, Loader2, Home, BarChart3, UserCircle, Users
 } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
