@@ -10,6 +10,7 @@ import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentHeader } from "@/components/AgentHeader";
+import { AgentTeamLinks } from "@/components/agent/AgentTeamLinks";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
@@ -29,6 +30,9 @@ const AgentDashboard = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [agencyInviteCode, setAgencyInviteCode] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -43,6 +47,7 @@ const AgentDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
       setUserEmail(user.email ?? null);
+      setUserId(user.id);
 
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
@@ -58,6 +63,8 @@ const AgentDashboard = () => {
       if (orgErr) console.error(orgErr.message);
       else if (orgs && orgs.length > 0) {
         const org = orgs[0];
+        setAgencyInviteCode(org.invite_code);
+        setIsOwner(org.created_by === user.id);
         // Map organization to Agency interface
         setAgency({
           id: org.id,
@@ -107,7 +114,15 @@ const AgentDashboard = () => {
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
         {agency ? (
           profileStatus === "active" ? (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              {/* Team Links section */}
+              {userId && (
+                <AgentTeamLinks
+                  inviteCode={agencyInviteCode || undefined}
+                  userId={userId}
+                  isOwner={isOwner}
+                />
+              )}
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={activeGroupId} />}
               {activeTab === "equipo" && <AgentTeamProperties activeGroupId={activeGroupId} onOpenGroups={() => setIsGroupsOpen(true)} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}

@@ -311,6 +311,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           is_system_delegate: boolean
           org_id: string
           role: Database["public"]["Enums"]["org_role"]
@@ -319,6 +320,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           is_system_delegate?: boolean
           org_id: string
           role?: Database["public"]["Enums"]["org_role"]
@@ -327,6 +329,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           is_system_delegate?: boolean
           org_id?: string
           role?: Database["public"]["Enums"]["org_role"]

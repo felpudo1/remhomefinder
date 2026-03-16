@@ -16,6 +16,8 @@ export function useAuthRedirect() {
                 // Si estamos en la landing (HOME), no forzamos auth
                 if (location.pathname === ROUTES.HOME) return;
 
+            // Allow /join/* and /ref/* routes without auth (they handle their own redirect)
+                if (location.pathname.startsWith("/join/") || location.pathname.startsWith("/ref/")) return;
                 if (location.pathname !== ROUTES.AUTH) navigate(ROUTES.AUTH);
                 return;
             }
@@ -37,6 +39,16 @@ export function useAuthRedirect() {
                     .eq("user_id", user.id);
 
                 const roleSet = new Set(roles?.map((r) => r.role) ?? []);
+
+                // Check for returnTo parameter first (e.g., from /join/:code)
+                const returnTo = new URLSearchParams(location.search).get("returnTo");
+                if (returnTo && location.pathname === ROUTES.AUTH) {
+                    navigate(returnTo);
+                    return;
+                }
+
+                // Skip redirect for /join/* and /ref/* routes
+                if (location.pathname.startsWith("/join/") || location.pathname.startsWith("/ref/")) return;
 
                 if (roleSet.has(ROLES.ADMIN) && location.pathname !== ROUTES.ADMIN) {
                     navigate(ROUTES.ADMIN);

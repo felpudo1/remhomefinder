@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useGroups, Group, GroupMember } from "@/hooks/useGroups";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,7 +23,7 @@ interface GroupsModalProps {
 }
 
 export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false }: GroupsModalProps) {
-  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
+  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember, toggleMemberActive } = useGroups();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<string>("groups");
@@ -159,18 +160,32 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               <p className="text-sm text-muted-foreground">{detailGroup.description}</p>
             )}
 
-            {/* Invite code */}
-            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Código de invitación</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-background rounded-lg px-3 py-2 text-sm font-mono tracking-wider border border-border">
-                  {detailGroup.invite_code}
-                </code>
-                <Button size="sm" variant="outline" onClick={() => handleCopyCode(detailGroup.invite_code)}>
-                  <Copy className="w-3.5 h-3.5" />
-                </Button>
+            {/* Invite code — only for owners, or for non-agency_team groups */}
+            {(isOwner || !isAgencyTeamDetail) && (
+              <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {isAgencyTeamDetail ? "Link de Acceso a Oficina" : "Código de invitación"}
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background rounded-lg px-3 py-2 text-sm font-mono tracking-wider border border-border truncate">
+                    {isAgencyTeamDetail ? `${window.location.origin}/join/${detailGroup.invite_code}` : detailGroup.invite_code}
+                  </code>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const textToCopy = isAgencyTeamDetail
+                      ? `${window.location.origin}/join/${detailGroup.invite_code}`
+                      : detailGroup.invite_code;
+                    handleCopyCode(textToCopy);
+                  }}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                {isAgencyTeamDetail && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Compartí este link solo con tus agentes para que se unan al equipo.
+                  </p>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Members */}
             <div className="space-y-2">
@@ -182,12 +197,30 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               ) : (
                 <div className="space-y-1.5">
                   {members.map((m) => (
-                    <div key={m.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border group/member">
+                    <div key={m.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border group/member ${m.is_active === false ? "opacity-50" : ""}`}>
                       <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
                         {(m.display_name || "U")[0].toUpperCase()}
                       </div>
                       <span className="text-sm flex-1 truncate">{m.display_name || "Usuario"}</span>
+                      {m.is_active === false && (
+                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">Pausado</Badge>
+                      )}
                       {m.role === "owner" && <Crown className="w-3.5 h-3.5 text-amber-500" />}
+                      {isOwner && m.user_id !== currentUserId && isAgencyTeamDetail && (
+                        <Switch
+                          checked={m.is_active !== false}
+                          onCheckedChange={async (checked) => {
+                            try {
+                              await toggleMemberActive(m.id, checked);
+                              const updated = await fetchMembers(detailGroup.id);
+                              setMembers(updated);
+                            } catch (e: any) {
+                              toast({ title: "Error", description: e.message, variant: "destructive" });
+                            }
+                          }}
+                          className="scale-75"
+                        />
+                      )}
                       {isOwner && m.user_id !== currentUserId && (
                         <button
                           onClick={() => handleRemoveMember(m.user_id)}
@@ -299,18 +332,20 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                 </p>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCopyCode(agencyOrg.invite_code);
-                  }}
-                  title="Copiar código de invitación"
-                >
-                  <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                </Button>
+                {currentUserId === agencyOrg.created_by && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyCode(`${window.location.origin}/join/${agencyOrg.invite_code}`);
+                    }}
+                    title="Copiar link de oficina"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                  </Button>
+                )}
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             </button>
