@@ -10,6 +10,7 @@ import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentHeader } from "@/components/AgentHeader";
+import { AgentTeamLinks } from "@/components/agent/AgentTeamLinks";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
