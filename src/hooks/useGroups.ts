@@ -241,6 +241,7 @@ export function useGroups() {
         role: m.role,
         created_at: m.created_at,
         display_name: profileMap.get(m.user_id) || "Usuario",
+        is_active: (m as any).is_active ?? true,
       })) as GroupMember[];
     }
 
@@ -250,7 +251,16 @@ export function useGroups() {
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
+      is_active: (m as any).is_active ?? true,
     })) as GroupMember[];
+  };
+
+  const toggleMemberActive = async (memberId: string, isActive: boolean) => {
+    const { error } = await supabase
+      .from("organization_members")
+      .update({ is_active: isActive } as any)
+      .eq("id", memberId);
+    if (error) throw error;
   };
 
   return {
