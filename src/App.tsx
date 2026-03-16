@@ -5,10 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, ROLES } from "@/lib/constants";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { ReferralTracker } from "@/components/ReferralTracker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
 
@@ -45,14 +46,19 @@ const App = () => (
           <ErrorBoundary>
             <Routes>
               <Route path={ROUTES.HOME} element={<Landing />} />
-              <Route path={ROUTES.DASHBOARD} element={<Index />} />
               <Route path={ROUTES.AUTH} element={<Auth />} />
-              <Route path={ROUTES.ADMIN} element={<Admin />} />
-              <Route path={ROUTES.ADMIN_SECTION_PATH} element={<Admin />} />
-              <Route path={ROUTES.AGENCY} element={<AgentDashboard />} />
               <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
               <Route path={ROUTES.JOIN_TEAM_PATH} element={<JoinTeam />} />
               <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
+              
+              {/* Rutas Protegidas Simples (Solo requieren estar logeado) */}
+              <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              
+              {/* Rutas Protegidas con Roles Específicos */}
+              <Route path={ROUTES.ADMIN} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
+              <Route path={ROUTES.ADMIN_SECTION_PATH} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
+              <Route path={ROUTES.AGENCY} element={<ProtectedRoute allowedRoles={[ROLES.AGENCY]}><AgentDashboard /></ProtectedRoute>} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -52,12 +52,12 @@ const Admin = () => {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
 
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     // Redirect /admin to /admin/agentes

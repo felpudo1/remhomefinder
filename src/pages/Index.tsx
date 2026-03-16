@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
-import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { MarketplaceView } from "@/components/MarketplaceView";
@@ -32,11 +32,22 @@ type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
  */
 const Index = () => {
   const { toast } = useToast();
-  const location = useLocation();
   const navigate = useNavigate();
-  const { userEmail, handleLogout } = useAuthRedirect();
   const { properties, loading, addProperty, updateStatus, addComment } = useProperties();
   const { data: marketplaceProperties = [] } = useMarketplaceProperties();
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserEmail(user.email ?? null);
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   // Estado del perfil del usuario
   const { data: profile } = useProfile();

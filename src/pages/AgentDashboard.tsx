@@ -30,7 +30,6 @@ const TABS = [
 const AgentDashboard = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [agencyInviteCode, setAgencyInviteCode] = useState<string | null>(null);
@@ -47,11 +46,7 @@ const AgentDashboard = () => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
-      setUserEmail(user.email ?? null);
-      setUserId(user.id);
-
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-      if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
 
       // Get agency org
       const { data: orgs, error: orgErr } = await supabase
@@ -100,7 +95,7 @@ const AgentDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AgentHeader
-        userEmail={userEmail}
+        userEmail={null}
         agencyStatus={effectiveStatus}
         activeTab={activeTab}
         setActiveTab={(tab) => setActiveTab(tab)}
