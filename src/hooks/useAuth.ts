@@ -20,6 +20,14 @@ export const useAuth = () => {
      */
     const redirectByRole = async (userId: string) => {
         try {
+            // Check for returnTo parameter first
+            const params = new URLSearchParams(window.location.search);
+            const returnTo = params.get("returnTo");
+            if (returnTo && returnTo.startsWith("/")) {
+                navigate(returnTo);
+                return;
+            }
+
             const { data: roles, error } = await supabase
                 .from("user_roles")
                 .select("role")

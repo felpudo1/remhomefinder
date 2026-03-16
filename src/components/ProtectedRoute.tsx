@@ -65,7 +65,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [allowedRoles, location.pathname]);
+  }, [allowedRoles]);
 
   if (isAuthorized === null) {
     return (
