@@ -114,7 +114,15 @@ const AgentDashboard = () => {
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
         {agency ? (
           profileStatus === "active" ? (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              {/* Team Links section */}
+              {userId && (
+                <AgentTeamLinks
+                  inviteCode={agencyInviteCode || undefined}
+                  userId={userId}
+                  isOwner={isOwner}
+                />
+              )}
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={activeGroupId} />}
               {activeTab === "equipo" && <AgentTeamProperties activeGroupId={activeGroupId} onOpenGroups={() => setIsGroupsOpen(true)} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
