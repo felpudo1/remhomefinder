@@ -37,6 +37,7 @@ export function mapListingToProperty(
 ): Property {
     return {
         id: listing.id,
+        propertyId: property?.id || listing.property_id || listing.id,
         url: property?.source_url || "",
         title: property?.title || "Sin datos",
         priceRent: Number(property?.price_amount || 0),
@@ -79,6 +80,7 @@ export function mapListingToProperty(
 export function mapDbToProperty(db: any, comments: any[]): Property {
     return {
         id: db.id,
+        propertyId: db.property_id || db.id,
         url: db.source_url || db.url || "",
         title: db.title,
         priceRent: Number(db.price_amount || db.price_rent || 0),
