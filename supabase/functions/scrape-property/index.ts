@@ -10,6 +10,7 @@ const corsHeaders = {
 // ── Scraping helpers ──
 
 async function scrapeWithFirecrawl(formattedUrl: string) {
+  // Try both secret names (connector may inject either)
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY") || Deno.env.get("FIRECRAWL_API_KEY_1");
   if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
 
