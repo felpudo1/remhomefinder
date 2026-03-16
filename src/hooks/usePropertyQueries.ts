@@ -113,6 +113,7 @@ export function usePropertyQueries() {
 
                 return {
                     id: listing.id, // Use listing ID as the main ID for UI operations
+                    propertyId: p.id, // Real property UUID for property_reviews FK
                     url: p.source_url || "",
                     title: p.title,
                     priceRent: Number(p.price_amount),
