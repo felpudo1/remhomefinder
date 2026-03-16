@@ -21,9 +21,9 @@ import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "prompt" | "estadisticas" | "sistema";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "prompt", "estadisticas", "sistema"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -34,6 +34,7 @@ const MENU_ITEMS: {
     { id: "agentes", label: "Datos Users", icon: Building2, description: "Información completa de todos los usuarios y agentes" },
     { id: "usuarios", label: "Consola", icon: Users, description: "Gestión rápida de roles y estados" },
     { id: "publicaciones", label: "Publicaciones", icon: FileText, description: "Todas las publicaciones guardadas por usuarios" },
+    { id: "grupos", label: "Grupos / Equipos", icon: Users, description: "Todos los grupos y equipos de la plataforma" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
