@@ -11,7 +11,17 @@
 Nuestra misión es simplificar la toma de decisiones inmobiliarias mediante el uso de inteligencia de datos y una interfaz de usuario excepcional.
 
 - **UY (Uruguay):** Mercado de lanzamiento y consolidación.
-- 
+
+---
+
+## 📋 Requisitos previos
+
+Para desarrollar o ejecutar el proyecto localmente necesitás:
+
+| Requisito | Versión recomendada | Notas |
+|-----------|----------------------|--------|
+| **Node.js** | ≥ 18 | LTS recomendado. Verificar con `node -v`. |
+| **pnpm** | ≥ 8 | Gestor de paquetes preferido. Instalación: `npm install -g pnpm`. |
 
 ---
 
@@ -40,6 +50,8 @@ src/
 └── pages/          # Vistas principales de la aplicación.
 ```
 
+Para un mapa detallado de archivos y responsabilidades, ver [docs/CHANGELOG.md — Mapa de archivos](docs/CHANGELOG.md#-mapa-de-archivos-principales).
+
 ---
 
 ## 🔒 Arquitectura Responsable
@@ -47,6 +59,22 @@ src/
 - **Configuración Centralizada:** Todas las claves del sistema viven en `src/lib/config-keys.ts`, permitiendo un mantenimiento simple y escalable.
 - **Seguridad:** Validación de esquemas con **ZOD** y reglas de RLS en Supabase.
 - **Rendimiento:** Carga diferida (Lazy Loading) y optimización de re-renders mediante Zustand y Query Selectors.
+
+Diagramas de flujo (auth, datos, roles): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+---
+
+## ⚙️ Variables de entorno
+
+El frontend y las Edge Functions de Supabase usan variables de entorno. Para desarrollo local:
+
+1. Copiá el archivo de ejemplo:  
+   `cp .env.example .env`
+2. Editá `.env` y completá los valores (URL y clave de Supabase en el Dashboard del proyecto).
+3. **No commitear `.env`** — ya está en `.gitignore`.
+
+Descripción de cada variable: [.env.example](.env.example).  
+Guía paso a paso de setup: [docs/SETUP.md](docs/SETUP.md).
 
 ---
 
@@ -56,9 +84,38 @@ src/
 # Instalar dependencias
 pnpm install
 
-# Correr en modo desarrollo (Puerto 3000)
+# Copiar variables de entorno (ver sección anterior)
+cp .env.example .env
+
+# Correr en modo desarrollo (puerto por defecto de Vite, ej. 5173)
 pnpm run dev
 ```
+
+### Scripts disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm run dev` | Servidor de desarrollo con Vite (HMR). |
+| `pnpm run build` | Build de producción (`dist/`). |
+| `pnpm run build:dev` | Build en modo development (para pruebas de deploy). |
+| `pnpm run preview` | Sirve el build de producción localmente para probar antes de deploy. |
+| `pnpm run lint` | Ejecuta ESLint sobre el código. |
+| `pnpm run test` | Ejecuta tests con Vitest (una sola corrida). |
+| `pnpm run test:watch` | Tests en modo watch (re-ejecuta al cambiar archivos). |
+
+---
+
+## 📚 Documentación técnica
+
+Toda la documentación para el desarrollador del mañana está en la carpeta **`docs/`**:
+
+| Documento | Contenido |
+|-----------|-----------|
+| [docs/README.md](docs/README.md) | Índice de la documentación y guías. |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Changelog técnico, schema de BD, auth, UI, correcciones Lovable. |
+| [docs/SETUP.md](docs/SETUP.md) | Setup paso a paso, troubleshooting y verificación. |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diagramas de flujo (auth, datos, roles). |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Cómo contribuir, estilo de código y buenas prácticas. |
 
 ---
 

@@ -18,6 +18,7 @@
 8. [IA — Scraping de propiedades](#ia--scraping-de-propiedades)
 9. [UI / UX — Cambios visuales](#ui--ux--cambios-visuales)
 10. [Pendientes y próximos pasos](#pendientes-y-próximos-pasos)
+11. [Correcciones realizadas en Lovable (Mar 2026)](#correcciones-realizadas-en-lovable-mar-2026)
 
 ---
 
@@ -422,6 +423,30 @@ DROP TYPE IF EXISTS agency_status;
 ### 🟢 Backend status enforcement
 
 El frontend controla el acceso según `profiles.status`, pero un usuario con token activo podría evadir la validación. Se recomienda agregar validación servidor en Supabase Edge Functions o RLS adicional.
+
+---
+
+## 🔧 Correcciones realizadas en Lovable (Mar 2026)
+
+En marzo de 2026 se realizaron correcciones en [Lovable](https://lovable.dev) por fallos detectados en el código. Esta sección documenta cada fallo y su solución.
+
+**Formato de cada entrada:**
+
+- **Problema:** descripción del fallo (error en consola, comportamiento incorrecto, tipo TypeScript, etc.).
+- **Solución:** qué se cambió en Lovable (archivo/componente y cambio concreto).
+- **Archivos afectados:** rutas o nombres de componentes, si aplica.
+
+*(Pendiente: listar aquí cada fallo y su corrección cuando JP proporcione el detalle.)*
+
+### Ejemplo de entrada (plantilla)
+
+```markdown
+### [Título breve del fallo]
+
+**Problema:** Descripción del fallo.
+**Solución:** Qué se cambió en Lovable.
+**Archivos afectados:** `src/...`
+```
 
 ---
 

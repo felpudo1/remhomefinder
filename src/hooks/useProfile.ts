@@ -4,7 +4,7 @@ import { UserStatus } from "@/types/property";
 
 /**
  * Perfil del usuario actual, leído desde la tabla `profiles`.
- * Incluye el status centralizado para controlar el acceso a la plataforma.
+ * Incluye el status centralizado (active | pending | suspended | rejected) para controlar el acceso a la plataforma.
  */
 export interface UserProfile {
     userId: string;
@@ -17,12 +17,16 @@ export interface UserProfile {
 }
 
 /**
- * Hook centralizado para leer el perfil del usuario autenticado.
- * Reemplaza los múltiples `useEffect + supabase.from("profiles")` dispersos.
+ * Hook centralizado para leer el perfil del usuario autenticado desde la tabla `profiles`.
+ * Usa TanStack Query; el status (active | pending | suspended | rejected) es el source of truth para acceso a la app.
  *
- * Ejemplo de uso:
- *   const { profile, isLoading } = useProfile();
- *   if (profile?.status !== "active") return <UserStatusBanner status={profile.status} />;
+ * @returns Resultado de useQuery: data = UserProfile | null, isLoading, error, refetch, etc.
+ *   - profile (data): null si no hay usuario o no se pudo cargar; incluye userId, displayName, avatarUrl, phone, email, status, referredById.
+ *   - staleTime: 0 para refrescar al montar y poder ver cambios hechos desde el admin (ej. aprobación de agente).
+ *
+ * @example
+ * const { data: profile, isLoading } = useProfile();
+ * if (profile?.status !== "active") return <UserStatusBanner status={profile.status} />;
  */
 export function useProfile() {
     return useQuery({

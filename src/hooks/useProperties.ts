@@ -3,9 +3,21 @@ import { usePropertyQueries } from "./usePropertyQueries";
 import { usePropertyMutations } from "./usePropertyMutations";
 
 /**
- * Hook de fachada (Facade Pattern) para la gestión de propiedades.
- * Orquestra la lectura y escritura delegando en hooks especializados.
- * Siguiendo la Regla 2 (Arquitectura Profesional).
+ * Hook de fachada (Facade) para el listado personal de propiedades del usuario.
+ * Orquesta lectura (usePropertyQueries) y escritura (usePropertyMutations) sin exponer los hooks internos.
+ *
+ * @returns Objeto con:
+ *   - properties: lista de propiedades del usuario (desde Supabase, tabla properties).
+ *   - loading, error: estado de la query de listado.
+ *   - addProperty: agrega una propiedad (ej. tras scraping o formulario).
+ *   - updateStatus(id, status, ...): actualiza estado de una propiedad (y opcionales deletedReason, coordinatedDate, groupId, contactedName).
+ *   - addComment(id, comment): agrega un comentario a una propiedad.
+ *   - refetch: fuerza refetch del listado.
+ *
+ * @example
+ * const { properties, loading, addProperty, updateStatus } = useProperties();
+ * await addProperty({ title: "Casa X", ... });
+ * updateStatus(propId, "contacted", undefined, null, null, "Juan");
  */
 export function useProperties() {
   const { properties, loading, error, refetch } = usePropertyQueries();

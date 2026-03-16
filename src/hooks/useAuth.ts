@@ -6,8 +6,20 @@ import { ROLES, ROUTES } from "@/lib/constants";
 import { loginSchema, registerSchema } from "@/lib/schemas/auth";
 
 /**
- * Hook personalizado para centralizar toda la lógica de autenticación de Supabase.
- * Siguiendo la Regla 2 (Arquitectura Profesional).
+ * Hook que centraliza la lógica de autenticación con Supabase (registro, login y redirección por rol).
+ * Usado en pantallas de login/registro y tras el callback de confirmación de email.
+ *
+ * @returns Objeto con:
+ *   - loading: true mientras hay una operación de login/signup en curso.
+ *   - isSigningUp: true durante el registro (para deshabilitar UI o mostrar estado distinto).
+ *   - signIn(email, password): inicia sesión; retorna { success, user? } o { success: false, error }.
+ *   - signUp(params): registra usuario o agencia; agentes quedan con status "pending" hasta aprobación admin.
+ *   - redirectByRole(userId): redirige a /admin, /agency o /dashboard según user_roles; respeta query returnTo.
+ *
+ * @example
+ * const { signIn, redirectByRole, loading } = useAuth();
+ * const result = await signIn("user@example.com", "password");
+ * if (result.success && result.user) await redirectByRole(result.user.id);
  */
 export const useAuth = () => {
     const [loading, setLoading] = useState(false);
@@ -17,6 +29,9 @@ export const useAuth = () => {
 
     /**
      * Redirige al usuario según su rol definido en la tabla user_roles.
+     * Si la URL tiene ?returnTo=/ruta, redirige ahí (si es path local). Si no, usa admin → agency → dashboard.
+     *
+     * @param userId - ID del usuario autenticado (Supabase auth.user.id).
      */
     const redirectByRole = async (userId: string) => {
         try {
@@ -55,7 +70,11 @@ export const useAuth = () => {
     };
 
     /**
-     * Realiza el registro de un nuevo usuario, incluyendo perfiles y agencias si aplica.
+     * Registra un nuevo usuario: crea cuenta en Supabase Auth, upsert en profiles y (vía triggers) agencia/rol si es agente.
+     * Usuarios normales quedan con profiles.status "active"; agentes con "pending" hasta aprobación en /admin/usuarios.
+     *
+     * @param params - email, password, confirmPassword, accountType ("user" | "agency"), displayName, phone; opcionales orgName, orgPhone para agency.
+     * @returns { success: true } en éxito (y redirige a dashboard tras 1.5s), o { success: false, error } con toast de error.
      */
     const signUp = async (params: {
         email: string;
@@ -166,7 +185,11 @@ export const useAuth = () => {
     };
 
     /**
-     * Inicia sesión con email y contraseña.
+     * Inicia sesión con email y contraseña. Valida con Zod antes de llamar a Supabase.
+     *
+     * @param email - Email del usuario.
+     * @param password - Contraseña.
+     * @returns { success: true, user } en éxito, o { success: false, error } con toast de error.
      */
     const signIn = async (email: string, password: string) => {
         setLoading(true);
