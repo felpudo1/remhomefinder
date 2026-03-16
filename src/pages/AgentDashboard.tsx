@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Building2, Loader2, Home, BarChart3, UserCircle, Users
 } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
@@ -45,8 +46,9 @@ const AgentDashboard = () => {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate("/auth"); return; }
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      if (!user) return; // ProtectedRoute already handles unauthenticated users
+
+      setUserId(user.id);
 
       // Get agency org
       const { data: orgs, error: orgErr } = await supabase
@@ -61,7 +63,6 @@ const AgentDashboard = () => {
         const org = orgs[0];
         setAgencyInviteCode(org.invite_code);
         setIsOwner(org.created_by === user.id);
-        // Map organization to Agency interface
         setAgency({
           id: org.id,
           name: org.name,
@@ -78,9 +79,9 @@ const AgentDashboard = () => {
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [navigate, profile]);
 
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate("/auth"); };
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate(ROUTES.AUTH); };
 
   if (loading) {
     return (

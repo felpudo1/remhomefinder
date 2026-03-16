@@ -46,7 +46,7 @@ const Index = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate(ROUTES.AUTH);
   };
 
   // Estado del perfil del usuario

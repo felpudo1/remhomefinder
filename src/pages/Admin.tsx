@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Shield, Building2, Users, Bot, BarChart3,
-  LogOut, ArrowLeft, Loader2, Settings, FileText
+  Building2, Users, Bot, BarChart3,
+  Settings, FileText
 } from "lucide-react";
-import { ROUTES, ROLES } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
 
 import { AdminAgencias } from "@/components/admin/AdminAgencias";
 import { AdminUsuarios } from "@/components/admin/AdminUsuarios";
@@ -50,14 +49,10 @@ const Admin = () => {
     ? (section as AdminSection)
     : "agentes";
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
-
 
   useEffect(() => {
     // Redirect /admin to /admin/agentes
@@ -66,44 +61,10 @@ const Admin = () => {
     }
   }, [section, navigate]);
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate(ROUTES.AUTH); return; }
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", ROLES.ADMIN);
-
-      if (!roles || roles.length === 0) {
-        navigate(ROUTES.DASHBOARD);
-        return;
-      }
-
-      setIsAdmin(true);
-      setUserEmail(user.email ?? null);
-      setChecking(false);
-    };
-
-    checkAdmin();
-  }, [navigate]);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate(ROUTES.AUTH);
   };
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) return null;
 
   const renderSection = () => {
     switch (activeSection) {
@@ -128,7 +89,7 @@ const Admin = () => {
         onGoBack={() => navigate(ROUTES.DASHBOARD)}
         handleSignOut={handleSignOut}
         menuItems={MENU_ITEMS}
-        userEmail={userEmail}
+        userEmail={profile?.email}
         displayName={profile?.displayName}
         isPremium={isPremium}
       />
