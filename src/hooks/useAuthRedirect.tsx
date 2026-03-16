@@ -16,6 +16,8 @@ export function useAuthRedirect() {
                 // Si estamos en la landing (HOME), no forzamos auth
                 if (location.pathname === ROUTES.HOME) return;
 
+            // Allow /join/* and /ref/* routes without auth (they handle their own redirect)
+                if (location.pathname.startsWith("/join/") || location.pathname.startsWith("/ref/")) return;
                 if (location.pathname !== ROUTES.AUTH) navigate(ROUTES.AUTH);
                 return;
             }
