@@ -273,5 +273,6 @@ export function useGroups() {
     deleteGroup: deleteGroupMutation.mutateAsync,
     removeMember: removeMemberMutation.mutateAsync,
     fetchMembers,
+    toggleMemberActive,
   };
 }
