@@ -89,7 +89,7 @@ const Admin = () => {
         onGoBack={() => navigate(ROUTES.DASHBOARD)}
         handleSignOut={handleSignOut}
         menuItems={MENU_ITEMS}
-        userEmail={userEmail}
+        userEmail={profile?.email}
         displayName={profile?.displayName}
         isPremium={isPremium}
       />
