@@ -159,18 +159,32 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               <p className="text-sm text-muted-foreground">{detailGroup.description}</p>
             )}
 
-            {/* Invite code */}
-            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Código de invitación</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-background rounded-lg px-3 py-2 text-sm font-mono tracking-wider border border-border">
-                  {detailGroup.invite_code}
-                </code>
-                <Button size="sm" variant="outline" onClick={() => handleCopyCode(detailGroup.invite_code)}>
-                  <Copy className="w-3.5 h-3.5" />
-                </Button>
+            {/* Invite code — only for owners, or for non-agency_team groups */}
+            {(isOwner || !isAgencyTeamDetail) && (
+              <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {isAgencyTeamDetail ? "Link de Acceso a Oficina" : "Código de invitación"}
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background rounded-lg px-3 py-2 text-sm font-mono tracking-wider border border-border truncate">
+                    {isAgencyTeamDetail ? `${window.location.origin}/join/${detailGroup.invite_code}` : detailGroup.invite_code}
+                  </code>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const textToCopy = isAgencyTeamDetail
+                      ? `${window.location.origin}/join/${detailGroup.invite_code}`
+                      : detailGroup.invite_code;
+                    handleCopyCode(textToCopy);
+                  }}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                {isAgencyTeamDetail && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Compartí este link solo con tus agentes para que se unan al equipo.
+                  </p>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Members */}
             <div className="space-y-2">
