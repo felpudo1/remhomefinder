@@ -47,6 +47,7 @@ const AgentDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
       setUserEmail(user.email ?? null);
+      setUserId(user.id);
 
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       if (!roles?.some(r => r.role === "agency")) { navigate("/dashboard"); return; }
