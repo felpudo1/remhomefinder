@@ -51,8 +51,8 @@ export function AdminPublicaciones({ toast }: Props) {
           source_marketplace_id: d.source_publication_id,
           listing_type: d.listing_type,
           created_at: d.created_at,
-          // admin_hidden se lee de la DB — false por defecto si el campo aún no existe
           admin_hidden: d.admin_hidden ?? false,
+          property_id: d.property_id,
         })));
       }
     } catch (e: any) {
