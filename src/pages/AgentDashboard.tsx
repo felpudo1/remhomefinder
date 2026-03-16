@@ -30,6 +30,9 @@ const AgentDashboard = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [agencyInviteCode, setAgencyInviteCode] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
