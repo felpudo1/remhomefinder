@@ -135,16 +135,34 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                     {property.statusChangedAt && <span>{formatDateTime(property.statusChangedAt)}</span>}
                   </span>
                 )}
-                {property.status === "visita_coordinada" && property.coordinatedDate && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
-                    <CalendarIcon className="w-3 h-3" />
-                    Visita: {formatDateTime(property.coordinatedDate)}
-                  </span>
+                {property.status === "visita_coordinada" && (
+                  <>
+                    {property.coordinatedBy && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
+                        Coordinado por {property.coordinatedBy}
+                      </span>
+                    )}
+                    {property.coordinatedDate && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
+                        <CalendarIcon className="w-3 h-3" />
+                        Visita: {formatDateTime(property.coordinatedDate)}
+                      </span>
+                    )}
+                  </>
                 )}
-                {property.status === "contactado" && property.contactedName && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
-                    Contacto: {property.contactedName}
-                  </span>
+                {property.status === "contactado" && (
+                  <>
+                    {property.contactedBy && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
+                        Contactado por {property.contactedBy}
+                      </span>
+                    )}
+                    {property.contactedName && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
+                        Contacto: {property.contactedName}
+                      </span>
+                    )}
+                  </>
                 )}
               </>
             )}

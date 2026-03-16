@@ -43,7 +43,11 @@ export interface Property {
   statusChangedByEmail: string;
   statusChangedAt?: Date | null;
   coordinatedDate?: Date | null;
+  /** Quién coordinó la visita (display_name del changed_by) */
+  coordinatedBy?: string;
   contactedName?: string;
+  /** Quién cambió el estado a contactado (display_name del changed_by) */
+  contactedBy?: string;
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
   marketplaceStatus?: MarketplacePropertyStatus | null;
