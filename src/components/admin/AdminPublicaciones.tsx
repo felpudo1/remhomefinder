@@ -148,9 +148,26 @@ export function AdminPublicaciones({ toast }: Props) {
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     } else {
-      // Solo remover de UI después de confirmación de BD
+      // Borrar la property huérfana si ya no tiene más referencias
+      const propertyId = deleteUserTarget.property_id;
+      if (propertyId) {
+        // Verificar que no haya otros user_listings o agent_publications referenciando esta property
+        const { count: listingsCount } = await supabase
+          .from("user_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("property_id", propertyId);
+
+        const { count: pubsCount } = await supabase
+          .from("agent_publications")
+          .select("id", { count: "exact", head: true })
+          .eq("property_id", propertyId);
+
+        if ((listingsCount ?? 0) === 0 && (pubsCount ?? 0) === 0) {
+          await supabase.from("properties").delete().eq("id", propertyId);
+        }
+      }
       setUserProps(p => p.filter(prop => prop.id !== id));
-      toast({ title: "Listado eliminado permanentemente" });
+      toast({ title: "Listado y propiedad eliminados permanentemente" });
     }
   };
 
