@@ -40,11 +40,10 @@ export function usePropertyQueries() {
         queryKey: ["properties"],
         queryFn: async () => {
             // 1. Get user listings (includes org_id filter via RLS)
-            const { data: listings, error: listingsError } = await supabase
+            const { data: listings, error: listingsError } = await (supabase
                 .from("user_listings")
-                .select("*, properties(*)")
-                // Los listings ocultos por el admin no deben ser visibles para el usuario
-                .eq("admin_hidden" as any, false)
+                .select("*, properties(*)") as any)
+                .eq("admin_hidden", false)
                 .order("created_at", { ascending: false });
 
             if (listingsError) throw listingsError;
