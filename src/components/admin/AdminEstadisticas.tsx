@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, TrendingUp, Users2, Loader2, BarChart3, Shield } from "lucide-react";
+import { Home, Building2, TrendingUp, Users2, Loader2, BarChart3, Shield, RefreshCw } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,13 @@ export function AdminEstadisticas() {
         key: 'created_at',
         direction: 'desc'
     });
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await Promise.all([fetchStats(), fetchAllStats()]);
+        setIsRefreshing(false);
+    };
 
     useEffect(() => { fetchStats(); }, []);
     useEffect(() => { fetchAllStats(); }, [page, sortConfig]);
@@ -256,6 +263,17 @@ export function AdminEstadisticas() {
 
     return (
         <div className="space-y-8">
+            <div className="flex justify-end">
+                <button
+                    title="Refrescar datos"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50 flex items-center gap-2"
+                >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                    <span className="text-sm font-medium">Refrescar</span>
+                </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center gap-3 mb-4">

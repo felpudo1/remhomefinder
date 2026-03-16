@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Search, Users, Building2, Network } from "lucide-react";
+import { Loader2, Trash2, Search, Users, Building2, Network, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,7 @@ export function AdminGrupos({ toast }: Props) {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<OrgRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchOrgs = async () => {
     setLoading(true);
@@ -177,6 +178,17 @@ export function AdminGrupos({ toast }: Props) {
         <Badge variant="outline" className="shrink-0">
           {filtered.length} {filtered.length === 1 ? "grupo" : "grupos"}
         </Badge>
+        <button
+          title="Refrescar datos"
+          onClick={async () => {
+            setIsRefreshing(true);
+            await fetchOrgs();
+            setIsRefreshing(false);
+          }}
+          className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
       <div className="space-y-2">

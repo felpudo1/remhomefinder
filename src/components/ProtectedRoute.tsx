@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, ROLES } from "@/lib/constants";
 
 import { AppRole } from "@/types/supabase";
 
@@ -13,6 +13,8 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  /** Si el usuario debe ser redirigido a su panel por rol (admin/agency en dashboard) */
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -27,22 +29,41 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
           return;
         }
 
-        // Si no se especifican roles permitidos, con estar logeado alcanza
-        if (!allowedRoles || allowedRoles.length === 0) {
-          if (isMounted) setIsAuthorized(true);
-          return;
-        }
-
-        // Chequear roles
+        // Obtener roles del usuario (siempre lo necesitamos para redirect por rol)
         const { data: roles } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id);
 
         const userRoles = roles?.map((r) => r.role as AppRole) || [];
+
+        // Si estamos en /dashboard y el usuario es admin o agency, redirigir a su panel
+        const isDashboard = location.pathname === ROUTES.DASHBOARD;
+        if (isDashboard && !allowedRoles?.length) {
+          if (userRoles.includes(ROLES.ADMIN)) {
+            if (isMounted) setRedirectTo(ROUTES.ADMIN);
+            return;
+          }
+          if (userRoles.includes(ROLES.AGENCY)) {
+            if (isMounted) setRedirectTo(ROUTES.AGENCY);
+            return;
+          }
+        }
+
+        // Si no se especifican roles permitidos, con estar logeado alcanza
+        if (!allowedRoles || allowedRoles.length === 0) {
+          if (isMounted) {
+            setRedirectTo(null);
+            setIsAuthorized(true);
+          }
+          return;
+        }
+
+        // Chequear roles para rutas protegidas por rol
         const hasAccess = allowedRoles.some(role => userRoles.includes(role));
 
         if (isMounted) {
+          setRedirectTo(null);
           setIsAuthorized(hasAccess);
         }
       } catch (error) {
@@ -65,9 +86,9 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [allowedRoles]);
+  }, [allowedRoles, location.pathname]);
 
-  if (isAuthorized === null) {
+  if (isAuthorized === null && !redirectTo) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-background">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -75,11 +96,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
+  if (redirectTo) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
   if (!isAuthorized) {
-    // Si no está autorizado y el acceso falló por rol, idealmente iría al dashboard.
-    // Si no tiene sesión, va al login. Lo manejaremos con un chequeo rápido de sesión actual.
-    // Lo mandamos a auth, que decidirá si está en sesión o no. 
-    // Guardamos la ruta a la que quería ir por si luego de logearse queremos llevarlo (returnTo)
     const currentPath = location.pathname + location.search;
     return <Navigate to={`${ROUTES.AUTH}?returnTo=${encodeURIComponent(currentPath)}`} replace />;
   }

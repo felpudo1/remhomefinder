@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Building2, Users } from "lucide-react";
+import { Loader2, Building2, Users, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProperty, MktProperty, MarketplaceStatus } from "@/types/admin-publications";
@@ -25,6 +25,13 @@ export function AdminPublicaciones({ toast }: Props) {
   const [mktProps, setMktProps] = useState<MktProperty[]>([]);
   const [loadingMkt, setLoadingMkt] = useState(true);
   const [deleteMktTarget, setDeleteMktTarget] = useState<MktProperty | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([fetchUserProperties(), fetchMktProperties()]);
+    setIsRefreshing(false);
+  };
 
   useEffect(() => {
     fetchUserProperties();
@@ -240,7 +247,8 @@ export function AdminPublicaciones({ toast }: Props) {
 
   return (
     <Tabs defaultValue="marketplace" className="w-full">
-      <TabsList className="mb-6 bg-muted rounded-xl p-1 h-auto w-full grid grid-cols-2">
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <TabsList className="bg-muted rounded-xl p-1 h-auto flex-1 grid grid-cols-2">
         <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
           <Building2 className="w-4 h-4 shrink-0" />
           <span className="hidden sm:inline">Marketplace</span>
@@ -252,6 +260,15 @@ export function AdminPublicaciones({ toast }: Props) {
           <Badge variant="secondary" className="ml-1 text-xs">{userProps.length}</Badge>
         </TabsTrigger>
       </TabsList>
+        <button
+          title="Refrescar datos"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+        </button>
+      </div>
 
       <MarketplaceTab
         mktProps={mktProps}
