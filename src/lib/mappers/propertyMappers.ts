@@ -37,6 +37,7 @@ export function mapListingToProperty(
 ): Property {
     return {
         id: listing.id,
+        propertyId: property?.id || listing.property_id || listing.id,
         url: property?.source_url || "",
         title: property?.title || "Sin datos",
         priceRent: Number(property?.price_amount || 0),

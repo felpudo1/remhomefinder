@@ -63,8 +63,8 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [galleryInitialImg, setGalleryInitialImg] = useState(0);
 
-  // Hook de calificación por estrellas (solo si hay grupo)
-  const { userVote, averageRating, totalVotes, totalGroupMembers, rate } = usePropertyRating(property.id, property.groupId || null);
+  // Hook de calificación por estrellas (solo si hay grupo) — usa el propertyId real, no el user_listing ID
+  const { userVote, averageRating, totalVotes, totalGroupMembers, rate } = usePropertyRating(property.propertyId || property.id, property.groupId || null);
 
   const config = STATUS_CONFIG[property.status];
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;

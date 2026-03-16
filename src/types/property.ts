@@ -18,6 +18,8 @@ export type AddButtonConfig = "blue" | "white" | "both" | "none";
 
 export interface Property {
   id: string;
+  /** UUID real de la tabla properties (puede diferir del id si este es un user_listing) */
+  propertyId?: string;
   url: string;
   title: string;
   priceRent: number;
