@@ -15,6 +15,7 @@ import { AdminPrompt } from "@/components/admin/AdminPrompt";
 import { AdminEstadisticas } from "@/components/admin/AdminEstadisticas";
 import { AdminSystem } from "@/components/admin/AdminSystem";
 import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
+import { AdminGrupos } from "@/components/admin/AdminGrupos";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
