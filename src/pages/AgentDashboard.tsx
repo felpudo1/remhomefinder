@@ -63,6 +63,8 @@ const AgentDashboard = () => {
       if (orgErr) console.error(orgErr.message);
       else if (orgs && orgs.length > 0) {
         const org = orgs[0];
+        setAgencyInviteCode(org.invite_code);
+        setIsOwner(org.created_by === user.id);
         // Map organization to Agency interface
         setAgency({
           id: org.id,
