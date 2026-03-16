@@ -50,14 +50,10 @@ const Admin = () => {
     ? (section as AdminSection)
     : "agentes";
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
-
 
   useEffect(() => {
     // Redirect /admin to /admin/agentes
@@ -66,44 +62,10 @@ const Admin = () => {
     }
   }, [section, navigate]);
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate(ROUTES.AUTH); return; }
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", ROLES.ADMIN);
-
-      if (!roles || roles.length === 0) {
-        navigate(ROUTES.DASHBOARD);
-        return;
-      }
-
-      setIsAdmin(true);
-      setUserEmail(user.email ?? null);
-      setChecking(false);
-    };
-
-    checkAdmin();
-  }, [navigate]);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate(ROUTES.AUTH);
   };
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) return null;
 
   const renderSection = () => {
     switch (activeSection) {
