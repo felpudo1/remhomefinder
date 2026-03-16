@@ -1,0 +1,1 @@
+ALTER TABLE public.user_listings ADD COLUMN admin_hidden BOOLEAN NOT NULL DEFAULT false;
