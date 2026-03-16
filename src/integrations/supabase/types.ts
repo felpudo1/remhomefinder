@@ -1055,8 +1055,6 @@ export type Database = {
         | "visitado"
         | "a_analizar"
         | "descartado"
-        | "firme_candidato"
-        | "posible_interes"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
     CompositeTypes: {
@@ -1205,8 +1203,6 @@ export const Constants = {
         "visitado",
         "a_analizar",
         "descartado",
-        "firme_candidato",
-        "posible_interes",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
     },
