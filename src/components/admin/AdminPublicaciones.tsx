@@ -120,13 +120,13 @@ export function AdminPublicaciones({ toast }: Props) {
     if (!deleteUserTarget) return;
     const id = deleteUserTarget.id;
     const title = deleteUserTarget.title;
-    setUserProps(p => p.filter(prop => prop.id !== id));
+    const snapshot = [...userProps];
     setDeleteUserTarget(null);
 
     // Obtener el admin que ejecuta la acción para el log de auditoría
     const { data: { user: adminUser } } = await supabase.auth.getUser();
 
-    // Registrar en auditoría ANTES de borrar — si falla el log el borrado no ocurre
+    // Registrar en auditoría ANTES de borrar
     const { error: auditError } = await supabase
       .from("publication_deletion_audit_log")
       .insert({
@@ -141,14 +141,15 @@ export function AdminPublicaciones({ toast }: Props) {
 
     if (auditError) {
       toast({ title: "Error al registrar auditoría", description: auditError.message, variant: "destructive" });
-      return; // No borrar si falla el log
+      return;
     }
 
     const { error } = await supabase.from("user_listings").delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
-      fetchUserProperties();
     } else {
+      // Solo remover de UI después de confirmación de BD
+      setUserProps(p => p.filter(prop => prop.id !== id));
       toast({ title: "Listado eliminado permanentemente" });
     }
   };
