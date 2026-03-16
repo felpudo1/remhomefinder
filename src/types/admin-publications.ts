@@ -25,6 +25,7 @@ export interface UserProperty {
     listing_type: "rent" | "sale";
     created_at: string;
     admin_hidden: boolean;
+    property_id?: string;
 }
 
 export interface MktProperty {

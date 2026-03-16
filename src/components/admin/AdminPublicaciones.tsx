@@ -36,7 +36,7 @@ export function AdminPublicaciones({ toast }: Props) {
       const { data, error } = await supabase
         .from("user_listings")
         // Se incluye admin_hidden para poder mostrar el estado en el panel del admin
-        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, properties(id, title, source_url)")
+        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, property_id, properties(id, title, source_url)")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -51,8 +51,8 @@ export function AdminPublicaciones({ toast }: Props) {
           source_marketplace_id: d.source_publication_id,
           listing_type: d.listing_type,
           created_at: d.created_at,
-          // admin_hidden se lee de la DB — false por defecto si el campo aún no existe
           admin_hidden: d.admin_hidden ?? false,
+          property_id: d.property_id,
         })));
       }
     } catch (e: any) {
@@ -148,9 +148,26 @@ export function AdminPublicaciones({ toast }: Props) {
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     } else {
-      // Solo remover de UI después de confirmación de BD
+      // Borrar la property huérfana si ya no tiene más referencias
+      const propertyId = deleteUserTarget.property_id;
+      if (propertyId) {
+        // Verificar que no haya otros user_listings o agent_publications referenciando esta property
+        const { count: listingsCount } = await supabase
+          .from("user_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("property_id", propertyId);
+
+        const { count: pubsCount } = await supabase
+          .from("agent_publications")
+          .select("id", { count: "exact", head: true })
+          .eq("property_id", propertyId);
+
+        if ((listingsCount ?? 0) === 0 && (pubsCount ?? 0) === 0) {
+          await supabase.from("properties").delete().eq("id", propertyId);
+        }
+      }
       setUserProps(p => p.filter(prop => prop.id !== id));
-      toast({ title: "Listado eliminado permanentemente" });
+      toast({ title: "Listado y propiedad eliminados permanentemente" });
     }
   };
 
