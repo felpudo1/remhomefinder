@@ -293,7 +293,17 @@ serve(async (req) => {
     }
 
     // Step 1: Scrape
-    const result = scraper === "zenrows" ? await scrapeWithZenRows(formattedUrl) : await scrapeWithFirecrawl(formattedUrl);
+    let result;
+    if (scraper === "zenrows") {
+      try {
+        result = await scrapeWithZenRows(formattedUrl);
+      } catch (e) {
+        console.warn(`ZenRows failed, falling back to Firecrawl: ${e instanceof Error ? e.message : e}`);
+        result = await scrapeWithFirecrawl(formattedUrl);
+      }
+    } else {
+      result = await scrapeWithFirecrawl(formattedUrl);
+    }
     console.log(`Found ${result.imageUrls.length} property images`);
 
     if (!result.markdown) {
