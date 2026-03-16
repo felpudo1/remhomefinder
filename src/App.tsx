@@ -19,6 +19,8 @@ const Admin = routeLazy(() => import("./pages/Admin"));
 const AgentDashboard = routeLazy(() => import("./pages/AgentDashboard"));
 const NotFound = routeLazy(() => import("./pages/NotFound"));
 const PublicPropertyView = routeLazy(() => import("./pages/PublicPropertyView"));
+const JoinTeam = routeLazy(() => import("./pages/JoinTeam"));
+const Referral = routeLazy(() => import("./pages/Referral"));
 
 const queryClient = new QueryClient();
 
