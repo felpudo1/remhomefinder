@@ -218,21 +218,43 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
 
               {/* Hide abandon button for agency_team org */}
               {!isAgencyTeamDetail && (
-                <Button
-                  variant="ghost"
-                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
-                  onClick={async () => {
-                    try {
-                      await leaveGroup(detailGroup.id);
-                      setDetailGroup(null);
-                    } catch (e: any) {
-                      toast({ title: "Error", description: e.message, variant: "destructive" });
-                    }
-                  }}
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Abandonar {groupLabel}
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
+                    onClick={async () => {
+                      try {
+                        await leaveGroup(detailGroup.id);
+                        setDetailGroup(null);
+                      } catch (e: any) {
+                        toast({ title: "Error", description: e.message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Abandonar {groupLabel}
+                  </Button>
+
+                  {isOwner && (
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
+                      onClick={async () => {
+                        if (!confirm(`¿Estás seguro de eliminar "${detailGroup.name}"? Se eliminarán todos los miembros.`)) return;
+                        try {
+                          await deleteGroup(detailGroup.id);
+                          setDetailGroup(null);
+                          onClose();
+                        } catch (e: any) {
+                          toast({ title: "Error", description: e.message, variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Eliminar {groupLabel}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
