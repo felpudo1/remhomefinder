@@ -43,6 +43,8 @@ export function usePropertyQueries() {
             const { data: listings, error: listingsError } = await supabase
                 .from("user_listings")
                 .select("*, properties(*)")
+                // Los listings ocultos por el admin no deben ser visibles para el usuario
+                .eq("admin_hidden", false)
                 .order("created_at", { ascending: false });
 
             if (listingsError) throw listingsError;

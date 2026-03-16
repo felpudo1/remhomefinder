@@ -35,7 +35,8 @@ export function AdminPublicaciones({ toast }: Props) {
     try {
       const { data, error } = await supabase
         .from("user_listings")
-        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, properties(id, title, source_url)")
+        // Se incluye admin_hidden para poder mostrar el estado en el panel del admin
+        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, properties(id, title, source_url)")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -50,7 +51,8 @@ export function AdminPublicaciones({ toast }: Props) {
           source_marketplace_id: d.source_publication_id,
           listing_type: d.listing_type,
           created_at: d.created_at,
-          admin_hidden: false,
+          // admin_hidden se lee de la DB — false por defecto si el campo aún no existe
+          admin_hidden: d.admin_hidden ?? false,
         })));
       }
     } catch (e: any) {
@@ -89,17 +91,28 @@ export function AdminPublicaciones({ toast }: Props) {
   };
 
   const toggleHideUserProperty = async (prop: UserProperty) => {
-    // In new schema, we delete the listing instead of hiding
+    // Toggle admin_hidden: oculta el listing al usuario SIN borrarlo del listado del admin
+    const newHiddenState = !prop.admin_hidden;
+
+    // Actualizar optimisticamente el estado local para respuesta inmediata en UI
+    setUserProps(p => p.map(pr => pr.id === prop.id ? { ...pr, admin_hidden: newHiddenState } : pr));
+
     const { error } = await supabase
       .from("user_listings")
-      .delete()
+      .update({ admin_hidden: newHiddenState })
       .eq("id", prop.id);
 
     if (error) {
+      // Revertir el cambio optimista si falla
+      setUserProps(p => p.map(pr => pr.id === prop.id ? { ...pr, admin_hidden: !newHiddenState } : pr));
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      setUserProps(p => p.filter(pr => pr.id !== prop.id));
-      toast({ title: "Listado eliminado" });
+      toast({
+        title: newHiddenState ? "Listado oculto" : "Listado restaurado",
+        description: newHiddenState
+          ? "El usuario ya no verá esta propiedad en su lista."
+          : "La propiedad volvió a ser visible para el usuario.",
+      });
     }
   };
 
