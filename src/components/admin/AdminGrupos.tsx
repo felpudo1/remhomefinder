@@ -25,6 +25,12 @@ interface OrgRow {
   invite_code: string;
   created_by: string;
   parent_id: string | null;
+  members?: Array<{
+    user_id: string;
+    role: string;
+    display_name: string;
+    plan_type: string;
+  }>;
 }
 
 interface Props {
@@ -40,16 +46,61 @@ export function AdminGrupos({ toast }: Props) {
 
   const fetchOrgs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("organizations")
-      .select("*")
-      .eq("is_personal", false)
-      .order("created_at", { ascending: false });
+    try {
+      // Fetch organizations
+      const { data: orgsData, error: orgsError } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("is_personal", false)
+        .order("created_at", { ascending: false });
 
-    if (error) {
+      if (orgsError) throw orgsError;
+
+      const orgsList = (orgsData as OrgRow[]) || [];
+
+      // Fetch all members for these orgs
+      if (orgsList.length > 0) {
+        const orgIds = orgsList.map(o => o.id);
+        const { data: membersData, error: membersError } = await supabase
+          .from("organization_members")
+          .select("org_id, user_id, role")
+          .in("org_id", orgIds);
+
+        if (membersError) throw membersError;
+
+        // Fetch profiles for these members to get names and plans
+        const userIds = [...new Set(membersData.map(m => m.user_id))];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, plan_type")
+          .in("user_id", userIds);
+
+        if (profilesError) throw profilesError;
+
+        const profileMap = new Map(profilesData.map(p => [p.user_id, p]));
+
+        // Attach members to orgs
+        const enrichedOrgs = orgsList.map(org => {
+          const orgMembers = membersData
+            .filter(m => m.org_id === org.id)
+            .map(m => {
+              const profile = profileMap.get(m.user_id);
+              return {
+                user_id: m.user_id,
+                role: m.role,
+                display_name: profile?.display_name || "Sin nombre",
+                plan_type: profile?.plan_type || "free"
+              };
+            });
+          return { ...org, members: orgMembers };
+        });
+
+        setOrgs(enrichedOrgs);
+      } else {
+        setOrgs([]);
+      }
+    } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      setOrgs((data as OrgRow[]) || []);
     }
     setLoading(false);
   };
@@ -150,6 +201,22 @@ export function AdminGrupos({ toast }: Props) {
                 <p className="text-xs text-muted-foreground truncate">
                   {org.description || "Sin descripción"} · Código: {org.invite_code}
                 </p>
+                {org.members && org.members.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Integrantes:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {org.members.map((m) => (
+                        <div key={m.user_id} className="flex items-center gap-1.5 bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
+                          <span className="text-[11px] font-medium text-foreground">{m.display_name}</span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-background font-normal border-primary/20 text-primary">
+                            {m.plan_type}
+                          </Badge>
+                          <span className="text-[9px] text-muted-foreground/70 italic">({m.role})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <Button
                 size="sm"
