@@ -72,6 +72,7 @@ export function usePropertyQueries() {
                     // Fallback if join fails
                     return {
                         id: listing.id,
+                        propertyId: listing.property_id,
                         url: "",
                         title: "Sin datos",
                         priceRent: 0,
