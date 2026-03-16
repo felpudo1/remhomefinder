@@ -99,7 +99,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     const { error } = await supabase
       .from("user_listings")
-      .update({ admin_hidden: newHiddenState })
+      .update({ admin_hidden: newHiddenState } as any)
       .eq("id", prop.id);
 
     if (error) {

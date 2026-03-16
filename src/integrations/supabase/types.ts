@@ -793,6 +793,7 @@ export type Database = {
       user_listings: {
         Row: {
           added_by: string
+          admin_hidden: boolean
           created_at: string
           current_status: Database["public"]["Enums"]["user_listing_status"]
           id: string
@@ -804,6 +805,7 @@ export type Database = {
         }
         Insert: {
           added_by: string
+          admin_hidden?: boolean
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
           id?: string
@@ -815,6 +817,7 @@ export type Database = {
         }
         Update: {
           added_by?: string
+          admin_hidden?: boolean
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
           id?: string
