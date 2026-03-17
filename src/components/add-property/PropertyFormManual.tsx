@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Sparkles, ImageIcon, X, Plus, Upload, Link, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { formatDaysAgo } from "@/lib/duplicateCheck";
 
 export interface PropertyFormManualProps {
     form: any;

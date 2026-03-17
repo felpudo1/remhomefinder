@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
   Building2, Users, Bot, BarChart3,
-  Settings, FileText
+  Settings, FileText, KeyRound
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
@@ -15,14 +15,15 @@ import { AdminEstadisticas } from "@/components/admin/AdminEstadisticas";
 import { AdminSystem } from "@/components/admin/AdminSystem";
 import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
 import { AdminGrupos } from "@/components/admin/AdminGrupos";
+import { AdminDatosAdmin } from "@/components/admin/AdminDatosAdmin";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -37,6 +38,7 @@ const MENU_ITEMS: {
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
+    { id: "datos-admin", label: "Datos Admin", icon: KeyRound, description: "Datos privados del administrador (cuentas, claves, notas)" },
   ];
 
 /**
@@ -75,6 +77,7 @@ const Admin = () => {
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;
+      case "datos-admin": return <AdminDatosAdmin />;
       default: return null;
     }
   };
