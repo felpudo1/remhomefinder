@@ -560,9 +560,10 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         <ScraperInput
           step={step}
           url={url}
-          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInAppMsg(null); }}
+          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); setUrlInAppMsg(null); }}
           isLoading={isLoading}
           urlInFamily={urlInFamily}
+          urlInApp={urlInApp}
           onOpenExisting={onOpenExisting}
           formatDaysAgo={formatDaysAgo}
           isAnalyzingUnified={isAnalyzingUnified}
