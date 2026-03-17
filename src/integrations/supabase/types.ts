@@ -793,6 +793,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_listing_attachments: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          image_url: string
+          user_listing_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          image_url: string
+          user_listing_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          user_listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_listing_attachments_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_listing_attachments_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_listings: {
         Row: {
           added_by: string
