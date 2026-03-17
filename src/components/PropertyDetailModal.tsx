@@ -109,6 +109,37 @@ export function PropertyDetailModal({
     }
   }, [open, property?.id, property?.sourceMarketplaceId]);
 
+  /**
+   * Marca comentarios como leídos al abrir el detalle.
+   * Se guarda por usuario + listing para habilitar el badge de "Nuevo comentario".
+   */
+  useEffect(() => {
+    if (!open || !property?.id || property.comments.length === 0) return;
+
+    const markCommentsAsRead = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await (supabase as any)
+          .from("user_listing_comment_reads")
+          .upsert(
+            {
+              user_listing_id: property.id,
+              user_id: user.id,
+              last_read_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_listing_id,user_id" }
+          );
+      } catch (error) {
+        console.warn("No se pudo marcar comentarios como leídos:", error);
+      }
+    };
+
+    markCommentsAsRead();
+  }, [open, property?.id, property?.comments.length]);
+
   // Manejo de teclado para la galería (AHORA GESTIONADO POR FullScreenGallery)
 
   if (!property) return null;

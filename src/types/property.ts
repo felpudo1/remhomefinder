@@ -57,6 +57,12 @@ export interface Property {
   ref: string;
   details: string;
   viewsCount?: number;
+  /** True cuando el listing está compartido en un grupo (no personal) */
+  isSharedListing?: boolean;
+  /** True cuando hay comentarios nuevos de otros miembros para este usuario */
+  hasUnreadComments?: boolean;
+  /** Cantidad de comentarios no leídos de otros miembros para este usuario */
+  unreadCommentsCount?: number;
 }
 
 export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";

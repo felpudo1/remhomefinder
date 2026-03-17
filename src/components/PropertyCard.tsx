@@ -162,7 +162,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         }
         topOverlay={
           <>
-            {property.groupId && (
+            {property.isSharedListing && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-md">
                 <Users className="w-3 h-3" />
                 Compartido por {ownerEmail || property.createdByEmail}
@@ -174,6 +174,11 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
               {config.label}
             </span>
+            {property.hasUnreadComments && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-600 text-white backdrop-blur-md">
+                {property.unreadCommentsCount || 0} comentario{(property.unreadCommentsCount || 0) === 1 ? "" : "s"} nuevo{(property.unreadCommentsCount || 0) === 1 ? "" : "s"}
+              </span>
+            )}
             {property.status === "ingresado" ? (
               <span className="inline-flex flex-col items-start px-2 py-1 rounded-lg text-[10px] bg-black/50 text-white backdrop-blur-md max-w-[200px] leading-relaxed">
                 <span className="truncate w-full">por {ownerEmail || property.createdByEmail}</span>

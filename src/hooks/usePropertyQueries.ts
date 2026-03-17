@@ -25,6 +25,7 @@ export function usePropertyQueries() {
         const channelComments = supabase
             .channel("properties_realtime_comments")
             .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_comment_reads" }, onCommentsChange)
             .subscribe();
 
         return () => {
@@ -36,10 +37,13 @@ export function usePropertyQueries() {
     const query = useQuery({
         queryKey: ["properties"],
         queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const currentUserId = user?.id || null;
+
             // 1. Get user listings (includes org_id filter via RLS)
             const { data: listings, error: listingsError } = await (supabase
                 .from("user_listings")
-                .select("*, properties(*)") as any)
+                .select("*, properties(*), organizations(type, is_personal)") as any)
                 .eq("admin_hidden", false)
                 .order("created_at", { ascending: false });
 
@@ -48,6 +52,27 @@ export function usePropertyQueries() {
 
             const listingIds = listings.map((l) => l.id);
             const addedByIds: string[] = [...new Set(listings.map((l: any) => l.added_by).filter(Boolean))] as string[];
+            const commentReadAtByListing: Record<string, string> = {};
+
+            // 1.1 Obtener última lectura de comentarios por listing para el usuario actual
+            // Si la tabla aún no existe en la BD del entorno, seguimos sin romper el flujo.
+            if (currentUserId && listingIds.length > 0) {
+                try {
+                    const { data: readRows, error: readsError } = await (supabase as any)
+                        .from("user_listing_comment_reads")
+                        .select("user_listing_id, last_read_at")
+                        .eq("user_id", currentUserId)
+                        .in("user_listing_id", listingIds);
+
+                    if (!readsError && readRows) {
+                        readRows.forEach((row: { user_listing_id: string; last_read_at: string }) => {
+                            commentReadAtByListing[row.user_listing_id] = row.last_read_at;
+                        });
+                    }
+                } catch (error) {
+                    console.warn("No se pudo leer user_listing_comment_reads:", error);
+                }
+            }
 
             // 2. Obtener emails/nombres de quienes ingresaron cada listing (added_by -> profiles)
             let addedByMap: Record<string, string> = {};
@@ -214,6 +239,8 @@ export function usePropertyQueries() {
             // 9. Map to UI model
             return listings.map((listing): Property => {
                 const p = listing.properties as any;
+                const org = Array.isArray(listing.organizations) ? listing.organizations[0] : listing.organizations;
+                const isSharedListing = org?.is_personal === false;
                 if (!p) {
                     // Fallback if join fails
                     return {
@@ -250,11 +277,15 @@ export function usePropertyQueries() {
                         details: "",
                         groupId: listing.org_id || null,
                         sourceMarketplaceId: listing.source_publication_id || null,
+                        isSharedListing,
+                        hasUnreadComments: false,
+                        unreadCommentsCount: 0,
                     };
                 }
 
-                const comments = allComments
-                    .filter((c) => c.user_listing_id === listing.id)
+                const listingCommentsRaw = allComments.filter((c) => c.user_listing_id === listing.id);
+
+                const comments = listingCommentsRaw
                     .map((c): PropertyComment => ({
                         id: c.id,
                         author: c.author || "Anónimo",
@@ -262,6 +293,18 @@ export function usePropertyQueries() {
                         text: c.text || "",
                         createdAt: new Date(c.created_at),
                     }));
+
+                const unreadCommentsCount = listingCommentsRaw.filter((c: any) => {
+                    if (!currentUserId) return false;
+                    const isFromAnotherMember = c.user_id !== currentUserId;
+                    if (!isFromAnotherMember) return false;
+
+                    const lastReadAt = commentReadAtByListing[listing.id];
+                    // Si nunca abrió el detalle, consideramos no leídos todos los comentarios ajenos.
+                    if (!lastReadAt) return true;
+
+                    return new Date(c.created_at).getTime() > new Date(lastReadAt).getTime();
+                }).length;
 
                 return {
                     id: listing.id, // Use listing ID as the main ID for UI operations
@@ -298,6 +341,9 @@ export function usePropertyQueries() {
                     listingType: (listing.listing_type as DbListingType) || "rent",
                     ref: p.ref || "",
                     details: p.details || "",
+                    isSharedListing,
+                    hasUnreadComments: unreadCommentsCount > 0,
+                    unreadCommentsCount,
                 };
             });
         },
