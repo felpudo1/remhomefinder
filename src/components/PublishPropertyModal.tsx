@@ -50,6 +50,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const [isAnalyzingUnified, setIsAnalyzingUnified] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const privateFileInputRef = useRef<HTMLInputElement>(null);
+  const [privateImages, setPrivateImages] = useState<string[]>([]);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
   const unifiedImageRef = useRef<HTMLInputElement>(null);
 
