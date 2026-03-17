@@ -18,6 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,6 +98,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
   /** Caso 2: existe en app - mensaje informativo */
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
+  /** Estado para el AlertDialog de "in_app" */
+  const [inAppDialogData, setInAppDialogData] = useState<{ message: string; existingProp: any } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
   // Ref para el input oculto de análisis de screenshots
@@ -286,24 +298,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       if (result.case === "in_app") {
         const existing = await getExistingPropertyByUrl(url.trim());
         if (existing) {
-          setScrapedImages(existing.images || []);
-          setForm({
-            title: existing.title || "",
-            priceRent: String(existing.price_amount ?? ""),
-            priceExpenses: String(existing.price_expenses ?? ""),
-            currency: existing.currency || "USD",
-            neighborhood: existing.neighborhood || "",
-            city: existing.city || "",
-            sqMeters: String(existing.m2_total ?? ""),
-            rooms: String(existing.rooms ?? ""),
-            aiSummary: existing.details || "",
-            ref: existing.ref || "",
-            details: existing.details || "",
-          });
-          setStep("manual");
-          setUrlDuplicated(false);
-          setUrlInAppMsg(`Este aviso ya existe en la APP, fue ingresado ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo han guardado para evaluar.`);
-          toast.success("Revisá los datos y agregalo a tu familia.");
+          const msg = `Esta publicación ya existe en nuestra app, fue ingresada ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} la han marcado como favorita.`;
+          setInAppDialogData({ message: msg, existingProp: existing });
         }
         setIsLoading(false);
         return;
@@ -554,9 +550,35 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     onClose();
   };
 
+  /** Confirmar agregar propiedad que ya existe en la app (Caso 2) */
+  const handleConfirmInApp = () => {
+    if (!inAppDialogData?.existingProp) return;
+    const existing = inAppDialogData.existingProp;
+    setScrapedImages(existing.images || []);
+    setForm({
+      title: existing.title || "",
+      priceRent: String(existing.price_amount ?? ""),
+      priceExpenses: String(existing.price_expenses ?? ""),
+      currency: existing.currency || "USD",
+      neighborhood: existing.neighborhood || "",
+      city: existing.city || "",
+      sqMeters: String(existing.m2_total ?? ""),
+      rooms: String(existing.rooms ?? ""),
+      aiSummary: existing.details || "",
+      ref: existing.ref || "",
+      details: existing.details || "",
+    });
+    setStep("manual");
+    setUrlDuplicated(false);
+    setUrlInAppMsg(inAppDialogData.message);
+    setInAppDialogData(null);
+    toast.success("Revisá los datos y agregalo a tu familia.");
+  };
+
   const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated && !urlInFamily;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
@@ -630,5 +652,24 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Dialog de confirmación cuando la propiedad ya existe en la app (otra familia) */}
+    <AlertDialog open={!!inAppDialogData} onOpenChange={(open) => { if (!open) setInAppDialogData(null); }}>
+      <AlertDialogContent className="rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Publicación existente</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm">
+            {inAppDialogData?.message}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+          <AlertDialogAction className="rounded-xl" onClick={handleConfirmInApp}>
+            Agregar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

@@ -433,7 +433,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
             privateFileInputRef={privateFileInputRef} handlePrivateFileUpload={handlePrivateFileUpload}
             manualImageUrl={manualImageUrl} setManualImageUrl={setManualImageUrl} fileInputRef={fileInputRef}
             handleFileUpload={handleFileUpload} isUploading={isUploading} url={url} setUrl={setUrl}
-            urlDuplicated={urlDuplicated} setUrlDuplicated={setUrlDuplicated} checkDuplicateUrl={checkDuplicateUrl}
+            urlDuplicated={urlDuplicated} setUrlDuplicated={setUrlDuplicated}
             groups={[]} selectedGroupId={null} setSelectedGroupId={() => {}} setStep={setStep}
             handleSubmit={handleSubmit} isFormValid={isFormValid && !saving}
           />
