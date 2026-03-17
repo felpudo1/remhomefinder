@@ -92,22 +92,19 @@ export async function checkUrlStatus(
     };
   }
 
-  // Caso 2: existe en la app, no en nuestra org
-  const { data: allListings } = await supabase
-    .from("user_listings")
-    .select("created_at, added_by")
-    .eq("property_id", prop.id)
-    .order("created_at", { ascending: true });
-
-  if (!allListings?.length) return { case: "none" };
-
-  const firstAddedAt = allListings[0].created_at;
-  const usersCount = new Set(allListings.map((l) => l.added_by)).size;
+  // Caso 2: existe en la app, no en nuestra org.
+  // Nota: no podemos consultar user_listings de otras orgs (RLS lo impide),
+  // así que usamos los datos de la tabla properties (visible para todos los auth users).
+  const { data: propMeta } = await supabase
+    .from("properties")
+    .select("created_at")
+    .eq("id", prop.id)
+    .single();
 
   return {
     case: "in_app",
-    firstAddedAt,
-    usersCount,
+    firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
+    usersCount: 1, // mínimo conocido; no podemos contar listings de otras orgs por RLS
   };
 }
 
