@@ -77,6 +77,7 @@ const Admin = () => {
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;
+      case "datos-admin": return <AdminDatosAdmin />;
       default: return null;
     }
   };
