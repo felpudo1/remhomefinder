@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users, Share2, X, RefreshCw } from "lucide-react";
+import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -41,7 +41,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
-    const [copied, setCopied] = useState(false);
 
     const isActive = profileStatus === "active";
 
@@ -90,6 +89,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     listingType: pub.listing_type || "rent",
                     createdAt: new Date(pub.created_at),
                     updatedAt: new Date(pub.updated_at),
+                    ref: p.ref || "",
                 };
             });
         },
@@ -107,44 +107,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const handleEdit = (prop: any) => {
         setPropertyToEdit(prop);
         setPublishOpen(true);
-    };
-
-    const { data: referralCount = 0 } = useQuery({
-        queryKey: ["agency-referral-count", agency.created_by],
-        enabled: !!agency.created_by,
-        queryFn: async () => {
-            const { count, error } = await supabase
-                .from("profiles")
-                .select("*", { count: "exact", head: true })
-                .eq("referred_by_id", agency.created_by);
-            if (error) throw error;
-            return count || 0;
-        },
-    });
-
-    const copyToClipboard = async () => {
-        const link = `${window.location.origin}/?ref=${agency.created_by}`;
-        try {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(link);
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = link;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-9999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                document.execCommand('copy');
-                textArea.remove();
-            }
-            setCopied(true);
-            toast({ title: "¡Link copiado! 🔗", description: "Ya podés pegarlo donde quieras." });
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Error al copiar:', err);
-            toast({ title: "Error al copiar", description: "Por favor, copialo manualmente.", variant: "destructive" });
-        }
     };
 
     // Map agent_pub_status values for status changes
@@ -181,32 +143,6 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 </Button>
             </div>
 
-            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-5 space-y-4">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-foreground leading-tight">Invita clientes y obten beneficios</p>
-                        <div className="px-2 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm cursor-help animate-in fade-in zoom-in" title="Clientes referenciados">
-                            {referralCount} referidos
-                        </div>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="rounded-xl gap-2 h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none" onClick={copyToClipboard}>
-                            {copied ? (<><Check className="w-4 h-4" /> Copiado</>) : (<><Edit className="w-4 h-4" /> Copiar Link</>)}
-                        </Button>
-                        <Button variant="default" size="sm" className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm transition-all hover:scale-[1.02] flex-1 sm:flex-none"
-                            onClick={() => {
-                                const link = `${window.location.origin}/?ref=${agency.created_by}`;
-                                const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${link}`);
-                                window.open(`https://wa.me/?text=${text}`, '_blank');
-                            }}>
-                            <Users className="w-4 h-4" /> WhatsApp
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
             {propsLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : agencyProperties.length === 0 ? (
@@ -234,6 +170,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                 rooms={p.rooms}
                                 images={p.images}
                                 listingType={p.listingType}
+                                collapsibleImages
+                                refText={p.ref ?? ""}
                                 onClick={() => { setSelectedProperty(p); setIsDetailOpen(true); }}
                                 onImageClick={(index) => { setGalleryImages(p.images); setGalleryIndex(index); setIsGalleryOpen(true); }}
                                 statusOverlay={

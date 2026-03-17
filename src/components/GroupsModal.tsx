@@ -22,9 +22,11 @@ interface GroupsModalProps {
   isAgent?: boolean;
   /** Solo owners ven lista/crear; no-owners solo Unirme */
   isOwner?: boolean;
+  /** Agency (rol) ve código para invitar; AgencyMember solo pega */
+  canManageTeams?: boolean;
 }
 
-export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false, isOwner = true }: GroupsModalProps) {
+export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false, isOwner = true, canManageTeams = true }: GroupsModalProps) {
   const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember, toggleMemberActive } = useGroups();
   const { toast } = useToast();
 
@@ -53,6 +55,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     } else {
       setDetailGroup(null);
       setTab("groups");
+      setInviteCode("");
     }
   }, [open]);
 
@@ -114,27 +117,32 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   };
 
+  const copyToClipboard = async (text: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      textArea.remove();
+    }
+  };
+
   const handleCopyCode = async (code: string) => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(code);
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = code;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-9999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand("copy");
-        textArea.remove();
-      }
+      await copyToClipboard(code);
       toast({ title: "Código copiado", description: "Compartilo para que lo peguen en la pestaña Unirme." });
     } catch (err) {
       console.error("Error al copiar:", err);
-      toast({ title: "Error al copiar", description: "Copiá el link manualmente.", variant: "destructive" });
+      toast({ title: "Error al copiar", description: "Copiá el código manualmente.", variant: "destructive" });
     }
   };
+
 
   const handleRemoveMember = async (userId: string) => {
     if (!detailGroup) return;
@@ -181,7 +189,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               <p className="text-sm text-muted-foreground">{detailGroup.description}</p>
             )}
 
-            {/* Código de invitación — igual que familias, solo owners */}
+            {/* Código de invitación — owners: copiar código y link; no-owners en agency_team no ven */}
             {(isOwner || !isAgencyTeamDetail) && (
               <div className="bg-muted/50 rounded-xl p-3 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">
@@ -196,6 +204,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                     variant="outline"
                     className="shrink-0"
                     onClick={() => handleCopyCode(detailGroup.invite_code)}
+                    title="Copiar código"
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </Button>
@@ -317,8 +326,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     );
   }
 
-  // No-owners (agentes): solo pestaña Unirme para pegar el código que les pasó el owner
-  if (isAgent && !isOwner) {
+  // AgencyMember: solo pestaña Unirme para pegar el código. Agency (canManageTeams) ve el modal completo con código.
+  if (isAgent && !canManageTeams) {
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className="sm:max-w-md">

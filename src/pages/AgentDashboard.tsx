@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  Building2, Loader2, Home, BarChart3, UserCircle, Users
+  Building2, Loader2, Home, BarChart3, UserCircle, Users, Gift
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
@@ -10,6 +10,7 @@ import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
+import { AgentReferralSection } from "@/components/agent/AgentReferralSection";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
@@ -19,12 +20,13 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 
-type AgentTab = "propiedades" | "equipo" | "estadisticas" | "perfil";
+type AgentTab = "propiedades" | "equipo" | "estadisticas" | "referencias" | "perfil";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
   { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
+  { id: "referencias", label: "Referencias", icon: Gift },
   { id: "perfil", label: "Perfil", icon: UserCircle },
 ];
 
@@ -37,6 +39,7 @@ const AgentDashboard = () => {
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [showFormarEquipo, setShowFormarEquipo] = useState(false);
   const navigate = useNavigate();
 
   const { data: profile } = useProfile();
@@ -55,7 +58,9 @@ const AgentDashboard = () => {
         .eq("user_id", user.id);
       const roleSet = new Set((roleRows || []).map((r) => r.role));
       const hasAgencyRole = roleSet.has(ROLES.AGENCY);
+      const hasAgencyMemberRole = roleSet.has(ROLES.AGENCY_MEMBER);
       setCanManageTeams(hasAgencyRole);
+      setShowFormarEquipo(hasAgencyRole || hasAgencyMemberRole);
 
       // Buscar agencia: primero la que creó el usuario, luego cualquier agency_team donde sea miembro (ej. owner agregado por admin)
       const { data: orgsCreated } = await supabase
@@ -143,6 +148,7 @@ const AgentDashboard = () => {
         isPremium={isPremium}
         isOwner={isOwner}
         canManageTeams={canManageTeams}
+        showFormarEquipo={showFormarEquipo}
       />
 
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
@@ -158,6 +164,7 @@ const AgentDashboard = () => {
                 />
               )}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
+              {activeTab === "referencias" && <AgentReferralSection agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
           ) : profileStatus === "pending" ? (
@@ -172,7 +179,7 @@ const AgentDashboard = () => {
           </div>
         )}
       </main>
-      {canManageTeams && (
+      {(canManageTeams || showFormarEquipo) && (
         <GroupsModal
           open={isGroupsOpen}
           onClose={() => setIsGroupsOpen(false)}
@@ -180,6 +187,7 @@ const AgentDashboard = () => {
           onSelectGroup={setActiveGroupId}
           isAgent={true}
           isOwner={isOwner}
+          canManageTeams={canManageTeams}
         />
       )}
       <Footer />

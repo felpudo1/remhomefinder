@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Maximize2, BedDouble } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { ListingType } from "@/types/property";
 
@@ -22,6 +22,8 @@ interface PropertyCardBaseProps {
     statusOverlay?: React.ReactNode;
     /** Badge de estado inline junto al barrio */
     statusBadge?: React.ReactNode;
+    /** Referencia de la publicación (ej: REF-12345), se muestra a la derecha del barrio */
+    refText?: string;
     /** Elementos adicionales debajo de la imagen (quien lo cargó, etc) */
     subImageContent?: React.ReactNode;
     /** Contenido extra dentro del cuerpo (motivos de eliminación, descripción corta) */
@@ -34,6 +36,8 @@ interface PropertyCardBaseProps {
     ratingOverlay?: React.ReactNode;
     /** Manejador de click específico para la imagen (para abrir galería sin abrir detalle) */
     onImageClick?: (index: number) => void;
+    /** Si true, la sección de fotos es colapsable y empieza colapsada (para listados densos) */
+    collapsibleImages?: boolean;
 }
 
 /**
@@ -56,14 +60,17 @@ export function PropertyCardBase({
     topOverlay,
     statusOverlay,
     statusBadge,
+    refText,
     subImageContent,
     extraBodyContent,
     actions,
     className = "",
     onImageClick,
     ratingOverlay,
+    collapsibleImages = false,
 }: PropertyCardBaseProps) {
     const [currentImg, setCurrentImg] = useState(0);
+    const [imagesExpanded, setImagesExpanded] = useState(!collapsibleImages);
 
     const handleImageContainerClick = (e: React.MouseEvent) => {
         if (onImageClick) {
@@ -72,77 +79,116 @@ export function PropertyCardBase({
         }
     };
 
+    const handleToggleImages = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setImagesExpanded((v) => !v);
+    };
+
     return (
         <div
             className={`bg-card rounded-2xl overflow-hidden border-[4px] border-foreground/40 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-fade-in ${className}`}
             onClick={onClick}
         >
-            {/* Sección de Imagen */}
-            <div
-                className="relative h-48 md:h-64 lg:h-72 overflow-hidden bg-muted cursor-zoom-in"
-                onClick={handleImageContainerClick}
-            >
-                <img
-                    src={images[currentImg] || "/placeholder.svg"}
-                    alt={title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-
-                {/* Thumbnails si hay más de una foto */}
-                {images.length > 1 && (
-                    <div
-                        className="absolute bottom-3 right-3 flex gap-1.5"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {images.slice(0, 4).map((img, i) => (
-                            <button
-                                key={i}
-                                onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
-                                className={`w-7 h-7 rounded-md overflow-hidden border-2 transition-all ${i === currentImg ? "border-card opacity-100" : "border-transparent opacity-60 hover:opacity-90"
-                                    }`}
-                            >
-                                <img src={img} alt="" className="w-full h-full object-cover" />
-                            </button>
-                        ))}
+            {/* Sección de Imagen (colapsable o fija) */}
+            {collapsibleImages && !imagesExpanded ? (
+                <div
+                    className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/80 hover:bg-muted cursor-pointer border-b border-border"
+                    onClick={handleToggleImages}
+                >
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+                        <ImageIcon className="w-4 h-4" />
+                        Ver fotos ({images.length})
                     </div>
-                )}
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </div>
+            ) : (
+                <div
+                    className="relative h-48 md:h-64 lg:h-72 overflow-hidden bg-muted cursor-zoom-in"
+                    onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.closest("[data-collapse-btn]")) return;
+                        handleImageContainerClick(e);
+                    }}
+                >
+                    {collapsibleImages && (
+                        <button
+                            data-collapse-btn
+                            type="button"
+                            className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-background/80 hover:bg-background border border-border shadow-sm transition-colors"
+                            onClick={handleToggleImages}
+                            title="Colapsar fotos"
+                        >
+                            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                    )}
+                    <img
+                        src={images[currentImg] || "/placeholder.svg"}
+                        alt={title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {images.length > 1 && (
+                        <div
+                            className="absolute bottom-3 right-3 flex gap-1.5"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {images.slice(0, 4).map((img, i) => (
+                                <button
+                                    key={i}
+                                    onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
+                                    className={`w-7 h-7 rounded-md overflow-hidden border-2 transition-all ${i === currentImg ? "border-card opacity-100" : "border-transparent opacity-60 hover:opacity-90"}`}
+                                >
+                                    <img src={img} alt="" className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {topOverlay && (
+                        <div className="absolute top-3 left-3 flex flex-col gap-1">
+                            {topOverlay}
+                        </div>
+                    )}
+                    {statusOverlay && (
+                        <div className="absolute top-3 right-3">
+                            {statusOverlay}
+                        </div>
+                    )}
+                    {ratingOverlay && (
+                        <div className="absolute top-3 right-3">
+                            {ratingOverlay}
+                        </div>
+                    )}
+                </div>
+            )}
 
-                {/* Overlay superior izquierdo (Agency name, type badge) */}
-                {topOverlay && (
-                    <div className="absolute top-3 left-3 flex flex-col gap-1">
-                        {topOverlay}
-                    </div>
-                )}
-
-                {/* Overlay de estado superior derecho (Reservada, Vendida, Alquilada) */}
-                {statusOverlay && (
-                    <div className="absolute top-3 right-3">
-                        {statusOverlay}
-                    </div>
-                )}
-
-                {/* Overlay de estrellas (puntuación familiar) */}
-                {ratingOverlay && (
-                    <div className="absolute top-3 right-3">
-                        {ratingOverlay}
-                    </div>
-                )}
-            </div>
-
-            {/* Contenido debajo de la imagen (ej: Ingresado por...) */}
+            {/* Contenido debajo de la imagen */}
             {subImageContent}
 
             {/* Cuerpo de la tarjeta */}
             <div className="p-4 space-y-3 text-left">
-                {/* Barrio + Estado */}
+                {/* Barrio + Ciudad | Ref */}
                 <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1 text-muted-foreground min-w-0">
-                        <MapPin className="w-3.5 h-3.5 shrink-0" />
-                        <span className="text-xs font-medium truncate">
-                            {neighborhood || "Sin barrio"}{city ? `, ${city}` : ""}
-                        </span>
+                    <div className="flex flex-col gap-0.5 text-muted-foreground min-w-0">
+                        <div className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 shrink-0" />
+                            <span className="text-xs font-medium truncate">{neighborhood || "Sin barrio"}</span>
+                        </div>
+                        {city && (
+                            <span className="text-xs font-medium truncate pl-5">{city}</span>
+                        )}
                     </div>
-                    {statusBadge}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {refText !== undefined && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-mono font-bold text-foreground bg-muted/80 px-3 py-1 rounded min-h-[2.5rem] inline-flex items-center justify-center">
+                                    ref:
+                                </span>
+                                <span className="text-xs font-mono font-bold text-foreground bg-muted/80 px-3 py-1 rounded min-w-[6rem] min-h-[2.5rem] inline-flex items-center justify-center tracking-widest">
+                                    {refText || "\u00A0"}
+                                </span>
+                            </div>
+                        )}
+                        {statusBadge}
+                    </div>
                 </div>
 
                 {/* Título */}

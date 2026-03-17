@@ -14,8 +14,10 @@ interface AgentHeaderProps {
     isPremium?: boolean;
     /** Solo owners pueden formar/gestionar equipos */
     isOwner?: boolean;
-    /** Solo agency administra equipos; agencymember no ve botón de grupos */
+    /** Solo agency administra equipos; agencymember no ve tab Equipo */
     canManageTeams?: boolean;
+    /** Muestra botón Formar equipo (agency y agencymember pueden abrir para copiar/pegar) */
+    showFormarEquipo?: boolean;
 }
 
 export const AgentHeader = ({
@@ -31,6 +33,7 @@ export const AgentHeader = ({
     isPremium,
     isOwner = false,
     canManageTeams = false,
+    showFormarEquipo = false,
 }: AgentHeaderProps) => {
     const StatusStar = () => (
         isPremium ? (
@@ -66,7 +69,7 @@ export const AgentHeader = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {canManageTeams && (
+                    {(showFormarEquipo || canManageTeams) && (
                         <Button
                             variant={activeGroupId ? "default" : "outline"}
                             size="sm"

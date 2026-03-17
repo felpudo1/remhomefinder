@@ -70,6 +70,7 @@ export function useOrgSharedProperties(orgId: string | null) {
           sharedByName: profileMap.get(pub.published_by) || "Agente",
           sharedByUserId: pub.published_by,
           sharedAt: pub.created_at,
+          ref: p.ref || "",
         };
       });
     },

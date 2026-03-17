@@ -169,7 +169,9 @@ export const useAuth = () => {
                     : "Revisá tu email para confirmar tu cuenta."
             });
 
-            setTimeout(() => navigate(`${ROUTES.DASHBOARD}?registered=true`), 1500);
+            // Agentes van directo a /agente; usuarios a /dashboard (evita pasar por dashboard y redirección)
+            const targetRoute = accountType === ROLES.AGENCY ? ROUTES.AGENCY : ROUTES.DASHBOARD;
+            setTimeout(() => navigate(`${targetRoute}?registered=true`), 1500);
             return { success: true };
         } catch (error: any) {
             toast({

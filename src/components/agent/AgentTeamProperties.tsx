@@ -96,6 +96,8 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups, isOwner = fal
             rooms={p.rooms}
             images={p.images}
             listingType={p.listingType}
+            collapsibleImages
+            refText={p.ref ?? ""}
             onClick={() => {
               setSelectedProperty(p);
               setIsDetailOpen(true);

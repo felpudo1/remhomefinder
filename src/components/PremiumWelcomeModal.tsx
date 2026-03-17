@@ -61,7 +61,7 @@ export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWel
                             <p className="text-gray-300 text-sm font-medium px-4">
                                 {isAgent
                                     ? "Tu suscripción como Agente ha sido activada. Preparate para publicar sin límites y destacar tus propiedades como nunca."
-                                    : "Tu experiencia en HomeFinder ahora es ilimitada. Preparate para encontrar tu próximo hogar como un verdadero profesional."}
+                                    : "Tu experiencia en HomeFinder ahora es ilimitada. Preparate para alcanzar todas tus metas como un verdadero profesional."}
                             </p>
                         </div>
 

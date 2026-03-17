@@ -88,6 +88,8 @@ export interface MarketplaceProperty {
   listingType: ListingType;
   createdAt: Date;
   updatedAt: Date;
+  /** Referencia de la publicación (ej: REF-12345) */
+  ref?: string;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {
