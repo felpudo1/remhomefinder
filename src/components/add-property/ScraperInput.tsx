@@ -26,6 +26,8 @@ export interface ScraperInputProps {
     urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
     urlInApp?: { firstAddedAt: string; usersCount: number } | null;
     onOpenExisting?: (userListingId: string) => void;
+    onAddExistingFromApp?: () => void;
+    isAddingExistingFromApp?: boolean;
     formatDaysAgo?: (isoDate: string) => string;
 }
 
@@ -50,8 +52,14 @@ export function ScraperInput({
     urlInFamily,
     urlInApp,
     onOpenExisting,
+    onAddExistingFromApp,
+    isAddingExistingFromApp = false,
     formatDaysAgo,
 }: ScraperInputProps) {
+    const isFamilyLocked = Boolean(urlInFamily);
+    const isInAppLocked = Boolean(urlInApp);
+    const isUrlActionsLocked = isFamilyLocked || isInAppLocked;
+
     if (step === "url") {
         return (
             <div className="space-y-5 py-2">
@@ -65,7 +73,8 @@ export function ScraperInput({
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
                             className="pl-9 rounded-xl"
-                            onKeyDown={(e) => e.key === "Enter" && handleScrape()}
+                            disabled={isUrlActionsLocked}
+                            onKeyDown={(e) => !isUrlActionsLocked && e.key === "Enter" && handleScrape()}
                         />
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -90,6 +99,21 @@ export function ScraperInput({
                         <p className="text-sm text-blue-900 font-medium">
                             Esta publicación ya existe en nuestra app, fue ingresada {formatDaysAgo ? formatDaysAgo(urlInApp.firstAddedAt) : ""} y {urlInApp.usersCount} usuario{urlInApp.usersCount !== 1 ? "s" : ""} la han ingresado en su listado.
                         </p>
+                        {onAddExistingFromApp && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-xl gap-2 border-blue-400 text-blue-800 hover:bg-blue-100"
+                                onClick={onAddExistingFromApp}
+                                disabled={isAddingExistingFromApp}
+                            >
+                                {isAddingExistingFromApp ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" />Agregando...</>
+                                ) : (
+                                    <><ExternalLink className="w-4 h-4" />Para ingresarlo hace click aca</>
+                                )}
+                            </Button>
+                        )}
                     </div>
                 ) : (
                     <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">
@@ -97,7 +121,7 @@ export function ScraperInput({
                     </div>
                 )}
 
-                <Button onClick={handleScrape} disabled={!url.trim() || isLoading || !!urlInFamily} className="w-full rounded-xl gap-2">
+                <Button onClick={handleScrape} disabled={!url.trim() || isLoading || isUrlActionsLocked} className="w-full rounded-xl gap-2">
                     {isLoading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
                     ) : (
@@ -122,7 +146,7 @@ export function ScraperInput({
                 <Button
                     variant="secondary"
                     onClick={() => unifiedImageRef.current?.click()}
-                    disabled={isAnalyzingUnified || isLoading}
+                    disabled={isUrlActionsLocked || isAnalyzingUnified || isLoading}
                     className="w-full rounded-xl gap-2"
                 >
                     {isAnalyzingUnified ? (
@@ -140,6 +164,7 @@ export function ScraperInput({
                 <Button
                     variant="secondary"
                     onClick={() => setStep("manual")}
+                    disabled={isUrlActionsLocked}
                     className="w-full rounded-xl gap-2"
                 >
                     <Plus className="w-4 h-4" />

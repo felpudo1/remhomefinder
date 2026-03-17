@@ -60,7 +60,12 @@ interface AddPropertyModalProps {
 
 export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl", onOpenExisting }: AddPropertyModalProps) {
   const { groups } = useGroups();
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
+  const getDefaultFamilyGroupId = () => {
+    const firstFamilyGroup = groups.find((group) => group.type === "family");
+    return firstFamilyGroup?.id ?? null;
+  };
+
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || getDefaultFamilyGroupId());
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,10 +78,16 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const screenshotInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setSelectedGroupId(activeGroupId || null);
+    if (!open) return;
+
+    // Prioridad 1: grupo activo del contexto. Prioridad 2: primer grupo familiar.
+    if (activeGroupId) {
+      setSelectedGroupId(activeGroupId);
+      return;
     }
-  }, [open, activeGroupId]);
+
+    setSelectedGroupId((current) => current ?? getDefaultFamilyGroupId());
+  }, [open, activeGroupId, groups]);
 
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
   const [privateImages, setPrivateImages] = useState<string[]>([]);
@@ -98,6 +109,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   // Estado de carga para el análisis de imágenes
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
   const [isAnalyzingUnified, setIsAnalyzingUnified] = useState(false);
+  const [isAddingFromApp, setIsAddingFromApp] = useState(false);
   const [form, setForm] = useState({
     title: "",
     priceRent: "",
@@ -520,6 +532,47 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     }
   };
 
+  const handleAddFromExistingApp = async () => {
+    if (!url.trim()) return;
+
+    setIsAddingFromApp(true);
+    try {
+      const orgId = selectedGroupId || null;
+      const result = await checkUrlStatus(url.trim(), orgId);
+
+      if (result.case !== "in_app") {
+        return;
+      }
+
+      const formData = {
+        url: url.trim(),
+        title: "",
+        priceRent: 0,
+        priceExpenses: 0,
+        currency: "USD",
+        neighborhood: "",
+        city: "",
+        sqMeters: 0,
+        rooms: 1,
+        aiSummary: "",
+        images: [],
+        privateImages: undefined,
+        groupId: selectedGroupId,
+        listingType,
+        ref: "",
+        details: "",
+      };
+
+      (formData as any)._successMessage = "Publicación agregada correctamente a tu listado.";
+      await onAdd(formData);
+      handleClose();
+    } catch {
+      // Error ya mostrado por handleAddProperty; modal permanece abierto
+    } finally {
+      setIsAddingFromApp(false);
+    }
+  };
+
   const handleClose = () => {
     setUrl("");
     setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", city: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
@@ -537,6 +590,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setScreenshotFile(null);
     setScreenshotPreview(null);
     setIsLoading(false);
+    setIsAddingFromApp(false);
     onClose();
   };
 
@@ -579,6 +633,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
           setScreenshotPreview={setScreenshotPreview}
           handleAnalyzeImage={handleAnalyzeImage}
           setCameFromImage={setCameFromImage}
+          onAddExistingFromApp={handleAddFromExistingApp}
+          isAddingExistingFromApp={isAddingFromApp}
         />
 
         {step === "manual" && (
