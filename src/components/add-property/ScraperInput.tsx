@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link, Sparkles, Loader2, Camera, Plus, ImageIcon, X } from "lucide-react";
+import { Link, Sparkles, Loader2, Camera, Plus, ImageIcon, X, ExternalLink } from "lucide-react";
 
 export interface ScraperInputProps {
     step: "url" | "image-upload" | "manual";
@@ -23,6 +23,9 @@ export interface ScraperInputProps {
     setScreenshotPreview: (p: string | null) => void;
     handleAnalyzeImage: () => void;
     setCameFromImage: (v: boolean) => void;
+    urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
+    onOpenExisting?: (userListingId: string) => void;
+    formatDaysAgo?: (isoDate: string) => string;
 }
 
 export function ScraperInput({
@@ -43,6 +46,9 @@ export function ScraperInput({
     setScreenshotPreview,
     handleAnalyzeImage,
     setCameFromImage,
+    urlInFamily,
+    onOpenExisting,
+    formatDaysAgo,
 }: ScraperInputProps) {
     if (step === "url") {
         return (
@@ -65,11 +71,25 @@ export function ScraperInput({
                     </p>
                 </div>
 
-                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">
-                    <strong>AVISO:</strong> Para ingresar publicaciones de MARKETPLACE y redes sociales, debe sacar captura con los datos y click en <strong>Analizar fotos de RRSS</strong> o agregar las publicaciones manualmente.
-                </div>
+                {urlInFamily ? (
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 space-y-3">
+                        <p className="text-sm text-destructive font-medium">
+                            Este aviso fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es <strong>{urlInFamily.status}</strong>.
+                        </p>
+                        {onOpenExisting && (
+                            <Button variant="outline" size="sm" className="rounded-xl gap-2 border-destructive text-destructive hover:bg-destructive/10" onClick={() => onOpenExisting(urlInFamily.userListingId)}>
+                                <ExternalLink className="w-4 h-4" />
+                                Ver aviso
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">
+                        <strong>AVISO:</strong> Para ingresar publicaciones de MARKETPLACE y redes sociales, debe sacar captura con los datos y click en <strong>Analizar fotos de RRSS</strong> o agregar las publicaciones manualmente.
+                    </div>
+                )}
 
-                <Button onClick={handleScrape} disabled={!url.trim() || isLoading} className="w-full rounded-xl gap-2">
+                <Button onClick={handleScrape} disabled={!url.trim() || isLoading || !!urlInFamily} className="w-full rounded-xl gap-2">
                     {isLoading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
                     ) : (

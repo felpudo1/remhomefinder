@@ -1,7 +1,41 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeUrl } from "@/lib/duplicateCheck";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
+
+/** Inserta una nueva property y devuelve su id */
+async function insertNewProperty(
+    form: { url?: string; title: string; priceRent: number; priceExpenses: number; currency: string; neighborhood: string; city: string; sqMeters: number; rooms: number; images?: string[]; ref?: string; aiSummary?: string; details?: string },
+    userId: string
+) {
+    const { data: prop, error: propError } = await supabase
+        .from("properties")
+        .insert({
+            source_url: form.url || null,
+            title: form.title,
+            price_amount: form.priceRent,
+            price_expenses: form.priceExpenses,
+            total_cost: form.priceRent + form.priceExpenses,
+            currency: form.currency as CurrencyCode,
+            neighborhood: form.neighborhood,
+            city: form.city || "",
+            m2_total: form.sqMeters,
+            rooms: form.rooms,
+            images: form.images || [],
+            created_by: userId,
+            ref: form.ref || "",
+            details: form.aiSummary || form.details || "",
+        })
+        .select("id")
+        .single();
+    if (propError) {
+        const msg = propError.message || "Error al guardar la propiedad";
+        const isUniqueUrl = String(propError.code) === "23505" && /source_url|unique/i.test(msg);
+        throw new Error(isUniqueUrl ? "Esta URL ya existe en el sistema (agregada por otra familia)." : msg);
+    }
+    return prop?.id;
+}
 
 /**
  * Hook para mutaciones: insertar propiedades + user_listings,
@@ -24,6 +58,7 @@ export function usePropertyMutations() {
             rooms: number;
             aiSummary: string;
             images?: string[];
+            privateImages?: string[];
             groupId?: string | null;
             listingType?: string;
             ref?: string;
@@ -45,35 +80,31 @@ export function usePropertyMutations() {
             }
             if (!orgId) throw new Error("No pertenecés a ninguna organización");
 
-            // Insert into properties (physical metadata)
-            const { data: prop, error: propError } = await supabase
-                .from("properties")
-                .insert({
-                    source_url: form.url || null,
-                    title: form.title,
-                    price_amount: form.priceRent,
-                    price_expenses: form.priceExpenses,
-                    total_cost: form.priceRent + form.priceExpenses,
-                    currency: form.currency as CurrencyCode,
-                    neighborhood: form.neighborhood,
-                    city: form.city || "",
-                    m2_total: form.sqMeters,
-                    rooms: form.rooms,
-                    images: form.images || [],
-                    created_by: user.id,
-                    ref: form.ref || "",
-                    details: form.aiSummary || form.details || "",
-                })
-                .select()
-                .single();
+            const normalizedUrl = form.url ? normalizeUrl(form.url) : null;
 
-            if (propError) throw propError;
+            // Buscar si existe property con esa URL (otra familia ya la ingresó)
+            let propId: string;
+            if (normalizedUrl) {
+                const { data: existing, error: existingErr } = await supabase
+                    .from("properties")
+                    .select("id")
+                    .eq("source_url", normalizedUrl)
+                    .limit(1)
+                    .maybeSingle();
+                if (!existingErr && existing) {
+                    propId = existing.id;
+                } else {
+                    propId = (await insertNewProperty(form, user.id)) as string;
+                }
+            } else {
+                propId = (await insertNewProperty(form, user.id)) as string;
+            }
 
             // Insert into user_listings (tracking)
             const { data: listing, error: listingError } = await supabase
                 .from("user_listings")
                 .insert({
-                    property_id: prop.id,
+                    property_id: propId,
                     org_id: orgId,
                     listing_type: (form.listingType as "rent" | "sale") || "rent",
                     added_by: user.id,
@@ -81,7 +112,23 @@ export function usePropertyMutations() {
                 .select()
                 .single();
 
-            if (listingError) throw listingError;
+            if (listingError) {
+                const msg = listingError.message || "Error al guardar el listado";
+                throw new Error(msg);
+            }
+
+            // Insertar fotos privadas (user_listing_attachments)
+            if (form.privateImages?.length && listing) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const rows = form.privateImages.map((image_url) => ({
+                        user_listing_id: listing.id,
+                        image_url,
+                        added_by: user.id,
+                    }));
+                    await supabase.from("user_listing_attachments").insert(rows);
+                }
+            }
             return listing;
         },
         onSuccess: () => {
@@ -208,6 +255,9 @@ export function usePropertyMutations() {
             if (context?.previousProperties) {
                 queryClient.setQueryData(["properties"], context.previousProperties);
             }
+        },
+        onSuccess: () => {
+            queryClient.refetchQueries({ queryKey: ["properties"] });
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["properties"] });

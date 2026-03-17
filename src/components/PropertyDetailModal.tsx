@@ -65,6 +65,7 @@ export function PropertyDetailModal({
 }: PropertyDetailModalProps) {
   const { groups } = useGroups();
   const [activeImg, setActiveImg] = useState(0);
+  const allImages = property ? [...(property.images || []), ...(property.privateImages || [])] : [];
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
 
@@ -144,29 +145,29 @@ export function PropertyDetailModal({
         {/* Image Gallery */}
         <div className="relative h-64 bg-muted rounded-t-2xl overflow-hidden cursor-zoom-in" onClick={() => setIsGalleryOpen(true)}>
           <img
-            src={property.images[activeImg] || "/placeholder.svg"}
+            src={allImages[activeImg] || "/placeholder.svg"}
             alt={property.title}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
           <div className="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
             <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
           </div>
-          {property.images.length > 1 && (
+          {allImages.length > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setActiveImg((p) => (p - 1 + property.images.length) % property.images.length); }}
+                onClick={(e) => { e.stopPropagation(); setActiveImg((p) => (p - 1 + allImages.length) % allImages.length); }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors shadow-lg z-10"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setActiveImg((p) => (p + 1) % property.images.length); }}
+                onClick={(e) => { e.stopPropagation(); setActiveImg((p) => (p + 1) % allImages.length); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors shadow-lg z-10"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                {property.images.map((_, i) => (
+                {allImages.map((_, i) => (
                   <button
                     key={i}
                     onClick={(e) => { e.stopPropagation(); setActiveImg(i); }}
@@ -396,7 +397,7 @@ export function PropertyDetailModal({
 
         {/* Full Screen Gallery Overlay (MODULARIZADO) */}
         <FullScreenGallery
-          images={property.images}
+          images={allImages}
           isOpen={isGalleryOpen}
           initialIndex={activeImg}
           onClose={() => setIsGalleryOpen(false)}

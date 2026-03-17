@@ -154,6 +154,12 @@ const Index = () => {
     }
   };
 
+  const getErrorMessage = (e: unknown): string => {
+    if (e instanceof Error) return e.message;
+    if (e && typeof e === "object" && "message" in e) return String((e as { message: unknown }).message);
+    return "Error desconocido";
+  };
+
   const handleAddProperty = async (form: any) => {
     try {
       await addProperty(form);
@@ -161,7 +167,8 @@ const Index = () => {
       setIsAddZenRowsOpen(false);
       toast({ title: "Éxito", description: "Propiedad agregada correctamente" });
     } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+      toast({ title: "Error", description: getErrorMessage(e), variant: "destructive" });
+      throw e; // Re-lanzar para que el modal no se cierre si falla
     }
   };
 
@@ -186,6 +193,13 @@ const Index = () => {
 
   const handleCardClick = (property: Property) => {
     setSelectedPropertyId(property.id);
+    setIsDetailOpen(true);
+  };
+
+  const handleOpenExistingListing = (userListingId: string) => {
+    setIsAddOpen(false);
+    setIsAddZenRowsOpen(false);
+    setSelectedPropertyId(userListingId);
     setIsDetailOpen(true);
   };
 
@@ -411,6 +425,7 @@ const Index = () => {
             onStatusChange={handleStatusChange}
             onAddComment={handleAddComment}
             onAddProperty={handleAddProperty}
+            onOpenExistingListing={handleOpenExistingListing}
             isAddZenRowsOpen={isAddZenRowsOpen}
             setIsAddZenRowsOpen={setIsAddZenRowsOpen}
             isAddOpen={isAddOpen}

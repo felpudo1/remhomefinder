@@ -13,6 +13,10 @@ export interface PropertyFormManualProps {
     cameFromImage: boolean;
     scrapedImages: string[];
     setScrapedImages: React.Dispatch<React.SetStateAction<string[]>>;
+    privateImages: string[];
+    setPrivateImages: React.Dispatch<React.SetStateAction<string[]>>;
+    privateFileInputRef: React.RefObject<HTMLInputElement>;
+    handlePrivateFileUpload: (files: FileList | null) => void;
     manualImageUrl: string;
     setManualImageUrl: (url: string) => void;
     fileInputRef: React.RefObject<HTMLInputElement>;
@@ -21,13 +25,17 @@ export interface PropertyFormManualProps {
     url: string;
     setUrl: (url: string) => void;
     urlDuplicated: boolean;
+    urlAddedByName?: string | null;
+    urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
+    urlInAppMsg?: string | null;
+    formatDaysAgo?: (isoDate: string) => string;
     setUrlDuplicated: (d: boolean) => void;
     checkDuplicateUrl: (url: string) => void;
     groups: any[];
     selectedGroupId: string | null;
     setSelectedGroupId: (id: string | null) => void;
     setStep: (step: "url" | "image-upload" | "manual") => void;
-    handleSubmit: () => void;
+    handleSubmit: () => void | Promise<void>;
     isFormValid: boolean;
 }
 
@@ -39,6 +47,10 @@ export function PropertyFormManual({
     cameFromImage,
     scrapedImages,
     setScrapedImages,
+    privateImages,
+    setPrivateImages,
+    privateFileInputRef,
+    handlePrivateFileUpload,
     manualImageUrl,
     setManualImageUrl,
     fileInputRef,
@@ -47,6 +59,9 @@ export function PropertyFormManual({
     url,
     setUrl,
     urlDuplicated,
+    urlAddedByName,
+    urlInFamily,
+    urlInAppMsg,
     setUrlDuplicated,
     checkDuplicateUrl,
     groups,
@@ -139,15 +154,55 @@ export function PropertyFormManual({
                 </div>
             </div>
 
-            {/* Link de la publicación */}
+            {/* Fotos privadas (solo tu familia) */}
+            <div className="space-y-1.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
+                <Label className="text-xs font-medium flex items-center gap-1">
+                    <ImageIcon className="w-3 h-3" />
+                    Fotos privadas (solo tu familia)
+                </Label>
+                <p className="text-[10px] text-muted-foreground">Fotos de visitas, capturas, etc. Solo las ve tu familia.</p>
+                {privateImages.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                        {privateImages.map((img, i) => (
+                            <div key={i} className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-muted">
+                                <img src={img} alt={`Privada ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).parentElement?.classList.add('hidden'); }} />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button type="button" onClick={() => setPrivateImages((prev) => prev.filter((_, idx) => idx !== i))} className="bg-destructive text-destructive-foreground p-1.5 rounded-full" title="Eliminar">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : null}
+                <input ref={privateFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handlePrivateFileUpload(e.target.files); e.target.value = ""; }} />
+                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={isUploading} onClick={() => privateFileInputRef.current?.click()}>
+                    {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                    {isUploading ? "Subiendo..." : "Agregar fotos privadas"}
+                </Button>
+            </div>
+
+            {/* Link de la publicación (obligatorio) */}
             <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Link de la publicación</Label>
+                <Label className="text-xs font-medium">Link de la publicación *</Label>
                 <div className="relative">
                     <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} onBlur={() => checkDuplicateUrl(url)} placeholder="http://intocasas.com.uy" className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
                 </div>
-                {urlDuplicated && (
-                    <p className="text-xs text-destructive font-medium">⚠️ Esta URL ya fue ingresada. Revisá tus propiedades existentes.</p>
+                {urlInFamily && (
+                    <p className="text-xs text-destructive font-medium">
+                        Este aviso fue ingresado por {urlInFamily.addedByName} {formatDaysAgo && urlInFamily.addedAt ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es {urlInFamily.status}.
+                    </p>
+                )}
+                {urlDuplicated && !urlInFamily && (
+                    <p className="text-xs text-destructive font-medium">
+                        ⚠️ {urlAddedByName ? `${urlAddedByName} ya ingresó esa publicación.` : "Esta URL ya fue ingresada en tu familia."}
+                    </p>
+                )}
+                {urlInAppMsg && !urlDuplicated && (
+                    <p className="text-xs text-primary font-medium bg-primary/5 border border-primary/20 rounded-lg p-2">
+                        {urlInAppMsg}
+                    </p>
                 )}
             </div>
 

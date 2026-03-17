@@ -27,6 +27,7 @@ interface IndexModalsProps {
     ) => Promise<void>;
     onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;
     onAddProperty: (form: any) => Promise<void>;
+    onOpenExistingListing?: (userListingId: string) => void;
 
     // Estados de control de apertura
     isAddZenRowsOpen: boolean;
@@ -61,6 +62,7 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
     onStatusChange,
     onAddComment,
     onAddProperty,
+    onOpenExistingListing,
     isAddZenRowsOpen,
     setIsAddZenRowsOpen,
     isAddOpen,
@@ -94,6 +96,7 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
                 onAdd={onAddProperty}
                 activeGroupId={activeGroupId}
                 scraper="zenrows"
+                onOpenExisting={onOpenExistingListing}
             />
 
             <AddPropertyModal
@@ -101,6 +104,7 @@ export const IndexModals: React.FC<IndexModalsProps> = ({
                 onClose={() => setIsAddOpen(false)}
                 onAdd={onAddProperty}
                 activeGroupId={activeGroupId}
+                onOpenExisting={onOpenExistingListing}
             />
 
             <GroupsModal

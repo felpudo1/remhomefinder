@@ -32,6 +32,8 @@ export interface Property {
   rooms: number;
   status: PropertyStatus;
   images: string[];
+  /** Fotos privadas de la familia (user_listing_attachments) */
+  privateImages?: string[];
   aiSummary: string;
   createdByEmail: string;
   comments: PropertyComment[];

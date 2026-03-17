@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { checkUrlStatus, checkDuplicateUrlInOrg, getExistingPropertyByUrl, formatDaysAgo } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGroups } from "@/hooks/useGroups";
@@ -44,6 +45,8 @@ interface AddPropertyModalProps {
     rooms: number;
     aiSummary: string;
     images: string[];
+    /** Fotos privadas (solo familia) - van a user_listing_attachments */
+    privateImages?: string[];
     groupId?: string | null;
     listingType?: string;
     ref?: string;
@@ -51,9 +54,11 @@ interface AddPropertyModalProps {
   }) => void;
   activeGroupId?: string | null;
   scraper?: "firecrawl" | "zenrows";
+  /** Al detectar que ya está en la familia, abrir ese aviso en lugar de agregar */
+  onOpenExisting?: (userListingId: string) => void;
 }
 
-export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl" }: AddPropertyModalProps) {
+export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl", onOpenExisting }: AddPropertyModalProps) {
   const { groups } = useGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
   const [listingType, setListingType] = useState<"rent" | "sale">("rent");
@@ -74,11 +79,18 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   }, [open, activeGroupId]);
 
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
+  const [privateImages, setPrivateImages] = useState<string[]>([]);
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [urlDuplicated, setUrlDuplicated] = useState(false);
+  const [urlAddedByName, setUrlAddedByName] = useState<string | null>(null);
+  /** Caso 1: ya en familia - bloquear y mostrar mensaje con link */
+  const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
+  /** Caso 2: existe en app - mensaje informativo */
+  const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
   const [isCheckingUrl, setIsCheckingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const privateFileInputRef = useRef<HTMLInputElement>(null);
   // Ref para el input oculto de análisis de screenshots
   const imageAnalysisRef = useRef<HTMLInputElement>(null);
   // Ref para el nuevo botón unificado
@@ -248,22 +260,55 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   };
 
   /**
-   * Scrapea una URL y extrae datos con IA.
+   * Scrapea una URL o pre-llena si otra familia ya la ingresó.
+   * Caso 1: ya en familia → bloquear. Caso 2: en app (otra familia) → pre-llenar con mensaje.
    */
   const handleScrape = async () => {
     if (!url.trim()) return;
     setIsLoading(true);
+    setUrlInFamily(null);
+    setUrlInAppMsg(null);
     try {
-      const { data: existing } = await supabase
-        .from("properties")
-        .select("id")
-        .eq("source_url", url.trim())
-        .limit(1);
-      if (existing && existing.length > 0) {
-        toast.error("Esta publicación ya fue ingresada anteriormente.");
+      const orgId = selectedGroupId || null;
+      const result = await checkUrlStatus(url.trim(), orgId);
+
+      if (result.case === "in_family") {
+        setUrlInFamily({
+          addedByName: result.addedByName,
+          addedAt: result.addedAt,
+          status: result.status,
+          userListingId: result.userListingId,
+        });
         setIsLoading(false);
         return;
       }
+
+      if (result.case === "in_app") {
+        const existing = await getExistingPropertyByUrl(url.trim());
+        if (existing) {
+          setScrapedImages(existing.images || []);
+          setForm({
+            title: existing.title || "",
+            priceRent: String(existing.price_amount ?? ""),
+            priceExpenses: String(existing.price_expenses ?? ""),
+            currency: existing.currency || "USD",
+            neighborhood: existing.neighborhood || "",
+            city: existing.city || "",
+            sqMeters: String(existing.m2_total ?? ""),
+            rooms: String(existing.rooms ?? ""),
+            aiSummary: existing.details || "",
+            ref: existing.ref || "",
+            details: existing.details || "",
+          });
+          setStep("manual");
+          setUrlInAppMsg(`Este aviso ya existe en la APP, fue ingresado ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo han guardado para evaluar.`);
+          toast.success("Revisá los datos y agregalo a tu familia.");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Caso none: scrapear
 
       const { data, error } = await supabase.functions.invoke("scrape-property", {
         body: { url: url.trim(), scraper, role: "user" },
@@ -417,44 +462,107 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     }
   };
 
-  const checkDuplicateUrl = async (urlToCheck: string) => {
-    if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
-    setIsCheckingUrl(true);
+  const handlePrivateFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
     try {
-      const { data } = await supabase.from("properties").select("id").eq("source_url", urlToCheck.trim()).limit(1);
-      setUrlDuplicated(!!(data && data.length > 0));
-    } catch { setUrlDuplicated(false); }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Debés estar logueado"); return; }
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/private-${safeUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("property-images").upload(path, file);
+        if (error) { console.error("Upload error:", error); continue; }
+        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+        uploaded.push(urlData.publicUrl);
+      }
+      if (uploaded.length > 0) {
+        setPrivateImages(prev => [...prev, ...uploaded]);
+        toast.success(`${uploaded.length} foto(s) privada(s) agregada(s)`);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Error al subir fotos");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const checkDuplicateUrl = async (urlToCheck: string) => {
+    if (!urlToCheck.trim()) { setUrlDuplicated(false); setUrlAddedByName(null); setUrlInFamily(null); setUrlInAppMsg(null); return; }
+    setIsCheckingUrl(true);
+    setUrlInFamily(null);
+    setUrlInAppMsg(null);
+    try {
+      const orgId = selectedGroupId || null;
+      const result = await checkUrlStatus(urlToCheck.trim(), orgId);
+      if (result.case === "in_family") {
+        setUrlDuplicated(true);
+        setUrlAddedByName(result.addedByName);
+        setUrlInFamily({ addedByName: result.addedByName, addedAt: result.addedAt, status: result.status, userListingId: result.userListingId });
+      } else if (result.case === "in_app") {
+        setUrlDuplicated(false);
+        setUrlInAppMsg(`Este aviso ya existe en la APP, fue ingresado ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo han guardado para evaluar.`);
+      } else {
+        setUrlDuplicated(false);
+        setUrlAddedByName(null);
+      }
+    } catch { setUrlDuplicated(false); setUrlAddedByName(null); setUrlInFamily(null); setUrlInAppMsg(null); }
     finally { setIsCheckingUrl(false); }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!url.trim()) {
+      toast.error("La URL de la publicación es obligatoria.");
+      return;
+    }
+    const orgId = selectedGroupId || null;
+    const result = await checkUrlStatus(url.trim(), orgId);
+    if (result.case === "in_family") {
+      toast.error(`Este aviso fue ingresado por ${result.addedByName} ${formatDaysAgo(result.addedAt)}. Su estado es ${result.status}.`);
+      return;
+    }
     const isRent = listingType === "rent";
-    onAdd({
-      url: url || "",
-      title: form.title,
-      priceRent: isRent ? (Number(form.priceRent) || 0) : (Number(form.priceRent) || 0),
-      priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
-      currency: form.currency,
-      neighborhood: form.neighborhood,
-      city: form.city,
-      sqMeters: Number(form.sqMeters) || 0,
-      rooms: Number(form.rooms) || 1,
-      aiSummary: form.aiSummary,
-      images: scrapedImages,
-      groupId: selectedGroupId,
-      listingType,
-      ref: form.ref,
-      details: form.details,
-    });
-    handleClose();
+    // Manual/cameFromImage: fotos van a privadas. Scraped: fotos públicas + privadas separadas
+    const publicImages = cameFromImage ? [] : scrapedImages;
+    const familyImages = cameFromImage ? scrapedImages : privateImages;
+    try {
+      await onAdd({
+        url: url || "",
+        title: form.title,
+        priceRent: isRent ? (Number(form.priceRent) || 0) : (Number(form.priceRent) || 0),
+        priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
+        currency: form.currency,
+        neighborhood: form.neighborhood,
+        city: form.city,
+        sqMeters: Number(form.sqMeters) || 0,
+        rooms: Number(form.rooms) || 1,
+        aiSummary: form.aiSummary,
+        images: publicImages,
+        privateImages: familyImages.length > 0 ? familyImages : undefined,
+        groupId: selectedGroupId,
+        listingType,
+        ref: form.ref,
+        details: form.details,
+      });
+      handleClose();
+    } catch {
+      // Error ya mostrado por handleAddProperty; modal permanece abierto
+    }
   };
 
   const handleClose = () => {
     setUrl("");
     setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", city: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
     setScrapedImages([]);
+    setPrivateImages([]);
     setManualImageUrl("");
     setUrlDuplicated(false);
+    setUrlAddedByName(null);
+    setUrlInFamily(null);
+    setUrlInAppMsg(null);
     setListingType("rent");
     setStep("url");
     setCameFromImage(false);
@@ -464,7 +572,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     onClose();
   };
 
-  const isFormValid = form.title && form.neighborhood && form.priceRent && !urlDuplicated;
+  const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -482,8 +590,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         <ScraperInput
           step={step}
           url={url}
-          setUrl={setUrl}
+          setUrl={(v) => { setUrl(v); setUrlInFamily(null); }}
           isLoading={isLoading}
+          urlInFamily={urlInFamily}
+          onOpenExisting={onOpenExisting}
+          formatDaysAgo={formatDaysAgo}
           isAnalyzingUnified={isAnalyzingUnified}
           handleScrape={handleScrape}
           unifiedImageRef={unifiedImageRef}
@@ -508,14 +619,22 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             cameFromImage={cameFromImage}
             scrapedImages={scrapedImages}
             setScrapedImages={setScrapedImages}
+            privateImages={privateImages}
+            setPrivateImages={setPrivateImages}
+            privateFileInputRef={privateFileInputRef}
+            handlePrivateFileUpload={handlePrivateFileUpload}
             manualImageUrl={manualImageUrl}
             setManualImageUrl={setManualImageUrl}
             fileInputRef={fileInputRef}
             handleFileUpload={handleFileUpload}
             isUploading={isUploading}
             url={url}
-            setUrl={setUrl}
+            setUrl={(v) => { setUrl(v); setUrlInFamily(null); }}
             urlDuplicated={urlDuplicated}
+            urlAddedByName={urlAddedByName}
+            urlInFamily={urlInFamily}
+            urlInAppMsg={urlInAppMsg}
+            formatDaysAgo={formatDaysAgo}
             setUrlDuplicated={setUrlDuplicated}
             checkDuplicateUrl={checkDuplicateUrl}
             groups={groups}

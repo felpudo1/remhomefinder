@@ -145,7 +145,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         totalCost={property.totalCost}
         sqMeters={property.sqMeters}
         rooms={property.rooms}
-        images={property.images}
+        images={[...(property.images || []), ...(property.privateImages || [])]}
         listingType={property.listingType}
         onClick={onClick}
         onImageClick={(index) => {
@@ -526,9 +526,15 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   <Button
                     type="button"
                     disabled={!coordinatedDateTime.trim() || new Date(coordinatedDateTime) <= new Date()}
-                    onClick={() => {
+                    onClick={async () => {
                       const isoDate = coordinatedDateTime ? new Date(coordinatedDateTime).toISOString() : null;
-                      onStatusChange(property.id, "visita_coordinada", undefined, isoDate);
+                      try {
+                        await onStatusChange(property.id, "visita_coordinada", undefined, isoDate);
+                        setShowCoordinatedConfirm(false);
+                        setCoordinatedDateTime("");
+                      } catch {
+                        // Error ya mostrado en toast; el modal permanece abierto
+                      }
                     }}
                     className="bg-status-coordinated text-white hover:bg-status-coordinated/90 disabled:opacity-50 disabled:pointer-events-none"
                   >
@@ -572,7 +578,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         }
       />
       <FullScreenGallery
-        images={property.images}
+        images={[...(property.images || []), ...(property.privateImages || [])]}
         isOpen={isGalleryOpen}
         initialIndex={galleryInitialImg}
         onClose={() => setIsGalleryOpen(false)}

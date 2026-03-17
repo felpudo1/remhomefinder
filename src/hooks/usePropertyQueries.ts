@@ -13,27 +13,23 @@ export function usePropertyQueries() {
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        const channel = supabase
-            .channel("properties_queries_realtime")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "family_comments" },
-                () => queryClient.invalidateQueries({ queryKey: ["properties"] })
-            )
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "user_listings" },
-                () => queryClient.invalidateQueries({ queryKey: ["properties"] })
-            )
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "properties" },
-                () => queryClient.invalidateQueries({ queryKey: ["properties"] })
-            )
+        const onCommentsChange = () => queryClient.refetchQueries({ queryKey: ["properties"] });
+
+        const channelListings = supabase
+            .channel("properties_realtime_listings")
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, onCommentsChange)
+            .subscribe();
+
+        const channelComments = supabase
+            .channel("properties_realtime_comments")
+            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, onCommentsChange)
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(channelListings);
+            supabase.removeChannel(channelComments);
         };
     }, [queryClient]);
 
@@ -204,7 +200,18 @@ export function usePropertyQueries() {
                 allComments = commentsData || [];
             }
 
-            // 8. Map to UI model
+            // 8. Get private attachments (fotos privadas por familia)
+            let attachmentsByListing: Record<string, string[]> = {};
+            const { data: attachmentsData } = await supabase
+                .from("user_listing_attachments")
+                .select("user_listing_id, image_url")
+                .in("user_listing_id", listingIds);
+            attachmentsData?.forEach((a) => {
+                if (!attachmentsByListing[a.user_listing_id]) attachmentsByListing[a.user_listing_id] = [];
+                attachmentsByListing[a.user_listing_id].push(a.image_url);
+            });
+
+            // 9. Map to UI model
             return listings.map((listing): Property => {
                 const p = listing.properties as any;
                 if (!p) {
@@ -224,6 +231,7 @@ export function usePropertyQueries() {
                         rooms: 0,
                         status: (listing.current_status as UserListingStatus) || "ingresado",
                         images: [],
+                        privateImages: [],
                         aiSummary: "",
                         createdByEmail: addedByMap[listing.added_by] || "",
                         comments: [],
@@ -270,6 +278,7 @@ export function usePropertyQueries() {
                     rooms: p.rooms || 0,
                     status: (listing.current_status as UserListingStatus) || "ingresado",
                     images: resolveImages(p.images as string[] | null),
+                    privateImages: attachmentsByListing[listing.id] || [],
                     aiSummary: p.details || "",
                     createdByEmail: addedByMap[listing.added_by] || "",
                     comments,

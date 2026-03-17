@@ -19,3 +19,11 @@ O directamente:
 ```bash
 supabase db push
 ```
+
+## Realtime: tablas para actualización en vivo
+
+Para que los estados de las tarjetas se actualicen sin refrescar, agregá `user_listings` a la publicación:
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_listings;
+```

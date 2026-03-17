@@ -1,14 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 /**
  * Hook para gestionar el sistema de estrellas (property_reviews).
  * Usa organizations + organization_members en lugar de groups.
+ * Realtime: invalida la query cuando otro miembro vota.
  */
 export function usePropertyRating(propertyId: string, groupId: string | null) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (!propertyId || !groupId) return;
+        const channel = supabase
+            .channel(`property-rating-${propertyId}-${groupId}`)
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "property_reviews", filter: `property_id=eq.${propertyId}` },
+                () => queryClient.invalidateQueries({ queryKey: ["property-rating", propertyId, groupId] })
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [propertyId, groupId, queryClient]);
 
     const { data: ratingsData, isLoading } = useQuery({
         queryKey: ["property-rating", propertyId, groupId],
