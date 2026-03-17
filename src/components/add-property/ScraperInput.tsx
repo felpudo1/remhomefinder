@@ -48,6 +48,7 @@ export function ScraperInput({
     handleAnalyzeImage,
     setCameFromImage,
     urlInFamily,
+    urlInApp,
     onOpenExisting,
     formatDaysAgo,
 }: ScraperInputProps) {
