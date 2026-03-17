@@ -38,6 +38,7 @@ const MENU_ITEMS: {
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
+    { id: "datos-admin", label: "Datos Admin", icon: KeyRound, description: "Datos privados del administrador (cuentas, claves, notas)" },
   ];
 
 /**
