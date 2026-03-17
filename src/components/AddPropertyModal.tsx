@@ -600,7 +600,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             handleFileUpload={handleFileUpload}
             isUploading={isUploading}
             url={url}
-            setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInAppMsg(null); }}
+            setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); setUrlInAppMsg(null); }}
             urlDuplicated={urlDuplicated}
             urlAddedByName={urlAddedByName}
             urlInFamily={urlInFamily}
