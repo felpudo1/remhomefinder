@@ -651,5 +651,24 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Dialog de confirmación cuando la propiedad ya existe en la app (otra familia) */}
+    <AlertDialog open={!!inAppDialogData} onOpenChange={(open) => { if (!open) setInAppDialogData(null); }}>
+      <AlertDialogContent className="rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Publicación existente</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm">
+            {inAppDialogData?.message}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+          <AlertDialogAction className="rounded-xl" onClick={handleConfirmInApp}>
+            Agregar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
