@@ -578,6 +578,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated && !urlInFamily;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
