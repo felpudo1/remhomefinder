@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { checkUrlStatus, getExistingPropertyByUrl, formatDaysAgo } from "@/lib/duplicateCheck";
+import { checkUrlStatus, formatDaysAgo } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGroups } from "@/hooks/useGroups";
