@@ -20,9 +20,11 @@ interface GroupsModalProps {
   activeGroupId: string | null;
   onSelectGroup: (groupId: string | null) => void;
   isAgent?: boolean;
+  /** Solo owners ven lista/crear; no-owners solo Unirme */
+  isOwner?: boolean;
 }
 
-export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false }: GroupsModalProps) {
+export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false, isOwner = true }: GroupsModalProps) {
   const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember, toggleMemberActive } = useGroups();
   const { toast } = useToast();
 
@@ -112,9 +114,26 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast({ title: "Código copiado", description: "Compartilo con tus colegas o familia para que se unan." });
+  const handleCopyCode = async (code: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = code;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+      }
+      toast({ title: "Código copiado", description: "Compartilo para que lo peguen en la pestaña Unirme." });
+    } catch (err) {
+      console.error("Error al copiar:", err);
+      toast({ title: "Error al copiar", description: "Copiá el link manualmente.", variant: "destructive" });
+    }
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -132,11 +151,13 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
 
   // Detail view
   if (detailGroup) {
-    const isOwner = detailGroup.created_by === currentUserId;
+    // Owner = creador O tiene role 'owner' en organization_members (ej. agregado por admin)
+    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
+    const isOwner = detailGroup.created_by === currentUserId || currentUserMembership?.role === "owner";
 
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <button onClick={() => setDetailGroup(null)} className="text-muted-foreground hover:text-foreground">
@@ -160,28 +181,28 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               <p className="text-sm text-muted-foreground">{detailGroup.description}</p>
             )}
 
-            {/* Invite code — only for owners, or for non-agency_team groups */}
+            {/* Código de invitación — igual que familias, solo owners */}
             {(isOwner || !isAgencyTeamDetail) && (
-              <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
+              <div className="bg-muted/50 rounded-xl p-3 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">
-                  {isAgencyTeamDetail ? "Link de Acceso a Oficina" : "Código de invitación"}
+                  Código de invitación
                 </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-background rounded-lg px-3 py-2 text-sm font-mono tracking-wider border border-border truncate">
-                    {isAgencyTeamDetail ? `${window.location.origin}/join/${detailGroup.invite_code}` : detailGroup.invite_code}
+                <div className="flex gap-2 min-w-0">
+                  <code className="flex-1 min-w-0 bg-background rounded-lg px-3 py-2 text-xs font-mono break-all border border-border">
+                    {detailGroup.invite_code}
                   </code>
-                  <Button size="sm" variant="outline" onClick={() => {
-                    const textToCopy = isAgencyTeamDetail
-                      ? `${window.location.origin}/join/${detailGroup.invite_code}`
-                      : detailGroup.invite_code;
-                    handleCopyCode(textToCopy);
-                  }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => handleCopyCode(detailGroup.invite_code)}
+                  >
                     <Copy className="w-3.5 h-3.5" />
                   </Button>
                 </div>
                 {isAgencyTeamDetail && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Compartí este link solo con tus agentes para que se unan al equipo.
+                  <p className="text-[10px] text-muted-foreground">
+                    Compartí este código con tus agentes para que lo peguen en la pestaña Unirme.
                   </p>
                 )}
               </div>
@@ -296,6 +317,40 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     );
   }
 
+  // No-owners (agentes): solo pestaña Unirme para pegar el código que les pasó el owner
+  if (isAgent && !isOwner) {
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Unirme al equipo
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Pegá el código que te pasó el owner de tu agencia para unirte.
+            </p>
+            <div className="space-y-2">
+              <Label>Código de invitación</Label>
+              <Input
+                placeholder="Pegá el código acá"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                className="rounded-xl font-mono tracking-wider"
+              />
+            </div>
+            <Button onClick={handleJoin} disabled={joining || !inviteCode.trim()} className="w-full rounded-xl">
+              {joining ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Unirme al equipo
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -306,7 +361,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
           </DialogTitle>
         </DialogHeader>
 
-        {/* Fixed agency section for agents */}
+        {/* Fixed agency section for agents (solo owners) */}
         {isAgent && agencyOrg && (
           <div className="space-y-3">
             <button
@@ -332,16 +387,16 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                 </p>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                {currentUserId === agencyOrg.created_by && (
+                {(agencyOrg.created_by === currentUserId || agencyMembers.find((m) => m.user_id === currentUserId)?.role === "owner") && (
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 p-0"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCopyCode(`${window.location.origin}/join/${agencyOrg.invite_code}`);
+                      handleCopyCode(agencyOrg.invite_code);
                     }}
-                    title="Copiar link de oficina"
+                    title="Copiar código"
                   >
                     <Copy className="w-3.5 h-3.5 text-muted-foreground" />
                   </Button>

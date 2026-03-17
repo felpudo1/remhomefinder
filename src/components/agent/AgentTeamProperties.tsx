@@ -12,9 +12,11 @@ import { useState } from "react";
 interface AgentTeamPropertiesProps {
   activeGroupId: string | null;
   onOpenGroups: () => void;
+  /** Solo owners pueden gestionar/crear equipos */
+  isOwner?: boolean;
 }
 
-export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPropertiesProps) => {
+export const AgentTeamProperties = ({ activeGroupId, onOpenGroups, isOwner = false }: AgentTeamPropertiesProps) => {
   const { sharedProperties, isLoading } = useOrgSharedProperties(activeGroupId);
   const [selectedProperty, setSelectedProperty] = useState<MarketplaceProperty | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -29,12 +31,16 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPr
         <div className="space-y-1">
           <h3 className="font-semibold text-foreground">Sin equipo seleccionado</h3>
           <p className="text-muted-foreground text-sm">
-            Seleccioná o creá un grupo para ver las propiedades compartidas por tu equipo.
+            {isOwner
+              ? "Seleccioná o creá un grupo para ver las propiedades compartidas por tu equipo."
+              : "Los equipos son gestionados por el owner de la agencia. Contactalo para que te asigne uno."}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={onOpenGroups}>
-          <UserPlus className="w-4 h-4" /> Gestionar equipos
-        </Button>
+        {isOwner && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onOpenGroups}>
+            <UserPlus className="w-4 h-4" /> Gestionar equipos
+          </Button>
+        )}
       </div>
     );
   }
@@ -52,12 +58,19 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups }: AgentTeamPr
       <div className="border border-border rounded-2xl bg-card p-10 text-center space-y-3">
         <Users className="w-10 h-10 text-muted-foreground mx-auto" />
         <p className="text-muted-foreground text-sm">
-          Todavía no hay propiedades compartidas en este equipo.<br />
-          Compartí desde "Mis Propiedades" usando el botón de compartir.
+          Todavía no hay propiedades compartidas en este equipo.
+          {isOwner && (
+            <>
+              <br />
+              Compartí desde "Mis Propiedades" usando el botón de compartir.
+            </>
+          )}
         </p>
-        <Button variant="outline" size="sm" className="gap-2" onClick={onOpenGroups}>
-          <UserPlus className="w-4 h-4" /> Cambiar equipo
-        </Button>
+        {isOwner && (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onOpenGroups}>
+            <UserPlus className="w-4 h-4" /> Cambiar equipo
+          </Button>
+        )}
       </div>
     );
   }

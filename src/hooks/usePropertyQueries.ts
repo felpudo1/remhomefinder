@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyComment } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
@@ -12,8 +12,27 @@ import type { UserListingStatus, DbListingType } from "@/types/supabase";
 export function usePropertyQueries() {
     const queryClient = useQueryClient();
 
+    // Obtener userId actual para usar como dependencia en la query key
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
     useEffect(() => {
-        const onCommentsChange = () => queryClient.refetchQueries({ queryKey: ["properties"] });
+        // Obtener userId inicial
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setCurrentUserId(user?.id || null);
+        });
+
+        // Suscribirse a cambios de auth para actualizar userId
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setCurrentUserId(session?.user.id || null);
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
+
+    useEffect(() => {
+        const onCommentsChange = () => queryClient.refetchQueries({ queryKey: ["properties", currentUserId] });
 
         const channelListings = supabase
             .channel("properties_realtime_listings")
@@ -32,10 +51,10 @@ export function usePropertyQueries() {
             supabase.removeChannel(channelListings);
             supabase.removeChannel(channelComments);
         };
-    }, [queryClient]);
+    }, [queryClient, currentUserId]);
 
     const query = useQuery({
-        queryKey: ["properties"],
+        queryKey: ["properties", currentUserId],
         queryFn: async () => {
             const { data: { user } } = await supabase.auth.getUser();
             const currentUserId = user?.id || null;

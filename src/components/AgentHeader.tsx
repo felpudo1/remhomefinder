@@ -12,6 +12,8 @@ interface AgentHeaderProps {
     setIsGroupsOpen: (open: boolean) => void;
     displayName?: string | null;
     isPremium?: boolean;
+    /** Solo owners pueden formar/gestionar equipos */
+    isOwner?: boolean;
 }
 
 export const AgentHeader = ({
@@ -25,6 +27,7 @@ export const AgentHeader = ({
     setIsGroupsOpen,
     displayName,
     isPremium,
+    isOwner = false,
 }: AgentHeaderProps) => {
     const StatusStar = () => (
         isPremium ? (
@@ -47,11 +50,14 @@ export const AgentHeader = ({
                     </div>
                     <div className="flex flex-col min-w-0">
                         <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
-                        {/* Identidad del Agente como subtexto */}
+                        {/* Identidad del Agente como subtexto: nombre + rol (owner/agente) */}
                         <div className="flex items-center gap-1">
                             <StatusStar />
                             <span className="text-[11px] text-muted-foreground truncate max-w-[150px] leading-tight font-medium">
                                 {displayName || userEmail}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/80 shrink-0">
+                                · {isOwner ? "Owner" : "Agente"}
                             </span>
                         </div>
                     </div>
@@ -63,7 +69,7 @@ export const AgentHeader = ({
                         disabled={agencyStatus !== "approved"}
                         className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
                         onClick={() => setIsGroupsOpen(true)}
-                        title={agencyStatus === "approved" ? "Formar equipo / Mis grupos" : "Cuenta pendiente de activación"}
+                        title={agencyStatus === "approved" ? (isOwner ? "Formar equipo / Mis grupos" : "Unirme con código") : "Cuenta pendiente de activación"}
                     >
                         <Users className="w-4 h-4" />
                         <span>Formar equipo</span>

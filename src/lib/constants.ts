@@ -28,8 +28,6 @@ export const ROUTES = {
     AGENCY: "/agente",
     PUBLIC_PROPERTY: (id: string) => `/p/${id}`,
     PUBLIC_PROPERTY_PATH: "/p/:id",
-    JOIN_TEAM: (code: string) => `/join/${code}`,
-    JOIN_TEAM_PATH: "/join/:inviteCode",
     REFERRAL: (userId: string) => `/ref/${userId}`,
     REFERRAL_PATH: "/ref/:userId",
 } as const;

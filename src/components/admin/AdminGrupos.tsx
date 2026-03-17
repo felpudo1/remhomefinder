@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Search, Users, Building2, Network, RefreshCw } from "lucide-react";
+import { Loader2, Trash2, Search, Users, Building2, Network, RefreshCw, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +14,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface OrgRow {
   id: string;
@@ -44,6 +52,11 @@ export function AdminGrupos({ toast }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<OrgRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  /** Agregar owner a agencia: admin designa a un usuario como owner para delegar administración */
+  const [addOwnerTarget, setAddOwnerTarget] = useState<OrgRow | null>(null);
+  const [addOwnerEmail, setAddOwnerEmail] = useState("");
+  const [addOwnerLoading, setAddOwnerLoading] = useState(false);
 
   const fetchOrgs = async () => {
     setLoading(true);
@@ -135,6 +148,67 @@ export function AdminGrupos({ toast }: Props) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  /**
+   * Agrega un usuario como owner de la agencia. Admin busca por email, inserta en organization_members
+   * con role='owner' y asegura que tenga role 'agency' en user_roles para acceder al panel.
+   */
+  const handleAddOwner = async () => {
+    if (!addOwnerTarget || !addOwnerEmail.trim()) return;
+    setAddOwnerLoading(true);
+    try {
+      const email = addOwnerEmail.trim().toLowerCase();
+      const { data: profiles, error: profileErr } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, email")
+        .ilike("email", email)
+        .limit(1);
+
+      if (profileErr) throw profileErr;
+      if (!profiles || profiles.length === 0) {
+        toast({ title: "Usuario no encontrado", description: `No existe un usuario con email "${email}".`, variant: "destructive" });
+        return;
+      }
+
+      const targetUser = profiles[0];
+
+      // Verificar si ya es miembro
+      const { data: existing } = await supabase
+        .from("organization_members")
+        .select("id")
+        .eq("org_id", addOwnerTarget.id)
+        .eq("user_id", targetUser.user_id)
+        .single();
+
+      if (existing) {
+        toast({ title: "Ya es miembro", description: `${targetUser.display_name} ya pertenece a esta agencia. Actualizá su rol desde otro flujo si es necesario.`, variant: "destructive" });
+        return;
+      }
+
+      const { error: insertErr } = await supabase
+        .from("organization_members")
+        .insert({ org_id: addOwnerTarget.id, user_id: targetUser.user_id, role: "owner" });
+
+      if (insertErr) throw insertErr;
+
+      // Asegurar que tenga role 'agency' para acceder a /agency
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", targetUser.user_id);
+      const hasAgency = roles?.some((r) => r.role === "agency") ?? false;
+      if (!hasAgency) {
+        const { error: roleErr } = await supabase.from("user_roles").insert({ user_id: targetUser.user_id, role: "agency" });
+        if (roleErr && roleErr.code !== "23505") throw roleErr; // 23505 = ya existe
+      }
+
+      toast({ title: "Owner agregado", description: `${targetUser.display_name} ahora es owner de "${addOwnerTarget.name}".` });
+      setAddOwnerTarget(null);
+      setAddOwnerEmail("");
+      fetchOrgs();
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+    } finally {
+      setAddOwnerLoading(false);
     }
   };
 
@@ -230,14 +304,30 @@ export function AdminGrupos({ toast }: Props) {
                   </div>
                 )}
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                onClick={() => setDeleteTarget(org)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1 shrink-0">
+                {org.type === "agency_team" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                    onClick={() => {
+                      setAddOwnerTarget(org);
+                      setAddOwnerEmail("");
+                    }}
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Agregar owner
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setDeleteTarget(org)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ))
         )}
@@ -264,6 +354,39 @@ export function AdminGrupos({ toast }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!addOwnerTarget} onOpenChange={(v) => !v && setAddOwnerTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar owner a agencia</DialogTitle>
+            <DialogDescription>
+              Designá a un usuario como owner de <strong>{addOwnerTarget?.name}</strong>. Podrá dar de baja agentes, gestionar miembros y ver el link de oficina.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email del usuario</label>
+              <Input
+                type="email"
+                placeholder="usuario@ejemplo.com"
+                value={addOwnerEmail}
+                onChange={(e) => setAddOwnerEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddOwner()}
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOwnerTarget(null)} disabled={addOwnerLoading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddOwner} disabled={addOwnerLoading || !addOwnerEmail.trim()}>
+              {addOwnerLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Agregar owner
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

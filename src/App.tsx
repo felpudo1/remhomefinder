@@ -21,7 +21,6 @@ const Admin = routeLazy(() => import("./pages/Admin"));
 const AgentDashboard = routeLazy(() => import("./pages/AgentDashboard"));
 const NotFound = routeLazy(() => import("./pages/NotFound"));
 const PublicPropertyView = routeLazy(() => import("./pages/PublicPropertyView"));
-const JoinTeam = routeLazy(() => import("./pages/JoinTeam"));
 const Referral = routeLazy(() => import("./pages/Referral"));
 
 const queryClient = new QueryClient();
@@ -48,7 +47,6 @@ const App = () => (
               <Route path={ROUTES.HOME} element={<Landing />} />
               <Route path={ROUTES.AUTH} element={<Auth />} />
               <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
-              <Route path={ROUTES.JOIN_TEAM_PATH} element={<JoinTeam />} />
               <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
               
               {/* Rutas Protegidas Simples (Solo requieren estar logeado) */}

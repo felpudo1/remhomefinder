@@ -11,7 +11,6 @@ import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentHeader } from "@/components/AgentHeader";
-import { AgentTeamLinks } from "@/components/agent/AgentTeamLinks";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
@@ -33,7 +32,6 @@ const AgentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [agencyInviteCode, setAgencyInviteCode] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -50,19 +48,40 @@ const AgentDashboard = () => {
 
       setUserId(user.id);
 
-      // Get agency org
-      const { data: orgs, error: orgErr } = await supabase
+      // Buscar agencia: primero la que creó el usuario, luego cualquier agency_team donde sea miembro (ej. owner agregado por admin)
+      const { data: orgsCreated } = await supabase
         .from("organizations")
         .select("*")
         .eq("created_by", user.id)
         .eq("type", "agency_team" satisfies OrgType)
         .limit(1);
 
-      if (orgErr) console.error(orgErr.message);
-      else if (orgs && orgs.length > 0) {
-        const org = orgs[0];
-        setAgencyInviteCode(org.invite_code);
-        setIsOwner(org.created_by === user.id);
+      let org = orgsCreated?.[0];
+      if (!org) {
+        const { data: memberships } = await supabase
+          .from("organization_members")
+          .select("org_id")
+          .eq("user_id", user.id);
+        const orgIds = memberships?.map((m) => m.org_id) || [];
+        if (orgIds.length > 0) {
+          const { data: orgsMember } = await supabase
+            .from("organizations")
+            .select("*")
+            .eq("type", "agency_team" satisfies OrgType)
+            .in("id", orgIds)
+            .limit(1);
+          org = orgsMember?.[0];
+        }
+      }
+
+      if (org) {
+        // Owner = solo si tiene role 'owner' en organization_members (RPC de BD, source of truth)
+        const { data: isOwnerResult, error: ownerErr } = await supabase.rpc("is_org_owner", {
+          _user_id: user.id,
+          _org_id: org.id,
+        });
+        if (ownerErr) console.warn("is_org_owner RPC:", ownerErr);
+        setIsOwner(Boolean(isOwnerResult));
         setAgency({
           id: org.id,
           name: org.name,
@@ -106,22 +125,15 @@ const AgentDashboard = () => {
         setIsGroupsOpen={setIsGroupsOpen}
         displayName={profile?.displayName}
         isPremium={isPremium}
+        isOwner={isOwner}
       />
 
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
         {agency ? (
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
-              {/* Team Links section */}
-              {userId && (
-                <AgentTeamLinks
-                  inviteCode={agencyInviteCode || undefined}
-                  userId={userId}
-                  isOwner={isOwner}
-                />
-              )}
-              {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={activeGroupId} />}
-              {activeTab === "equipo" && <AgentTeamProperties activeGroupId={activeGroupId} onOpenGroups={() => setIsGroupsOpen(true)} />}
+              {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={isOwner ? activeGroupId : null} />}
+              {activeTab === "equipo" && <AgentTeamProperties activeGroupId={isOwner ? activeGroupId : agency.id} onOpenGroups={() => setIsGroupsOpen(true)} isOwner={isOwner} />}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
@@ -143,6 +155,7 @@ const AgentDashboard = () => {
         activeGroupId={activeGroupId}
         onSelectGroup={setActiveGroupId}
         isAgent={true}
+        isOwner={isOwner}
       />
       <Footer />
     </div>

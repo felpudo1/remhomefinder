@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users, Share2, X } from "lucide-react";
+import { Home, Plus, Loader2, MapPin, Maximize2, BedDouble, Edit, ChevronDown, Check, Users, Share2, X, RefreshCw } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -56,7 +56,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         }
     }, [isPremium, agency.created_by]);
 
-    const { data: agencyProperties = [], isLoading: propsLoading } = useQuery({
+    const { data: agencyProperties = [], isLoading: propsLoading, refetch: refetchProperties, isFetching: isRefreshing } = useQuery({
         queryKey: ["agency-marketplace-properties", agency.id],
         enabled: isActive,
         queryFn: async () => {
@@ -161,10 +161,21 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <Home className="w-5 h-5" /> Mis Propiedades ({agencyProperties.length})
-                </h3>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Home className="w-5 h-5" /> Mis Propiedades ({agencyProperties.length})
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={() => refetchProperties()}
+                        disabled={isRefreshing || propsLoading}
+                        className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+                        title="Refrescar listado"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                    </button>
+                </div>
                 <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
                     <Plus className="w-4 h-4" /> Publicar propiedad
                 </Button>
