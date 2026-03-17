@@ -298,24 +298,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       if (result.case === "in_app") {
         const existing = await getExistingPropertyByUrl(url.trim());
         if (existing) {
-          setScrapedImages(existing.images || []);
-          setForm({
-            title: existing.title || "",
-            priceRent: String(existing.price_amount ?? ""),
-            priceExpenses: String(existing.price_expenses ?? ""),
-            currency: existing.currency || "USD",
-            neighborhood: existing.neighborhood || "",
-            city: existing.city || "",
-            sqMeters: String(existing.m2_total ?? ""),
-            rooms: String(existing.rooms ?? ""),
-            aiSummary: existing.details || "",
-            ref: existing.ref || "",
-            details: existing.details || "",
-          });
-          setStep("manual");
-          setUrlDuplicated(false);
-          setUrlInAppMsg(`Este aviso ya existe en la APP, fue ingresado ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo han guardado para evaluar.`);
-          toast.success("Revisá los datos y agregalo a tu familia.");
+          const msg = `Esta publicación ya existe en nuestra app, fue ingresada ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} la han marcado como favorita.`;
+          setInAppDialogData({ message: msg, existingProp: existing });
         }
         setIsLoading(false);
         return;
