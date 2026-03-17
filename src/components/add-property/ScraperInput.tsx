@@ -24,6 +24,7 @@ export interface ScraperInputProps {
     handleAnalyzeImage: () => void;
     setCameFromImage: (v: boolean) => void;
     urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
+    urlInApp?: { firstAddedAt: string; usersCount: number } | null;
     onOpenExisting?: (userListingId: string) => void;
     formatDaysAgo?: (isoDate: string) => string;
 }
@@ -47,6 +48,7 @@ export function ScraperInput({
     handleAnalyzeImage,
     setCameFromImage,
     urlInFamily,
+    urlInApp,
     onOpenExisting,
     formatDaysAgo,
 }: ScraperInputProps) {
@@ -82,6 +84,12 @@ export function ScraperInput({
                                 Para verlo hacé click acá
                             </Button>
                         )}
+                    </div>
+                ) : urlInApp ? (
+                    <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 space-y-3">
+                        <p className="text-sm text-blue-900 font-medium">
+                            Esta publicación ya existe en nuestra app, fue ingresada {formatDaysAgo ? formatDaysAgo(urlInApp.firstAddedAt) : ""} y {urlInApp.usersCount} usuario{urlInApp.usersCount !== 1 ? "s" : ""} la han ingresado en su listado.
+                        </p>
                     </div>
                 ) : (
                     <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">

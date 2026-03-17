@@ -86,7 +86,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [urlAddedByName, setUrlAddedByName] = useState<string | null>(null);
   /** Caso 1: ya en familia - bloquear y mostrar mensaje con link */
   const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
-  /** Caso 2: existe en app - mensaje informativo */
+  /** Caso 2: existe en app pero no en familia - info + permitir agregar */
+  const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
@@ -266,6 +267,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     if (!url.trim()) return;
     setIsLoading(true);
     setUrlInFamily(null);
+    setUrlInApp(null);
     setUrlInAppMsg(null);
     try {
       const orgId = selectedGroupId || null;
@@ -284,13 +286,10 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       }
 
       if (result.case === "in_app") {
-        setUrlInFamily({
-          addedByName: result.addedByName,
-          addedAt: result.firstAddedAt,
-          status: "Ingresado",
-          userListingId: "",
+        setUrlInApp({
+          firstAddedAt: result.firstAddedAt,
+          usersCount: result.usersCount,
         });
-        setUrlDuplicated(true);
         setIsLoading(false);
         return;
       }
@@ -530,6 +529,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setUrlDuplicated(false);
     setUrlAddedByName(null);
     setUrlInFamily(null);
+    setUrlInApp(null);
     setUrlInAppMsg(null);
     setListingType("rent");
     setStep("url");
@@ -560,9 +560,10 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         <ScraperInput
           step={step}
           url={url}
-          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInAppMsg(null); }}
+          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); setUrlInAppMsg(null); }}
           isLoading={isLoading}
           urlInFamily={urlInFamily}
+          urlInApp={urlInApp}
           onOpenExisting={onOpenExisting}
           formatDaysAgo={formatDaysAgo}
           isAnalyzingUnified={isAnalyzingUnified}
@@ -599,7 +600,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             handleFileUpload={handleFileUpload}
             isUploading={isUploading}
             url={url}
-            setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInAppMsg(null); }}
+            setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); setUrlInAppMsg(null); }}
             urlDuplicated={urlDuplicated}
             urlAddedByName={urlAddedByName}
             urlInFamily={urlInFamily}

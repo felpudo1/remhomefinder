@@ -22,7 +22,6 @@ export type InAppResult = {
   case: "in_app";
   firstAddedAt: string;
   usersCount: number;
-  addedByName: string;
 };
 
 export type UrlCheckResult =
@@ -100,24 +99,16 @@ export async function checkUrlStatus(
     .eq("id", prop.id)
     .single();
 
-  let addedByName = "Otro usuario";
-  if (propMeta?.created_by) {
-    const { data: creatorProfile } = await supabase
-      .from("profiles")
-      .select("display_name, email")
-      .eq("user_id", propMeta.created_by)
-      .maybeSingle();
-    addedByName =
-      (creatorProfile?.display_name?.trim() && creatorProfile.display_name) ||
-      creatorProfile?.email ||
-      "Otro usuario";
-  }
+  // Contar cuántos user_listings tienen esta property
+  const { count: listingsCount } = await supabase
+    .from("user_listings")
+    .select("id", { count: "exact", head: true })
+    .eq("property_id", prop.id);
 
   return {
     case: "in_app",
     firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
-    usersCount: 1,
-    addedByName,
+    usersCount: listingsCount ?? 1,
   };
 }
 
