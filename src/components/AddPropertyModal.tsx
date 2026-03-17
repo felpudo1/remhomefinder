@@ -86,7 +86,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [urlAddedByName, setUrlAddedByName] = useState<string | null>(null);
   /** Caso 1: ya en familia - bloquear y mostrar mensaje con link */
   const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
-  /** Caso 2: existe en app - mensaje informativo */
+  /** Caso 2: existe en app pero no en familia - info + permitir agregar */
+  const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
