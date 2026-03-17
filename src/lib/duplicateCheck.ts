@@ -17,11 +17,12 @@ export type InFamilyResult = {
   userListingId: string;
 };
 
-/** Resultado cuando la URL existe en la app pero no en la familia (Caso 2 - permitir) */
+/** Resultado cuando la URL existe en la app pero no en la familia (Caso 2) */
 export type InAppResult = {
   case: "in_app";
   firstAddedAt: string;
   usersCount: number;
+  addedByName: string;
 };
 
 export type UrlCheckResult =
