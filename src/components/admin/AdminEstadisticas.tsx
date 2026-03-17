@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, TrendingUp, Users2, Loader2, BarChart3, Shield, RefreshCw } from "lucide-react";
+import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Pencil } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,13 @@ interface Stats {
     admins: number;
 }
 
+interface FeedbackAttributeRow {
+    id: string;
+    name: string;
+    active: boolean;
+    display_order: number;
+}
+
 export function AdminEstadisticas() {
     const { toast } = useToast();
     const [stats, setStats] = useState<Stats | null>(null);
@@ -46,16 +53,22 @@ export function AdminEstadisticas() {
         direction: 'desc'
     });
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [feedbackAttributes, setFeedbackAttributes] = useState<FeedbackAttributeRow[]>([]);
+    const [loadingFeedbackAttributes, setLoadingFeedbackAttributes] = useState(true);
+    const [savingFeedbackAttributeId, setSavingFeedbackAttributeId] = useState<string | null>(null);
+    const [newAttributeName, setNewAttributeName] = useState("");
+    const [newAttributeOrder, setNewAttributeOrder] = useState<number>(1);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats()]);
+        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchFeedbackAttributes()]);
         setIsRefreshing(false);
     };
 
     useEffect(() => { fetchStats(); }, []);
     useEffect(() => { fetchMarketStats(); }, [pageMarket]);
     useEffect(() => { fetchPersonalStats(); }, [pagePersonal]);
+    useEffect(() => { fetchFeedbackAttributes(); }, []);
 
     const fetchStats = async () => {
         setLoading(true);
@@ -290,6 +303,77 @@ export function AdminEstadisticas() {
         }
     };
 
+    const fetchFeedbackAttributes = async () => {
+        setLoadingFeedbackAttributes(true);
+        try {
+            const { data, error } = await supabase
+                .from("feedback_attributes")
+                .select("id, name, active, display_order")
+                .order("display_order", { ascending: true });
+
+            if (error) throw error;
+            const rows = (data || []) as FeedbackAttributeRow[];
+            setFeedbackAttributes(rows);
+            const nextOrder = rows.length > 0
+                ? Math.max(...rows.map((r) => Number(r.display_order || 0))) + 1
+                : 1;
+            setNewAttributeOrder(nextOrder);
+        } catch (e: unknown) {
+            toast({ title: "Error cargando opciones de estado", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+        } finally {
+            setLoadingFeedbackAttributes(false);
+        }
+    };
+
+    const handleCreateFeedbackAttribute = async () => {
+        const trimmedName = newAttributeName.trim();
+        if (!trimmedName) {
+            toast({ title: "Nombre requerido", description: "Escribí un nombre para la nueva opción.", variant: "destructive" });
+            return;
+        }
+        try {
+            const { error } = await supabase
+                .from("feedback_attributes")
+                .insert({
+                    name: trimmedName,
+                    display_order: Number.isFinite(newAttributeOrder) ? newAttributeOrder : 1,
+                    active: true,
+                });
+            if (error) throw error;
+            toast({ title: "Opción creada", description: "La nueva opción fue guardada correctamente." });
+            setNewAttributeName("");
+            await fetchFeedbackAttributes();
+        } catch (e: unknown) {
+            toast({ title: "Error creando opción", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+        }
+    };
+
+    const handleUpdateFeedbackAttribute = async (row: FeedbackAttributeRow) => {
+        const trimmedName = row.name.trim();
+        if (!trimmedName) {
+            toast({ title: "Nombre requerido", description: "El nombre no puede quedar vacío.", variant: "destructive" });
+            return;
+        }
+        setSavingFeedbackAttributeId(row.id);
+        try {
+            const { error } = await supabase
+                .from("feedback_attributes")
+                .update({
+                    name: trimmedName,
+                    display_order: Number.isFinite(row.display_order) ? row.display_order : 1,
+                    active: row.active,
+                })
+                .eq("id", row.id);
+            if (error) throw error;
+            toast({ title: "Opción actualizada", description: "Los cambios se guardaron correctamente." });
+            await fetchFeedbackAttributes();
+        } catch (e: unknown) {
+            toast({ title: "Error actualizando opción", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+        } finally {
+            setSavingFeedbackAttributeId(null);
+        }
+    };
+
     const handleSort = (key: keyof StatProperty) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
@@ -431,6 +515,130 @@ export function AdminEstadisticas() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <h4 className="font-semibold text-sm text-foreground">Opciones de cambios de estado</h4>
+                        <p className="text-[11px] text-muted-foreground">
+                            Gestioná las opciones que se usan en descarte y análisis estadístico.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+                    <div className="md:col-span-6">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nombre</label>
+                        <input
+                            value={newAttributeName}
+                            onChange={(e) => setNewAttributeName(e.target.value)}
+                            placeholder="Ej: Otros"
+                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
+                        />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</label>
+                        <input
+                            type="number"
+                            min={1}
+                            value={newAttributeOrder}
+                            onChange={(e) => setNewAttributeOrder(Number(e.target.value))}
+                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
+                        />
+                    </div>
+                    <div className="md:col-span-4">
+                        <button
+                            onClick={handleCreateFeedbackAttribute}
+                            className="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Agregar opción
+                        </button>
+                    </div>
+                </div>
+
+                {loadingFeedbackAttributes ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Cargando opciones...
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {feedbackAttributes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No hay opciones cargadas.</p>
+                        ) : (
+                            feedbackAttributes.map((row) => (
+                                <div key={row.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center border border-border/60 rounded-lg p-2.5">
+                                    <div className="md:col-span-6">
+                                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nombre</label>
+                                        <input
+                                            value={row.name}
+                                            onChange={(e) =>
+                                                setFeedbackAttributes((prev) =>
+                                                    prev.map((item) => item.id === row.id ? { ...item, name: e.target.value } : item)
+                                                )
+                                            }
+                                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            value={row.display_order}
+                                            onChange={(e) =>
+                                                setFeedbackAttributes((prev) =>
+                                                    prev.map((item) => item.id === row.id ? { ...item, display_order: Number(e.target.value) } : item)
+                                                )
+                                            }
+                                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 flex items-center gap-2 mt-4 md:mt-0">
+                                        <input
+                                            id={`active-${row.id}`}
+                                            type="checkbox"
+                                            checked={row.active}
+                                            onChange={(e) =>
+                                                setFeedbackAttributes((prev) =>
+                                                    prev.map((item) => item.id === row.id ? { ...item, active: e.target.checked } : item)
+                                                )
+                                            }
+                                            className="h-4 w-4"
+                                        />
+                                        <label htmlFor={`active-${row.id}`} className="text-xs text-foreground">
+                                            Activa
+                                        </label>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <button
+                                            onClick={() => handleUpdateFeedbackAttribute(row)}
+                                            disabled={savingFeedbackAttributeId === row.id}
+                                            className="w-full h-8 rounded-md border border-border text-xs font-medium inline-flex items-center justify-center gap-1.5 hover:bg-muted transition-colors disabled:opacity-50"
+                                        >
+                                            {savingFeedbackAttributeId === row.id ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Guardando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="w-4 h-4" />
+                                                    Guardar
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                    Podés editar nombre, orden y si la opción está activa. Las opciones inactivas no aparecen para el usuario final.
+                </p>
             </div>
 
             <EstadisticasTab
