@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { checkUrlStatus, checkDuplicateUrlInOrg, getExistingPropertyByUrl, formatDaysAgo } from "@/lib/duplicateCheck";
+import { checkUrlStatus, getExistingPropertyByUrl, formatDaysAgo } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGroups } from "@/hooks/useGroups";
@@ -88,7 +88,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
   /** Caso 2: existe en app - mensaje informativo */
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
-  const [isCheckingUrl, setIsCheckingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
   // Ref para el input oculto de análisis de screenshots
@@ -279,6 +278,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
           status: result.status,
           userListingId: result.userListingId,
         });
+        setUrlDuplicated(true);
         setIsLoading(false);
         return;
       }
@@ -301,6 +301,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             details: existing.details || "",
           });
           setStep("manual");
+          setUrlDuplicated(false);
           setUrlInAppMsg(`Este aviso ya existe en la APP, fue ingresado ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo han guardado para evaluar.`);
           toast.success("Revisá los datos y agregalo a tu familia.");
         }
@@ -490,29 +491,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     }
   };
 
-  const checkDuplicateUrl = async (urlToCheck: string) => {
-    if (!urlToCheck.trim()) { setUrlDuplicated(false); setUrlAddedByName(null); setUrlInFamily(null); setUrlInAppMsg(null); return; }
-    setIsCheckingUrl(true);
-    setUrlInFamily(null);
-    setUrlInAppMsg(null);
-    try {
-      const orgId = selectedGroupId || null;
-      const result = await checkUrlStatus(urlToCheck.trim(), orgId);
-      if (result.case === "in_family") {
-        setUrlDuplicated(true);
-        setUrlAddedByName(result.addedByName);
-        setUrlInFamily({ addedByName: result.addedByName, addedAt: result.addedAt, status: result.status, userListingId: result.userListingId });
-      } else if (result.case === "in_app") {
-        setUrlDuplicated(false);
-        setUrlInAppMsg(`Este aviso ya existe en la APP, fue ingresado ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo han guardado para evaluar.`);
-      } else {
-        setUrlDuplicated(false);
-        setUrlAddedByName(null);
-      }
-    } catch { setUrlDuplicated(false); setUrlAddedByName(null); setUrlInFamily(null); setUrlInAppMsg(null); }
-    finally { setIsCheckingUrl(false); }
-  };
-
   const handleSubmit = async () => {
     if (!url.trim()) {
       toast.error("La URL de la publicación es obligatoria.");
@@ -528,25 +506,29 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     // Manual/cameFromImage: fotos van a privadas. Scraped: fotos públicas + privadas separadas
     const publicImages = cameFromImage ? [] : scrapedImages;
     const familyImages = cameFromImage ? scrapedImages : privateImages;
+    const formData = {
+      url: url || "",
+      title: form.title,
+      priceRent: isRent ? (Number(form.priceRent) || 0) : (Number(form.priceRent) || 0),
+      priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
+      currency: form.currency,
+      neighborhood: form.neighborhood,
+      city: form.city,
+      sqMeters: Number(form.sqMeters) || 0,
+      rooms: Number(form.rooms) || 1,
+      aiSummary: form.aiSummary,
+      images: publicImages,
+      privateImages: familyImages.length > 0 ? familyImages : undefined,
+      groupId: selectedGroupId,
+      listingType,
+      ref: form.ref,
+      details: form.details,
+    };
+    if (result.case === "in_app") {
+      (formData as any)._successMessage = `Este aviso ya fue ingresado hace ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo tienen entre sus favoritos.`;
+    }
     try {
-      await onAdd({
-        url: url || "",
-        title: form.title,
-        priceRent: isRent ? (Number(form.priceRent) || 0) : (Number(form.priceRent) || 0),
-        priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
-        currency: form.currency,
-        neighborhood: form.neighborhood,
-        city: form.city,
-        sqMeters: Number(form.sqMeters) || 0,
-        rooms: Number(form.rooms) || 1,
-        aiSummary: form.aiSummary,
-        images: publicImages,
-        privateImages: familyImages.length > 0 ? familyImages : undefined,
-        groupId: selectedGroupId,
-        listingType,
-        ref: form.ref,
-        details: form.details,
-      });
+      await onAdd(formData);
       handleClose();
     } catch {
       // Error ya mostrado por handleAddProperty; modal permanece abierto
@@ -572,7 +554,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     onClose();
   };
 
-  const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated;
+  const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated && !urlInFamily;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -590,7 +572,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         <ScraperInput
           step={step}
           url={url}
-          setUrl={(v) => { setUrl(v); setUrlInFamily(null); }}
+          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInAppMsg(null); }}
           isLoading={isLoading}
           urlInFamily={urlInFamily}
           onOpenExisting={onOpenExisting}
@@ -629,20 +611,21 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             handleFileUpload={handleFileUpload}
             isUploading={isUploading}
             url={url}
-            setUrl={(v) => { setUrl(v); setUrlInFamily(null); }}
+            setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInAppMsg(null); }}
             urlDuplicated={urlDuplicated}
             urlAddedByName={urlAddedByName}
             urlInFamily={urlInFamily}
             urlInAppMsg={urlInAppMsg}
             formatDaysAgo={formatDaysAgo}
             setUrlDuplicated={setUrlDuplicated}
-            checkDuplicateUrl={checkDuplicateUrl}
             groups={groups}
             selectedGroupId={selectedGroupId}
             setSelectedGroupId={setSelectedGroupId}
             setStep={setStep}
             handleSubmit={handleSubmit}
             isFormValid={isFormValid}
+            onExtractFromUrl={handleScrape}
+            isExtracting={isLoading}
           />
         )}
       </DialogContent>

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Camera, Sparkles, ImageIcon, X, Plus, Upload, Link, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { formatDaysAgo } from "@/lib/duplicateCheck";
 
 export interface PropertyFormManualProps {
     form: any;
@@ -31,13 +30,14 @@ export interface PropertyFormManualProps {
     urlInAppMsg?: string | null;
     formatDaysAgo?: (isoDate: string) => string;
     setUrlDuplicated: (d: boolean) => void;
-    checkDuplicateUrl: (url: string) => void;
     groups: any[];
     selectedGroupId: string | null;
     setSelectedGroupId: (id: string | null) => void;
     setStep: (step: "url" | "image-upload" | "manual") => void;
     handleSubmit: () => void | Promise<void>;
     isFormValid: boolean;
+    onExtractFromUrl?: () => void | Promise<void>;
+    isExtracting?: boolean;
 }
 
 export function PropertyFormManual({
@@ -64,16 +64,47 @@ export function PropertyFormManual({
     urlInFamily,
     urlInAppMsg,
     setUrlDuplicated,
-    checkDuplicateUrl,
     groups,
     selectedGroupId,
     setSelectedGroupId,
     setStep,
     handleSubmit,
     isFormValid,
+    onExtractFromUrl,
+    isExtracting,
 }: PropertyFormManualProps) {
     return (
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
+            {/* URL + Extraer datos (chequeo aquí, no en submit) */}
+            <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Link de la publicación *</Label>
+                <div className="flex gap-2">
+                    <div className="relative flex-1">
+                        <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} placeholder="http://intocasas.com.uy" className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
+                    </div>
+                    <Button type="button" onClick={onExtractFromUrl} disabled={!url.trim() || isExtracting} className="rounded-xl gap-1.5 shrink-0">
+                        {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {isExtracting ? "Verificando..." : "Extraer datos"}
+                    </Button>
+                </div>
+                {urlInFamily && (
+                    <p className="text-xs text-destructive font-medium">
+                        Este aviso fue ingresado por {urlInFamily.addedByName} {formatDaysAgo && urlInFamily.addedAt ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es {urlInFamily.status}.
+                    </p>
+                )}
+                {urlDuplicated && !urlInFamily && (
+                    <p className="text-xs text-destructive font-medium">
+                        ⚠️ {urlAddedByName ? `${urlAddedByName} ya ingresó esa publicación.` : "Esta URL ya fue ingresada en tu familia."}
+                    </p>
+                )}
+                {urlInAppMsg && !urlDuplicated && (
+                    <p className="text-xs text-primary font-medium bg-primary/5 border border-primary/20 rounded-lg p-2">
+                        {urlInAppMsg}
+                    </p>
+                )}
+            </div>
+
             {/* Nota cuando viene de análisis de imagen */}
             {cameFromImage && (
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-200 flex gap-2">
@@ -181,30 +212,6 @@ export function PropertyFormManual({
                     {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                     {isUploading ? "Subiendo..." : "Agregar fotos privadas"}
                 </Button>
-            </div>
-
-            {/* Link de la publicación (obligatorio) */}
-            <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Link de la publicación *</Label>
-                <div className="relative">
-                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} onBlur={() => checkDuplicateUrl(url)} placeholder="http://intocasas.com.uy" className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
-                </div>
-                {urlInFamily && (
-                    <p className="text-xs text-destructive font-medium">
-                        Este aviso fue ingresado por {urlInFamily.addedByName} {formatDaysAgo && urlInFamily.addedAt ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es {urlInFamily.status}.
-                    </p>
-                )}
-                {urlDuplicated && !urlInFamily && (
-                    <p className="text-xs text-destructive font-medium">
-                        ⚠️ {urlAddedByName ? `${urlAddedByName} ya ingresó esa publicación.` : "Esta URL ya fue ingresada en tu familia."}
-                    </p>
-                )}
-                {urlInAppMsg && !urlDuplicated && (
-                    <p className="text-xs text-primary font-medium bg-primary/5 border border-primary/20 rounded-lg p-2">
-                        {urlInAppMsg}
-                    </p>
-                )}
             </div>
 
             <div className="space-y-1.5">

@@ -162,10 +162,11 @@ const Index = () => {
 
   const handleAddProperty = async (form: any) => {
     try {
-      await addProperty(form);
+      const { _successMessage, ...formWithoutMeta } = form;
+      await addProperty(formWithoutMeta);
       setIsAddOpen(false);
       setIsAddZenRowsOpen(false);
-      toast({ title: "Éxito", description: "Propiedad agregada correctamente" });
+      toast({ title: "Éxito", description: _successMessage || "Propiedad agregada correctamente" });
     } catch (e: unknown) {
       toast({ title: "Error", description: getErrorMessage(e), variant: "destructive" });
       throw e; // Re-lanzar para que el modal no se cierre si falla
