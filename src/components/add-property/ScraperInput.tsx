@@ -72,14 +72,14 @@ export function ScraperInput({
                 </div>
 
                 {urlInFamily ? (
-                    <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 space-y-3">
-                        <p className="text-sm text-destructive font-medium">
-                            Este aviso fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es <strong>{urlInFamily.status}</strong>.
+                    <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3">
+                        <p className="text-sm text-amber-900 font-medium">
+                            Este aviso ya existe en tu listado familiar. Fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo ? formatDaysAgo(urlInFamily.addedAt) : ""}.
                         </p>
                         {onOpenExisting && (
-                            <Button variant="outline" size="sm" className="rounded-xl gap-2 border-destructive text-destructive hover:bg-destructive/10" onClick={() => onOpenExisting(urlInFamily.userListingId)}>
+                            <Button variant="outline" size="sm" className="rounded-xl gap-2 border-amber-400 text-amber-800 hover:bg-amber-100" onClick={() => { onOpenExisting(urlInFamily.userListingId); }}>
                                 <ExternalLink className="w-4 h-4" />
-                                Ver aviso
+                                Para verlo hacé click acá
                             </Button>
                         )}
                     </div>
