@@ -31,6 +31,8 @@ interface UserProfile {
     orgName?: string;
 }
 
+type AgentRole = "user" | "agencymember" | "agency";
+
 interface Props {
     toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
@@ -219,6 +221,37 @@ export function AdminUsuarios({ toast }: Props) {
         }
     };
 
+    const updateAgentRole = async (userId: string, newRole: AgentRole) => {
+        const previousUsers = users;
+        setUsers(prev => prev.map(u => {
+            if (u.user_id !== userId) return u;
+            const nextRoles = u.roles.filter((r) => r !== "agency" && r !== "agencymember" && r !== "user");
+            nextRoles.push(newRole);
+            return { ...u, roles: nextRoles };
+        }));
+
+        try {
+            // Limpiamos roles de actor final para evitar combinación incompatible agency/agencymember.
+            const { error: deleteErr } = await supabase
+                .from("user_roles")
+                .delete()
+                .eq("user_id", userId)
+                .in("role", ["agency", "agencymember", "user"]);
+            if (deleteErr) throw deleteErr;
+
+            const rolesToInsert = [{ user_id: userId, role: newRole }];
+            const { error: insertErr } = await supabase
+                .from("user_roles")
+                .insert(rolesToInsert as any);
+            if (insertErr) throw insertErr;
+
+            toast({ title: "Rol actualizado", description: `El usuario ahora tiene rol "${newRole}".` });
+        } catch (error: unknown) {
+            setUsers(previousUsers);
+            toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+        }
+    };
+
     const handlePhysicalDelete = async (userId: string) => {
         const previousUsers = users;
         // Guardar reason ANTES de limpiar el estado
@@ -337,6 +370,10 @@ export function AdminUsuarios({ toast }: Props) {
                                     const statusCfg = STATUS_CONFIG[user.status] || STATUS_CONFIG.active;
                                     const StatusIcon = statusCfg.icon;
                                     const isAdmin = user.roles.includes("admin");
+                                    const isPlainUserRole =
+                                        user.roles.includes("user") &&
+                                        !user.roles.includes("agency") &&
+                                        !user.roles.includes("agencymember");
 
                                     return (
                                         <TableRow key={user.user_id} className="group">
@@ -378,9 +415,10 @@ export function AdminUsuarios({ toast }: Props) {
                                                             "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase",
                                                             r === 'admin' ? "bg-amber-100 text-amber-800" :
                                                                 r === 'agency' ? "bg-purple-100 text-purple-800" :
+                                                                    r === 'agencymember' ? "bg-violet-100 text-violet-800" :
                                                                     "bg-blue-50 text-blue-700"
                                                         )}>
-                                                            {r === 'admin' ? '🛡️' : r === 'agency' ? '🏢' : '👤'} {r}
+                                                            {r === 'admin' ? '🛡️' : r === 'agency' ? '🏢' : r === 'agencymember' ? '🧩' : '👤'} {r}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -445,6 +483,23 @@ export function AdminUsuarios({ toast }: Props) {
                                                                 <SelectContent>
                                                                     <SelectItem value="free">Free</SelectItem>
                                                                     <SelectItem value="premium">Premium</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Select
+                                                                value={user.roles.includes("agency") ? "agency" : user.roles.includes("agencymember") ? "agencymember" : "user"}
+                                                                onValueChange={(val) => updateAgentRole(user.user_id, val as AgentRole)}
+                                                                disabled={isPlainUserRole}
+                                                            >
+                                                                <SelectTrigger
+                                                                    className="h-6 text-[10px] w-[110px] rounded-lg"
+                                                                    title={isPlainUserRole ? "Solo lectura para cuentas User" : "Cambiar rol"}
+                                                                >
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="agency">Agency</SelectItem>
+                                                                    <SelectItem value="agencymember">AgencyMember</SelectItem>
+                                                                    <SelectItem value="user">User</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <Button

@@ -58,7 +58,7 @@ export const useAuth = () => {
 
             if (roleSet.has(ROLES.ADMIN)) {
                 navigate(ROUTES.ADMIN);
-            } else if (roleSet.has(ROLES.AGENCY)) {
+            } else if (roleSet.has(ROLES.AGENCY) || roleSet.has(ROLES.AGENCY_MEMBER)) {
                 navigate(ROUTES.AGENCY);
             } else {
                 navigate(ROUTES.DASHBOARD);

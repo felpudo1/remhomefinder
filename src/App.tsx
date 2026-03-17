@@ -55,7 +55,14 @@ const App = () => (
               {/* Rutas Protegidas con Roles Específicos */}
               <Route path={ROUTES.ADMIN} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
               <Route path={ROUTES.ADMIN_SECTION_PATH} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
-              <Route path={ROUTES.AGENCY} element={<ProtectedRoute allowedRoles={[ROLES.AGENCY]}><AgentDashboard /></ProtectedRoute>} />
+              <Route
+                path={ROUTES.AGENCY}
+                element={
+                  <ProtectedRoute allowedRoles={[ROLES.AGENCY, ROLES.AGENCY_MEMBER]}>
+                    <AgentDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

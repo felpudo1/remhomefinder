@@ -54,14 +54,14 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
         const userRoles = roles?.map((r) => r.role as AppRole) || [];
 
-        // Si estamos en /dashboard y el usuario es admin o agency, redirigir a su panel
+        // Si estamos en /dashboard y el usuario es admin o rol agente, redirigir a su panel
         const isDashboard = location.pathname === ROUTES.DASHBOARD;
         if (isDashboard && !allowedRoles?.length) {
           if (userRoles.includes(ROLES.ADMIN)) {
             if (isMounted) setRedirectTo(ROUTES.ADMIN);
             return;
           }
-          if (userRoles.includes(ROLES.AGENCY)) {
+          if (userRoles.includes(ROLES.AGENCY) || userRoles.includes(ROLES.AGENCY_MEMBER)) {
             if (isMounted) setRedirectTo(ROUTES.AGENCY);
             return;
           }

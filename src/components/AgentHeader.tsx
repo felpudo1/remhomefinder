@@ -14,6 +14,8 @@ interface AgentHeaderProps {
     isPremium?: boolean;
     /** Solo owners pueden formar/gestionar equipos */
     isOwner?: boolean;
+    /** Solo agency administra equipos; agencymember no ve botón de grupos */
+    canManageTeams?: boolean;
 }
 
 export const AgentHeader = ({
@@ -28,6 +30,7 @@ export const AgentHeader = ({
     displayName,
     isPremium,
     isOwner = false,
+    canManageTeams = false,
 }: AgentHeaderProps) => {
     const StatusStar = () => (
         isPremium ? (
@@ -63,17 +66,19 @@ export const AgentHeader = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant={activeGroupId ? "default" : "outline"}
-                        size="sm"
-                        disabled={agencyStatus !== "approved"}
-                        className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
-                        onClick={() => setIsGroupsOpen(true)}
-                        title={agencyStatus === "approved" ? (isOwner ? "Formar equipo / Mis grupos" : "Unirme con código") : "Cuenta pendiente de activación"}
-                    >
-                        <Users className="w-4 h-4" />
-                        <span>Formar equipo</span>
-                    </Button>
+                    {canManageTeams && (
+                        <Button
+                            variant={activeGroupId ? "default" : "outline"}
+                            size="sm"
+                            disabled={agencyStatus !== "approved"}
+                            className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
+                            onClick={() => setIsGroupsOpen(true)}
+                            title={agencyStatus === "approved" ? (isOwner ? "Formar equipo / Mis grupos" : "Unirme con código") : "Cuenta pendiente de activación"}
+                        >
+                            <Users className="w-4 h-4" />
+                            <span>Formar equipo</span>
+                        </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-muted-foreground ml-1">
                         <LogOut className="w-4 h-4" />
                         <span className="hidden sm:inline">Salir</span>

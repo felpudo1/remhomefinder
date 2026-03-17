@@ -17,6 +17,7 @@ import { UserStatus } from "@/types/property";
 import type { OrgType } from "@/types/supabase";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
+import { ROLES } from "@/lib/constants";
 
 type AgentTab = "propiedades" | "equipo" | "estadisticas" | "perfil";
 
@@ -32,6 +33,7 @@ const AgentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [canManageTeams, setCanManageTeams] = useState(false);
   const [activeTab, setActiveTab] = useState<AgentTab>("propiedades");
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -47,6 +49,13 @@ const AgentDashboard = () => {
       if (!user) return; // ProtectedRoute already handles unauthenticated users
 
       setUserId(user.id);
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const roleSet = new Set((roleRows || []).map((r) => r.role));
+      const hasAgencyRole = roleSet.has(ROLES.AGENCY);
+      setCanManageTeams(hasAgencyRole);
 
       // Buscar agencia: primero la que creó el usuario, luego cualquier agency_team donde sea miembro (ej. owner agregado por admin)
       const { data: orgsCreated } = await supabase
@@ -81,7 +90,7 @@ const AgentDashboard = () => {
           _org_id: org.id,
         });
         if (ownerErr) console.warn("is_org_owner RPC:", ownerErr);
-        setIsOwner(Boolean(isOwnerResult));
+        setIsOwner(hasAgencyRole && Boolean(isOwnerResult));
         setAgency({
           id: org.id,
           name: org.name,
@@ -100,6 +109,12 @@ const AgentDashboard = () => {
     init();
   }, [navigate, profile]);
 
+  useEffect(() => {
+    if (!canManageTeams && activeTab === "equipo") {
+      setActiveTab("propiedades");
+    }
+  }, [canManageTeams, activeTab]);
+
   const handleLogout = async () => { await supabase.auth.signOut(); navigate(ROUTES.AUTH); };
 
   if (loading) {
@@ -111,6 +126,7 @@ const AgentDashboard = () => {
   }
 
   const effectiveStatus = profileStatus === "active" ? "approved" : profileStatus;
+  const visibleTabs = canManageTeams ? TABS : TABS.filter((t) => t.id !== "equipo");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -119,13 +135,14 @@ const AgentDashboard = () => {
         agencyStatus={effectiveStatus}
         activeTab={activeTab}
         setActiveTab={(tab) => setActiveTab(tab)}
-        tabs={TABS}
+        tabs={visibleTabs}
         handleLogout={handleLogout}
         activeGroupId={activeGroupId}
         setIsGroupsOpen={setIsGroupsOpen}
         displayName={profile?.displayName}
         isPremium={isPremium}
         isOwner={isOwner}
+        canManageTeams={canManageTeams}
       />
 
       <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
@@ -133,7 +150,13 @@ const AgentDashboard = () => {
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={isOwner ? activeGroupId : null} />}
-              {activeTab === "equipo" && <AgentTeamProperties activeGroupId={isOwner ? activeGroupId : agency.id} onOpenGroups={() => setIsGroupsOpen(true)} isOwner={isOwner} />}
+              {activeTab === "equipo" && canManageTeams && (
+                <AgentTeamProperties
+                  activeGroupId={isOwner ? activeGroupId : agency.id}
+                  onOpenGroups={() => setIsGroupsOpen(true)}
+                  isOwner={isOwner}
+                />
+              )}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
@@ -149,14 +172,16 @@ const AgentDashboard = () => {
           </div>
         )}
       </main>
-      <GroupsModal
-        open={isGroupsOpen}
-        onClose={() => setIsGroupsOpen(false)}
-        activeGroupId={activeGroupId}
-        onSelectGroup={setActiveGroupId}
-        isAgent={true}
-        isOwner={isOwner}
-      />
+      {canManageTeams && (
+        <GroupsModal
+          open={isGroupsOpen}
+          onClose={() => setIsGroupsOpen(false)}
+          activeGroupId={activeGroupId}
+          onSelectGroup={setActiveGroupId}
+          isAgent={true}
+          isOwner={isOwner}
+        />
+      )}
       <Footer />
     </div>
   );

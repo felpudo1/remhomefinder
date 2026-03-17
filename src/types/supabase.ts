@@ -27,7 +27,7 @@ export type UserListingStatus = Database["public"]["Enums"]["user_listing_status
 /** Estado de una publicación de agente: "disponible" | "reservado" | "vendido" | "alquilado" | "eliminado" | "pausado" */
 export type AgentPubStatus = Database["public"]["Enums"]["agent_pub_status"];
 
-/** Roles de la app: "admin" | "agency" | "user" */
+/** Roles de la app: "admin" | "agency" | "agencymember" | "user" */
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
 /** Estado del usuario: "active" | "pending" | "suspended" | "rejected" */
