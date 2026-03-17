@@ -6,10 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { KeyRound, Plus, Save, Loader2, Trash2 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { KeyRound, Plus, Save, Loader2, Trash2, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface AdminKey {
   id: string;
@@ -17,6 +21,7 @@ interface AdminKey {
   descripcion: string;
   texto: string;
   estado: string;
+  fecha: string | null;
   created_by: string;
   created_by_name: string;
   created_at: string;
@@ -35,6 +40,7 @@ export function AdminDatosAdmin() {
   const [descripcion, setDescripcion] = useState("");
   const [texto, setTexto] = useState("");
   const [estado, setEstado] = useState("valido");
+  const [fecha, setFecha] = useState<Date | undefined>(undefined);
 
   // Inline editing estado
   const [editingEstado, setEditingEstado] = useState<Record<string, string>>({});
@@ -73,6 +79,7 @@ export function AdminDatosAdmin() {
         descripcion: descripcion.trim(),
         texto: texto.trim(),
         estado,
+        fecha: fecha ? format(fecha, "yyyy-MM-dd") : null,
         created_by: user.id,
         created_by_name: profile?.displayName || user.email || "",
       } as any);
@@ -83,6 +90,7 @@ export function AdminDatosAdmin() {
       setDescripcion("");
       setTexto("");
       setEstado("valido");
+      setFecha(undefined);
       fetchKeys();
     } catch (err: any) {
       console.error(err);
@@ -116,11 +124,18 @@ export function AdminDatosAdmin() {
     }
   };
 
-  const formatDate = (iso: string) => {
+  const formatDateTime = (iso: string) => {
     if (!iso) return "-";
     return new Date(iso).toLocaleDateString("es-AR", {
       day: "2-digit", month: "2-digit", year: "numeric",
       hour: "2-digit", minute: "2-digit",
+    });
+  };
+
+  const formatDateOnly = (iso: string | null) => {
+    if (!iso) return "-";
+    return new Date(iso + "T00:00:00").toLocaleDateString("es-AR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
     });
   };
 
@@ -136,6 +151,8 @@ export function AdminDatosAdmin() {
         <h3 className="text-sm font-semibold flex items-center gap-1.5">
           <Plus className="w-4 h-4" /> Nuevo registro
         </h3>
+
+        {/* Row 1: Cuenta + Descripción */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Cuenta *</Label>
@@ -156,6 +173,8 @@ export function AdminDatosAdmin() {
             />
           </div>
         </div>
+
+        {/* Row 2: Texto */}
         <div className="space-y-1.5">
           <Label className="text-xs">Texto</Label>
           <Textarea
@@ -165,31 +184,63 @@ export function AdminDatosAdmin() {
             className="text-sm min-h-[80px]"
           />
         </div>
-        <div className="flex items-end gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Estado</Label>
-            <Select value={estado} onValueChange={setEstado}>
-              <SelectTrigger className="w-[140px] text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="valido">Válido</SelectItem>
-                <SelectItem value="caducado">Caducado</SelectItem>
-              </SelectContent>
-            </Select>
+
+        {/* Row 3: Estado + Fecha (left) | Admin + Guardar (right) */}
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex items-end gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Estado</Label>
+              <Select value={estado} onValueChange={setEstado}>
+                <SelectTrigger className="w-[140px] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="valido">Válido</SelectItem>
+                  <SelectItem value="caducado">Caducado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Fecha</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[160px] justify-start text-left text-sm font-normal",
+                      !fecha && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {fecha ? format(fecha, "dd/MM/yyyy") : "Seleccionar..."}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={fecha}
+                    onSelect={setFecha}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Admin</Label>
-            <Input
-              value={profile?.displayName || ""}
-              disabled
-              className="text-sm w-[180px] bg-muted"
-            />
+          <div className="flex items-end gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Admin</Label>
+              <Input
+                value={profile?.displayName || ""}
+                disabled
+                className="text-sm w-[180px] bg-muted"
+              />
+            </div>
+            <Button onClick={handleSave} disabled={saving || !cuenta.trim()} size="sm" className="gap-1.5">
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+              Guardar
+            </Button>
           </div>
-          <Button onClick={handleSave} disabled={saving || !cuenta.trim()} size="sm" className="gap-1.5">
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-            Guardar
-          </Button>
         </div>
       </div>
 
@@ -209,6 +260,7 @@ export function AdminDatosAdmin() {
                 <TableHead className="text-xs">Descripción</TableHead>
                 <TableHead className="text-xs">Texto</TableHead>
                 <TableHead className="text-xs">Estado</TableHead>
+                <TableHead className="text-xs">Fecha</TableHead>
                 <TableHead className="text-xs">Admin</TableHead>
                 <TableHead className="text-xs">Creado</TableHead>
                 <TableHead className="text-xs">Mod. Estado</TableHead>
@@ -248,9 +300,10 @@ export function AdminDatosAdmin() {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDateOnly(k.fecha)}</TableCell>
                   <TableCell className="text-xs">{k.created_by_name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(k.created_at)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(k.estado_updated_at)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDateTime(k.created_at)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDateTime(k.estado_updated_at)}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(k.id)}>
                       <Trash2 className="w-3.5 h-3.5 text-destructive" />

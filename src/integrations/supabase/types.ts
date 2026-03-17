@@ -23,6 +23,7 @@ export type Database = {
           descripcion: string
           estado: string
           estado_updated_at: string
+          fecha: string | null
           id: string
           texto: string
           updated_at: string
@@ -35,6 +36,7 @@ export type Database = {
           descripcion?: string
           estado?: string
           estado_updated_at?: string
+          fecha?: string | null
           id?: string
           texto?: string
           updated_at?: string
@@ -47,6 +49,7 @@ export type Database = {
           descripcion?: string
           estado?: string
           estado_updated_at?: string
+          fecha?: string | null
           id?: string
           texto?: string
           updated_at?: string
