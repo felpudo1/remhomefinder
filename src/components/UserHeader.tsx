@@ -73,7 +73,9 @@ export const UserHeader = ({
 
                 {/* Filtros de estado rápidos — solo desktop */}
                 <div className="hidden md:flex items-center gap-2">
-                    {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][]).map(
+                    {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][])
+                        .filter(([key]) => key !== "eliminado")
+                        .map(
                         ([key, cfg]) => (
                             <button
                                 key={key}

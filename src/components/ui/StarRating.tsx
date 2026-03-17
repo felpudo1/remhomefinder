@@ -100,7 +100,7 @@ export function StarRating({
 
             {/* Sección Promedio Familiar — siempre visible para ver si otros votaron */}
             <div className="space-y-1 border-t border-white/5 pt-1.5">
-                <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Promedio familiar</div>
+                <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Promedio</div>
                 <div className="flex items-center justify-between gap-2">
                     {renderFractionalStars(averageRating)}
                     <span className="text-[10px] font-bold text-white/90 tabular-nums flex items-center gap-1">

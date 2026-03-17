@@ -209,9 +209,8 @@ const Index = () => {
     if (activeGroupId) {
       result = result.filter((p) => p.groupId === activeGroupId);
     }
-    if (!selectedStatuses.includes("eliminado")) {
-      result = result.filter((p) => p.status !== "eliminado");
-    }
+    // Eliminación lógica visual: nunca mostrar estado eliminado en listados de usuario.
+    result = result.filter((p) => p.status !== "eliminado");
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(

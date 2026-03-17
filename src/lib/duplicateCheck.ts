@@ -99,16 +99,16 @@ export async function checkUrlStatus(
     .eq("id", prop.id)
     .single();
 
-  // Contar cuántos user_listings tienen esta property
-  const { count: listingsCount } = await supabase
-    .from("user_listings")
-    .select("id", { count: "exact", head: true })
-    .eq("property_id", prop.id);
+  // Contar cuántos usuarios (distintos) guardaron esta property en toda la app.
+  // Se usa RPC para evitar limitaciones de visibilidad por RLS entre organizaciones.
+  const { data: rpcUsersCount } = await supabase.rpc("count_property_listing_users", {
+    _property_id: prop.id,
+  });
 
   return {
     case: "in_app",
     firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
-    usersCount: listingsCount ?? 1,
+    usersCount: Math.max(typeof rpcUsersCount === "number" ? rpcUsersCount : 0, 1),
   };
 }
 

@@ -1094,6 +1094,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      count_property_listing_users: {
+        Args: { _property_id: string }
+        Returns: number
+      }
       find_org_by_invite_code: {
         Args: { _code: string }
         Returns: {

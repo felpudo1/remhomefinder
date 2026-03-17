@@ -59,6 +59,13 @@ export function ScraperInput({
     const isFamilyLocked = Boolean(urlInFamily);
     const isInAppLocked = Boolean(urlInApp);
     const isUrlActionsLocked = isFamilyLocked || isInAppLocked;
+    const formattedFirstAddedAt = urlInApp?.firstAddedAt
+        ? new Date(urlInApp.firstAddedAt).toLocaleDateString("es-UY", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        })
+        : "";
 
     if (step === "url") {
         return (
@@ -95,10 +102,27 @@ export function ScraperInput({
                         )}
                     </div>
                 ) : urlInApp ? (
-                    <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 space-y-3">
-                        <p className="text-sm text-blue-900 font-medium">
-                            Esta publicación ya existe en nuestra app, fue ingresada {formatDaysAgo ? formatDaysAgo(urlInApp.firstAddedAt) : ""} y {urlInApp.usersCount} usuario{urlInApp.usersCount !== 1 ? "s" : ""} la han ingresado en su listado.
-                        </p>
+                    <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 space-y-3 text-center">
+                        <div className="space-y-2 text-blue-900 text-center">
+                            <p className="text-sm font-semibold">
+                                <strong className="text-2xl md:text-3xl leading-tight block">
+                                    💪🔥 ESTA PUBLICACIÓN
+                                    <br />
+                                    YA ESTÁ EN PUJA 🔥💪
+                                </strong>
+                            </p>
+                            <p className="text-base font-bold">
+                                INGRESADA EL DÍA: <span className="text-lg">{formattedFirstAddedAt}</span>
+                            </p>
+                            <p className="text-base font-bold">
+                                <span className="text-lg">
+                                    {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""} YA LO GUARDARON EN SU{urlInApp.usersCount !== 1 ? "S" : ""} LISTADO{urlInApp.usersCount !== 1 ? "S" : ""}
+                                </span>
+                            </p>
+                            <p className="text-sm font-semibold">
+                                🔥🔥🔥CONTACTATE YA🔥🔥🔥
+                            </p>
+                        </div>
                         {onAddExistingFromApp && (
                             <Button
                                 variant="outline"

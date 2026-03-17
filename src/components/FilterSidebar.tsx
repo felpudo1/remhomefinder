@@ -100,7 +100,7 @@ export function FilterSidebar({
         </p>
         <div className="space-y-1.5">
           {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][])
-            .filter(([key]) => key !== "visitado" && key !== "a_analizar")
+            .filter(([key]) => key !== "visitado" && key !== "a_analizar" && key !== "eliminado")
             .map(([key, cfg]) => {
               const isSelected = selectedStatuses.includes(key);
               return (
