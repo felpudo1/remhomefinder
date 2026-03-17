@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
   Building2, Users, Bot, BarChart3,
-  Settings, FileText
+  Settings, FileText, KeyRound
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
