@@ -529,6 +529,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setUrlDuplicated(false);
     setUrlAddedByName(null);
     setUrlInFamily(null);
+    setUrlInApp(null);
     setUrlInAppMsg(null);
     setListingType("rent");
     setStep("url");
