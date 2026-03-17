@@ -550,30 +550,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     onClose();
   };
 
-  /** Confirmar agregar propiedad que ya existe en la app (Caso 2) */
-  const handleConfirmInApp = () => {
-    if (!inAppDialogData?.existingProp) return;
-    const existing = inAppDialogData.existingProp;
-    setScrapedImages(existing.images || []);
-    setForm({
-      title: existing.title || "",
-      priceRent: String(existing.price_amount ?? ""),
-      priceExpenses: String(existing.price_expenses ?? ""),
-      currency: existing.currency || "USD",
-      neighborhood: existing.neighborhood || "",
-      city: existing.city || "",
-      sqMeters: String(existing.m2_total ?? ""),
-      rooms: String(existing.rooms ?? ""),
-      aiSummary: existing.details || "",
-      ref: existing.ref || "",
-      details: existing.details || "",
-    });
-    setStep("manual");
-    setUrlDuplicated(false);
-    setUrlInAppMsg(inAppDialogData.message);
-    setInAppDialogData(null);
-    toast.success("Revisá los datos y agregalo a tu familia.");
-  };
 
   const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated && !urlInFamily;
 
