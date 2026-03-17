@@ -267,6 +267,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     if (!url.trim()) return;
     setIsLoading(true);
     setUrlInFamily(null);
+    setUrlInApp(null);
     setUrlInAppMsg(null);
     try {
       const orgId = selectedGroupId || null;
