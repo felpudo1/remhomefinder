@@ -297,6 +297,34 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     }
   };
 
+  const handlePrivateFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `organizations/${orgId}/private-${safeUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("property-images").upload(path, file);
+        if (error) { console.error("Upload error:", error); continue; }
+        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
+        uploaded.push(urlData.publicUrl);
+      }
+      if (uploaded.length > 0) {
+        setPrivateImages(prev => [...prev, ...uploaded]);
+        sonnerToast.success(`${uploaded.length} foto(s) privada(s) agregada(s)`);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      sonnerToast.error("Error al subir fotos");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const checkDuplicateUrl = async (urlToCheck: string) => {
     if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     try {
