@@ -24,6 +24,7 @@ export interface ScraperInputProps {
     handleAnalyzeImage: () => void;
     setCameFromImage: (v: boolean) => void;
     urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
+    urlInApp?: { firstAddedAt: string; usersCount: number } | null;
     onOpenExisting?: (userListingId: string) => void;
     formatDaysAgo?: (isoDate: string) => string;
 }
