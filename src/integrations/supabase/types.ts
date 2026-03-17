@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string
+          cuenta: string
+          descripcion: string
+          estado: string
+          estado_updated_at: string
+          id: string
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name?: string
+          cuenta?: string
+          descripcion?: string
+          estado?: string
+          estado_updated_at?: string
+          id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          cuenta?: string
+          descripcion?: string
+          estado?: string
+          estado_updated_at?: string
+          id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       agency_comments: {
         Row: {
           agent_pub_id: string

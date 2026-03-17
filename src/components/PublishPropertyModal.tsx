@@ -429,6 +429,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           <PropertyFormManual
             form={form} setForm={setForm} listingType={listingType} setListingType={setListingType}
             cameFromImage={cameFromImage} scrapedImages={scrapedImages} setScrapedImages={setScrapedImages}
+            privateImages={privateImages} setPrivateImages={setPrivateImages}
+            privateFileInputRef={privateFileInputRef} handlePrivateFileUpload={handlePrivateFileUpload}
             manualImageUrl={manualImageUrl} setManualImageUrl={setManualImageUrl} fileInputRef={fileInputRef}
             handleFileUpload={handleFileUpload} isUploading={isUploading} url={url} setUrl={setUrl}
             urlDuplicated={urlDuplicated} setUrlDuplicated={setUrlDuplicated} checkDuplicateUrl={checkDuplicateUrl}
