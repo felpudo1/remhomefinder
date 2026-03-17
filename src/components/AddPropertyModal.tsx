@@ -296,11 +296,13 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       }
 
       if (result.case === "in_app") {
-        const existing = await getExistingPropertyByUrl(url.trim());
-        if (existing) {
-          const msg = `Esta publicación ya existe en nuestra app, fue ingresada ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} la han marcado como favorita.`;
-          setInAppDialogData({ message: msg, existingProp: existing });
-        }
+        setUrlInFamily({
+          addedByName: result.addedByName,
+          addedAt: result.firstAddedAt,
+          status: "Ingresado",
+          userListingId: "",
+        });
+        setUrlDuplicated(true);
         setIsLoading(false);
         return;
       }
