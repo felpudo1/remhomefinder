@@ -284,13 +284,10 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       }
 
       if (result.case === "in_app") {
-        setUrlInFamily({
-          addedByName: result.addedByName,
-          addedAt: result.firstAddedAt,
-          status: "Ingresado",
-          userListingId: "",
+        setUrlInApp({
+          firstAddedAt: result.firstAddedAt,
+          usersCount: result.usersCount,
         });
-        setUrlDuplicated(true);
         setIsLoading(false);
         return;
       }
