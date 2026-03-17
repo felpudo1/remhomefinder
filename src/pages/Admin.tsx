@@ -21,9 +21,9 @@ import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin"];
 
 const MENU_ITEMS: {
   id: AdminSection;
