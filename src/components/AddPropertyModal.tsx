@@ -98,6 +98,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
   /** Caso 2: existe en app - mensaje informativo */
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
+  /** Estado para el AlertDialog de "in_app" */
+  const [inAppDialogData, setInAppDialogData] = useState<{ message: string; existingProp: any } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
   // Ref para el input oculto de análisis de screenshots
