@@ -22,7 +22,6 @@ export type InAppResult = {
   case: "in_app";
   firstAddedAt: string;
   usersCount: number;
-  addedByName: string;
 };
 
 export type UrlCheckResult =
