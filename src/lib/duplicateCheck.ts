@@ -94,18 +94,30 @@ export async function checkUrlStatus(
   }
 
   // Caso 2: existe en la app, no en nuestra org.
-  // Nota: no podemos consultar user_listings de otras orgs (RLS lo impide),
-  // así que usamos los datos de la tabla properties (visible para todos los auth users).
   const { data: propMeta } = await supabase
     .from("properties")
-    .select("created_at")
+    .select("created_at, created_by")
     .eq("id", prop.id)
     .single();
+
+  let addedByName = "Otro usuario";
+  if (propMeta?.created_by) {
+    const { data: creatorProfile } = await supabase
+      .from("profiles")
+      .select("display_name, email")
+      .eq("user_id", propMeta.created_by)
+      .maybeSingle();
+    addedByName =
+      (creatorProfile?.display_name?.trim() && creatorProfile.display_name) ||
+      creatorProfile?.email ||
+      "Otro usuario";
+  }
 
   return {
     case: "in_app",
     firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
-    usersCount: 1, // mínimo conocido; no podemos contar listings de otras orgs por RLS
+    usersCount: 1,
+    addedByName,
   };
 }
 
