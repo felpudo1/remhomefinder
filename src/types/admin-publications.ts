@@ -26,6 +26,8 @@ export interface UserProperty {
     created_at: string;
     admin_hidden: boolean;
     property_id?: string;
+    /** Referencia de la propiedad (ej: REF-12345) */
+    ref?: string;
 }
 
 export interface MktProperty {
@@ -36,6 +38,12 @@ export interface MktProperty {
     listing_type: "rent" | "sale";
     created_at: string;
     orgName?: string;
+    /** Nombre del miembro de la agencia que ingresó la publicación */
+    publishedByName?: string;
+    /** Referencia de la publicación (ej: REF-12345) */
+    ref?: string;
+    /** ID de la property en la tabla properties (para borrar huérfanas) */
+    property_id?: string;
 }
 
 /**

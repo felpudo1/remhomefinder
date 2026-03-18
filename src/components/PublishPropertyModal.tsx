@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeUrl, getExistingPropertyByUrl } from "@/lib/duplicateCheck";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -113,15 +114,26 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!url.trim()) return;
     setIsLoading(true);
     try {
-      // Check duplicate by source_url in properties
-      const { data: existing } = await supabase
-        .from("properties")
-        .select("id")
-        .eq("source_url", url.trim())
-        .limit(1);
-
-      if (existing && existing.length > 0) {
-        sonnerToast.error("Esta propiedad ya está registrada.");
+      // Si la URL ya existe en properties (ej. ingresada por una familia), reutilizarla
+      const existing = await getExistingPropertyByUrl(url);
+      if (existing) {
+        setScrapedImages((existing.images as string[]) || []);
+        setForm({
+          title: existing.title || "",
+          priceRent: String(existing.price_amount ?? ""),
+          priceExpenses: String(existing.price_expenses ?? ""),
+          currency: (existing.currency as string) || "UYU",
+          neighborhood: existing.neighborhood || "",
+          city: existing.city || "",
+          sqMeters: String(existing.m2_total ?? ""),
+          rooms: String(existing.rooms ?? ""),
+          aiSummary: existing.details || "",
+          ref: existing.ref || "",
+          details: existing.details || "",
+        });
+        setUrlDuplicated(true);
+        setStep("manual");
+        sonnerToast.info("Esta propiedad ya existe en el sistema. Podés publicarla en tu marketplace.");
         setIsLoading(false);
         return;
       }
@@ -328,8 +340,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const checkDuplicateUrl = async (urlToCheck: string) => {
     if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     try {
-      const { data } = await supabase.from("properties").select("id").eq("source_url", urlToCheck.trim()).limit(1);
-      setUrlDuplicated(!!(data && data.length > 0));
+      const existing = await getExistingPropertyByUrl(urlToCheck);
+      setUrlDuplicated(!!existing);
     } catch { setUrlDuplicated(false); }
   };
 
@@ -357,34 +369,67 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         if (error) throw error;
         toast({ title: "Actualizada", description: "La publicación fue actualizada correctamente." });
       } else {
-        // Insert: properties + agent_publications
-        const { data: prop, error: propError } = await supabase
-          .from("properties")
-          .insert({
-            source_url: url.trim() || null,
-            title: form.title.trim(),
-            price_amount: priceRent,
-            price_expenses: priceExpenses,
-            total_cost: priceRent + priceExpenses,
-            currency: form.currency as CurrencyCode,
-            neighborhood: form.neighborhood.trim(),
-            city: form.city.trim(),
-            m2_total: Number(form.sqMeters) || 0,
-            rooms: Number(form.rooms) || 1,
-            images: scrapedImages,
-            created_by: user.id,
-            ref: form.ref || "",
-            details: form.aiSummary || form.details || "",
-          })
-          .select()
-          .single();
+        // Insert: reutilizar property existente si la URL ya existe, sino crear nueva
+        let propertyId: string;
+        const normalizedUrl = url.trim() ? normalizeUrl(url.trim()) : null;
 
-        if (propError) throw propError;
+        if (normalizedUrl) {
+          const existing = await getExistingPropertyByUrl(url);
+          if (existing) {
+            propertyId = existing.id;
+          } else {
+            const { data: prop, error: propError } = await supabase
+              .from("properties")
+              .insert({
+                source_url: normalizedUrl,
+                title: form.title.trim(),
+                price_amount: priceRent,
+                price_expenses: priceExpenses,
+                total_cost: priceRent + priceExpenses,
+                currency: form.currency as CurrencyCode,
+                neighborhood: form.neighborhood.trim(),
+                city: form.city.trim(),
+                m2_total: Number(form.sqMeters) || 0,
+                rooms: Number(form.rooms) || 1,
+                images: scrapedImages,
+                created_by: user.id,
+                ref: form.ref || "",
+                details: form.aiSummary || form.details || "",
+              })
+              .select()
+              .single();
+            if (propError) throw propError;
+            propertyId = prop.id;
+          }
+        } else {
+          const { data: prop, error: propError } = await supabase
+            .from("properties")
+            .insert({
+              source_url: null,
+              title: form.title.trim(),
+              price_amount: priceRent,
+              price_expenses: priceExpenses,
+              total_cost: priceRent + priceExpenses,
+              currency: form.currency as CurrencyCode,
+              neighborhood: form.neighborhood.trim(),
+              city: form.city.trim(),
+              m2_total: Number(form.sqMeters) || 0,
+              rooms: Number(form.rooms) || 1,
+              images: scrapedImages,
+              created_by: user.id,
+              ref: form.ref || "",
+              details: form.aiSummary || form.details || "",
+            })
+            .select()
+            .single();
+          if (propError) throw propError;
+          propertyId = prop.id;
+        }
 
         const { error: pubError } = await supabase
           .from("agent_publications")
           .insert({
-            property_id: prop.id,
+            property_id: propertyId,
             org_id: orgId,
             listing_type: listingType as DbListingType,
             description: form.aiSummary || form.details || "",
@@ -406,7 +451,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
 
   const handleClose = () => { onClose(); };
 
-  const isFormValid = form.title && form.neighborhood && form.priceRent && !urlDuplicated;
+  const isFormValid = form.title && form.neighborhood && form.priceRent;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

@@ -43,7 +43,7 @@ export function AdminPublicaciones({ toast }: Props) {
     try {
       const { data, error } = await supabase
         .from("user_listings")
-        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, property_id, added_by, properties(id, title, source_url)")
+        .select("id, current_status, listing_type, created_at, org_id, source_publication_id, admin_hidden, property_id, added_by, properties(id, title, source_url, ref)")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -72,6 +72,7 @@ export function AdminPublicaciones({ toast }: Props) {
           created_at: d.created_at,
           admin_hidden: d.admin_hidden ?? false,
           property_id: d.property_id,
+          ref: d.properties?.ref || "",
         })));
       }
     } catch (e: unknown) {
@@ -85,21 +86,44 @@ export function AdminPublicaciones({ toast }: Props) {
     try {
       const { data, error } = await supabase
         .from("agent_publications")
-        .select("id, status, listing_type, created_at, description, views_count, properties(title, source_url), organizations(name)")
+        .select("id, property_id, status, listing_type, created_at, description, views_count, published_by, properties(title, source_url, ref), organizations(name)")
         .order("created_at", { ascending: false });
 
       if (error) {
         toast({ title: "Error al cargar publicaciones del marketplace", description: error.message, variant: "destructive" });
       } else {
+        /** Mapea agent_pub_status (DB) a MarketplaceStatus (UI) para que el Select muestre el valor correcto */
+        const dbToUiStatus: Record<string, MarketplaceStatus> = {
+          disponible: "active",
+          pausado: "paused",
+          reservado: "reserved",
+          vendido: "sold",
+          alquilado: "rented",
+          eliminado: "deleted",
+        };
+        const publisherIds = [...new Set((data || []).map((d: { published_by?: string }) => d.published_by).filter(Boolean))];
+        let publishedByMap: Record<string, string> = {};
+        if (publisherIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, email")
+            .in("user_id", publisherIds);
+          profilesData?.forEach((pr) => {
+            publishedByMap[pr.user_id] = pr.display_name || pr.email || "Agente";
+          });
+        }
         setMktProps(
           (data || []).map((p: any) => ({
             id: p.id,
             title: p.properties?.title || "Sin título",
             url: p.properties?.source_url || "",
-            status: p.status as MarketplaceStatus,
+            status: dbToUiStatus[p.status] ?? (p.status as MarketplaceStatus),
             listing_type: p.listing_type,
             created_at: p.created_at,
             orgName: p.organizations?.name || "Organización",
+            publishedByName: p.published_by ? publishedByMap[p.published_by] || "—" : "—",
+            ref: p.properties?.ref || "",
+            property_id: p.property_id,
           }))
         );
       }
@@ -247,11 +271,29 @@ export function AdminPublicaciones({ toast }: Props) {
       return; // No borrar si falla el log
     }
 
+    const propertyId = deleteMktTarget.property_id;
+
     const { error } = await supabase.from("agent_publications").delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
       fetchMktProperties();
     } else {
+      // Borrar la property huérfana si ya no tiene más referencias (igual que en deleteUserProperty)
+      if (propertyId) {
+        const { count: listingsCount } = await supabase
+          .from("user_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("property_id", propertyId);
+
+        const { count: pubsCount } = await supabase
+          .from("agent_publications")
+          .select("id", { count: "exact", head: true })
+          .eq("property_id", propertyId);
+
+        if ((listingsCount ?? 0) === 0 && (pubsCount ?? 0) === 0) {
+          await supabase.from("properties").delete().eq("id", propertyId);
+        }
+      }
       toast({ title: "Publicación eliminada del marketplace" });
     }
   };

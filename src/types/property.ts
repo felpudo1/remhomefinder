@@ -90,6 +90,8 @@ export interface MarketplaceProperty {
   updatedAt: Date;
   /** Referencia de la publicación (ej: REF-12345) */
   ref?: string;
+  /** Nombre del miembro de la agencia que ingresó la publicación */
+  publishedByName?: string;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {

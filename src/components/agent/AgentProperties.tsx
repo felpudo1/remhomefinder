@@ -66,13 +66,26 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 .order("created_at", { ascending: false });
             if (error) throw error;
             if (!data) return [];
+
+            const publisherIds = [...new Set((data || []).map((d: { published_by?: string }) => d.published_by).filter(Boolean))];
+            let publishedByMap: Record<string, string> = {};
+            if (publisherIds.length > 0) {
+                const { data: profilesData } = await supabase
+                    .from("profiles")
+                    .select("user_id, display_name, email")
+                    .in("user_id", publisherIds);
+                profilesData?.forEach((pr) => {
+                    publishedByMap[pr.user_id] = pr.display_name || pr.email || "Agente";
+                });
+            }
+
             return data.map((pub: any): MarketplaceProperty => {
                 const p = pub.properties || {};
                 return {
                     id: pub.id,
                     orgId: pub.org_id,
                     orgName: pub.organizations?.name || agency.name,
-                    agentId: agency.created_by,
+                    agentId: pub.published_by || agency.created_by,
                     title: p.title || "",
                     description: pub.description || "",
                     url: p.source_url || "",
@@ -90,6 +103,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     createdAt: new Date(pub.created_at),
                     updatedAt: new Date(pub.updated_at),
                     ref: p.ref || "",
+                    publishedByName: pub.published_by ? publishedByMap[pub.published_by] : undefined,
                 };
             });
         },
@@ -174,6 +188,11 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                 refText={p.ref ?? ""}
                                 onClick={() => { setSelectedProperty(p); setIsDetailOpen(true); }}
                                 onImageClick={(index) => { setGalleryImages(p.images); setGalleryIndex(index); setIsGalleryOpen(true); }}
+                                topOverlay={p.publishedByName ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-md">
+                                        Ingresado por {p.publishedByName}
+                                    </span>
+                                ) : undefined}
                                 statusOverlay={
                                     <Badge variant="outline" className={`text-xs font-bold border-none ${
                                         p.status === 'disponible' ? 'bg-green-500/90 text-white' :
