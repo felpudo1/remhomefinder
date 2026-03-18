@@ -27,7 +27,7 @@ interface GroupsModalProps {
 }
 
 export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false, isOwner = true, canManageTeams = true }: GroupsModalProps) {
-  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember, toggleMemberActive } = useGroups();
+  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<string>("groups");
@@ -239,16 +239,9 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                       {isOwner && m.user_id !== currentUserId && isAgencyTeamDetail && (
                         <Switch
                           checked={m.is_active !== false}
-                          onCheckedChange={async (checked) => {
-                            try {
-                              await toggleMemberActive(m.id, checked);
-                              const updated = await fetchMembers(detailGroup.id);
-                              setMembers(updated);
-                            } catch (e: unknown) {
-                              toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
-                            }
-                          }}
+                          disabled
                           className="scale-75"
+                          aria-readonly="true"
                         />
                       )}
                       {isOwner && m.user_id !== currentUserId && (
