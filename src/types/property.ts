@@ -69,6 +69,8 @@ export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved
 
 export interface MarketplaceProperty {
   id: string;
+  /** UUID real de la tabla properties asociada a la publicación */
+  propertyId?: string;
   orgId: string;
   orgName: string;
   agentId: string;

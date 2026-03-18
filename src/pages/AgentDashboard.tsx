@@ -151,7 +151,7 @@ const AgentDashboard = () => {
         showFormarEquipo={showFormarEquipo}
       />
 
-      <main className="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
+      <main className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
         {agency ? (
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">

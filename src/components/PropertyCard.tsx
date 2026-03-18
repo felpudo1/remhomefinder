@@ -152,6 +152,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           setGalleryInitialImg(index);
           setIsGalleryOpen(true);
         }}
+        collapsibleImages
         className={isEliminated || isDiscarded || isAgentDeleted ? "opacity-60" : ""}
         statusOverlay={
           mktOverlay ? (

@@ -23,6 +23,7 @@ export function useMarketplaceProperties() {
         const p = pub.properties || {};
         return {
           id: pub.id,
+          propertyId: pub.property_id,
           orgId: pub.org_id,
           orgName: pub.organizations?.name || "Organización",
           agentId: pub.organizations?.created_by || "",

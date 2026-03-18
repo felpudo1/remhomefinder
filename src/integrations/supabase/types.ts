@@ -1115,7 +1115,7 @@ export type Database = {
         Returns: boolean
       }
       increment_property_views: {
-        Args: { p_is_publication?: boolean; p_property_id: string }
+        Args: { p_property_id: string; p_publication_id?: string | null }
         Returns: undefined
       }
       is_org_member: {

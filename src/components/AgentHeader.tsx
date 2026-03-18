@@ -49,7 +49,7 @@ export const AgentHeader = ({
 
     return (
         <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
-            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                     <div className="w-7 h-7 md:w-8 md:h-8 bg-primary rounded-xl flex items-center justify-center shrink-0">
                         <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
@@ -74,12 +74,12 @@ export const AgentHeader = ({
                             variant={activeGroupId ? "default" : "outline"}
                             size="sm"
                             disabled={agencyStatus !== "approved"}
-                            className="h-10 px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
+                            className="h-10 px-3 md:px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
                             onClick={() => setIsGroupsOpen(true)}
                             title={agencyStatus === "approved" ? (isOwner ? "Formar equipo / Mis grupos" : "Unirme con código") : "Cuenta pendiente de activación"}
                         >
                             <Users className="w-4 h-4" />
-                            <span>Formar equipo</span>
+                            <span className="hidden md:inline">Formar equipo</span>
                         </Button>
                     )}
                     <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-muted-foreground ml-1">
@@ -90,7 +90,7 @@ export const AgentHeader = ({
             </div>
 
             {agencyStatus === "approved" && (
-                <div className="max-w-5xl mx-auto px-4 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                <div className="max-w-7xl mx-auto px-4 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
                     <nav className="flex gap-0 min-w-max border-t border-border/50 mt-1">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;

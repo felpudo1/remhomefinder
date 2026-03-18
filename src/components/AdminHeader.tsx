@@ -36,7 +36,7 @@ export const AdminHeader = ({
 
     return (
         <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
-            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                     <Button variant="ghost" size="icon" onClick={onGoBack} className="shrink-0 -ml-2">
                         <ArrowLeft className="w-5 h-5" />
@@ -64,7 +64,7 @@ export const AdminHeader = ({
             </div>
 
             {/* Pestañas superiores — scroll horizontal en mobile */}
-            <div className="max-w-5xl mx-auto px-4 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            <div className="max-w-7xl mx-auto px-4 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
                 <nav className="flex gap-0 min-w-max border-t border-border/50">
                     {menuItems.map((item) => {
                         const Icon = item.icon;

@@ -25,6 +25,8 @@ export interface ScraperInputProps {
     setCameFromImage: (v: boolean) => void;
     urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
     urlInApp?: { firstAddedAt: string; usersCount: number } | null;
+    /** Si true, muestra texto específico para agentes en el bloque urlInApp */
+    isAgent?: boolean;
     onOpenExisting?: (userListingId: string) => void;
     onAddExistingFromApp?: () => void;
     isAddingExistingFromApp?: boolean;
@@ -51,6 +53,7 @@ export function ScraperInput({
     setCameFromImage,
     urlInFamily,
     urlInApp,
+    isAgent = false,
     onOpenExisting,
     onAddExistingFromApp,
     isAddingExistingFromApp = false,
@@ -104,24 +107,39 @@ export function ScraperInput({
                 ) : urlInApp ? (
                     <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 space-y-3 text-center">
                         <div className="space-y-2 text-blue-900 text-center">
-                            <p className="text-sm font-semibold">
-                                <strong className="text-2xl md:text-3xl leading-tight block">
-                                    💪🔥 ESTA PUBLICACIÓN
-                                    <br />
-                                    YA ESTÁ EN PUJA 🔥💪
-                                </strong>
-                            </p>
-                            <p className="text-base font-bold">
-                                INGRESADA EL DÍA: <span className="text-lg">{formattedFirstAddedAt}</span>
-                            </p>
-                            <p className="text-base font-bold">
-                                <span className="text-lg">
-                                    {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""} YA LO GUARDARON EN SU{urlInApp.usersCount !== 1 ? "S" : ""} LISTADO{urlInApp.usersCount !== 1 ? "S" : ""}
-                                </span>
-                            </p>
-                            <p className="text-sm font-semibold">
-                                🔥🔥🔥CONTACTATE YA🔥🔥🔥
-                            </p>
+                            {isAgent ? (
+                                <>
+                                    <p className="text-sm font-semibold">
+                                        <strong className="text-2xl md:text-3xl leading-tight block">
+                                            ESTA PUBLICACIÓN YA FUE INGRESADA ANTERIORMENTE POR {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""}
+                                        </strong>
+                                    </p>
+                                    <p className="text-base font-medium">
+                                        En el panel de control tiene toda la información. Igual debe ingresarlo en el market para publicarlo.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm font-semibold">
+                                        <strong className="text-2xl md:text-3xl leading-tight block">
+                                            💪🔥 ESTA PUBLICACIÓN
+                                            <br />
+                                            YA ESTÁ EN PUJA 🔥💪
+                                        </strong>
+                                    </p>
+                                    <p className="text-base font-bold">
+                                        INGRESADA EL DÍA: <span className="text-lg">{formattedFirstAddedAt}</span>
+                                    </p>
+                                    <p className="text-base font-bold">
+                                        <span className="text-lg">
+                                            {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""} YA LO GUARDARON EN SU{urlInApp.usersCount !== 1 ? "S" : ""} LISTADO{urlInApp.usersCount !== 1 ? "S" : ""}
+                                        </span>
+                                    </p>
+                                    <p className="text-sm font-semibold">
+                                        🔥🔥🔥CONTACTATE YA🔥🔥🔥
+                                    </p>
+                                </>
+                            )}
                         </div>
                         {onAddExistingFromApp && (
                             <Button
@@ -133,6 +151,8 @@ export function ScraperInput({
                             >
                                 {isAddingExistingFromApp ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" />Agregando...</>
+                                ) : isAgent ? (
+                                    <><ExternalLink className="w-4 h-4" />Publicar en mi marketplace</>
                                 ) : (
                                     <><ExternalLink className="w-4 h-4" />Para ingresarlo hace click aca</>
                                 )}

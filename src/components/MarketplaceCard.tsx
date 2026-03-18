@@ -54,6 +54,7 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
           setCurrentImgIndex(index);
           setIsGalleryOpen(true);
         }}
+        collapsibleImages
         topOverlay={
           <div className="flex flex-col gap-1.5 items-start">
             {isReferred && (

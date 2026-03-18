@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MarketplaceProperty } from "@/types/property";
+import { supabase } from "@/integrations/supabase/client";
 import {
     Dialog,
     DialogContent,
@@ -51,6 +52,31 @@ export function MarketplacePropertyDetailModal({
 
     const bridgeProperty = userProperties.find(p => p.sourceMarketplaceId === property?.id);
     const currentGroupId = bridgeProperty?.groupId || "none";
+
+    useEffect(() => {
+        if (!open || !property?.id || !property?.propertyId) return;
+
+        const incrementViews = async () => {
+            try {
+                const today = new Date().toISOString().split("T")[0];
+                const storageKey = `viewed_marketplace_${property.id}`;
+                const lastViewed = localStorage.getItem(storageKey);
+
+                if (lastViewed === today) return;
+
+                await supabase.rpc("increment_property_views", {
+                    p_property_id: property.propertyId,
+                    p_publication_id: property.id,
+                });
+
+                localStorage.setItem(storageKey, today);
+            } catch (error) {
+                console.error("Error al incrementar vistas del marketplace:", error);
+            }
+        };
+
+        incrementViews();
+    }, [open, property?.id, property?.propertyId]);
 
     const handleGroupChange = async (groupId: string) => {
         if (!property) return;

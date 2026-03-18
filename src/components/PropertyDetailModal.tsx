@@ -89,13 +89,16 @@ export function PropertyDetailModal({
             return;
           }
 
-          // Si NO tiene sourceMarketplaceId, es un aviso original del marketplace.
-          const isMarketplace = !property.sourceMarketplaceId;
+          // Usamos el UUID real de properties para el log de vistas.
+          // Si este listing viene del marketplace, también mandamos publication_id
+          // para incrementar el contador de agent_publications.
+          const realPropertyId = property.propertyId || property.id;
+          const publicationId = property.sourceMarketplaceId || null;
 
           // Llamamos a la función mágica de Supabase (RPC) que sabe sumar +1 salteándose bloqueos
           await supabase.rpc('increment_property_views', {
-            p_property_id: property.id,
-            p_is_marketplace: isMarketplace
+            p_property_id: realPropertyId,
+            p_publication_id: publicationId
           });
 
           // Guardamos "Visto con éxito" para que no vuelva a sumar hasta mañana
@@ -107,7 +110,7 @@ export function PropertyDetailModal({
       };
       incrementViews();
     }
-  }, [open, property?.id, property?.sourceMarketplaceId]);
+  }, [open, property?.id, property?.propertyId, property?.sourceMarketplaceId]);
 
   /**
    * Marca comentarios como leídos al abrir el detalle.

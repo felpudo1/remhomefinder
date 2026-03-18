@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeUrl, getExistingPropertyByUrl } from "@/lib/duplicateCheck";
+import { normalizeUrl, getExistingPropertyByUrl, checkUrlStatus } from "@/lib/duplicateCheck";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -44,6 +44,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [urlDuplicated, setUrlDuplicated] = useState(false);
+  const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
+  const [isAddingExistingFromApp, setIsAddingExistingFromApp] = useState(false);
   const [cameFromImage, setCameFromImage] = useState(false);
 
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -98,6 +100,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         setListingType("rent");
         setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", city: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
         setCameFromImage(false);
+        setUrlInApp(null);
         setScreenshotFile(null);
         setScreenshotPreview(null);
       }
@@ -113,8 +116,20 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const handleScrape = async () => {
     if (!url.trim()) return;
     setIsLoading(true);
+    setUrlInApp(null);
     try {
-      // Si la URL ya existe en properties (ej. ingresada por una familia), reutilizarla
+      // Si la URL ya existe (ingresada por usuarios), mostrar banner y permitir publicar en marketplace
+      const urlStatus = await checkUrlStatus(url.trim(), orgId);
+      if (urlStatus.case === "in_app") {
+        setUrlInApp({
+          firstAddedAt: urlStatus.firstAddedAt,
+          usersCount: urlStatus.usersCount,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Si existe en properties pero no en user_listings (ej. solo agent_publications), reutilizar
       const existing = await getExistingPropertyByUrl(url);
       if (existing) {
         setScrapedImages((existing.images as string[]) || []);
@@ -337,6 +352,42 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     }
   };
 
+  const handleAddExistingFromApp = async () => {
+    if (!url.trim()) return;
+    setIsAddingExistingFromApp(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No autenticado");
+
+      const existing = await getExistingPropertyByUrl(url);
+      if (!existing) {
+        sonnerToast.error("No se encontró la propiedad");
+        return;
+      }
+
+      const { error: pubError } = await supabase
+        .from("agent_publications")
+        .insert({
+          property_id: existing.id,
+          org_id: orgId,
+          listing_type: "rent" as DbListingType,
+          description: existing.details || "",
+          published_by: user.id,
+        });
+
+      if (pubError) throw pubError;
+
+      setUrlInApp(null);
+      toast({ title: "Publicada", description: "La propiedad fue publicada en el marketplace." });
+      handleClose();
+      onPublished();
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo publicar", variant: "destructive" });
+    } finally {
+      setIsAddingExistingFromApp(false);
+    }
+  };
+
   const checkDuplicateUrl = async (urlToCheck: string) => {
     if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     try {
@@ -463,11 +514,15 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         </DialogHeader>
 
         <ScraperInput
-          step={step} url={url} setUrl={setUrl} isLoading={isLoading} isAnalyzingUnified={isAnalyzingUnified}
+          step={step} url={url} setUrl={(v) => { setUrl(v); setUrlInApp(null); }} isLoading={isLoading} isAnalyzingUnified={isAnalyzingUnified}
           handleScrape={handleScrape} unifiedImageRef={unifiedImageRef} handleUnifiedImageAnalysis={handleUnifiedImageAnalysis}
           setStep={setStep} screenshotInputRef={screenshotInputRef} screenshotFile={screenshotFile} screenshotPreview={screenshotPreview}
           handleScreenshotSelect={handleScreenshotSelect} setScreenshotFile={setScreenshotFile} setScreenshotPreview={setScreenshotPreview}
           handleAnalyzeImage={handleAnalyzeImage} setCameFromImage={setCameFromImage}
+          urlInApp={urlInApp}
+          isAgent={true}
+          onAddExistingFromApp={handleAddExistingFromApp}
+          isAddingExistingFromApp={isAddingExistingFromApp}
         />
 
         {step === "manual" && (

@@ -98,7 +98,7 @@ const Admin = () => {
       />
 
       {/* Contenido principal */}
-      <main className="max-w-5xl mx-auto w-full px-4 py-6 flex-1">
+      <main className="max-w-7xl mx-auto w-full px-4 py-6 flex-1">
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">{activeItem?.description}</p>
         </div>
