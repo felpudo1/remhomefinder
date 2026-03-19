@@ -783,6 +783,53 @@ export type Database = {
         }
         Relationships: []
       }
+      scrape_usage_log: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          role: string
+          scraper: string
+          source_url: string | null
+          success: boolean
+          token_charged: boolean
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          role?: string
+          scraper: string
+          source_url?: string | null
+          success?: boolean
+          token_charged?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          role?: string
+          scraper?: string
+          source_url?: string | null
+          success?: boolean
+          token_charged?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_usage_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       status_history_log: {
         Row: {
           changed_by: string
@@ -875,6 +922,42 @@ export type Database = {
           },
           {
             foreignKeyName: "user_listing_attachments_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_listing_comment_reads: {
+        Row: {
+          last_read_at: string
+          updated_at: string
+          user_id: string
+          user_listing_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          updated_at?: string
+          user_id: string
+          user_listing_id: string
+        }
+        Update: {
+          last_read_at?: string
+          updated_at?: string
+          user_id?: string
+          user_listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_listing_comment_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_listing_comment_reads_user_listing_id_fkey"
             columns: ["user_listing_id"]
             isOneToOne: false
             referencedRelation: "user_listings"
@@ -995,6 +1078,29 @@ export type Database = {
       }
     }
     Views: {
+      admin_scrape_usage_by_user: {
+        Row: {
+          last_scrape_at: string | null
+          total_failed: number | null
+          total_image_scrapes: number | null
+          total_scrapes: number | null
+          total_success: number | null
+          total_token_charged: number | null
+          total_url_scrapes: number | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_usage_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       agent_deserter_insights: {
         Row: {
           agency_org_id: string | null
@@ -1121,10 +1227,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_property_views: {
-        Args: { p_property_id: string; p_publication_id?: string | null }
-        Returns: undefined
-      }
+      increment_property_views:
+        | {
+            Args: { p_is_publication?: boolean; p_property_id: string }
+            Returns: undefined
+          }
+        | {
+            Args: { p_property_id: string; p_publication_id?: string }
+            Returns: undefined
+          }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -1143,7 +1254,7 @@ export type Database = {
         | "alquilado"
         | "eliminado"
         | "pausado"
-      app_role: "admin" | "agency" | "agencymember" | "user"
+      app_role: "admin" | "agency" | "user" | "agencymember"
       currency_code: "USD" | "ARS" | "UYU" | "CLP"
       listing_type: "rent" | "sale"
       org_role: "owner" | "agent" | "member" | "system_admin_delegate"
@@ -1157,6 +1268,7 @@ export type Database = {
         | "descartado"
         | "firme_candidato"
         | "posible_interes"
+        | "eliminado"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
     CompositeTypes: {
@@ -1293,7 +1405,7 @@ export const Constants = {
         "eliminado",
         "pausado",
       ],
-      app_role: ["admin", "agency", "agencymember", "user"],
+      app_role: ["admin", "agency", "user", "agencymember"],
       currency_code: ["USD", "ARS", "UYU", "CLP"],
       listing_type: ["rent", "sale"],
       org_role: ["owner", "agent", "member", "system_admin_delegate"],
@@ -1307,6 +1419,7 @@ export const Constants = {
         "descartado",
         "firme_candidato",
         "posible_interes",
+        "eliminado",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
     },
