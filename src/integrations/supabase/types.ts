@@ -1107,6 +1107,13 @@ export type Database = {
           type: Database["public"]["Enums"]["org_type"]
         }[]
       }
+      get_marketplace_org_names: {
+        Args: { _org_ids: string[] }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

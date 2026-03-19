@@ -26,6 +26,7 @@ export function StarRating({
     className = "",
 }: StarRatingProps) {
     const [hoverRating, setHoverRating] = useState(0);
+    const showFamilyAverage = totalGroupMembers > 1;
 
     // Helper para renderizar estrellas fraccionarias (promedio)
     const renderFractionalStars = (val: number) => {
@@ -98,17 +99,19 @@ export function StarRating({
                 </div>
             </div>
 
-            {/* Sección Promedio Familiar — siempre visible para ver si otros votaron */}
-            <div className="space-y-1 border-t border-white/5 pt-1.5">
-                <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Promedio</div>
-                <div className="flex items-center justify-between gap-2">
-                    {renderFractionalStars(averageRating)}
-                    <span className="text-[10px] font-bold text-white/90 tabular-nums flex items-center gap-1">
-                        <Users className="w-2.5 h-2.5 opacity-50" />
-                        <span>{totalVotes}/{totalGroupMembers}</span>
-                    </span>
+            {/* Si no hay grupo familiar (1 integrante), mostramos solo "Tu calificación". */}
+            {showFamilyAverage && (
+                <div className="space-y-1 border-t border-white/5 pt-1.5">
+                    <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Promedio</div>
+                    <div className="flex items-center justify-between gap-2">
+                        {renderFractionalStars(averageRating)}
+                        <span className="text-[10px] font-bold text-white/90 tabular-nums flex items-center gap-1">
+                            <Users className="w-2.5 h-2.5 opacity-50" />
+                            <span>{totalVotes}/{totalGroupMembers}</span>
+                        </span>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -19,13 +19,34 @@ export function useMarketplaceProperties() {
       if (error) throw error;
       if (!data) return [];
 
+      const missingOrgIds = Array.from(
+        new Set(
+          data
+            .filter((pub: any) => !pub.organizations?.name && pub.org_id)
+            .map((pub: any) => pub.org_id as string),
+        ),
+      );
+
+      let fallbackOrgNameById: Record<string, string> = {};
+      if (missingOrgIds.length > 0) {
+        const { data: orgNames } = await supabase.rpc("get_marketplace_org_names", {
+          _org_ids: missingOrgIds,
+        });
+
+        if (orgNames) {
+          fallbackOrgNameById = Object.fromEntries(
+            orgNames.map((org: { id: string; name: string }) => [org.id, org.name]),
+          );
+        }
+      }
+
       return data.map((pub: any): MarketplaceProperty => {
         const p = pub.properties || {};
         return {
           id: pub.id,
           propertyId: pub.property_id,
           orgId: pub.org_id,
-          orgName: pub.organizations?.name || "Organización",
+          orgName: pub.organizations?.name || fallbackOrgNameById[pub.org_id] || "Organización",
           agentId: pub.organizations?.created_by || "",
           title: p.title || pub.description || "",
           description: pub.description || "",

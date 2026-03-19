@@ -7,6 +7,59 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Extrae el user_id (claim "sub") del JWT enviado en Authorization.
+ * Si no existe o falla el parseo, retorna null.
+ */
+function getUserIdFromAuthHeader(req: Request): string | null {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "").trim();
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(atob(parts[1]));
+    return typeof payload?.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Registra consumo de scraping para auditoría admin.
+ * Se guarda incluso si no se publica luego la propiedad.
+ */
+async function logScrapeUsage(params: {
+  req: Request;
+  role: string;
+  scraper: "firecrawl" | "zenrows" | "vision";
+  channel: "url" | "image";
+  success: boolean;
+  tokenCharged: boolean;
+  sourceUrl?: string | null;
+  errorMessage?: string | null;
+}) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, serviceKey);
+    const userId = getUserIdFromAuthHeader(params.req);
+
+    await sb.from("scrape_usage_log").insert({
+      user_id: userId,
+      role: params.role === "agent" ? "agent" : "user",
+      scraper: params.scraper,
+      channel: params.channel,
+      success: params.success,
+      token_charged: params.tokenCharged,
+      source_url: params.sourceUrl || null,
+      error_message: params.errorMessage || null,
+    });
+  } catch (logError) {
+    console.error("scrape usage log error:", logError);
+  }
+}
+
 // ── Scraping helpers ──
 
 async function scrapeWithFirecrawl(formattedUrl: string) {
@@ -254,6 +307,14 @@ serve(async (req) => {
     if (images && Array.isArray(images) && images.length > 0) {
       console.log(`Vision path: analizando ${images.length} imagen(es) con Gemini Vision`);
       const extracted = await extractWithVision(images);
+      await logScrapeUsage({
+        req,
+        role,
+        scraper: "vision",
+        channel: "image",
+        success: true,
+        tokenCharged: true,
+      });
       return new Response(JSON.stringify({
         success: true,
         data: {
@@ -286,6 +347,16 @@ serve(async (req) => {
 
     const unsupportedDomains = ["facebook.com", "fb.com", "instagram.com", "tiktok.com"];
     if (unsupportedDomains.some(d => formattedUrl.toLowerCase().includes(d))) {
+      await logScrapeUsage({
+        req,
+        role,
+        scraper: scraper === "zenrows" ? "zenrows" : "firecrawl",
+        channel: "url",
+        success: false,
+        tokenCharged: false,
+        sourceUrl: formattedUrl,
+        errorMessage: "MARKETPLACE_MANUAL",
+      });
       return new Response(JSON.stringify({
         success: false, error: "MARKETPLACE_MANUAL",
         message: "MarketP, IG y otras RR.SS no permiten extraer sus datos por seguridad. Lamentamos que tenga que completar la publicación manualmente.",
@@ -312,6 +383,15 @@ serve(async (req) => {
 
     // Step 2: Extraer datos con IA usando el prompt específico al rol
     const extracted = await extractWithAI(result.markdown, role);
+    await logScrapeUsage({
+      req,
+      role,
+      scraper: scraper === "zenrows" ? "zenrows" : "firecrawl",
+      channel: "url",
+      success: true,
+      tokenCharged: true,
+      sourceUrl: formattedUrl,
+    });
 
     return new Response(JSON.stringify({
       success: true,
@@ -334,6 +414,23 @@ serve(async (req) => {
   } catch (error) {
     console.error("scrape-property error:", error);
     const message = error instanceof Error ? error.message : "Error desconocido";
+    try {
+      const { url, images, scraper = "firecrawl", role = "user" } = await req.clone().json();
+      await logScrapeUsage({
+        req,
+        role,
+        scraper: images && Array.isArray(images) && images.length > 0
+          ? "vision"
+          : scraper === "zenrows" ? "zenrows" : "firecrawl",
+        channel: images && Array.isArray(images) && images.length > 0 ? "image" : "url",
+        success: false,
+        tokenCharged: true,
+        sourceUrl: typeof url === "string" ? url : null,
+        errorMessage: message,
+      });
+    } catch {
+      // Si no podemos leer body, igual devolvemos el error original.
+    }
     const status = message.includes("429") ? 429 : message.includes("402") ? 402 : 500;
     return new Response(JSON.stringify({ success: false, error: message }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }

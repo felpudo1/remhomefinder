@@ -9,6 +9,8 @@ import { MarketplaceProperty } from "@/types/property";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 /** Estados que van al final del listado con opacidad (siguen visibles pero cerradas) */
 const INACTIVE_STATUSES = new Set(["reserved", "sold", "rented", "paused"]);
@@ -32,6 +34,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [selectedRooms, setSelectedRooms] = useState<string>("");
   const [selectedListingType, setSelectedListingType] = useState<string>("");
+  const [hideSaved, setHideSaved] = useState(true);
 
   const savedMarketplaceIds = useMemo(() => {
     return new Set(
@@ -95,11 +98,21 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       result = result.filter((p) => p.listingType === selectedListingType);
     }
 
+    // UX: opcionalmente ocultamos avisos guardados para evitar fatiga visual.
+    if (hideSaved) {
+      result = result.filter((p) => !savedMarketplaceIds.has(p.id));
+    }
+
     // Ordenamiento PRO: 
-    // 1. Activas vs Inactivas
+    // 1. No guardadas vs guardadas (guardadas al final)
     // 2. Referido (Prioridad agente VIP)
-    // 3. Fecha (Recientes primero)
+    // 3. Activas vs Inactivas
+    // 4. Fecha (Recientes primero)
     result = [...result].sort((a, b) => {
+      const aSaved = savedMarketplaceIds.has(a.id) ? 1 : 0;
+      const bSaved = savedMarketplaceIds.has(b.id) ? 1 : 0;
+      if (aSaved !== bSaved) return aSaved - bSaved;
+
       // Prioridad socio-comercial (Referido)
       if (referredAgentId) {
         const aIsReferred = a.agentId === referredAgentId ? 0 : 1;
@@ -115,7 +128,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     });
 
     return result;
-  }, [marketplaceProperties, searchQuery, selectedNeighborhood, maxPrice, selectedRooms, selectedListingType]);
+  }, [marketplaceProperties, searchQuery, selectedNeighborhood, maxPrice, selectedRooms, selectedListingType, hideSaved, savedMarketplaceIds, referredAgentId]);
 
   const handleSave = async (property: MarketplaceProperty) => {
     setSavingId(property.id);
@@ -161,6 +174,17 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-10 rounded-xl bg-muted border-0 text-sm"
           />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Switch
+            id="hide-saved-marketplace"
+            checked={hideSaved}
+            onCheckedChange={setHideSaved}
+          />
+          <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground">
+            Ocultar avisos guardados
+          </Label>
         </div>
 
         {isLoading ? (

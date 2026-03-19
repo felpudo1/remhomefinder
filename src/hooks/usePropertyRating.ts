@@ -84,7 +84,13 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["property-rating", propertyId, groupId] });
-            toast({ title: "¡Voto registrado!", description: "Tu familia podrá ver tu opinión. ⭐" });
+            const hasFamilyGroup = (ratingsData?.totalGroupMembers || 0) > 1;
+            toast({
+                title: "¡Voto registrado!",
+                description: hasFamilyGroup
+                    ? "Tu grupo familiar podrá ver tu calificación. ⭐"
+                    : "Tu calificación se guardó correctamente. ⭐",
+            });
         },
         onError: (error: any) => {
             const isDuplicate = error.code === "23505" ||

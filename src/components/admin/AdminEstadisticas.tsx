@@ -4,10 +4,11 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Pencil } from "lucide-react";
+import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Bot } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface StatusCount {
     label: string;
@@ -34,6 +35,19 @@ interface FeedbackAttributeRow {
     display_order: number;
 }
 
+interface ScrapeUsageRow {
+    user_id: string | null;
+    user_name: string | null;
+    user_email: string | null;
+    total_scrapes: number;
+    total_token_charged: number;
+    total_success: number;
+    total_failed: number;
+    total_url_scrapes: number;
+    total_image_scrapes: number;
+    last_scrape_at: string | null;
+}
+
 export function AdminEstadisticas() {
     const { toast } = useToast();
     const [stats, setStats] = useState<Stats | null>(null);
@@ -58,10 +72,13 @@ export function AdminEstadisticas() {
     const [savingFeedbackAttributeId, setSavingFeedbackAttributeId] = useState<string | null>(null);
     const [newAttributeName, setNewAttributeName] = useState("");
     const [newAttributeOrder, setNewAttributeOrder] = useState<number>(1);
+    const [mainTab, setMainTab] = useState<"propiedades" | "scraping">("propiedades");
+    const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
+    const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchFeedbackAttributes()]);
+        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchFeedbackAttributes(), fetchScrapeUsage()]);
         setIsRefreshing(false);
     };
 
@@ -69,6 +86,7 @@ export function AdminEstadisticas() {
     useEffect(() => { fetchMarketStats(); }, [pageMarket]);
     useEffect(() => { fetchPersonalStats(); }, [pagePersonal]);
     useEffect(() => { fetchFeedbackAttributes(); }, []);
+    useEffect(() => { fetchScrapeUsage(); }, []);
 
     const fetchStats = async () => {
         setLoading(true);
@@ -325,6 +343,27 @@ export function AdminEstadisticas() {
         }
     };
 
+    const fetchScrapeUsage = async () => {
+        setLoadingScrapeUsage(true);
+        try {
+            const { data, error } = await supabase
+                .from("admin_scrape_usage_by_user" as any)
+                .select("*")
+                .order("total_token_charged", { ascending: false })
+                .limit(200);
+            if (error) throw error;
+            setScrapeUsageRows((data || []) as ScrapeUsageRow[]);
+        } catch (e: unknown) {
+            toast({
+                title: "Error en métricas de scraping",
+                description: e instanceof Error ? e.message : "Error desconocido",
+                variant: "destructive",
+            });
+        } finally {
+            setLoadingScrapeUsage(false);
+        }
+    };
+
     const handleCreateFeedbackAttribute = async () => {
         const trimmedName = newAttributeName.trim();
         if (!trimmedName) {
@@ -517,6 +556,16 @@ export function AdminEstadisticas() {
                 </div>
             </div>
 
+            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "propiedades" | "scraping")} className="space-y-4">
+                <TabsList className="grid w-full max-w-[340px] grid-cols-2 rounded-xl">
+                    <TabsTrigger value="propiedades">Propiedades</TabsTrigger>
+                    <TabsTrigger value="scraping" className="flex items-center gap-1.5">
+                        <Bot className="w-4 h-4" />
+                        Scraping
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="propiedades" className="space-y-8">
             <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between gap-3">
                     <div>
@@ -653,6 +702,80 @@ export function AdminEstadisticas() {
                 subTab={statsSubTab}
                 onSubTabChange={setStatsSubTab}
             />
+                </TabsContent>
+
+                <TabsContent value="scraping" className="space-y-4">
+                    <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-row items-start justify-between gap-4">
+                        <div>
+                            <h4 className="font-semibold text-sm text-foreground">Consumo de scrapers por usuario</h4>
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                                Incluye intentos exitosos y fallidos, incluso cuando no se guardó la propiedad.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => fetchScrapeUsage()}
+                            disabled={loadingScrapeUsage}
+                            className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+                            title="Refrescar datos de scraping"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loadingScrapeUsage ? "animate-spin" : ""}`} />
+                        </button>
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-muted/50 border-b border-border">
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Usuario</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tokens consumidos</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Scrapes totales</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Éxitos</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fallos</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">URL</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Imagen</th>
+                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Último scrape</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {loadingScrapeUsage ? (
+                                        <tr>
+                                            <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                                                <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                                            </td>
+                                        </tr>
+                                    ) : scrapeUsageRows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={8} className="p-8 text-center text-muted-foreground text-sm">
+                                                No hay registros todavía.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        scrapeUsageRows.map((row, index) => (
+                                            <tr key={row.user_id || row.user_email || `scrape-row-${index}`} className="hover:bg-muted/30 transition-colors text-xs">
+                                                <td className="p-3">
+                                                    <div className="font-semibold">{row.user_name || "Usuario"}</div>
+                                                    <div className="text-[10px] text-muted-foreground">{row.user_email || "Sin email"}</div>
+                                                </td>
+                                                <td className="p-3 font-bold text-primary">{row.total_token_charged || 0}</td>
+                                                <td className="p-3">{row.total_scrapes || 0}</td>
+                                                <td className="p-3 text-emerald-600">{row.total_success || 0}</td>
+                                                <td className="p-3 text-rose-600">{row.total_failed || 0}</td>
+                                                <td className="p-3">{row.total_url_scrapes || 0}</td>
+                                                <td className="p-3">{row.total_image_scrapes || 0}</td>
+                                                <td className="p-3 text-muted-foreground">
+                                                    {row.last_scrape_at ? new Date(row.last_scrape_at).toLocaleString() : "—"}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
