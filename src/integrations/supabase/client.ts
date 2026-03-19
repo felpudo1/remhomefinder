@@ -2,8 +2,15 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://ktayllrmzoocgxhwyurv.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0YXlsbHJtem9vY2d4aHd5dXJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDY2MTcsImV4cCI6MjA4OTEyMjYxN30.0IWrD6weavq7FOCocBlOwP3ianaKZS8xHeX1wM9EFho";
+// La config del Supabase client vive en variables de entorno para poder separar dev/staging/prod.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error(
+    "Faltan variables de entorno para Supabase. Definí VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY."
+  );
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
