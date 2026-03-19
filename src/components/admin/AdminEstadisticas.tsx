@@ -352,7 +352,7 @@ export function AdminEstadisticas() {
                 .order("total_token_charged", { ascending: false })
                 .limit(200);
             if (error) throw error;
-            setScrapeUsageRows((data || []) as ScrapeUsageRow[]);
+            setScrapeUsageRows((data || []) as unknown as ScrapeUsageRow[]);
         } catch (e: unknown) {
             toast({
                 title: "Error en métricas de scraping",
