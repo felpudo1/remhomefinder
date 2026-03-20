@@ -1220,6 +1220,14 @@ export type Database = {
           name: string
         }[]
       }
+      get_marketplace_publication_contacts: {
+        Args: { _publication_ids: string[] }
+        Returns: {
+          agent_name: string
+          agent_phone: string
+          publication_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1268,8 +1276,8 @@ export type Database = {
         | "descartado"
         | "firme_candidato"
         | "posible_interes"
-        | "meta_conseguida"
         | "eliminado"
+        | "meta_conseguida"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
     CompositeTypes: {
@@ -1420,8 +1428,8 @@ export const Constants = {
         "descartado",
         "firme_candidato",
         "posible_interes",
-        "meta_conseguida",
         "eliminado",
+        "meta_conseguida",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
     },
