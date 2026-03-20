@@ -23,7 +23,8 @@ interface IndexModalsProps {
         groupId?: string | null,
         contactedName?: string,
         discardedAttributeIds?: string[],
-        prosAndCons?: { positiveIds: string[]; negativeIds: string[] }
+        prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
+        contactedFeedback?: { interest: number; urgency: number }
     ) => Promise<void>;
     onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;
     onAddProperty: (form: any) => Promise<void>;

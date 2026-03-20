@@ -147,6 +147,7 @@ export function usePropertyMutations() {
             contactedName,
             discardedAttributeIds,
             prosAndCons,
+            contactedFeedback,
         }: {
             id: string;
             status: PropertyStatus;
@@ -156,6 +157,7 @@ export function usePropertyMutations() {
             contactedName?: string;
             discardedAttributeIds?: string[];
             prosAndCons?: { positiveIds: string[]; negativeIds: string[] };
+            contactedFeedback?: { interest: number; urgency: number };
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
@@ -184,6 +186,10 @@ export function usePropertyMutations() {
             if (deletedReason) eventMetadata.reason = deletedReason;
             if (coordinatedDate) eventMetadata.coordinated_date = coordinatedDate;
             if (contactedName) eventMetadata.contacted_name = contactedName;
+            if (contactedFeedback) {
+                eventMetadata.contacted_interest = contactedFeedback.interest;
+                eventMetadata.contacted_urgency = contactedFeedback.urgency;
+            }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)
             const { data: insertedLog, error } = await supabase

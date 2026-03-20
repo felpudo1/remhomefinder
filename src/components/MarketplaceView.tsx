@@ -11,6 +11,21 @@ import { Search, Loader2, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import {
+  MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT,
+  MARKETPLACE_CONTACT_TIP_INTERVAL_KEY,
+} from "@/lib/config-keys";
 
 /** Estados que van al final del listado con opacidad (siguen visibles pero cerradas) */
 const INACTIVE_STATUSES = new Set(["reserved", "sold", "rented", "paused"]);
@@ -21,6 +36,14 @@ interface MarketplaceViewProps {
 }
 
 export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClose }: MarketplaceViewProps) {
+  const MARKET_TIP_COUNT_KEY = "hf_market_save_tip_count";
+  const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
+  const {
+    value: contactTipIntervalRaw,
+  } = useSystemConfig(
+    MARKETPLACE_CONTACT_TIP_INTERVAL_KEY,
+    MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT
+  );
   const { data: marketplaceProperties = [], isLoading } = useMarketplaceProperties();
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
@@ -35,6 +58,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [selectedRooms, setSelectedRooms] = useState<string>("");
   const [selectedListingType, setSelectedListingType] = useState<string>("");
   const [hideSaved, setHideSaved] = useState(true);
+  const [showContactTipModal, setShowContactTipModal] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const contactTipInterval = Number.isInteger(Number(contactTipIntervalRaw)) && Number(contactTipIntervalRaw) >= 1
+    ? Number(contactTipIntervalRaw)
+    : Number(MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT);
 
   const savedMarketplaceIds = useMemo(() => {
     return new Set(
@@ -135,11 +163,30 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     try {
       await saveToList.mutateAsync({ property });
       toast({ title: "¡Guardada!", description: `"${property.title}" fue agregada a tu listado.` });
+
+      const isTipDisabled = localStorage.getItem(MARKET_TIP_DISABLED_KEY) === "true";
+      if (!isTipDisabled) {
+        const previousCount = Number(localStorage.getItem(MARKET_TIP_COUNT_KEY) || "0");
+        const nextCount = previousCount + 1;
+        localStorage.setItem(MARKET_TIP_COUNT_KEY, String(nextCount));
+        if (nextCount === 1 || (nextCount - 1) % contactTipInterval === 0) {
+          setDontShowAgain(false);
+          setShowContactTipModal(true);
+        }
+      }
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
     } finally {
       setSavingId(null);
     }
+  };
+
+  const handleCloseTipModal = () => {
+    if (dontShowAgain) {
+      localStorage.setItem(MARKET_TIP_DISABLED_KEY, "true");
+    }
+    setShowContactTipModal(false);
+    setDontShowAgain(false);
   };
 
   const activeFilterCount = [selectedNeighborhood, maxPrice, selectedRooms, selectedListingType].filter(Boolean).length;
@@ -219,6 +266,42 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           </div>
         )}
       </main>
+
+      <Dialog
+        open={showContactTipModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseTipModal();
+            return;
+          }
+          setShowContactTipModal(true);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Tip para tu primer contacto 💬</DialogTitle>
+            <DialogDescription>
+              Para ahorrarte tiempo y coordinar mejor 😊, en el primer contacto hacé todas las preguntas clave.
+              Así evitás visitas que no te sirven y podés decidir mejor desde el inicio.
+              Consultá por patio/fondo 🏡, mascotas 🐾, escaleras 🪜, lugar para moto o auto 🛵🚗
+              y accesibilidad ♿.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="market-tip-dont-show"
+              checked={dontShowAgain}
+              onCheckedChange={(checked) => setDontShowAgain(Boolean(checked))}
+            />
+            <Label htmlFor="market-tip-dont-show" className="text-sm text-muted-foreground cursor-pointer">
+              No mostrar más este mensaje
+            </Label>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCloseTipModal}>Entendido</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

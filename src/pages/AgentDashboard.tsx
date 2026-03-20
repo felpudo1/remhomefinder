@@ -11,6 +11,7 @@ import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentReferralSection } from "@/components/agent/AgentReferralSection";
+import { AgentPropertyListing } from "@/components/agent/AgentPropertyListing";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
@@ -20,10 +21,11 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 
-type AgentTab = "propiedades" | "equipo" | "estadisticas" | "referencias" | "perfil";
+type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "referencias" | "perfil";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
+  { id: "listado", label: "Listado", icon: Building2 },
   { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
   { id: "referencias", label: "Referencias", icon: Gift },
@@ -156,6 +158,7 @@ const AgentDashboard = () => {
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={isOwner ? activeGroupId : null} />}
+              {activeTab === "listado" && <AgentPropertyListing />}
               {activeTab === "equipo" && canManageTeams && (
                 <AgentTeamProperties
                   activeGroupId={isOwner ? activeGroupId : agency.id}

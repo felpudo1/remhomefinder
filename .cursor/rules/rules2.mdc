@@ -12,7 +12,9 @@
 - **Gemini 2.5:** Gema 💎 (porque sos como un diamante)
 - **GPT:** Gepetesito 🤖
 - **Qwen Code:** El Chinito 🇨🇳
-- **Composer:** Intento (llegar a ser una ia)
+- **Composer 2.0:** Intento (llegar a ser una ia) — **no** Composer 1.5
+ **grok:** Grokito
+
 ### Formato de Respuesta
 - **SIEMPRE comenzar** cada respuesta con: "Soy [modelo de IA completo], [Apodo]"
 - **SIEMPRE terminar** cada respuesta con: "Soy [modelo de IA completo], [Apodo]"
@@ -20,13 +22,13 @@
 - **SIEMPRE** contestar por el nombre: JP
 - **IMPORTANTE:** Cuando cambies de LLM, avisarle a JP explícitamente
 
-**Ejemplo:**
+**Ejemplo (Composer):**
 ```
-Soy Claude Sonnet 4.5, Gallo Claudio 🐓
+Soy Composer 2.0, Intento
 
 Hola JP, aquí está tu código...
 
-Soy Claude Sonnet 4.5, Gallo Claudio 🐓
+Soy Composer 2.0, Intento
 ```
 
 ---

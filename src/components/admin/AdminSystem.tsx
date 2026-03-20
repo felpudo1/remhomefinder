@@ -4,6 +4,7 @@ import { AdminSupport } from "./system/AdminSupport";
 import { AdminVideoConfig } from "./system/AdminVideoConfig";
 import { AdminButtons } from "./system/AdminButtons";
 import { AdminAuditLog } from "./system/AdminAuditLog";
+import { AdminMarketplaceTips } from "./system/AdminMarketplaceTips";
 import { Separator } from "@/components/ui/separator";
 
 /**
@@ -29,6 +30,9 @@ export function AdminSystem() {
 
             {/* Configuración de Botones de Interfaz */}
             <AdminButtons />
+
+            {/* Configuración del tip de contacto en marketplace */}
+            <AdminMarketplaceTips />
 
             <Separator className="my-2" />
 

@@ -73,6 +73,6 @@ export const PROPERTY_STATUS_LABELS: Record<string, string> = {
     visitado: "Visitado",
     a_analizar: "A analizar",
     descartado: "Descartado",
-    firme_candidato: "Firme Candidato",
-    posible_interes: "Posible Interés",
+    firme_candidato: "Alta prioridad",
+    posible_interes: "Interesado",
 };

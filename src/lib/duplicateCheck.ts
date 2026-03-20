@@ -130,8 +130,8 @@ function getStatusLabel(status: string | null): string {
     visitado: "Visitado",
     descartado: "Descartado",
     a_analizar: "A Analizar",
-    firme_candidato: "Firme Candidato",
-    posible_interes: "Posible Interés",
+    firme_candidato: "Alta prioridad",
+    posible_interes: "Interesado",
     eliminado: "Eliminado",
     eliminado_agencia: "Aviso Finalizado",
   };

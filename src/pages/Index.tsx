@@ -23,6 +23,16 @@ import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { IndexModals } from "@/components/IndexModals";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
@@ -55,6 +65,7 @@ const Index = () => {
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hideDiscarded, setHideDiscarded] = useState(true);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -79,6 +90,11 @@ const Index = () => {
   const [showRegWelcome, setShowRegWelcome] = useState(false);
   const [dontShowRegAgain, setDontShowRegAgain] = useState(false);
   const [isRefreshingList, setIsRefreshingList] = useState(false);
+  const [showContactTipModal, setShowContactTipModal] = useState(false);
+  const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
+
+  const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
+  const OWN_LINK_TIP_SHOWN_KEY = "hf_own_link_first_tip_shown";
 
   const { canSaveMore, maxSaves, isPremium } = useSubscription();
 
@@ -120,9 +136,9 @@ const Index = () => {
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
-  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: { positiveIds: string[]; negativeIds: string[] }) => {
+  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: { positiveIds: string[]; negativeIds: string[] }, contactedFeedback?: { interest: number; urgency: number }) => {
     try {
-      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons);
+      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error desconocido";
       const isEnumError = /enum|invalid.*firme_candidato|invalid.*posible_interes|user_listing_status/i.test(msg);
@@ -132,7 +148,7 @@ const Index = () => {
         description: isPermissionError(e)
           ? permissionDeniedMsg
           : isEnumError
-            ? "Los estados Firme candidato y Posible interés requieren ejecutar la migración de la base de datos. Contactá al administrador."
+            ? "Los estados Alta prioridad e Interesado requieren ejecutar la migración de la base de datos. Contactá al administrador."
             : isRequiredField
               ? "Error al guardar. Si el problema persiste, ejecutá la migración: pnpm supabase db push"
               : msg,
@@ -167,10 +183,27 @@ const Index = () => {
       setIsAddOpen(false);
       setIsAddZenRowsOpen(false);
       toast({ title: "Éxito", description: _successMessage || "Propiedad agregada correctamente" });
+
+      const hasSourceUrl = typeof formWithoutMeta.url === "string" && formWithoutMeta.url.trim().length > 0;
+      const isTipDisabled = localStorage.getItem(MARKET_TIP_DISABLED_KEY) === "true";
+      const wasShownBefore = localStorage.getItem(OWN_LINK_TIP_SHOWN_KEY) === "true";
+      if (hasSourceUrl && !isTipDisabled && !wasShownBefore) {
+        localStorage.setItem(OWN_LINK_TIP_SHOWN_KEY, "true");
+        setDontShowContactTipAgain(false);
+        setShowContactTipModal(true);
+      }
     } catch (e: unknown) {
       toast({ title: "Error", description: getErrorMessage(e), variant: "destructive" });
       throw e; // Re-lanzar para que el modal no se cierre si falla
     }
+  };
+
+  const handleCloseContactTipModal = () => {
+    if (dontShowContactTipAgain) {
+      localStorage.setItem(MARKET_TIP_DISABLED_KEY, "true");
+    }
+    setShowContactTipModal(false);
+    setDontShowContactTipAgain(false);
   };
 
   const handleStatusToggle = (status: PropertyStatus) => {
@@ -223,6 +256,9 @@ const Index = () => {
     if (selectedStatuses.length > 0) {
       result = result.filter((p) => selectedStatuses.includes(p.status));
     }
+    if (hideDiscarded) {
+      result = result.filter((p) => p.status !== "descartado");
+    }
     switch (sortBy) {
       case "total-asc": result.sort((a, b) => a.totalCost - b.totalCost); break;
       case "total-desc": result.sort((a, b) => b.totalCost - a.totalCost); break;
@@ -231,7 +267,7 @@ const Index = () => {
     }
     result.sort((a, b) => (a.status === "descartado" ? 1 : 0) - (b.status === "descartado" ? 1 : 0));
     return result;
-  }, [properties, selectedStatuses, sortBy, searchQuery, activeGroupId]);
+  }, [properties, selectedStatuses, sortBy, searchQuery, activeGroupId, hideDiscarded]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
@@ -368,14 +404,26 @@ const Index = () => {
                           <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades ({filteredAndSorted.length})</h1>
                           <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                         </div>
-                        <button
-                          onClick={handleRefreshProperties}
-                          disabled={loading || isRefreshingList}
-                          className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
-                          title="Refrescar listado"
-                        >
-                          <RefreshCw className={`w-4 h-4 ${isRefreshingList ? "animate-spin" : ""}`} />
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 bg-card">
+                            <Switch
+                              id="hide-discarded-list"
+                              checked={hideDiscarded}
+                              onCheckedChange={setHideDiscarded}
+                            />
+                            <Label htmlFor="hide-discarded-list" className="text-xs text-muted-foreground cursor-pointer">
+                              Ocultar descartados
+                            </Label>
+                          </div>
+                          <button
+                            onClick={handleRefreshProperties}
+                            disabled={loading || isRefreshingList}
+                            className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+                            title="Refrescar listado"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${isRefreshingList ? "animate-spin" : ""}`} />
+                          </button>
+                        </div>
                       </div>
                       {loading ? (
                         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
@@ -449,6 +497,46 @@ const Index = () => {
               <button onClick={() => setActiveGroupId(null)} className="text-xs text-primary/70 underline ml-2">Ver todas</button>
             </div>
           )}
+
+          <Dialog
+            open={showContactTipModal}
+            onOpenChange={(open) => {
+              if (!open) {
+                handleCloseContactTipModal();
+                return;
+              }
+              setShowContactTipModal(true);
+            }}
+          >
+            <DialogContent className="sm:max-w-lg rounded-2xl">
+              <DialogHeader>
+                <DialogTitle>Tip para tu primer contacto 💬</DialogTitle>
+                <DialogDescription>
+                  Para ahorrarte tiempo y coordinar mejor 😊, en el primer contacto hacé todas las preguntas clave.
+                  Así evitás visitas que no te sirven y podés decidir mejor desde el inicio.
+                  Consultá por patio/fondo 🏡, mascotas 🐾, escaleras 🪜, lugar para moto o auto 🛵🚗
+                  y accesibilidad ♿.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="contact-tip-dont-show"
+                  checked={dontShowContactTipAgain}
+                  onCheckedChange={(checked) => setDontShowContactTipAgain(Boolean(checked))}
+                  className="rounded-md border-muted-foreground/30"
+                />
+                <label
+                  htmlFor="contact-tip-dont-show"
+                  className="text-sm text-muted-foreground cursor-pointer"
+                >
+                  No mostrar más este mensaje
+                </label>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseContactTipModal}>Entendido</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
       <Footer />

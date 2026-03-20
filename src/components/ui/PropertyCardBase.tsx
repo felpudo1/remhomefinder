@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Maximize2, BedDouble, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { ListingType } from "@/types/property";
@@ -30,6 +30,8 @@ interface PropertyCardBaseProps {
     extraBodyContent?: React.ReactNode;
     /** Botones o selectores de acción en la base de la tarjeta */
     actions?: React.ReactNode;
+    /** Contenido adicional al final de la tarjeta (debajo de precio/acciones) */
+    bottomContent?: React.ReactNode;
     /** Clase adicional para el contenedor principal */
     className?: string;
     /** Overlay de estrellas sobre la imagen */
@@ -38,6 +40,10 @@ interface PropertyCardBaseProps {
     onImageClick?: (index: number) => void;
     /** Si true, la sección de fotos es colapsable y empieza colapsada (para listados densos) */
     collapsibleImages?: boolean;
+    /** Si true, rota automáticamente las fotos de la tarjeta */
+    autoRotateImages?: boolean;
+    /** Define el estilo de transición de imagen al cambiar */
+    imageTransitionMode?: "fade" | "flip" | "kenburns" | "push";
 }
 
 /**
@@ -64,13 +70,29 @@ export function PropertyCardBase({
     subImageContent,
     extraBodyContent,
     actions,
+    bottomContent,
     className = "",
     onImageClick,
     ratingOverlay,
     collapsibleImages = false,
+    autoRotateImages = false,
+    imageTransitionMode = "fade",
 }: PropertyCardBaseProps) {
     const [currentImg, setCurrentImg] = useState(0);
     const [imagesExpanded, setImagesExpanded] = useState(!collapsibleImages);
+    const activeImageSrc = images[currentImg] || "/placeholder.svg";
+
+    useEffect(() => {
+        if (!autoRotateImages) return;
+        if (images.length <= 1) return;
+        if (collapsibleImages && !imagesExpanded) return;
+
+        const intervalId = window.setInterval(() => {
+            setCurrentImg((prev) => (prev + 1) % images.length);
+        }, 3500);
+
+        return () => window.clearInterval(intervalId);
+    }, [autoRotateImages, images.length, collapsibleImages, imagesExpanded]);
 
     const handleImageContainerClick = (e: React.MouseEvent) => {
         if (onImageClick) {
@@ -122,9 +144,18 @@ export function PropertyCardBase({
                         </button>
                     )}
                     <img
-                        src={images[currentImg] || "/placeholder.svg"}
+                        key={activeImageSrc}
+                        src={activeImageSrc}
                         alt={title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className={`w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-105 ${
+                            imageTransitionMode === "flip"
+                                ? "hf-card-image-flip"
+                                : imageTransitionMode === "kenburns"
+                                    ? "hf-card-image-kenburns"
+                                    : imageTransitionMode === "push"
+                                        ? "hf-card-image-push"
+                                    : "animate-fade-in"
+                        }`}
                     />
                     {images.length > 1 && (
                         <div
@@ -241,6 +272,9 @@ export function PropertyCardBase({
                         {actions}
                     </div>
                 </div>
+
+                {/* Contenido adicional del pie (ej: CTA contextual de calendario) */}
+                {bottomContent}
             </div>
         </div>
     );

@@ -26,3 +26,7 @@ export const USER_FREE_PLAN_SAVE_LIMIT_DEFAULT = "10";
 // Límite de publicaciones en marketplace para agentes gratuitos
 export const AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY = "agent_free_plan_publish_limit";
 export const AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT = "3";
+
+// Frecuencia del tip de contacto al guardar avisos en marketplace
+export const MARKETPLACE_CONTACT_TIP_INTERVAL_KEY = "marketplace_contact_tip_interval";
+export const MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT = "3";

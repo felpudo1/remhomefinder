@@ -134,13 +134,13 @@ export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: strin
     dot: "bg-purple-500",
   },
   firme_candidato: {
-    label: "Firme Candidato",
+    label: "Alta prioridad",
     color: "text-emerald-700",
     bg: "bg-emerald-100",
     dot: "bg-emerald-500",
   },
   posible_interes: {
-    label: "Posible Interés",
+    label: "Interesado",
     color: "text-amber-700",
     bg: "bg-amber-100",
     dot: "bg-amber-500",

@@ -3,6 +3,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
     userEmail: string | null;
@@ -25,8 +26,27 @@ export const UserHeader = ({
 }: HeaderProps) => {
     const { isPremium } = useSubscription();
     const { data: profile } = useProfile();
+    const [showStatusBubbles, setShowStatusBubbles] = useState(false);
 
     const isReferred = !!profile?.referredById;
+
+    useEffect(() => {
+        const evaluateHeaderBubbles = () => {
+            const isDesktop = window.innerWidth >= 1024;
+            const isFullscreen = document.fullscreenElement !== null;
+            // Evita tapar la marca: solo desktop + fullscreen real o ancho muy amplio.
+            setShowStatusBubbles(isDesktop && (isFullscreen || window.innerWidth >= 1440));
+        };
+
+        evaluateHeaderBubbles();
+        window.addEventListener("resize", evaluateHeaderBubbles);
+        document.addEventListener("fullscreenchange", evaluateHeaderBubbles);
+
+        return () => {
+            window.removeEventListener("resize", evaluateHeaderBubbles);
+            document.removeEventListener("fullscreenchange", evaluateHeaderBubbles);
+        };
+    }, []);
 
     const StatusStar = () => (
         isPremium ? (
@@ -72,7 +92,7 @@ export const UserHeader = ({
 
 
                 {/* Filtros de estado rápidos — solo desktop */}
-                <div className="hidden md:flex items-center gap-2">
+                <div className={`${showStatusBubbles ? "hidden md:flex" : "hidden"} items-center gap-2`}>
                     {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][])
                         .filter(([key]) => key !== "eliminado")
                         .map(
