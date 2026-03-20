@@ -261,10 +261,10 @@ export function usePropertyQueries() {
                 new Set(listings.map((l: any) => l.source_publication_id).filter(Boolean))
             ) as string[];
             if (sourcePublicationIds.length > 0) {
-                const { data: contactRows } = await supabase.rpc("get_marketplace_publication_contacts", {
+                const { data: contactRows } = await supabase.rpc("get_marketplace_publication_contacts" as any, {
                     _publication_ids: sourcePublicationIds,
                 });
-                (contactRows || []).forEach((row: any) => {
+                ((contactRows as any[]) || []).forEach((row: any) => {
                     marketplaceContactByPublicationId[row.publication_id] = {
                         name: row.agent_name || undefined,
                         phone: row.agent_phone || undefined,
