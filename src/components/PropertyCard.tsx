@@ -691,8 +691,9 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               onClick={(e) => {
                 e.stopPropagation();
                 const location = [property.neighborhood, property.city].filter(Boolean).join(", ") || undefined;
+                const contactName = property.marketplaceAgentName || ownerEmail || property.createdByEmail || "Sin nombre";
                 const url = buildGoogleCalendarUrl(
-                  `Visita: ${property.title}`,
+                  `Visita: ${property.title}. Contacto ${contactName}`,
                   property.coordinatedDate!,
                   property.url ? `Publicación: ${property.url}` : undefined,
                   location

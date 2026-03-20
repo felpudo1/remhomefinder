@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, Clock3, Phone, Star, Users } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Phone, Star, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ type PropertyRow = {
   id: string;
   title: string;
   neighborhood: string;
+  ref?: string;
   usersSaved: number;
   avgImpression: number;
   avgUrgency: number;
@@ -22,6 +23,7 @@ type UserRow = {
   phone: string;
   status: string;
   updatedAt: string;
+  coordinatedDate?: string;
   ratingsByStatus: Partial<Record<StatusFilter, { itemA: number; itemB: number }>>;
 };
 
@@ -32,6 +34,7 @@ const MOCK_PROPERTIES: PropertyRow[] = [
     id: "p-1",
     title: "Apartamento 2 dormitorios con balcón",
     neighborhood: "Pocitos",
+    ref: "REF-1201",
     usersSaved: 7,
     avgImpression: 4.3,
     avgUrgency: 3.4,
@@ -41,6 +44,7 @@ const MOCK_PROPERTIES: PropertyRow[] = [
     id: "p-2",
     title: "Casa con fondo y parrillero",
     neighborhood: "Carrasco Norte",
+    ref: "REF-845",
     usersSaved: 5,
     avgImpression: 4.8,
     avgUrgency: 4.2,
@@ -78,6 +82,7 @@ const MOCK_USERS_BY_PROPERTY: Record<string, UserRow[]> = {
       phone: "+598 98 123 456",
       status: "visita_coordinada",
       updatedAt: "Hoy 11:10",
+      coordinatedDate: "2026-03-22T15:30:00",
       ratingsByStatus: {
         ingresado: { itemA: 4, itemB: 3 },
         contactado: { itemA: 4, itemB: 3 },
@@ -160,6 +165,23 @@ function stars(value: number) {
   );
 }
 
+/**
+ * Crea una URL de Google Calendar para agendar una visita con duración de 1 hora.
+ */
+function buildGoogleCalendarUrl(title: string, startIso: string, details?: string) {
+  const startDate = new Date(startIso);
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}${String(d.getSeconds()).padStart(2, "0")}`;
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${fmt(startDate)}/${fmt(endDate)}`,
+  });
+  if (details) params.set("details", details);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 export function AgentPropertyListing() {
   const [query, setQuery] = useState("");
   const [selectedPropertyId, setSelectedPropertyId] = useState(MOCK_PROPERTIES[0].id);
@@ -177,6 +199,10 @@ export function AgentPropertyListing() {
   }, [query]);
 
   const selectedUsers = MOCK_USERS_BY_PROPERTY[selectedPropertyId] || [];
+  const selectedProperty = useMemo(
+    () => MOCK_PROPERTIES.find((p) => p.id === selectedPropertyId) || null,
+    [selectedPropertyId]
+  );
   const usersByStatus = selectedUsers.filter((user) =>
     activeStatusTab === "todos" ? true : user.status === activeStatusTab
   );
@@ -341,9 +367,30 @@ export function AgentPropertyListing() {
                       <p className="font-medium text-foreground">{user.name}</p>
                     </td>
                     <td className="py-3 px-3">
-                      <Badge variant="outline" className="capitalize">
-                        {user.status.replace("_", " ")}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="capitalize">
+                          {user.status.replace("_", " ")}
+                        </Badge>
+                        {user.status === "visita_coordinada" && user.coordinatedDate && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const refLabel = selectedProperty?.ref ? ` Ref ${selectedProperty.ref}` : "";
+                              const url = buildGoogleCalendarUrl(
+                                `Visita: ${selectedProperty?.title || "Propiedad"}${refLabel} - ${user.name}`,
+                                user.coordinatedDate,
+                                `Usuario: ${user.name} (${user.email})${refLabel}`
+                              );
+                              window.open(url, "_blank", "noopener,noreferrer");
+                            }}
+                            className="inline-flex items-center rounded-md p-1 text-primary hover:bg-primary/10"
+                            title="Agendar en Google Calendar"
+                          >
+                            <CalendarPlus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-3">
                       <p className="text-xs text-muted-foreground">{user.email}</p>
