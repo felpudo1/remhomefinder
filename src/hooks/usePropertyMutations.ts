@@ -151,6 +151,7 @@ export function usePropertyMutations() {
             coordinatedFeedback,
             discardedSurvey,
             metaAchievedFeedback,
+            closingFeedback,
         }: {
             id: string;
             status: PropertyStatus;
@@ -175,6 +176,13 @@ export function usePropertyMutations() {
                 appPerformance: number;
                 appSupport: number;
                 appPrice: number;
+            };
+            closingFeedback?: {
+                closePriceScore: number;
+                closeConditionScore: number;
+                closeSecurityScore: number;
+                closeGuaranteeScore: number;
+                closeMovingScore: number;
             };
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -226,6 +234,13 @@ export function usePropertyMutations() {
                 eventMetadata.meta_app_performance = metaAchievedFeedback.appPerformance;
                 eventMetadata.meta_app_support = metaAchievedFeedback.appSupport;
                 eventMetadata.meta_app_price = metaAchievedFeedback.appPrice;
+            }
+            if (closingFeedback) {
+                eventMetadata.close_price_score = closingFeedback.closePriceScore;
+                eventMetadata.close_condition_score = closingFeedback.closeConditionScore;
+                eventMetadata.close_security_score = closingFeedback.closeSecurityScore;
+                eventMetadata.close_guarantee_score = closingFeedback.closeGuaranteeScore;
+                eventMetadata.close_moving_score = closingFeedback.closeMovingScore;
             }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)

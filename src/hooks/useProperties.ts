@@ -52,8 +52,15 @@ export function useProperties() {
         appPerformance: number;
         appSupport: number;
         appPrice: number;
+      },
+      closingFeedback?: {
+        closePriceScore: number;
+        closeConditionScore: number;
+        closeSecurityScore: number;
+        closeGuaranteeScore: number;
+        closeMovingScore: number;
       }
-    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback, coordinatedFeedback, discardedSurvey, metaAchievedFeedback }),
+    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback, coordinatedFeedback, discardedSurvey, metaAchievedFeedback, closingFeedback }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addComment({ propertyId: id, comment }),
     refetch,

@@ -57,6 +57,13 @@ interface PropertyCardProps {
       appPerformance: number;
       appSupport: number;
       appPrice: number;
+    },
+    closingFeedback?: {
+      closePriceScore: number;
+      closeConditionScore: number;
+      closeSecurityScore: number;
+      closeGuaranteeScore: number;
+      closeMovingScore: number;
     }
   ) => void;
   onClick: () => void;
@@ -696,7 +703,27 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
               onConfirm={async () => {
                 if (!pendingProsConsStatus) return;
-                await onStatusChange(property.id, pendingProsConsStatus);
+                await onStatusChange(
+                  property.id,
+                  pendingProsConsStatus,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  {
+                    closePriceScore,
+                    closeConditionScore,
+                    closeSecurityScore,
+                    closeGuaranteeScore,
+                    closeMovingScore,
+                  }
+                );
                 setShowProsConsConfirm(false);
                 setPendingProsConsStatus(null);
                 setClosePriceScore(0);

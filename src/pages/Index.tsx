@@ -166,6 +166,13 @@ const Index = () => {
       appPerformance: number;
       appSupport: number;
       appPrice: number;
+    },
+    closingFeedback?: {
+      closePriceScore: number;
+      closeConditionScore: number;
+      closeSecurityScore: number;
+      closeGuaranteeScore: number;
+      closeMovingScore: number;
     }
   ) => {
     try {
@@ -181,7 +188,8 @@ const Index = () => {
         contactedFeedback,
         coordinatedFeedback,
         discardedSurvey,
-        metaAchievedFeedback
+        metaAchievedFeedback,
+        closingFeedback
       );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error desconocido";

@@ -39,6 +39,13 @@ interface IndexModalsProps {
             appPerformance: number;
             appSupport: number;
             appPrice: number;
+        },
+        closingFeedback?: {
+            closePriceScore: number;
+            closeConditionScore: number;
+            closeSecurityScore: number;
+            closeGuaranteeScore: number;
+            closeMovingScore: number;
         }
     ) => Promise<void>;
     onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;

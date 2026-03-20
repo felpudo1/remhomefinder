@@ -70,6 +70,13 @@ interface PropertyDetailModalProps {
       appPerformance: number;
       appSupport: number;
       appPrice: number;
+    },
+    closingFeedback?: {
+      closePriceScore: number;
+      closeConditionScore: number;
+      closeSecurityScore: number;
+      closeGuaranteeScore: number;
+      closeMovingScore: number;
     }
   ) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
