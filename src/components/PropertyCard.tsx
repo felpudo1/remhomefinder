@@ -115,6 +115,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discardReasonText, setDiscardReasonText] = useState("");
   const [showProsConsConfirm, setShowProsConsConfirm] = useState(false);
   const [pendingProsConsStatus, setPendingProsConsStatus] = useState<"firme_candidato" | "posible_interes" | null>(null);
   const [closePriceScore, setClosePriceScore] = useState(0);
@@ -609,6 +610,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               onOpenChange={(open) => {
                 setShowDiscardConfirm(open);
                 if (!open) {
+                  setDiscardReasonText("");
                   setDiscardedOverallCondition(0);
                   setDiscardedSurroundings(0);
                   setDiscardedHouseSecurity(0);
@@ -620,6 +622,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               description={`Queremos aprender de tu visita a "${property.title}" ✨. Tu feedback ayuda a mejorar las recomendaciones del Market.`}
               confirmLabel="🧡 Confirmar descarte"
               confirmDisabled={
+                !discardReasonText.trim() ||
                 discardedOverallCondition === 0 ||
                 discardedSurroundings === 0 ||
                 discardedHouseSecurity === 0 ||
@@ -631,7 +634,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 await onStatusChange(
                   property.id,
                   "descartado",
-                  undefined,
+                  discardReasonText.trim(),
                   undefined,
                   undefined,
                   undefined,
@@ -648,9 +651,17 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   }
                 );
                 setShowDiscardConfirm(false);
+                setDiscardReasonText("");
               }}
             >
               <div className="space-y-4 py-2">
+                <label className="text-sm font-medium text-foreground text-left block">🧾 Motivo del descarte</label>
+                <Textarea
+                  placeholder="Contanos brevemente por qué descartás esta propiedad..."
+                  value={discardReasonText}
+                  onChange={(e) => setDiscardReasonText(e.target.value)}
+                  className="resize-none text-sm min-h-[80px] rounded-xl"
+                />
                 {renderFiveStars(discardedOverallCondition, setDiscardedOverallCondition, "🏠 Estado general de la propiedad")}
                 {renderFiveStars(discardedSurroundings, setDiscardedSurroundings, "🌳 Entorno (casas linderas y barrio)")}
                 {renderFiveStars(discardedHouseSecurity, setDiscardedHouseSecurity, "🔐 Seguridad de la casa")}

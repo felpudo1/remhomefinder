@@ -149,10 +149,11 @@ export function usePropertyQueries() {
             // 4. Obtener changed_by de status_history_log para listings en estado "descartado"
             const descartadoListingIds = listings.filter((l) => l.current_status === "descartado").map((l) => l.id);
             let discardedByMap: Record<string, string> = {};
+            let discardedReasonMap: Record<string, string> = {};
             if (descartadoListingIds.length > 0) {
                 const { data: descartadoLogs } = await supabase
                     .from("status_history_log")
-                    .select("user_listing_id, changed_by")
+                    .select("user_listing_id, changed_by, event_metadata")
                     .in("user_listing_id", descartadoListingIds)
                     .eq("new_status", "descartado")
                     .order("created_at", { ascending: false });
@@ -161,6 +162,8 @@ export function usePropertyQueries() {
                 descartadoLogs?.forEach((log) => {
                     if (seen.has(log.user_listing_id)) return;
                     seen.add(log.user_listing_id);
+                    const meta = log.event_metadata as { reason?: string } | null;
+                    if (meta?.reason) discardedReasonMap[log.user_listing_id] = meta.reason;
                     if (log.changed_by) {
                         discardedByMap[log.user_listing_id] = log.changed_by;
                         changedByIds.push(log.changed_by);
@@ -318,7 +321,7 @@ export function usePropertyQueries() {
                         createdAt: new Date(listing.created_at),
                         deletedReason: deletedReasonMap[listing.id] || "",
                         deletedByEmail: deletedByMap[listing.id] || "",
-                        discardedReason: "",
+                        discardedReason: discardedReasonMap[listing.id] || "",
                         discardedByEmail: discardedByMap[listing.id] || "",
                         statusChangedByEmail: "",
                         contactedName: contactedNameMap[listing.id] || undefined,
@@ -402,7 +405,7 @@ export function usePropertyQueries() {
                     createdAt: new Date(listing.created_at),
                     deletedReason: deletedReasonMap[listing.id] || "",
                     deletedByEmail: deletedByMap[listing.id] || "",
-                    discardedReason: "",
+                    discardedReason: discardedReasonMap[listing.id] || "",
                     discardedByEmail: discardedByMap[listing.id] || "",
                     statusChangedByEmail: "",
                     statusChangedAt: listing.updated_at ? new Date(listing.updated_at) : null,
