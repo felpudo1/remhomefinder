@@ -79,22 +79,33 @@ export function StatusChangeConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className={contentClassName}>
+      <AlertDialogContent
+        className={cn(
+          "max-w-xl rounded-2xl border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-sm",
+          contentClassName
+        )}
+      >
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogTitle className="px-6 pt-6 text-xl font-semibold tracking-tight">{title}</AlertDialogTitle>
           {description != null && description !== "" ? (
             <AlertDialogDescription asChild>
-              <div className="text-sm text-muted-foreground">{description}</div>
+              <div className="px-6 pt-1 text-sm leading-relaxed text-muted-foreground">{description}</div>
             </AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
-        {children}
-        <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+        <div className="px-6 py-4">{children}</div>
+        <AlertDialogFooter className="gap-2 border-t border-border/60 bg-muted/20 px-6 py-4">
+          <AlertDialogCancel className="h-10 rounded-xl border border-border/80 bg-background px-5 text-sm font-medium hover:bg-muted">
+            {cancelLabel}
+          </AlertDialogCancel>
           <Button
             type="button"
             disabled={confirmDisabled}
-            className={cn(buttonVariants(), confirmClassName)}
+            className={cn(
+              buttonVariants(),
+              "h-10 rounded-xl px-5 text-sm font-semibold shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]",
+              confirmClassName
+            )}
             onClick={handleConfirm}
           >
             {confirmLabel}

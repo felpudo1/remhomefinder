@@ -53,6 +53,12 @@ export interface Property {
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
   marketplaceStatus?: MarketplacePropertyStatus | null;
+  /** Nombre del agente que publicó en marketplace (si aplica) */
+  marketplaceAgentName?: string;
+  /** Teléfono del agente para contacto directo (si aplica) */
+  marketplaceAgentPhone?: string;
+  /** Fuente del contacto para diagnóstico visual en UI */
+  marketplaceContactSource?: "relacion_publicacion" | "publicacion_lookup" | "creador_propiedad" | "marketplace_cache" | "sin_datos";
   listingType: ListingType;
   ref: string;
   details: string;
@@ -94,6 +100,8 @@ export interface MarketplaceProperty {
   ref?: string;
   /** Nombre del miembro de la agencia que ingresó la publicación */
   publishedByName?: string;
+  /** Teléfono de contacto del agente que publicó */
+  publishedByPhone?: string;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {

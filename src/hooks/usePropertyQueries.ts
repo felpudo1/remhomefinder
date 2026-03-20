@@ -62,7 +62,7 @@ export function usePropertyQueries() {
             // 1. Get user listings (includes org_id filter via RLS)
             const { data: listings, error: listingsError } = await (supabase
                 .from("user_listings")
-                .select("*, properties(*), organizations(type, is_personal)") as any)
+                .select("*, properties(*), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, published_by)") as any)
                 .eq("admin_hidden", false)
                 .order("created_at", { ascending: false });
 
@@ -255,12 +255,46 @@ export function usePropertyQueries() {
                 attachmentsByListing[a.user_listing_id].push(a.image_url);
             });
 
+            // 8.b Datos de agente para listings guardados desde marketplace
+            const marketplaceContactByPublicationId: Record<string, { name?: string; phone?: string }> = {};
+            const sourcePublicationIds = Array.from(
+                new Set(listings.map((l: any) => l.source_publication_id).filter(Boolean))
+            ) as string[];
+            if (sourcePublicationIds.length > 0) {
+                const { data: contactRows } = await supabase.rpc("get_marketplace_publication_contacts", {
+                    _publication_ids: sourcePublicationIds,
+                });
+                (contactRows || []).forEach((row: any) => {
+                    marketplaceContactByPublicationId[row.publication_id] = {
+                        name: row.agent_name || undefined,
+                        phone: row.agent_phone || undefined,
+                    };
+                });
+            }
+
             // 9. Map to UI model
             return listings.map((listing): Property => {
                 const p = listing.properties as any;
                 const org = Array.isArray(listing.organizations) ? listing.organizations[0] : listing.organizations;
                 const isSharedListing = org?.is_personal === false;
                 if (!p) {
+                    const relationName = undefined;
+                    const relationPhone = undefined;
+                    const publicationName = listing.source_publication_id
+                        ? marketplaceContactByPublicationId[listing.source_publication_id]?.name
+                        : undefined;
+                    const publicationPhone = listing.source_publication_id
+                        ? marketplaceContactByPublicationId[listing.source_publication_id]?.phone
+                        : undefined;
+                    const marketplaceAgentName = relationName || publicationName;
+                    const marketplaceAgentPhone = relationPhone || publicationPhone;
+                    const marketplaceContactSource = !listing.source_publication_id
+                        ? undefined
+                        : relationName || relationPhone
+                            ? "relacion_publicacion"
+                            : publicationName || publicationPhone
+                                ? "publicacion_lookup"
+                                : "sin_datos";
                     // Fallback if join fails
                     return {
                         id: listing.id,
@@ -296,6 +330,9 @@ export function usePropertyQueries() {
                         details: "",
                         groupId: listing.org_id || null,
                         sourceMarketplaceId: listing.source_publication_id || null,
+                        marketplaceAgentName,
+                        marketplaceAgentPhone,
+                        marketplaceContactSource,
                         isSharedListing,
                         hasUnreadComments: false,
                         unreadCommentsCount: 0,
@@ -324,6 +361,24 @@ export function usePropertyQueries() {
 
                     return new Date(c.created_at).getTime() > new Date(lastReadAt).getTime();
                 }).length;
+
+                const relationName = undefined;
+                const relationPhone = undefined;
+                const publicationName = listing.source_publication_id
+                    ? marketplaceContactByPublicationId[listing.source_publication_id]?.name
+                    : undefined;
+                const publicationPhone = listing.source_publication_id
+                    ? marketplaceContactByPublicationId[listing.source_publication_id]?.phone
+                    : undefined;
+                const marketplaceAgentName = relationName || publicationName;
+                const marketplaceAgentPhone = relationPhone || publicationPhone;
+                const marketplaceContactSource = !listing.source_publication_id
+                    ? undefined
+                    : relationName || relationPhone
+                        ? "relacion_publicacion"
+                        : publicationName || publicationPhone
+                            ? "publicacion_lookup"
+                            : "sin_datos";
 
                 return {
                     id: listing.id, // Use listing ID as the main ID for UI operations
@@ -357,6 +412,9 @@ export function usePropertyQueries() {
                     coordinatedBy: coordinatedByMap[listing.id] || undefined,
                     groupId: listing.org_id || null,
                     sourceMarketplaceId: listing.source_publication_id || null,
+                    marketplaceAgentName,
+                    marketplaceAgentPhone,
+                    marketplaceContactSource,
                     listingType: (listing.listing_type as DbListingType) || "rent",
                     ref: p.ref || "",
                     details: p.details || "",

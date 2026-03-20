@@ -148,6 +148,8 @@ export function usePropertyMutations() {
             discardedAttributeIds,
             prosAndCons,
             contactedFeedback,
+            coordinatedFeedback,
+            discardedSurvey,
         }: {
             id: string;
             status: PropertyStatus;
@@ -158,6 +160,14 @@ export function usePropertyMutations() {
             discardedAttributeIds?: string[];
             prosAndCons?: { positiveIds: string[]; negativeIds: string[] };
             contactedFeedback?: { interest: number; urgency: number };
+            coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number };
+            discardedSurvey?: {
+                overallCondition: number;
+                surroundings: number;
+                houseSecurity: number;
+                expectedSize: number;
+                photosReality: number;
+            };
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
@@ -189,6 +199,17 @@ export function usePropertyMutations() {
             if (contactedFeedback) {
                 eventMetadata.contacted_interest = contactedFeedback.interest;
                 eventMetadata.contacted_urgency = contactedFeedback.urgency;
+            }
+            if (coordinatedFeedback) {
+                eventMetadata.coordinated_agent_response_speed = coordinatedFeedback.agentResponseSpeed;
+                eventMetadata.coordinated_attention_quality = coordinatedFeedback.attentionQuality;
+            }
+            if (discardedSurvey) {
+                eventMetadata.discarded_overall_condition = discardedSurvey.overallCondition;
+                eventMetadata.discarded_surroundings = discardedSurvey.surroundings;
+                eventMetadata.discarded_house_security = discardedSurvey.houseSecurity;
+                eventMetadata.discarded_expected_size = discardedSurvey.expectedSize;
+                eventMetadata.discarded_photos_reality = discardedSurvey.photosReality;
             }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)

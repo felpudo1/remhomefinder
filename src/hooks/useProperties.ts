@@ -37,8 +37,16 @@ export function useProperties() {
       contactedName?: string,
       discardedAttributeIds?: string[],
       prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
-      contactedFeedback?: { interest: number; urgency: number }
-    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback }),
+      contactedFeedback?: { interest: number; urgency: number },
+      coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+      discardedSurvey?: {
+        overallCondition: number;
+        surroundings: number;
+        houseSecurity: number;
+        expectedSize: number;
+        photosReality: number;
+      }
+    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback, coordinatedFeedback, discardedSurvey }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addComment({ propertyId: id, comment }),
     refetch,

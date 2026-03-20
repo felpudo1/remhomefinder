@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
-import { Trash2, XCircle, ExternalLink, CalendarIcon, CalendarPlus, Building2, Users, Star } from "lucide-react";
+import { Trash2, XCircle, ExternalLink, CalendarIcon, CalendarPlus, Building2, Users, Star, MessageCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,25 @@ export interface ProsAndConsAttributeIds {
 
 interface PropertyCardProps {
   property: Property;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: ProsAndConsAttributeIds, contactedFeedback?: { interest: number; urgency: number }) => void;
+  onStatusChange: (
+    id: string,
+    status: PropertyStatus,
+    deletedReason?: string,
+    coordinatedDate?: string | null,
+    groupId?: string | null,
+    contactedName?: string,
+    discardedAttributeIds?: string[],
+    prosAndCons?: ProsAndConsAttributeIds,
+    contactedFeedback?: { interest: number; urgency: number },
+    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+    discardedSurvey?: {
+      overallCondition: number;
+      surroundings: number;
+      houseSecurity: number;
+      expectedSize: number;
+      photosReality: number;
+    }
+  ) => void;
   onClick: () => void;
   ownerEmail?: string | null;
 }
@@ -81,7 +99,6 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-  const [selectedAttributeIds, setSelectedAttributeIds] = useState<string[]>([]);
   const [showProsConsConfirm, setShowProsConsConfirm] = useState(false);
   const [pendingProsConsStatus, setPendingProsConsStatus] = useState<"firme_candidato" | "posible_interes" | null>(null);
   const [selectedPositiveIds, setSelectedPositiveIds] = useState<string[]>([]);
@@ -89,10 +106,17 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const { data: feedbackAttributes = [] } = useFeedbackAttributes();
   const [showCoordinatedConfirm, setShowCoordinatedConfirm] = useState(false);
   const [coordinatedDateTime, setCoordinatedDateTime] = useState("");
+  const [coordinatedResponseSpeed, setCoordinatedResponseSpeed] = useState(0);
+  const [coordinatedAttentionQuality, setCoordinatedAttentionQuality] = useState(0);
   const [showContactedConfirm, setShowContactedConfirm] = useState(false);
   const [contactedName, setContactedName] = useState("");
   const [contactedInterest, setContactedInterest] = useState(0);
   const [contactedUrgency, setContactedUrgency] = useState(0);
+  const [discardedOverallCondition, setDiscardedOverallCondition] = useState(0);
+  const [discardedSurroundings, setDiscardedSurroundings] = useState(0);
+  const [discardedHouseSecurity, setDiscardedHouseSecurity] = useState(0);
+  const [discardedExpectedSize, setDiscardedExpectedSize] = useState(0);
+  const [discardedPhotosReality, setDiscardedPhotosReality] = useState(0);
   const { toast } = useToast();
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [galleryInitialImg, setGalleryInitialImg] = useState(0);
@@ -102,6 +126,14 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
 
   const config = STATUS_CONFIG[property.status];
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
+  const marketplaceAgentPhoneDigits = (property.marketplaceAgentPhone || "").replace(/\D/g, "");
+  const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
+  const statusOptions: PropertyStatus[] = ["ingresado", "contactado", "visita_coordinada", "firme_candidato", "posible_interes", "descartado"];
+  const statusTransitionsByOrigin: Partial<Record<PropertyStatus, Set<PropertyStatus>>> = {
+    ingresado: new Set<PropertyStatus>(["contactado", "descartado"]),
+    contactado: new Set<PropertyStatus>(["visita_coordinada", "descartado"]),
+  };
+  const allowedNextStatuses = statusTransitionsByOrigin[property.status];
 
   const handleStatusChange = (val: string) => {
     if (val === "eliminado") {
@@ -131,9 +163,11 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
     onChange: (next: number) => void,
     label: string
   ) => (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground text-left block">{label}</label>
-      <div className="flex items-center gap-1">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+      <label className="text-sm font-medium text-foreground text-left leading-snug max-w-[70%]">
+        {label}
+      </label>
+      <div className="flex items-center gap-1 shrink-0">
         {[1, 2, 3, 4, 5].map((starValue) => (
           <button
             key={`${label}-${starValue}`}
@@ -269,10 +303,28 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
             {/* Fila 1: Ingresado por / De agencia (izq) + Badge Alquiler/Venta (der). */}
             <div className="flex items-center justify-between gap-2">
               {property.sourceMarketplaceId ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
-                  <Building2 className="w-3 h-3" />
-                  De agencia
-                </span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
+                    <Building2 className="w-3 h-3" />
+                    De agencia
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Agente: {property.marketplaceAgentName || "Agente no disponible"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!marketplaceAgentWhatsappUrl) return;
+                      window.open(marketplaceAgentWhatsappUrl, "_blank", "noopener,noreferrer");
+                    }}
+                    disabled={!marketplaceAgentWhatsappUrl}
+                    className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    Enviar WhatsApp
+                  </button>
+                </div>
               ) : ownerEmail ? (
                 <span className="text-[11px] text-muted-foreground">
                   Ingresado por {ownerEmail}
@@ -358,10 +410,15 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               </SelectTrigger>
               <SelectContent>
                 {(
-                  (["ingresado", "contactado", "visita_coordinada", "firme_candidato", "posible_interes", "descartado"] as PropertyStatus[])
+                  statusOptions
                   .map((key) => [key, STATUS_CONFIG[key]] as const)
                 ).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key} className="text-xs">
+                    <SelectItem
+                      key={key}
+                      value={key}
+                      className="text-xs data-[disabled]:text-muted-foreground/40"
+                      disabled={!!allowedNextStatuses && !allowedNextStatuses.has(key)}
+                    >
                       <span className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                         {cfg.label}
@@ -380,7 +437,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               title="¿Eliminar esta propiedad?"
               description={`La propiedad "${property.title}" será marcada como eliminada. Indicá el motivo de la eliminación.`}
               confirmLabel="Eliminar"
-              confirmClassName="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
               onConfirm={() => onStatusChange(property.id, "eliminado", deleteReason)}
             >
               <Textarea
@@ -395,35 +452,54 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               open={showDiscardConfirm}
               onOpenChange={(open) => {
                 setShowDiscardConfirm(open);
-                if (!open) setSelectedAttributeIds([]);
+                if (!open) {
+                  setDiscardedOverallCondition(0);
+                  setDiscardedSurroundings(0);
+                  setDiscardedHouseSecurity(0);
+                  setDiscardedExpectedSize(0);
+                  setDiscardedPhotosReality(0);
+                }
               }}
-              title="¿Descartar esta propiedad?"
-              description={`Lamentamos que la propiedad "${property.title}" no haya colmado tus expectativas. Por suerte quedan cientos de posibilidades dentro del Market en la aplicación. Podrías darnos una última ayuda marcando los items que no fueron de tu agrado?`}
-              confirmLabel="Descartar"
-              confirmClassName="bg-status-discarded text-white hover:bg-status-discarded/90"
-              onConfirm={() =>
-                onStatusChange(property.id, "descartado", undefined, undefined, undefined, undefined, selectedAttributeIds)
+              title="💬 Antes de descartar, contanos tu experiencia"
+              description={`Queremos aprender de tu visita a "${property.title}" ✨. Tu feedback ayuda a mejorar las recomendaciones del Market.`}
+              confirmLabel="🧡 Confirmar descarte"
+              confirmDisabled={
+                discardedOverallCondition === 0 ||
+                discardedSurroundings === 0 ||
+                discardedHouseSecurity === 0 ||
+                discardedExpectedSize === 0 ||
+                discardedPhotosReality === 0
               }
+              confirmClassName="bg-gradient-to-r from-status-discarded to-rose-500 text-white hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none"
+              onConfirm={async () => {
+                await onStatusChange(
+                  property.id,
+                  "descartado",
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  {
+                    overallCondition: discardedOverallCondition,
+                    surroundings: discardedSurroundings,
+                    houseSecurity: discardedHouseSecurity,
+                    expectedSize: discardedExpectedSize,
+                    photosReality: discardedPhotosReality,
+                  }
+                );
+                setShowDiscardConfirm(false);
+              }}
             >
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-2">
-                {feedbackAttributes.map((attr) => (
-                  <label
-                    key={attr.id}
-                    className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-muted/50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={selectedAttributeIds.includes(attr.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedAttributeIds((prev) =>
-                          checked ? [...prev, attr.id] : prev.filter((id) => id !== attr.id)
-                        );
-                      }}
-                    />
-                    <span className="text-sm font-medium text-foreground">
-                      {attr.name.toLowerCase() === "otro" ? "Otro motivo" : attr.name}
-                    </span>
-                  </label>
-                ))}
+              <div className="space-y-4 py-2">
+                {renderFiveStars(discardedOverallCondition, setDiscardedOverallCondition, "🏠 Estado general de la propiedad")}
+                {renderFiveStars(discardedSurroundings, setDiscardedSurroundings, "🌳 Entorno (casas linderas y barrio)")}
+                {renderFiveStars(discardedHouseSecurity, setDiscardedHouseSecurity, "🔐 Seguridad de la casa")}
+                {renderFiveStars(discardedExpectedSize, setDiscardedExpectedSize, "📐 El tamaño era el esperado")}
+                {renderFiveStars(discardedPhotosReality, setDiscardedPhotosReality, "📸 Las fotos mostraban la realidad")}
               </div>
             </StatusChangeConfirmDialog>
 
@@ -440,11 +516,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               title={pendingProsConsStatus === "firme_candidato" ? "Alta prioridad" : "Interesado"}
               description={`Contanos qué te gustó y qué podría mejorar de "${property.title}". Nos ayuda a mejorar las recomendaciones.`}
               confirmLabel="Confirmar"
-              confirmClassName={
-                pendingProsConsStatus === "firme_candidato"
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                  : "bg-amber-600 text-white hover:bg-amber-700"
-              }
+              confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
               onConfirm={async () => {
                 if (!pendingProsConsStatus) return;
                 await onStatusChange(property.id, pendingProsConsStatus, undefined, undefined, undefined, undefined, undefined, {
@@ -507,29 +579,53 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
               open={showCoordinatedConfirm}
               onOpenChange={(open) => {
                 setShowCoordinatedConfirm(open);
-                if (!open) setCoordinatedDateTime("");
+                if (!open) {
+                  setCoordinatedDateTime("");
+                  setCoordinatedResponseSpeed(0);
+                  setCoordinatedAttentionQuality(0);
+                }
               }}
-              title="Coordinar visita"
-              description={`Seleccioná la fecha y hora de la visita coordinada para "${property.title}". La fecha debe ser posterior a hoy.`}
-              confirmLabel="Confirmar visita"
-              confirmDisabled={!coordinatedDateTime.trim() || new Date(coordinatedDateTime) <= new Date()}
-              confirmClassName="bg-status-coordinated text-white hover:bg-status-coordinated/90 disabled:opacity-50 disabled:pointer-events-none"
+              title="🗓️ Coordinar visita"
+              description={`Elegí la fecha y hora de visita para "${property.title}" y calificá la gestión del agente ✨.`}
+              confirmLabel="🚀 Confirmar visita"
+              confirmDisabled={
+                !coordinatedDateTime.trim() ||
+                new Date(coordinatedDateTime) <= new Date() ||
+                coordinatedResponseSpeed === 0 ||
+                coordinatedAttentionQuality === 0
+              }
+              confirmClassName="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
               onConfirm={async () => {
                 const isoDate = coordinatedDateTime ? new Date(coordinatedDateTime).toISOString() : null;
-                await onStatusChange(property.id, "visita_coordinada", undefined, isoDate);
+                await onStatusChange(
+                  property.id,
+                  "visita_coordinada",
+                  undefined,
+                  isoDate,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  { agentResponseSpeed: coordinatedResponseSpeed, attentionQuality: coordinatedAttentionQuality }
+                );
                 setShowCoordinatedConfirm(false);
                 setCoordinatedDateTime("");
+                setCoordinatedResponseSpeed(0);
+                setCoordinatedAttentionQuality(0);
               }}
             >
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground text-left block">Fecha y hora de la visita</label>
+              <div className="space-y-4">
+                <label className="text-sm font-medium text-foreground text-left block">📅 Fecha y hora de la visita</label>
                 <Input
                   type="datetime-local"
                   value={coordinatedDateTime}
                   onChange={(e) => setCoordinatedDateTime(e.target.value)}
                   min={toDatetimeLocalString(new Date())}
-                  className="rounded-xl"
+                  className="rounded-xl border-status-coordinated/40 focus-visible:ring-status-coordinated"
                 />
+                {renderFiveStars(coordinatedResponseSpeed, setCoordinatedResponseSpeed, "⚡ ¿Cómo sentiste los tiempos de respuesta del agente?")}
+                {renderFiveStars(coordinatedAttentionQuality, setCoordinatedAttentionQuality, "🤝 La atención te resultó clara y amable")}
               </div>
             </StatusChangeConfirmDialog>
 
@@ -543,13 +639,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   setContactedUrgency(0);
                 }
               }}
-              title="Registrar contacto"
-              description={`Ingresá el nombre de la persona con la que te contactaste por "${property.title}" y calificá interés y urgencia.`}
-              confirmLabel="Confirmar contacto"
+              title="📞 Registrar contacto"
+              description={`Contanos con quién hablaste por "${property.title}" ✨. Completá el nombre y marcá interés + urgencia para avanzar 🚀.`}
+              confirmLabel="🔥 Confirmar contacto"
               confirmDisabled={!contactedName.trim() || contactedInterest === 0 || contactedUrgency === 0}
-              confirmClassName="bg-status-contacted text-white hover:bg-status-contacted/90"
-              onConfirm={() =>
-                onStatusChange(
+              confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
+              onConfirm={async () => {
+                await onStatusChange(
                   property.id,
                   "contactado",
                   undefined,
@@ -559,26 +655,30 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   undefined,
                   undefined,
                   { interest: contactedInterest, urgency: contactedUrgency }
-                )
-              }
+                );
+                setShowContactedConfirm(false);
+                setContactedName("");
+                setContactedInterest(0);
+                setContactedUrgency(0);
+              }}
             >
               <div className="space-y-4">
-                <label className="text-sm font-medium text-foreground text-left block">Nombre del contacto</label>
+                <label className="text-sm font-medium text-foreground text-left block">👤 Nombre del contacto</label>
                 <Input
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Ej: Juan Perez ✍️"
                   value={contactedName}
                   onChange={(e) => setContactedName(e.target.value)}
-                  className="rounded-xl"
+                  className="rounded-xl border-status-contacted/40 focus-visible:ring-status-contacted"
                 />
                 {renderFiveStars(
                   contactedInterest,
                   setContactedInterest,
-                  "A primera vista, calificá su primera impresión de la publicación"
+                  "⭐ A primera vista, ¿qué impresión le generó la publicación?"
                 )}
                 {renderFiveStars(
                   contactedUrgency,
                   setContactedUrgency,
-                  "¿Qué tan urgente es su mudanza?"
+                  "⏰ ¿Qué tan urgente es su mudanza?"
                 )}
               </div>
             </StatusChangeConfirmDialog>

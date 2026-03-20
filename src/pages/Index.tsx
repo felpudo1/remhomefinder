@@ -136,9 +136,39 @@ const Index = () => {
     return msg.includes("row-level security") || msg.includes("policy") || msg.includes("permission") || msg.includes("denied");
   };
 
-  const handleStatusChange = async (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: { positiveIds: string[]; negativeIds: string[] }, contactedFeedback?: { interest: number; urgency: number }) => {
+  const handleStatusChange = async (
+    id: string,
+    status: PropertyStatus,
+    deletedReason?: string,
+    coordinatedDate?: string | null,
+    groupId?: string | null,
+    contactedName?: string,
+    discardedAttributeIds?: string[],
+    prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
+    contactedFeedback?: { interest: number; urgency: number },
+    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+    discardedSurvey?: {
+      overallCondition: number;
+      surroundings: number;
+      houseSecurity: number;
+      expectedSize: number;
+      photosReality: number;
+    }
+  ) => {
     try {
-      await updateStatus(id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback);
+      await updateStatus(
+        id,
+        status,
+        deletedReason,
+        coordinatedDate,
+        groupId,
+        contactedName,
+        discardedAttributeIds,
+        prosAndCons,
+        contactedFeedback,
+        coordinatedFeedback,
+        discardedSurvey
+      );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error desconocido";
       const isEnumError = /enum|invalid.*firme_candidato|invalid.*posible_interes|user_listing_status/i.test(msg);
@@ -435,7 +465,13 @@ const Index = () => {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {filteredAndSorted.map((property) => (
-                            <PropertyCard key={property.id} property={property} onStatusChange={handleStatusChange} onClick={() => handleCardClick(property)} ownerEmail={property.createdByEmail || null} />
+                            <PropertyCard
+                              key={property.id}
+                              property={property}
+                              onStatusChange={handleStatusChange}
+                              onClick={() => handleCardClick(property)}
+                              ownerEmail={property.createdByEmail || null}
+                            />
                           ))}
                         </div>
                       )}

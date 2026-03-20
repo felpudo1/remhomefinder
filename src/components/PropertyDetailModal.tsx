@@ -46,7 +46,25 @@ interface PropertyDetailModalProps {
   property: Property | null;
   open: boolean;
   onClose: () => void;
-  onStatusChange: (id: string, status: PropertyStatus, deletedReason?: string, coordinatedDate?: string | null, groupId?: string | null, contactedName?: string, discardedAttributeIds?: string[], prosAndCons?: { positiveIds: string[]; negativeIds: string[] }, contactedFeedback?: { interest: number; urgency: number }) => void;
+  onStatusChange: (
+    id: string,
+    status: PropertyStatus,
+    deletedReason?: string,
+    coordinatedDate?: string | null,
+    groupId?: string | null,
+    contactedName?: string,
+    discardedAttributeIds?: string[],
+    prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
+    contactedFeedback?: { interest: number; urgency: number },
+    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+    discardedSurvey?: {
+      overallCondition: number;
+      surroundings: number;
+      houseSecurity: number;
+      expectedSize: number;
+      photosReality: number;
+    }
+  ) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
   currentUserEmail?: string | null;
   currentUserDisplayName?: string | null;

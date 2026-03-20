@@ -24,7 +24,15 @@ interface IndexModalsProps {
         contactedName?: string,
         discardedAttributeIds?: string[],
         prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
-        contactedFeedback?: { interest: number; urgency: number }
+        contactedFeedback?: { interest: number; urgency: number },
+        coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+        discardedSurvey?: {
+            overallCondition: number;
+            surroundings: number;
+            houseSecurity: number;
+            expectedSize: number;
+            photosReality: number;
+        }
     ) => Promise<void>;
     onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;
     onAddProperty: (form: any) => Promise<void>;

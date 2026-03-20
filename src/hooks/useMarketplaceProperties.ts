@@ -40,8 +40,26 @@ export function useMarketplaceProperties() {
         }
       }
 
+      const publisherIds = Array.from(
+        new Set((data || []).map((pub: any) => pub.published_by).filter(Boolean)),
+      );
+      let publisherById: Record<string, { name?: string; phone?: string }> = {};
+      if (publisherIds.length > 0) {
+        const { data: publishers } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, phone, email")
+          .in("user_id", publisherIds);
+        publisherById = Object.fromEntries(
+          (publishers || []).map((p: any) => [
+            p.user_id,
+            { name: p.display_name || p.email || "Agente", phone: p.phone || undefined },
+          ]),
+        );
+      }
+
       return data.map((pub: any): MarketplaceProperty => {
         const p = pub.properties || {};
+        const publisher = pub.published_by ? publisherById[pub.published_by] : undefined;
         return {
           id: pub.id,
           propertyId: pub.property_id,
@@ -64,6 +82,8 @@ export function useMarketplaceProperties() {
           listingType: pub.listing_type || "rent",
           createdAt: new Date(pub.created_at),
           updatedAt: new Date(pub.updated_at),
+          publishedByName: publisher?.name,
+          publishedByPhone: publisher?.phone,
         };
       });
     },
