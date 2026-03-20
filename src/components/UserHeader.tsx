@@ -4,6 +4,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 import { useEffect, useState } from "react";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 interface HeaderProps {
     userEmail: string | null;
@@ -27,6 +29,7 @@ export const UserHeader = ({
     const { isPremium } = useSubscription();
     const { data: profile } = useProfile();
     const [showStatusBubbles, setShowStatusBubbles] = useState(false);
+    const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     const isReferred = !!profile?.referredById;
 
@@ -76,7 +79,7 @@ export const UserHeader = ({
                         <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
+                        <span className="font-bold text-foreground text-sm tracking-tight leading-tight">{appBrandName}</span>
                         {/* Email del usuario visible solo en mobile, como subtexto bajo el nombre */}
                         {userEmail && (
                             <div className="flex items-center gap-1 md:hidden">

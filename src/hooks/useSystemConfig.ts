@@ -26,8 +26,10 @@ export function useSystemConfig(key: string, defaultValue: string) {
             // Si no existe la fila, retornar el valor por defecto
             return data?.value ?? defaultValue;
         },
-        // Sin staleTime — se refresca al montar para que los cambios del admin se vean en el próximo page load
-        staleTime: 0,
+        // Config estable: evitar reconsultas frecuentes en navegación y foco.
+        // Se refresca explícitamente cuando el admin guarda (invalidateQueries).
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 
     // Guardar (upsert) el valor en Supabase

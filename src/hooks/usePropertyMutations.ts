@@ -160,7 +160,7 @@ export function usePropertyMutations() {
             discardedAttributeIds?: string[];
             prosAndCons?: { positiveIds: string[]; negativeIds: string[] };
             contactedFeedback?: { interest: number; urgency: number };
-            coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number };
+            coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number; appHelpScore?: number };
             discardedSurvey?: {
                 overallCondition: number;
                 surroundings: number;
@@ -203,6 +203,7 @@ export function usePropertyMutations() {
             if (coordinatedFeedback) {
                 eventMetadata.coordinated_agent_response_speed = coordinatedFeedback.agentResponseSpeed;
                 eventMetadata.coordinated_attention_quality = coordinatedFeedback.attentionQuality;
+                eventMetadata.coordinated_app_help_score = coordinatedFeedback.appHelpScore ?? null;
             }
             if (discardedSurvey) {
                 eventMetadata.discarded_overall_condition = discardedSurvey.overallCondition;

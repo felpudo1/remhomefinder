@@ -5,10 +5,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import authBg from "@/assets/auth-bg.jpg";
 import { ROUTES } from "@/lib/constants";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 const Landing = () => {
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -25,7 +28,7 @@ const Landing = () => {
                         <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
                             <Home className="w-4 h-4 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-xl tracking-tight">HomeFinder</span>
+                        <span className="font-bold text-xl tracking-tight">{appBrandName}</span>
                     </div>
                     <div className="flex gap-4">
                         {isLoggedIn ?
@@ -121,9 +124,9 @@ const Landing = () => {
                         <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center">
                             <Home className="w-3 h-3 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-lg">HomeFinder</span>
+                        <span className="font-bold text-lg">{appBrandName}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">© 2024 HomeFinder. El primer organizador grupal inmobiliario.</p>
+                    <p className="text-sm text-muted-foreground">© 2024 {appBrandName}. El primer organizador grupal inmobiliario.</p>
                     <div className="flex gap-6 text-sm text-muted-foreground font-medium">
                         <a href="#" className="hover:text-primary">Términos</a>
                         <a href="#" className="hover:text-primary">Privacidad</a>
@@ -152,7 +155,7 @@ const testimonials = [
         location: "Pocitos, Montevideo"
     },
     {
-        quote: "Con mi pareja buscábamos alquiler en Cordón y Parque Rodó. HomeFinder nos salvó de la locura de coordinar todo por chat.",
+        quote: "Con mi pareja buscábamos alquiler en Cordón y Parque Rodó. Esta app nos salvó de la locura de coordinar todo por chat.",
         author: "Martín y Lucía",
         location: "Cordón, Montevideo"
     },

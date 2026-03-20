@@ -1,5 +1,7 @@
 import { Home, LogOut, ArrowLeft, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 interface AdminHeaderProps {
     activeSection: string;
@@ -22,6 +24,7 @@ export const AdminHeader = ({
     displayName,
     isPremium,
 }: AdminHeaderProps) => {
+    const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
     const StatusStar = () => (
         isPremium ? (
             <span title="PREMIUM">
@@ -46,7 +49,7 @@ export const AdminHeader = ({
                             <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-foreground text-sm tracking-tight leading-tight">HomeFinder</span>
+                            <span className="font-bold text-foreground text-sm tracking-tight leading-tight">{appBrandName}</span>
                             {/* Identidad del Admin como subtexto */}
                             <div className="flex items-center gap-1">
                                 <StatusStar />

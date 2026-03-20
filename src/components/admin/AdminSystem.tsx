@@ -5,6 +5,7 @@ import { AdminVideoConfig } from "./system/AdminVideoConfig";
 import { AdminButtons } from "./system/AdminButtons";
 import { AdminAuditLog } from "./system/AdminAuditLog";
 import { AdminMarketplaceTips } from "./system/AdminMarketplaceTips";
+import { AdminBranding } from "./system/AdminBranding";
 import { Separator } from "@/components/ui/separator";
 
 /**
@@ -33,6 +34,9 @@ export function AdminSystem() {
 
             {/* Configuración del tip de contacto en marketplace */}
             <AdminMarketplaceTips />
+
+            {/* Configuración de nombre comercial de la app */}
+            <AdminBranding />
 
             <Separator className="my-2" />
 

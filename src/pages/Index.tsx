@@ -19,7 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/constants";
-import { ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT } from "@/lib/config-keys";
+import {
+  ADD_BUTTON_CONFIG_KEY,
+  ADD_BUTTON_DEFAULT,
+  APP_BRAND_NAME_DEFAULT,
+  APP_BRAND_NAME_KEY,
+} from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { IndexModals } from "@/components/IndexModals";
@@ -75,6 +80,7 @@ const Index = () => {
 
   // Configuración de botones
   const { value: addButtonConfigRaw } = useSystemConfig(ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT);
+  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
   const addButtonConfig = (addButtonConfigRaw as AddButtonConfig) || ADD_BUTTON_DEFAULT;
 
   // Bienvenida
@@ -146,7 +152,7 @@ const Index = () => {
     discardedAttributeIds?: string[],
     prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
     contactedFeedback?: { interest: number; urgency: number },
-    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number; appHelpScore?: number },
     discardedSurvey?: {
       overallCondition: number;
       surroundings: number;
@@ -333,7 +339,7 @@ const Index = () => {
             <div className="space-y-3">
               <h2 className="text-3xl font-black text-foreground tracking-tight">¡Casi listo! 🚀</h2>
               <p className="text-muted-foreground leading-relaxed font-medium">
-                Bienvenido a <strong className="text-foreground">HomeFinder</strong>. Donde la tecnología te ayuda a descubrir tu lugar en el mundo.
+                Bienvenido a <strong className="text-foreground">{appBrandName}</strong>. Donde la tecnología te ayuda a descubrir tu lugar en el mundo.
               </p>
             </div>
 

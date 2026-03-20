@@ -11,7 +11,12 @@ import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLES, ROUTES } from "@/lib/constants";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { SHOW_AUTH_VIDEO_CONFIG_KEY, SHOW_AUTH_VIDEO_DEFAULT } from "@/lib/config-keys";
+import {
+  SHOW_AUTH_VIDEO_CONFIG_KEY,
+  SHOW_AUTH_VIDEO_DEFAULT,
+  APP_BRAND_NAME_DEFAULT,
+  APP_BRAND_NAME_KEY,
+} from "@/lib/config-keys";
 
 // Tipos posibles del estado de la base de datos
 type AccountType = "user" | "agency";
@@ -36,6 +41,7 @@ const Auth = () => {
   const { toast } = useToast();
   const { loading, isSigningUp, signIn, signUp, redirectByRole } = useAuth();
   const { value: showVideo } = useSystemConfig(SHOW_AUTH_VIDEO_CONFIG_KEY, SHOW_AUTH_VIDEO_DEFAULT);
+  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
   useEffect(() => {
     const {
@@ -111,7 +117,7 @@ const Auth = () => {
                 <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto transition-transform group-hover:scale-110 shadow-lg shadow-primary/20">
                   <Home className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">HomeFinder</h1>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">{appBrandName}</h1>
               </button>
               <p className="text-muted-foreground text-sm">
                 {isLogin ? "Iniciá sesión para continuar" : "Creá tu cuenta"}

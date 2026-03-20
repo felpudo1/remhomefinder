@@ -5,6 +5,8 @@ import { Gift, Copy, Check, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Agency } from "./AgentProfile";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 interface AgentReferralSectionProps {
   agency: Agency;
@@ -17,6 +19,7 @@ interface AgentReferralSectionProps {
 export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
   const { data: referralCount = 0 } = useQuery({
     queryKey: ["agency-referral-count", agency.created_by],
@@ -61,7 +64,7 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
   };
 
   const shareWhatsApp = () => {
-    const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en HomeFinder: ${referralLink}`);
+    const text = encodeURIComponent(`¡Hola! Te invito a ver mis propiedades destacadas en ${appBrandName}: ${referralLink}`);
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 

@@ -5,12 +5,15 @@ import {
     SUPPORT_EMAIL_CONFIG_KEY,
     SUPPORT_EMAIL_DEFAULT,
     SUPPORT_PHONE_CONFIG_KEY,
-    SUPPORT_PHONE_DEFAULT
+    SUPPORT_PHONE_DEFAULT,
+    APP_BRAND_NAME_DEFAULT,
+    APP_BRAND_NAME_KEY,
 } from "@/lib/config-keys";
 
 export const Footer = () => {
     const { value: supportEmail } = useSystemConfig(SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT);
     const { value: supportPhone } = useSystemConfig(SUPPORT_PHONE_CONFIG_KEY, SUPPORT_PHONE_DEFAULT);
+    const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     return (
         <footer className="w-full py-8 border-t border-border mt-auto bg-card/30">
@@ -19,7 +22,7 @@ export const Footer = () => {
                     <span>Hecho con</span>
                     <Heart className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" />
                     <span>por</span>
-                    <span className="font-bold text-foreground">HomeFinder</span>
+                    <span className="font-bold text-foreground">{appBrandName}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground/60">
                     © {new Date().getFullYear()} — Todos los derechos reservados.

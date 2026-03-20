@@ -56,7 +56,7 @@ interface PropertyDetailModalProps {
     discardedAttributeIds?: string[],
     prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
     contactedFeedback?: { interest: number; urgency: number },
-    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number; appHelpScore?: number },
     discardedSurvey?: {
       overallCondition: number;
       surroundings: number;

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { Property, PropertyStatus, STATUS_CONFIG, MarketplacePropertyStatus } from "@/types/property";
 import {
   Select,
@@ -20,8 +23,6 @@ import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { usePropertyRating } from "@/hooks/usePropertyRating";
 import { StarRating } from "@/components/ui/StarRating";
-import { useFeedbackAttributes } from "@/hooks/useFeedbackAttributes";
-import { Checkbox } from "@/components/ui/checkbox";
 
 /** Pros = score 5, contras = score 1 en attribute_scores */
 export interface ProsAndConsAttributeIds {
@@ -41,7 +42,7 @@ interface PropertyCardProps {
     discardedAttributeIds?: string[],
     prosAndCons?: ProsAndConsAttributeIds,
     contactedFeedback?: { interest: number; urgency: number },
-    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number },
+    coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number; appHelpScore?: number },
     discardedSurvey?: {
       overallCondition: number;
       surroundings: number;
@@ -65,7 +66,13 @@ function toDatetimeLocalString(d: Date): string {
 }
 
 /** Genera URL de Google Calendar para agregar el evento. Formato: YYYYMMDDTHHmmss (local). */
-function buildGoogleCalendarUrl(title: string, startDate: Date, details?: string, location?: string): string {
+function buildGoogleCalendarUrl(
+  title: string,
+  startDate: Date,
+  details?: string,
+  location?: string,
+  attendees?: string[]
+): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   const y = startDate.getFullYear();
   const m = pad(startDate.getMonth() + 1);
@@ -83,6 +90,7 @@ function buildGoogleCalendarUrl(title: string, startDate: Date, details?: string
   });
   if (details) params.set("details", details);
   if (location) params.set("location", location);
+  if (attendees && attendees.length > 0) params.set("add", attendees.join(","));
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
@@ -101,13 +109,23 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [showProsConsConfirm, setShowProsConsConfirm] = useState(false);
   const [pendingProsConsStatus, setPendingProsConsStatus] = useState<"firme_candidato" | "posible_interes" | null>(null);
-  const [selectedPositiveIds, setSelectedPositiveIds] = useState<string[]>([]);
-  const [selectedNegativeIds, setSelectedNegativeIds] = useState<string[]>([]);
-  const { data: feedbackAttributes = [] } = useFeedbackAttributes();
+  const [closePriceScore, setClosePriceScore] = useState(0);
+  const [closeConditionScore, setCloseConditionScore] = useState(0);
+  const [closeSecurityScore, setCloseSecurityScore] = useState(0);
+  const [closeGuaranteeScore, setCloseGuaranteeScore] = useState(0);
+  const [closeMovingScore, setCloseMovingScore] = useState(0);
   const [showCoordinatedConfirm, setShowCoordinatedConfirm] = useState(false);
   const [coordinatedDateTime, setCoordinatedDateTime] = useState("");
   const [coordinatedResponseSpeed, setCoordinatedResponseSpeed] = useState(0);
   const [coordinatedAttentionQuality, setCoordinatedAttentionQuality] = useState(0);
+  const [coordinatedAppHelpScore, setCoordinatedAppHelpScore] = useState(0);
+  const [isEditingCoordinatedVisit, setIsEditingCoordinatedVisit] = useState(false);
+  const [showCalendarOfferConfirm, setShowCalendarOfferConfirm] = useState(false);
+  const [calendarOfferDate, setCalendarOfferDate] = useState<Date | null>(null);
+  const [calendarMotivationText, setCalendarMotivationText] = useState(
+    "🏡✨ Falta menos para ver tu próximo hogar. ¡No te olvides de agendar la cita!"
+  );
+  const [familyMemberEmails, setFamilyMemberEmails] = useState<string[]>([]);
   const [showContactedConfirm, setShowContactedConfirm] = useState(false);
   const [contactedName, setContactedName] = useState("");
   const [contactedInterest, setContactedInterest] = useState(0);
@@ -118,6 +136,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const [discardedExpectedSize, setDiscardedExpectedSize] = useState(0);
   const [discardedPhotosReality, setDiscardedPhotosReality] = useState(0);
   const { toast } = useToast();
+  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [galleryInitialImg, setGalleryInitialImg] = useState(0);
 
@@ -132,6 +151,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const statusTransitionsByOrigin: Partial<Record<PropertyStatus, Set<PropertyStatus>>> = {
     ingresado: new Set<PropertyStatus>(["contactado", "descartado"]),
     contactado: new Set<PropertyStatus>(["visita_coordinada", "descartado"]),
+    visita_coordinada: new Set<PropertyStatus>(["firme_candidato", "posible_interes", "descartado"]),
   };
   const allowedNextStatuses = statusTransitionsByOrigin[property.status];
 
@@ -141,18 +161,103 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
     } else if (val === "descartado") {
       setShowDiscardConfirm(true);
     } else if (val === "visita_coordinada") {
+      setIsEditingCoordinatedVisit(false);
       setShowCoordinatedConfirm(true);
     } else if (val === "contactado") {
       setShowContactedConfirm(true);
     } else if (val === "firme_candidato" || val === "posible_interes") {
       setPendingProsConsStatus(val);
-      setSelectedPositiveIds([]);
-      setSelectedNegativeIds([]);
+      setClosePriceScore(0);
+      setCloseConditionScore(0);
+      setCloseSecurityScore(0);
+      setCloseGuaranteeScore(0);
+      setCloseMovingScore(0);
       setShowProsConsConfirm(true);
     } else {
       onStatusChange(property.id, val as PropertyStatus);
     }
   };
+
+  const handleEditCoordinatedVisit = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setIsEditingCoordinatedVisit(true);
+    if (property.coordinatedDate) {
+      setCoordinatedDateTime(toDatetimeLocalString(property.coordinatedDate));
+    } else {
+      setCoordinatedDateTime("");
+    }
+    setCoordinatedResponseSpeed(0);
+    setCoordinatedAttentionQuality(0);
+    setCoordinatedAppHelpScore(0);
+    setShowCoordinatedConfirm(true);
+  };
+
+  const openVisitCalendarEntry = (visitDate: Date) => {
+    const location = [property.neighborhood, property.city].filter(Boolean).join(", ") || undefined;
+    const contactName = property.marketplaceAgentName || ownerEmail || property.createdByEmail || "Sin nombre";
+    const attendees = Array.from(
+      new Set(
+        familyMemberEmails
+          .map((email) => email.trim())
+          .filter((email) => email.includes("@"))
+      )
+    );
+    const url = buildGoogleCalendarUrl(
+      `Visita: ${property.title}. Contacto ${contactName}`,
+      visitDate,
+      property.url ? `Publicación: ${property.url}` : undefined,
+      location,
+      attendees
+    );
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const groupIdForCalendar = property.groupId || null;
+  const propertyIdForCalendar = property.id;
+  useEffect(() => {
+    const loadFamilyEmails = async () => {
+      if (!groupIdForCalendar) {
+        setFamilyMemberEmails([]);
+        return;
+      }
+      const { data: members, error: membersError } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("org_id", groupIdForCalendar)
+        .eq("is_active", true);
+      if (membersError || !members || members.length === 0) {
+        setFamilyMemberEmails([]);
+        return;
+      }
+      const userIds = Array.from(new Set(members.map((m) => m.user_id).filter(Boolean)));
+      if (userIds.length === 0) {
+        setFamilyMemberEmails([]);
+        return;
+      }
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, email")
+        .in("user_id", userIds);
+      if (profilesError || !profilesData) {
+        setFamilyMemberEmails([]);
+        return;
+      }
+      setFamilyMemberEmails(
+        profilesData
+          .map((p) => p.email || "")
+          .filter((email) => email.includes("@"))
+      );
+    };
+    loadFamilyEmails();
+  }, [groupIdForCalendar, propertyIdForCalendar]);
+
+  const calendarMotivationOptions = [
+    "🏡✨ Falta menos para ver tu próximo hogar. ¡No te olvides de agendar la cita!",
+    "🧠💘 Modo cabecita de novio: que no se te escape la cita, agendala ahora.",
+    "📅🔥 Para vos que no te olvidás ni de la cabeza porque la tenés pegada: ¡agendate la visita!",
+    "🚀🏠 Un clic más y estás más cerca de comprar. Sumala al calendario ahora.",
+    "⏰💡 Tu yo del futuro te lo agradece: dejá la visita agendada y listo.",
+  ];
 
   const isEliminated = property.status === "eliminado";
   const isDiscarded = property.status === "descartado";
@@ -163,8 +268,8 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
     onChange: (next: number) => void,
     label: string
   ) => (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
-      <label className="text-sm font-medium text-foreground text-left leading-snug max-w-[70%]">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200/70 bg-blue-50/70 px-3 py-2">
+      <label className="text-sm font-medium text-blue-900 text-left leading-snug max-w-[70%]">
         {label}
       </label>
       <div className="flex items-center gap-1 shrink-0">
@@ -173,13 +278,43 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
             key={`${label}-${starValue}`}
             type="button"
             onClick={() => onChange(starValue)}
-            className="p-1 rounded-md hover:bg-muted transition-colors"
+            className="p-1 rounded-md hover:bg-blue-100 transition-colors"
             aria-label={`${label}: ${starValue} de 5`}
           >
             <Star
               className={cn(
                 "w-5 h-5 transition-colors",
-                starValue <= value ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"
+                starValue <= value ? "fill-amber-400 text-amber-400" : "text-blue-300/80"
+              )}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderPriorityStars = (
+    value: number,
+    onChange: (next: number) => void,
+    label: string
+  ) => (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200/70 bg-blue-50/70 px-3 py-2">
+      <label className="text-sm font-medium text-blue-900 text-left leading-snug max-w-[70%]">
+        {label}
+      </label>
+      <div className="flex items-center gap-1 shrink-0">
+        {[1, 2, 3, 4, 5].map((starValue) => (
+          <button
+            key={`${label}-${starValue}`}
+            type="button"
+            onClick={() => onChange(starValue)}
+            className="p-1 rounded-md hover:bg-blue-100 transition-colors"
+            aria-label={`${label}: ${starValue} de 5`}
+          >
+            <Star
+              className={cn(
+                "w-5 h-5 transition-colors",
+                starValue <= value ? "fill-amber-400 text-amber-400" : "text-blue-300/80"
               )}
             />
           </button>
@@ -342,16 +477,18 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         extraBodyContent={
           <>
             <div className="flex justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 gap-1.5 hover:bg-muted text-[10px] font-normal -mt-2"
-                onClick={(e) => { e.stopPropagation(); window.open(property.url, "_blank"); }}
-                title="Ver publicación original"
-              >
-                <span className="text-muted-foreground uppercase tracking-wider">link de la publicación</span>
-                <ExternalLink className="h-3 w-3" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 gap-1.5 hover:bg-muted text-[10px] font-normal -mt-2"
+                  onClick={(e) => { e.stopPropagation(); window.open(property.url, "_blank"); }}
+                  title="Ver publicación original"
+                >
+                  <span className="text-muted-foreground uppercase tracking-wider">link de la publicación</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
 
             {isEliminated && (
@@ -509,69 +646,42 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 setShowProsConsConfirm(open);
                 if (!open) {
                   setPendingProsConsStatus(null);
-                  setSelectedPositiveIds([]);
-                  setSelectedNegativeIds([]);
+                  setClosePriceScore(0);
+                  setCloseConditionScore(0);
+                  setCloseSecurityScore(0);
+                  setCloseGuaranteeScore(0);
+                  setCloseMovingScore(0);
                 }
               }}
               title={pendingProsConsStatus === "firme_candidato" ? "Alta prioridad" : "Interesado"}
-              description={`Contanos qué te gustó y qué podría mejorar de "${property.title}". Nos ayuda a mejorar las recomendaciones.`}
+              description={`✨ Queremos darte una mano proactiva para que estés cada vez más cerca de disfrutar "${property.title}" como tu próximo hogar 🏡💙.`}
               confirmLabel="Confirmar"
+              confirmDisabled={
+                closePriceScore === 0 ||
+                closeConditionScore === 0 ||
+                closeSecurityScore === 0 ||
+                closeGuaranteeScore === 0 ||
+                closeMovingScore === 0
+              }
               confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
               onConfirm={async () => {
                 if (!pendingProsConsStatus) return;
-                await onStatusChange(property.id, pendingProsConsStatus, undefined, undefined, undefined, undefined, undefined, {
-                  positiveIds: selectedPositiveIds,
-                  negativeIds: selectedNegativeIds,
-                });
+                await onStatusChange(property.id, pendingProsConsStatus);
                 setShowProsConsConfirm(false);
                 setPendingProsConsStatus(null);
-                setSelectedPositiveIds([]);
-                setSelectedNegativeIds([]);
+                setClosePriceScore(0);
+                setCloseConditionScore(0);
+                setCloseSecurityScore(0);
+                setCloseGuaranteeScore(0);
+                setCloseMovingScore(0);
               }}
             >
-              <div className="space-y-4 py-2">
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">¿Qué te gustó?</p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {feedbackAttributes.map((attr) => (
-                      <label
-                        key={attr.id}
-                        className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
-                      >
-                        <Checkbox
-                          checked={selectedPositiveIds.includes(attr.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedPositiveIds((prev) =>
-                              checked ? [...prev, attr.id] : prev.filter((id) => id !== attr.id)
-                            );
-                          }}
-                        />
-                        <span className="text-sm font-medium text-foreground">{attr.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">¿Qué no te gustó o podría mejorar?</p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {feedbackAttributes.map((attr) => (
-                      <label
-                        key={attr.id}
-                        className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
-                      >
-                        <Checkbox
-                          checked={selectedNegativeIds.includes(attr.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedNegativeIds((prev) =>
-                              checked ? [...prev, attr.id] : prev.filter((id) => id !== attr.id)
-                            );
-                          }}
-                        />
-                        <span className="text-sm font-medium text-foreground">{attr.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+              <div className="space-y-3 py-2">
+                {renderPriorityStars(closePriceScore, setClosePriceScore, "💰 ¿Considerás que la relación calidad-precio es acorde? (5 acorde)")}
+                {renderPriorityStars(closeConditionScore, setCloseConditionScore, "🏠 ¿Calificarías como bueno el estado general de la casa para avanzar? (5 bueno)")}
+                {renderPriorityStars(closeSecurityScore, setCloseSecurityScore, "🛡️ ¿Son suficientes y satisfactorios los elementos de seguridad de esta propiedad para poder avanzar? (5 suficientes)")}
+                {renderPriorityStars(closeGuaranteeScore, setCloseGuaranteeScore, "🧾 ¿Ya tenés solucionada la garantía/crédito para lograr tu objetivo? (5 solucionado)")}
+                {renderPriorityStars(closeMovingScore, setCloseMovingScore, "🚚 ¿Ya tenés cubierta la mudanza o creés que puede ser un dolor de cabeza? (5 cubierta)")}
               </div>
             </StatusChangeConfirmDialog>
 
@@ -583,16 +693,25 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   setCoordinatedDateTime("");
                   setCoordinatedResponseSpeed(0);
                   setCoordinatedAttentionQuality(0);
+                  setCoordinatedAppHelpScore(0);
+                  setIsEditingCoordinatedVisit(false);
                 }
               }}
-              title="🗓️ Coordinar visita"
-              description={`Elegí la fecha y hora de visita para "${property.title}" y calificá la gestión del agente ✨.`}
-              confirmLabel="🚀 Confirmar visita"
+              title={isEditingCoordinatedVisit ? "✏️ Editar visita" : "🗓️ Coordinar visita"}
+              description={
+                isEditingCoordinatedVisit
+                  ? `Actualizá solo la fecha y hora de visita para "${property.title}".`
+                  : `Elegí la fecha y hora de visita para "${property.title}" y calificá la gestión del agente ✨.`
+              }
+              confirmLabel={isEditingCoordinatedVisit ? "Guardar nueva fecha" : "🚀 Confirmar visita"}
               confirmDisabled={
                 !coordinatedDateTime.trim() ||
                 new Date(coordinatedDateTime) <= new Date() ||
-                coordinatedResponseSpeed === 0 ||
-                coordinatedAttentionQuality === 0
+                (!isEditingCoordinatedVisit && (
+                  coordinatedResponseSpeed === 0 ||
+                  coordinatedAttentionQuality === 0 ||
+                  coordinatedAppHelpScore === 0
+                ))
               }
               confirmClassName="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
               onConfirm={async () => {
@@ -607,12 +726,22 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   undefined,
                   undefined,
                   undefined,
-                  { agentResponseSpeed: coordinatedResponseSpeed, attentionQuality: coordinatedAttentionQuality }
+                  isEditingCoordinatedVisit
+                    ? undefined
+                    : { agentResponseSpeed: coordinatedResponseSpeed, attentionQuality: coordinatedAttentionQuality, appHelpScore: coordinatedAppHelpScore }
                 );
                 setShowCoordinatedConfirm(false);
                 setCoordinatedDateTime("");
                 setCoordinatedResponseSpeed(0);
                 setCoordinatedAttentionQuality(0);
+                setCoordinatedAppHelpScore(0);
+                setIsEditingCoordinatedVisit(false);
+                if (isoDate) {
+                  const randomIndex = Math.floor(Math.random() * calendarMotivationOptions.length);
+                  setCalendarMotivationText(calendarMotivationOptions[randomIndex]);
+                  setCalendarOfferDate(new Date(isoDate));
+                  setShowCalendarOfferConfirm(true);
+                }
               }}
             >
               <div className="space-y-4">
@@ -624,10 +753,41 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   min={toDatetimeLocalString(new Date())}
                   className="rounded-xl border-status-coordinated/40 focus-visible:ring-status-coordinated"
                 />
-                {renderFiveStars(coordinatedResponseSpeed, setCoordinatedResponseSpeed, "⚡ ¿Cómo sentiste los tiempos de respuesta del agente?")}
-                {renderFiveStars(coordinatedAttentionQuality, setCoordinatedAttentionQuality, "🤝 La atención te resultó clara y amable")}
+                {!isEditingCoordinatedVisit && (
+                  <>
+                    {renderFiveStars(coordinatedResponseSpeed, setCoordinatedResponseSpeed, "⚡ ¿Cómo sentiste los tiempos de respuesta del agente?")}
+                    {renderFiveStars(coordinatedAttentionQuality, setCoordinatedAttentionQuality, "🤝 La atención te resultó clara y amable")}
+                    {renderFiveStars(coordinatedAppHelpScore, setCoordinatedAppHelpScore, `🚀 ¿Cuánto te ayudó ${appBrandName} a avanzar más rápido y con menos estrés?`)}
+                  </>
+                )}
               </div>
             </StatusChangeConfirmDialog>
+
+            <StatusChangeConfirmDialog
+              open={showCalendarOfferConfirm}
+              onOpenChange={(open) => {
+                setShowCalendarOfferConfirm(open);
+                if (!open) setCalendarOfferDate(null);
+              }}
+              title="🏡✨ Falta menos para ver tu próximo hogar"
+              description={
+                <>
+                  ⏰💡 Tu yo del futuro te lo agradece: dejá la visita agendada y listo.
+                  <br />
+                  <br />
+                  👨‍👩‍👧‍👦 Esta cita les llegará a todos los miembros del grupo familiar.
+                </>
+              }
+              cancelLabel="Ahora no"
+              confirmLabel="Agendar/editar visita"
+              confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
+              onConfirm={() => {
+                if (!calendarOfferDate) return;
+                openVisitCalendarEntry(calendarOfferDate);
+                setShowCalendarOfferConfirm(false);
+                setCalendarOfferDate(null);
+              }}
+            />
 
             <StatusChangeConfirmDialog
               open={showContactedConfirm}
@@ -686,25 +846,19 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
         }
         bottomContent={
           property.status === "visita_coordinada" && property.coordinatedDate ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const location = [property.neighborhood, property.city].filter(Boolean).join(", ") || undefined;
-                const contactName = property.marketplaceAgentName || ownerEmail || property.createdByEmail || "Sin nombre";
-                const url = buildGoogleCalendarUrl(
-                  `Visita: ${property.title}. Contacto ${contactName}`,
-                  property.coordinatedDate!,
-                  property.url ? `Publicación: ${property.url}` : undefined,
-                  location
-                );
-                window.open(url, "_blank", "noopener,noreferrer");
-              }}
-              className="w-full mt-3 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-colors touch-manipulation"
-            >
-              <CalendarPlus className="w-4 h-4 shrink-0" />
-              <span className="truncate">Agregar visita al calendario</span>
-            </button>
+            <div className="w-full mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openVisitCalendarEntry(property.coordinatedDate!);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-colors touch-manipulation"
+              >
+                <CalendarPlus className="w-4 h-4 shrink-0" />
+                <span className="truncate">Agendar/editar visita</span>
+              </button>
+            </div>
           ) : undefined
         }
       />

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Sparkles, Home, CheckCircle2, ChevronRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 interface UserWelcomeProps {
     onDismiss: (dontShowAgain: boolean) => void;
@@ -10,6 +12,7 @@ interface UserWelcomeProps {
 
 export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
     const [dontShowAgain, setDontShowAgain] = useState(false);
+    const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     return (
         <div className="flex flex-col items-center justify-center text-center py-12 md:py-24 animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-[70vh]">
@@ -21,7 +24,7 @@ export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
             </div>
 
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
-                ¡Bienvenido a <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">HomeFinder</span>{userName ? `, ${userName.split(' ')[0]}` : ''}!
+                ¡Bienvenido a <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{appBrandName}</span>{userName ? `, ${userName.split(' ')[0]}` : ''}!
             </h2>
             <p className="text-muted-foreground max-w-lg mb-10 text-sm md:text-base leading-relaxed">
                 El lugar ideal para organizar tu búsqueda de propiedades, comparar opciones en familia y guardar tus favoritos de cualquier portal en un solo lugar.

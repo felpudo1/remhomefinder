@@ -30,3 +30,7 @@ export const AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT = "3";
 // Frecuencia del tip de contacto al guardar avisos en marketplace
 export const MARKETPLACE_CONTACT_TIP_INTERVAL_KEY = "marketplace_contact_tip_interval";
 export const MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT = "3";
+
+// Nombre de marca para textos dinámicos en la app
+export const APP_BRAND_NAME_KEY = "app_brand_name";
+export const APP_BRAND_NAME_DEFAULT = "HomeFinder";

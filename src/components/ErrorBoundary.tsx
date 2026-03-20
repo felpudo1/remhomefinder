@@ -1,9 +1,11 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
 import { Button } from "./ui/button";
+import { APP_BRAND_NAME_DEFAULT } from "@/lib/config-keys";
 
 interface Props {
     children: ReactNode;
+    appBrandName?: string;
 }
 
 interface State {
@@ -15,7 +17,7 @@ interface State {
  * Componente ErrorBoundary genérico para capturar errores de renderizado
  * Pensado como un componente de infraestructura senior (REGLA 2)
  */
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryCore extends Component<Props, State> {
     public state: State = {
         hasError: false,
     };
@@ -59,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                     Algo no salió bien
                                 </h1>
                                 <p className="text-muted-foreground text-sm leading-relaxed">
-                                    HomeFinder encontró un error inesperado al renderizar esta página.
+                                    {this.props.appBrandName} encontró un error inesperado al renderizar esta página.
                                     No te preocupes, tus datos están seguros.
                                 </p>
                             </div>
@@ -92,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         </div>
 
                         <p className="text-center text-[10px] text-muted-foreground/50 font-medium tracking-widest uppercase">
-                            HomeFinder Resilience System v1.0
+                            {this.props.appBrandName} Resilience System v1.0
                         </p>
                     </div>
                 </div>
@@ -102,3 +104,10 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.children;
     }
 }
+
+export const ErrorBoundary = ({ children }: { children: ReactNode }) => {
+    // ErrorBoundary puede montarse antes del QueryClientProvider (main.tsx),
+    // por eso no debe depender de hooks que usen React Query.
+    const appBrandName = APP_BRAND_NAME_DEFAULT;
+    return <ErrorBoundaryCore appBrandName={appBrandName} children={children} />;
+};

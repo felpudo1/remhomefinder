@@ -5,6 +5,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Crown, Star, Sparkles, PartyPopper, CheckCircle2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 interface PremiumWelcomeModalProps {
     open: boolean;
@@ -15,6 +17,7 @@ interface PremiumWelcomeModalProps {
 export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWelcomeModalProps) {
     const [showContent, setShowContent] = useState(false);
     const isAgent = type === "agent";
+    const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     useEffect(() => {
         if (open) {
@@ -61,7 +64,7 @@ export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWel
                             <p className="text-gray-300 text-sm font-medium px-4">
                                 {isAgent
                                     ? "Tu suscripción como Agente ha sido activada. Preparate para publicar sin límites y destacar tus propiedades como nunca."
-                                    : "Tu experiencia en HomeFinder ahora es ilimitada. Preparate para alcanzar todas tus metas como un verdadero profesional."}
+                                    : `Tu experiencia en ${appBrandName} ahora es ilimitada. Preparate para alcanzar todas tus metas como un verdadero profesional.`}
                             </p>
                         </div>
 
@@ -99,7 +102,7 @@ export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWel
                 {/* Footer Discreto */}
                 <div className="bg-[#0f111a] p-4 text-center border-t border-white/5">
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">
-                        {isAgent ? "Agencia Premium &bull; Elite Edition" : "HomeFinder Premium &bull; Edición 2026"}
+                        {isAgent ? "Agencia Premium &bull; Elite Edition" : `${appBrandName} Premium &bull; Edición 2026`}
                     </p>
                 </div>
             </DialogContent>
