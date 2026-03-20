@@ -1,160 +1,25 @@
 import { useMemo, useState } from "react";
-import { Building2, CalendarPlus, Clock3, Phone, Star, Users } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  useAgentPropertyInsights,
+  type AgentPropertyInsight,
+  type AgentUserInsight,
+} from "@/hooks/useAgentPropertyInsights";
+import { Agency } from "./AgentProfile";
 
-type PropertyRow = {
-  id: string;
-  title: string;
-  neighborhood: string;
-  ref?: string;
-  usersSaved: number;
-  avgImpression: number;
-  avgUrgency: number;
-  statusBreakdown: string;
-};
+type StatusFilter = "todos" | "ingresado" | "contactado" | "visita_coordinada" | "descartado" | "firme_candidato" | "posible_interes" | "meta_conseguida";
 
-type UserRow = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: string;
-  updatedAt: string;
-  coordinatedDate?: string;
-  ratingsByStatus: Partial<Record<StatusFilter, { itemA: number; itemB: number }>>;
-};
-
-type StatusFilter = "todos" | "ingresado" | "contactado" | "visita_coordinada" | "descartado";
-
-const MOCK_PROPERTIES: PropertyRow[] = [
-  {
-    id: "p-1",
-    title: "Apartamento 2 dormitorios con balcón",
-    neighborhood: "Pocitos",
-    ref: "REF-1201",
-    usersSaved: 7,
-    avgImpression: 4.3,
-    avgUrgency: 3.4,
-    statusBreakdown: "3 contactado · 2 visita · 2 ingresado",
-  },
-  {
-    id: "p-2",
-    title: "Casa con fondo y parrillero",
-    neighborhood: "Carrasco Norte",
-    ref: "REF-845",
-    usersSaved: 5,
-    avgImpression: 4.8,
-    avgUrgency: 4.2,
-    statusBreakdown: "4 contactado · 1 visita",
-  },
-  {
-    id: "p-3",
-    title: "Monoambiente moderno amoblado",
-    neighborhood: "Centro",
-    usersSaved: 9,
-    avgImpression: 3.9,
-    avgUrgency: 4.0,
-    statusBreakdown: "5 ingresado · 3 contactado · 1 descartado",
-  },
-];
-
-const MOCK_USERS_BY_PROPERTY: Record<string, UserRow[]> = {
-  "p-1": [
-    {
-      id: "u-1",
-      name: "Ana Pérez",
-      email: "ana***@mail.com",
-      phone: "+598 99 111 222",
-      status: "contactado",
-      updatedAt: "Hoy 14:20",
-      ratingsByStatus: {
-        contactado: { itemA: 5, itemB: 4 },
-        visita_coordinada: { itemA: 4, itemB: 5 },
-      },
-    },
-    {
-      id: "u-2",
-      name: "Joaquín Díaz",
-      email: "joa***@mail.com",
-      phone: "+598 98 123 456",
-      status: "visita_coordinada",
-      updatedAt: "Hoy 11:10",
-      coordinatedDate: "2026-03-22T15:30:00",
-      ratingsByStatus: {
-        ingresado: { itemA: 4, itemB: 3 },
-        contactado: { itemA: 4, itemB: 3 },
-      },
-    },
-    {
-      id: "u-3",
-      name: "Sofía Núñez",
-      email: "sof***@mail.com",
-      phone: "+598 94 777 100",
-      status: "ingresado",
-      updatedAt: "Ayer 19:45",
-      ratingsByStatus: {
-        ingresado: { itemA: 3, itemB: 2 },
-      },
-    },
-  ],
-  "p-2": [
-    {
-      id: "u-4",
-      name: "Martín Costa",
-      email: "mar***@mail.com",
-      phone: "+598 91 444 908",
-      status: "contactado",
-      updatedAt: "Hoy 09:35",
-      ratingsByStatus: {
-        contactado: { itemA: 5, itemB: 5 },
-      },
-    },
-    {
-      id: "u-5",
-      name: "Lucía Vera",
-      email: "luc***@mail.com",
-      phone: "+598 92 333 654",
-      status: "contactado",
-      updatedAt: "Ayer 22:18",
-      ratingsByStatus: {
-        ingresado: { itemA: 4, itemB: 4 },
-        contactado: { itemA: 4, itemB: 4 },
-      },
-    },
-  ],
-  "p-3": [
-    {
-      id: "u-6",
-      name: "Pablo Rivas",
-      email: "pab***@mail.com",
-      phone: "+598 95 111 989",
-      status: "ingresado",
-      updatedAt: "Hoy 13:02",
-      ratingsByStatus: {
-        ingresado: { itemA: 4, itemB: 4 },
-      },
-    },
-    {
-      id: "u-7",
-      name: "Camila Rocha",
-      email: "cam***@mail.com",
-      phone: "+598 93 700 100",
-      status: "contactado",
-      updatedAt: "Ayer 18:50",
-      ratingsByStatus: {
-        ingresado: { itemA: 3, itemB: 4 },
-        contactado: { itemA: 3, itemB: 5 },
-      },
-    },
-  ],
-};
+interface AgentPropertyListingProps {
+  agency: Agency;
+}
 
 function stars(value: number) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((s) => (
         <Star
           key={s}
@@ -165,9 +30,6 @@ function stars(value: number) {
   );
 }
 
-/**
- * Crea una URL de Google Calendar para agendar una visita con duración de 1 hora.
- */
 function buildGoogleCalendarUrl(title: string, startIso: string, details?: string) {
   const startDate = new Date(startIso);
   const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
@@ -182,34 +44,140 @@ function buildGoogleCalendarUrl(title: string, startIso: string, details?: strin
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-export function AgentPropertyListing() {
+/** Renders a single rating row */
+function RatingRow({ label, value }: { label: string; value: number }) {
+  if (!value) return null;
+  return (
+    <div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      {stars(value)}
+    </div>
+  );
+}
+
+/** Renders ratings card for a given status */
+function StatusRatingCard({ status, user }: { status: string; user: AgentUserInsight }) {
+  const r = user.ratingsByStatus;
+
+  const statusLabels: Record<string, string> = {
+    contactado: "Contactado",
+    visita_coordinada: "Visita Coordinada",
+    firme_candidato: "Alta Prioridad",
+    posible_interes: "Interesado",
+    meta_conseguida: "Meta Conseguida",
+    descartado: "Descartado",
+  };
+
+  let rows: Array<{ label: string; value: number }> = [];
+
+  switch (status) {
+    case "contactado":
+      if (!r.contactado) return null;
+      rows = [
+        { label: "Interés inicial", value: r.contactado.contacted_interest },
+        { label: "Urgencia de mudanza", value: r.contactado.contacted_urgency },
+      ];
+      break;
+    case "visita_coordinada":
+      if (!r.visita_coordinada) return null;
+      rows = [
+        { label: "Velocidad de respuesta", value: r.visita_coordinada.coordinated_agent_response_speed },
+        { label: "Calidad de atención", value: r.visita_coordinada.coordinated_attention_quality },
+      ];
+      if (r.visita_coordinada.coordinated_app_help_score) {
+        rows.push({ label: "Ayuda de la app", value: r.visita_coordinada.coordinated_app_help_score });
+      }
+      break;
+    case "firme_candidato":
+    case "posible_interes": {
+      const closing = status === "firme_candidato" ? r.firme_candidato : r.posible_interes;
+      if (!closing) return null;
+      rows = [
+        { label: "Precio", value: closing.close_price_score },
+        { label: "Estado general", value: closing.close_condition_score },
+        { label: "Seguridad", value: closing.close_security_score },
+        { label: "Garantía", value: closing.close_guarantee_score },
+        { label: "Mudanza", value: closing.close_moving_score },
+      ];
+      break;
+    }
+    case "meta_conseguida":
+      if (!r.meta_conseguida) return null;
+      rows = [
+        { label: "Puntualidad agente", value: r.meta_conseguida.meta_agent_punctuality },
+        { label: "Atención agente", value: r.meta_conseguida.meta_agent_attention },
+        { label: "Funcionamiento app", value: r.meta_conseguida.meta_app_performance },
+        { label: "Soporte app", value: r.meta_conseguida.meta_app_support },
+        { label: "Precio app", value: r.meta_conseguida.meta_app_price },
+      ];
+      break;
+    case "descartado":
+      if (!r.descartado) return null;
+      rows = [
+        { label: "Estado general", value: r.descartado.discarded_overall_condition },
+        { label: "Entorno", value: r.descartado.discarded_surroundings },
+        { label: "Seguridad", value: r.descartado.discarded_house_security },
+        { label: "Tamaño esperado", value: r.descartado.discarded_expected_size },
+        { label: "Fotos vs realidad", value: r.descartado.discarded_photos_reality },
+      ];
+      break;
+    default:
+      return null;
+  }
+
+  const hasData = rows.some((r) => r.value > 0);
+  if (!hasData) return null;
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-3 space-y-2 min-w-[200px] shrink-0">
+      <Badge variant="secondary" className="capitalize text-xs">
+        {statusLabels[status] || status.replace("_", " ")}
+      </Badge>
+      <div className="space-y-1.5">
+        {rows.map((row) => (
+          <RatingRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
+  const { data: insights = [], isLoading } = useAgentPropertyInsights(agency.id);
   const [query, setQuery] = useState("");
-  const [selectedPropertyId, setSelectedPropertyId] = useState(MOCK_PROPERTIES[0].id);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [activeStatusTab, setActiveStatusTab] = useState<StatusFilter>("todos");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
+  // Auto-select first property
+  const effectiveSelectedId = selectedPropertyId || insights[0]?.publicationId || null;
+
   const filteredProperties = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return MOCK_PROPERTIES;
-    return MOCK_PROPERTIES.filter(
+    if (!q) return insights;
+    return insights.filter(
       (p) =>
         p.title.toLowerCase().includes(q) ||
         p.neighborhood.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, insights]);
 
-  const selectedUsers = MOCK_USERS_BY_PROPERTY[selectedPropertyId] || [];
   const selectedProperty = useMemo(
-    () => MOCK_PROPERTIES.find((p) => p.id === selectedPropertyId) || null,
-    [selectedPropertyId]
+    () => insights.find((p) => p.publicationId === effectiveSelectedId) || null,
+    [effectiveSelectedId, insights]
   );
+
+  const selectedUsers = selectedProperty?.users || [];
   const usersByStatus = selectedUsers.filter((user) =>
-    activeStatusTab === "todos" ? true : user.status === activeStatusTab
+    activeStatusTab === "todos" ? true : user.currentStatus === activeStatusTab
   );
 
   const selectedUser = useMemo(() => {
-    if (!selectedUserId) return usersByStatus[0] || null;
-    return usersByStatus.find((u) => u.id === selectedUserId) || usersByStatus[0] || null;
+    if (selectedUserId) {
+      const found = usersByStatus.find((u) => u.userId === selectedUserId);
+      if (found) return found;
+    }
+    return usersByStatus[0] || null;
   }, [selectedUserId, usersByStatus]);
 
   const statusCounts = useMemo(() => {
@@ -219,33 +187,59 @@ export function AgentPropertyListing() {
       contactado: 0,
       visita_coordinada: 0,
       descartado: 0,
+      firme_candidato: 0,
+      posible_interes: 0,
+      meta_conseguida: 0,
     };
     selectedUsers.forEach((u) => {
-      if (u.status in base) {
-        base[u.status as StatusFilter] += 1;
+      if (u.currentStatus in base) {
+        base[u.currentStatus as StatusFilter] += 1;
       }
     });
     return base;
   }, [selectedUsers]);
 
-  const ratingLabels: Record<Exclude<StatusFilter, "todos">, { itemA: string; itemB: string }> = {
-    ingresado: {
-      itemA: "Calidad inicial del aviso",
-      itemB: "Claridad de la publicación",
-    },
-    contactado: {
-      itemA: "Primera impresión",
-      itemB: "Urgencia de mudanza",
-    },
-    visita_coordinada: {
-      itemA: "Interés post-visita",
-      itemB: "Probabilidad de avanzar",
-    },
-    descartado: {
-      itemA: "Nivel de descarte",
-      itemB: "Distancia a lo buscado",
-    },
+  // Status tabs to show (only those with count > 0, plus "todos")
+  const visibleTabs: StatusFilter[] = useMemo(() => {
+    const tabs: StatusFilter[] = ["todos"];
+    const order: StatusFilter[] = ["ingresado", "contactado", "visita_coordinada", "firme_candidato", "posible_interes", "meta_conseguida", "descartado"];
+    order.forEach((s) => {
+      if (statusCounts[s] > 0) tabs.push(s);
+    });
+    return tabs;
+  }, [statusCounts]);
+
+  const statusLabel: Record<string, string> = {
+    todos: "Todos",
+    ingresado: "Ingresado",
+    contactado: "Contactado",
+    visita_coordinada: "Visita",
+    firme_candidato: "Alta prioridad",
+    posible_interes: "Interesado",
+    meta_conseguida: "Meta",
+    descartado: "Descartado",
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!insights.length) {
+    return (
+      <div className="border border-border rounded-2xl bg-card p-8 text-center">
+        <p className="text-muted-foreground text-sm">
+          No hay publicaciones con usuarios vinculados todavía.
+        </p>
+      </div>
+    );
+  }
+
+  // Determine which status stages to show for selected user
+  const allStages = ["contactado", "visita_coordinada", "firme_candidato", "posible_interes", "meta_conseguida", "descartado"];
 
   return (
     <div className="space-y-5">
@@ -267,14 +261,19 @@ export function AgentPropertyListing() {
         </div>
       </div>
 
+      {/* Property cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {filteredProperties.map((property) => {
-          const isActive = property.id === selectedPropertyId;
+          const isActive = property.publicationId === effectiveSelectedId;
           return (
             <button
-              key={property.id}
+              key={property.publicationId}
               type="button"
-              onClick={() => setSelectedPropertyId(property.id)}
+              onClick={() => {
+                setSelectedPropertyId(property.publicationId);
+                setSelectedUserId(null);
+                setActiveStatusTab("todos");
+              }}
               className={`text-left rounded-2xl border p-4 transition-all ${
                 isActive
                   ? "border-primary bg-primary/5 shadow-sm"
@@ -293,166 +292,176 @@ export function AgentPropertyListing() {
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Primera impresión</p>
-                  <p className="text-sm font-semibold">{property.avgImpression.toFixed(1)}/5</p>
+                  <p className="text-[11px] text-muted-foreground">Interés inicial</p>
+                  <p className="text-sm font-semibold">
+                    {property.avgContactedInterest > 0
+                      ? `${property.avgContactedInterest.toFixed(1)}/5`
+                      : "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[11px] text-muted-foreground">Urgencia mudanza</p>
-                  <p className="text-sm font-semibold">{property.avgUrgency.toFixed(1)}/5</p>
+                  <p className="text-sm font-semibold">
+                    {property.avgContactedUrgency > 0
+                      ? `${property.avgContactedUrgency.toFixed(1)}/5`
+                      : "—"}
+                  </p>
                 </div>
               </div>
 
-              <p className="text-[11px] text-muted-foreground mt-3">{property.statusBreakdown}</p>
+              <p className="text-[11px] text-muted-foreground mt-3">
+                {property.statusBreakdown || "Sin actividad todavía"}
+              </p>
             </button>
           );
         })}
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <h4 className="font-semibold text-foreground">Usuarios en esta propiedad</h4>
-          <Button variant="outline" size="sm" className="text-xs">
-            <Clock3 className="w-3.5 h-3.5 mr-1" /> Vista reciente
-          </Button>
-        </div>
-
-        <Tabs
-          value={activeStatusTab}
-          onValueChange={(value) => {
-            setActiveStatusTab(value as StatusFilter);
-            setSelectedUserId(null);
-          }}
-          className="w-full"
-        >
-          <TabsList className="h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
-            <TabsTrigger value="todos" className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Todos ({statusCounts.todos})
-            </TabsTrigger>
-            <TabsTrigger value="ingresado" className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Ingresado ({statusCounts.ingresado})
-            </TabsTrigger>
-            <TabsTrigger value="contactado" className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Contactado ({statusCounts.contactado})
-            </TabsTrigger>
-            <TabsTrigger value="visita_coordinada" className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Visita ({statusCounts.visita_coordinada})
-            </TabsTrigger>
-            <TabsTrigger value="descartado" className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Descartado ({statusCounts.descartado})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-4">
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left py-2 px-3 font-medium">Usuario</th>
-                  <th className="text-left py-2 px-3 font-medium">Estado</th>
-                  <th className="text-left py-2 px-3 font-medium">Contacto</th>
-                  <th className="text-left py-2 px-3 font-medium">Actualizado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usersByStatus.map((user) => (
-                  <tr
-                    key={user.id}
-                    onClick={() => setSelectedUserId(user.id)}
-                    className={`border-b border-border/70 last:border-b-0 cursor-pointer ${
-                      selectedUser?.id === user.id ? "bg-primary/5" : "hover:bg-muted/40"
-                    }`}
-                  >
-                    <td className="py-3 px-3">
-                      <p className="font-medium text-foreground">{user.name}</p>
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="capitalize">
-                          {user.status.replace("_", " ")}
-                        </Badge>
-                        {user.status === "visita_coordinada" && user.coordinatedDate && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const refLabel = selectedProperty?.ref ? ` Ref ${selectedProperty.ref}` : "";
-                              const url = buildGoogleCalendarUrl(
-                                `Visita: ${selectedProperty?.title || "Propiedad"}${refLabel} - ${user.name}`,
-                                user.coordinatedDate,
-                                `Usuario: ${user.name} (${user.email})${refLabel}`
-                              );
-                              window.open(url, "_blank", "noopener,noreferrer");
-                            }}
-                            className="inline-flex items-center rounded-md p-1 text-primary hover:bg-primary/10"
-                            title="Agendar en Google Calendar"
-                          >
-                            <CalendarPlus className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">{user.phone}</p>
-                    </td>
-                    <td className="py-3 px-3 text-muted-foreground">{user.updatedAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Users table + detail sidebar */}
+      {selectedProperty && (
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="font-semibold text-foreground">Usuarios en esta propiedad</h4>
+            <Button variant="outline" size="sm" className="text-xs">
+              <Clock3 className="w-3.5 h-3.5 mr-1" /> Vista reciente
+            </Button>
           </div>
 
-          <aside className="rounded-xl border border-border p-4 bg-muted/20">
-            {!selectedUser ? (
-              <p className="text-sm text-muted-foreground">
-                No hay usuarios para este estado.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{selectedUser.name}</p>
-                  <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Phone className="w-3 h-3" /> {selectedUser.phone}
-                  </p>
-                </div>
+          <Tabs
+            value={activeStatusTab}
+            onValueChange={(value) => {
+              setActiveStatusTab(value as StatusFilter);
+              setSelectedUserId(null);
+            }}
+            className="w-full"
+          >
+            <TabsList className="h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+              {visibleTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab}
+                  value={tab}
+                  className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  {statusLabel[tab]} ({statusCounts[tab]})
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Calificaciones por etapa
-                  </p>
-                  <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
-                    {(["ingresado", "contactado", "visita_coordinada", "descartado"] as const).map((stage) => {
-                      const rating = selectedUser.ratingsByStatus[stage];
-                      if (!rating) return null;
-                      return (
-                        <div key={stage} className="rounded-lg border border-border bg-card p-3 space-y-2 min-w-[220px] shrink-0">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="secondary" className="capitalize">
-                              {stage.replace("_", " ")}
+          {usersByStatus.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No hay usuarios en este estado.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-4">
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="text-left py-2 px-3 font-medium">Usuario</th>
+                      <th className="text-left py-2 px-3 font-medium">Estado</th>
+                      <th className="text-left py-2 px-3 font-medium">Contacto</th>
+                      <th className="text-left py-2 px-3 font-medium">Actualizado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersByStatus.map((user) => (
+                      <tr
+                        key={user.userListingId}
+                        onClick={() => setSelectedUserId(user.userId)}
+                        className={`border-b border-border/70 last:border-b-0 cursor-pointer ${
+                          selectedUser?.userId === user.userId ? "bg-primary/5" : "hover:bg-muted/40"
+                        }`}
+                      >
+                        <td className="py-3 px-3">
+                          <p className="font-medium text-foreground">{user.displayName}</p>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="capitalize text-xs">
+                              {user.currentStatus.replace(/_/g, " ")}
                             </Badge>
+                            {user.currentStatus === "visita_coordinada" && user.coordinatedDate && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const refLabel = selectedProperty?.ref ? ` Ref ${selectedProperty.ref}` : "";
+                                  const url = buildGoogleCalendarUrl(
+                                    `Visita: ${selectedProperty?.title || "Propiedad"}${refLabel} - ${user.displayName}`,
+                                    user.coordinatedDate!,
+                                    `Usuario: ${user.displayName} (${user.emailMasked})${refLabel}`
+                                  );
+                                  window.open(url, "_blank", "noopener,noreferrer");
+                                }}
+                                className="inline-flex items-center rounded-md p-1 text-primary hover:bg-primary/10"
+                                title="Agendar en Google Calendar"
+                              >
+                                <CalendarPlus className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
-                          <div className="space-y-2">
-                            <div>
-                              <p className="text-[11px] text-muted-foreground">{ratingLabels[stage].itemA}</p>
-                              {stars(rating.itemA)}
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-muted-foreground">{ratingLabels[stage].itemB}</p>
-                              {stars(rating.itemB)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <p className="text-xs text-muted-foreground">{user.emailMasked}</p>
+                          <p className="text-xs text-muted-foreground">{user.phone}</p>
+                        </td>
+                        <td className="py-3 px-3 text-muted-foreground text-xs">
+                          {user.updatedAtRelative}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </aside>
+
+              {/* Detail sidebar */}
+              <aside className="rounded-xl border border-border p-4 bg-muted/20">
+                {!selectedUser ? (
+                  <p className="text-sm text-muted-foreground">
+                    No hay usuarios para este estado.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{selectedUser.displayName}</p>
+                      <p className="text-xs text-muted-foreground">{selectedUser.emailMasked}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                        <Phone className="w-3 h-3" /> {selectedUser.phone || "Sin teléfono"}
+                      </p>
+                    </div>
+
+                    {selectedUser.ratingsByStatus.descartado?.reason && (
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                        <p className="text-xs font-medium text-destructive">Motivo de descarte</p>
+                        <p className="text-xs text-foreground mt-1">{selectedUser.ratingsByStatus.descartado.reason}</p>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Calificaciones por etapa
+                      </p>
+                      <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
+                        {allStages.map((stage) => (
+                          <StatusRatingCard key={stage} status={stage} user={selectedUser} />
+                        ))}
+                      </div>
+                      {allStages.every(
+                        (stage) => !selectedUser.ratingsByStatus[stage as keyof typeof selectedUser.ratingsByStatus]
+                      ) && (
+                        <p className="text-xs text-muted-foreground italic">
+                          Sin datos de calificación todavía.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </aside>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
