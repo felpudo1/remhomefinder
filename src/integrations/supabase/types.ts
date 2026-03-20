@@ -1268,6 +1268,7 @@ export type Database = {
         | "descartado"
         | "firme_candidato"
         | "posible_interes"
+        | "meta_conseguida"
         | "eliminado"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
@@ -1419,6 +1420,7 @@ export const Constants = {
         "descartado",
         "firme_candidato",
         "posible_interes",
+        "meta_conseguida",
         "eliminado",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],

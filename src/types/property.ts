@@ -1,6 +1,6 @@
 export type ListingType = "rent" | "sale";
 
-export type PropertyStatus = "ingresado" | "contactado" | "visita_coordinada" | "visitado" | "descartado" | "a_analizar" | "eliminado" | "eliminado_agencia" | "firme_candidato" | "posible_interes";
+export type PropertyStatus = "ingresado" | "contactado" | "visita_coordinada" | "visitado" | "descartado" | "a_analizar" | "eliminado" | "eliminado_agencia" | "firme_candidato" | "posible_interes" | "meta_conseguida";
 
 /** Estado del perfil de usuario en la plataforma (tabla profiles.status) */
 export type UserStatus = "active" | "pending" | "suspended" | "rejected";
@@ -106,19 +106,19 @@ export interface MarketplaceProperty {
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {
   ingresado: {
-    label: "Ingresado",
+    label: "📝 Ingresado",
     color: "text-blue-700",
     bg: "bg-blue-100",
     dot: "bg-blue-500",
   },
   contactado: {
-    label: "Contactado",
+    label: "📞 Contactado",
     color: "text-status-contacted",
     bg: "bg-status-contacted-bg",
     dot: "bg-status-contacted",
   },
   visita_coordinada: {
-    label: "Visita Coordinada",
+    label: "🗓️ Visita coordinada",
     color: "text-status-coordinated",
     bg: "bg-status-coordinated-bg",
     dot: "bg-status-coordinated",
@@ -130,7 +130,7 @@ export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: strin
     dot: "bg-green-500",
   },
   descartado: {
-    label: "Descartado",
+    label: "❌ Descartado",
     color: "text-status-discarded",
     bg: "bg-status-discarded-bg",
     dot: "bg-status-discarded",
@@ -142,16 +142,22 @@ export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: strin
     dot: "bg-purple-500",
   },
   firme_candidato: {
-    label: "Alta prioridad",
+    label: "🔥 Alta prioridad",
     color: "text-emerald-700",
     bg: "bg-emerald-100",
     dot: "bg-emerald-500",
   },
   posible_interes: {
-    label: "Interesado",
+    label: "💡 Interesado",
     color: "text-amber-700",
     bg: "bg-amber-100",
     dot: "bg-amber-500",
+  },
+  meta_conseguida: {
+    label: "🎯 Meta conseguida",
+    color: "text-teal-700",
+    bg: "bg-teal-100",
+    dot: "bg-teal-500",
   },
   eliminado: {
     label: "Eliminado",

@@ -97,7 +97,7 @@ export const UserHeader = ({
                 {/* Filtros de estado rápidos — solo desktop */}
                 <div className={`${showStatusBubbles ? "hidden md:flex" : "hidden"} items-center gap-2`}>
                     {(Object.entries(STATUS_CONFIG) as [PropertyStatus, typeof STATUS_CONFIG[PropertyStatus]][])
-                        .filter(([key]) => key !== "eliminado")
+                        .filter(([key]) => key !== "visitado" && key !== "a_analizar" && key !== "eliminado")
                         .map(
                         ([key, cfg]) => (
                             <button

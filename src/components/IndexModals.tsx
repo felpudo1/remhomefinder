@@ -32,6 +32,13 @@ interface IndexModalsProps {
             houseSecurity: number;
             expectedSize: number;
             photosReality: number;
+        },
+        metaAchievedFeedback?: {
+            agentPunctuality: number;
+            agentAttention: number;
+            appPerformance: number;
+            appSupport: number;
+            appPrice: number;
         }
     ) => Promise<void>;
     onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;

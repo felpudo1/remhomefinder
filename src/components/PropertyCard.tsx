@@ -13,10 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
-import { Trash2, XCircle, ExternalLink, CalendarIcon, CalendarPlus, Building2, Users, Star, MessageCircle } from "lucide-react";
+import { Trash2, XCircle, ExternalLink, CalendarIcon, CalendarPlus, Building2, Users, Star, MessageCircle, Trophy, Sparkles, Rocket } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
@@ -49,6 +50,13 @@ interface PropertyCardProps {
       houseSecurity: number;
       expectedSize: number;
       photosReality: number;
+    },
+    metaAchievedFeedback?: {
+      agentPunctuality: number;
+      agentAttention: number;
+      appPerformance: number;
+      appSupport: number;
+      appPrice: number;
     }
   ) => void;
   onClick: () => void;
@@ -127,6 +135,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   );
   const [familyMemberEmails, setFamilyMemberEmails] = useState<string[]>([]);
   const [showContactedConfirm, setShowContactedConfirm] = useState(false);
+  const [showMetaAchievedConfirm, setShowMetaAchievedConfirm] = useState(false);
+  const [showMetaSurveyConfirm, setShowMetaSurveyConfirm] = useState(false);
+  const [metaAgentPunctuality, setMetaAgentPunctuality] = useState(0);
+  const [metaAgentAttention, setMetaAgentAttention] = useState(0);
+  const [metaAppPerformance, setMetaAppPerformance] = useState(0);
+  const [metaAppSupport, setMetaAppSupport] = useState(0);
+  const [metaAppPrice, setMetaAppPrice] = useState(0);
   const [contactedName, setContactedName] = useState("");
   const [contactedInterest, setContactedInterest] = useState(0);
   const [contactedUrgency, setContactedUrgency] = useState(0);
@@ -147,11 +162,13 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
   const marketplaceAgentPhoneDigits = (property.marketplaceAgentPhone || "").replace(/\D/g, "");
   const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
-  const statusOptions: PropertyStatus[] = ["ingresado", "contactado", "visita_coordinada", "firme_candidato", "posible_interes", "descartado"];
+  const statusOptions: PropertyStatus[] = ["ingresado", "contactado", "visita_coordinada", "posible_interes", "firme_candidato", "meta_conseguida", "descartado"];
   const statusTransitionsByOrigin: Partial<Record<PropertyStatus, Set<PropertyStatus>>> = {
     ingresado: new Set<PropertyStatus>(["contactado", "descartado"]),
     contactado: new Set<PropertyStatus>(["visita_coordinada", "descartado"]),
     visita_coordinada: new Set<PropertyStatus>(["firme_candidato", "posible_interes", "descartado"]),
+    posible_interes: new Set<PropertyStatus>(["firme_candidato", "meta_conseguida", "descartado"]),
+    firme_candidato: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
   };
   const allowedNextStatuses = statusTransitionsByOrigin[property.status];
 
@@ -165,6 +182,8 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
       setShowCoordinatedConfirm(true);
     } else if (val === "contactado") {
       setShowContactedConfirm(true);
+    } else if (val === "meta_conseguida") {
+      setShowMetaAchievedConfirm(true);
     } else if (val === "firme_candidato" || val === "posible_interes") {
       setPendingProsConsStatus(val);
       setClosePriceScore(0);
@@ -840,6 +859,128 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                   setContactedUrgency,
                   "⏰ ¿Qué tan urgente es su mudanza?"
                 )}
+              </div>
+            </StatusChangeConfirmDialog>
+
+            <Dialog
+              open={showMetaAchievedConfirm}
+              onOpenChange={setShowMetaAchievedConfirm}
+            >
+              <DialogContent className="max-w-md rounded-[2rem] p-0 overflow-hidden border-none shadow-[0_0_50px_rgba(20,184,166,0.35)]">
+                <div className="bg-gradient-to-br from-[#072a2a] via-[#0f4c4c] to-[#0a2f3a] p-8 text-white relative overflow-hidden text-center">
+                  <div className="absolute -top-10 -left-10 w-36 h-36 bg-teal-300/20 rounded-full blur-3xl animate-pulse" />
+                  <div className="absolute -bottom-10 -right-10 w-36 h-36 bg-cyan-300/20 rounded-full blur-3xl animate-pulse" />
+
+                  <div className="relative z-10 space-y-5">
+                    <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-md px-4 py-1.5 rounded-full">
+                      <Sparkles className="w-4 h-4 text-yellow-300" />
+                      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-teal-100">
+                        Objetivo cumplido
+                      </span>
+                    </div>
+
+                    <div className="mx-auto w-20 h-20 rounded-3xl bg-gradient-to-b from-teal-300 to-cyan-500 flex items-center justify-center shadow-2xl">
+                      <Trophy className="w-10 h-10 text-teal-950" />
+                    </div>
+
+                    <h3 className="text-3xl font-black tracking-tight leading-tight">
+                      🎯 Meta conseguida
+                    </h3>
+
+                    <p className="text-sm text-teal-50/90 leading-relaxed px-2">
+                      Excelente avance con <strong>{property.title}</strong>.
+                      <br />
+                      Confirmá este estado para dejar registro de cierre en {appBrandName}.
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-2 text-[10px] uppercase tracking-wider font-bold text-teal-100/90">
+                      <div className="rounded-xl bg-white/10 border border-white/15 px-2 py-2">Cierre</div>
+                      <div className="rounded-xl bg-white/10 border border-white/15 px-2 py-2">Logro</div>
+                      <div className="rounded-xl bg-white/10 border border-white/15 px-2 py-2">Objetivo</div>
+                    </div>
+
+                    <div className="pt-2 flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 rounded-xl border-white/30 bg-white/5 text-white hover:bg-white/10"
+                        onClick={() => setShowMetaAchievedConfirm(false)}
+                      >
+                        Volver
+                      </Button>
+                      <Button
+                        className="flex-1 rounded-xl bg-gradient-to-r from-teal-300 via-cyan-300 to-sky-300 text-slate-900 hover:opacity-95 font-bold gap-2"
+                        onClick={() => {
+                          setShowMetaAchievedConfirm(false);
+                          setShowMetaSurveyConfirm(true);
+                        }}
+                      >
+                        <Rocket className="w-4 h-4" />
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <StatusChangeConfirmDialog
+              open={showMetaSurveyConfirm}
+              onOpenChange={(open) => {
+                setShowMetaSurveyConfirm(open);
+                if (!open) {
+                  setMetaAgentPunctuality(0);
+                  setMetaAgentAttention(0);
+                  setMetaAppPerformance(0);
+                  setMetaAppSupport(0);
+                  setMetaAppPrice(0);
+                }
+              }}
+              title="✨ Último paso: ayudanos con tu feedback"
+              description={`Tu experiencia nos ayuda a mejorar el acompañamiento del agente y de ${appBrandName}.`}
+              confirmLabel="🎯 Confirmar meta conseguida"
+              confirmDisabled={
+                metaAgentPunctuality === 0 ||
+                metaAgentAttention === 0 ||
+                metaAppPerformance === 0 ||
+                metaAppSupport === 0 ||
+                metaAppPrice === 0
+              }
+              confirmClassName="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+              onConfirm={async () => {
+                await onStatusChange(
+                  property.id,
+                  "meta_conseguida",
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  {
+                    agentPunctuality: metaAgentPunctuality,
+                    agentAttention: metaAgentAttention,
+                    appPerformance: metaAppPerformance,
+                    appSupport: metaAppSupport,
+                    appPrice: metaAppPrice,
+                  }
+                );
+                setShowMetaSurveyConfirm(false);
+                setMetaAgentPunctuality(0);
+                setMetaAgentAttention(0);
+                setMetaAppPerformance(0);
+                setMetaAppSupport(0);
+                setMetaAppPrice(0);
+              }}
+            >
+              <div className="space-y-3 py-2">
+                {renderFiveStars(metaAgentPunctuality, setMetaAgentPunctuality, "⏱️ Puntualidad del agente")}
+                {renderFiveStars(metaAgentAttention, setMetaAgentAttention, "🤝 Atención del agente")}
+                {renderFiveStars(metaAppPerformance, setMetaAppPerformance, "⚙️ Funcionamiento de la app")}
+                {renderFiveStars(metaAppSupport, setMetaAppSupport, "🛟 Soporte de la app")}
+                {renderFiveStars(metaAppPrice, setMetaAppPrice, "💸 Precio de la app respecto al valor")}
               </div>
             </StatusChangeConfirmDialog>
           </>

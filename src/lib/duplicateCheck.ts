@@ -124,14 +124,15 @@ export async function checkDuplicateUrlInOrg(
 
 function getStatusLabel(status: string | null): string {
   const labels: Record<string, string> = {
-    ingresado: "Ingresado",
-    contactado: "Contactado",
-    visita_coordinada: "Visita Coordinada",
+    ingresado: "📝 Ingresado",
+    contactado: "📞 Contactado",
+    visita_coordinada: "🗓️ Visita coordinada",
     visitado: "Visitado",
-    descartado: "Descartado",
+    descartado: "❌ Descartado",
     a_analizar: "A Analizar",
-    firme_candidato: "Alta prioridad",
-    posible_interes: "Interesado",
+    firme_candidato: "🔥 Alta prioridad",
+    posible_interes: "💡 Interesado",
+    meta_conseguida: "🎯 Meta conseguida",
     eliminado: "Eliminado",
     eliminado_agencia: "Aviso Finalizado",
   };

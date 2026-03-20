@@ -159,6 +159,13 @@ const Index = () => {
       houseSecurity: number;
       expectedSize: number;
       photosReality: number;
+    },
+    metaAchievedFeedback?: {
+      agentPunctuality: number;
+      agentAttention: number;
+      appPerformance: number;
+      appSupport: number;
+      appPrice: number;
     }
   ) => {
     try {
@@ -173,18 +180,19 @@ const Index = () => {
         prosAndCons,
         contactedFeedback,
         coordinatedFeedback,
-        discardedSurvey
+        discardedSurvey,
+        metaAchievedFeedback
       );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error desconocido";
-      const isEnumError = /enum|invalid.*firme_candidato|invalid.*posible_interes|user_listing_status/i.test(msg);
+      const isEnumError = /enum|invalid.*firme_candidato|invalid.*posible_interes|invalid.*meta_conseguida|user_listing_status/i.test(msg);
       const isRequiredField = /requerido|required/i.test(msg);
       toast({
         title: isPermissionError(e) ? "Sin permisos" : "Error",
         description: isPermissionError(e)
           ? permissionDeniedMsg
           : isEnumError
-            ? "Los estados Alta prioridad e Interesado requieren ejecutar la migración de la base de datos. Contactá al administrador."
+            ? "Los estados Alta prioridad, Interesado y Meta conseguida requieren ejecutar la migración de la base de datos. Contactá al administrador."
             : isRequiredField
               ? "Error al guardar. Si el problema persiste, ejecutá la migración: pnpm supabase db push"
               : msg,
@@ -307,7 +315,7 @@ const Index = () => {
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
-      ingresado: 0, contactado: 0, visita_coordinada: 0, visitado: 0, descartado: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0, firme_candidato: 0, posible_interes: 0
+      ingresado: 0, contactado: 0, visita_coordinada: 0, visitado: 0, descartado: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0, firme_candidato: 0, posible_interes: 0, meta_conseguida: 0
     };
     properties.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status]++; });
     return counts;

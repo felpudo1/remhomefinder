@@ -45,8 +45,15 @@ export function useProperties() {
         houseSecurity: number;
         expectedSize: number;
         photosReality: number;
+      },
+      metaAchievedFeedback?: {
+        agentPunctuality: number;
+        agentAttention: number;
+        appPerformance: number;
+        appSupport: number;
+        appPrice: number;
       }
-    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback, coordinatedFeedback, discardedSurvey }),
+    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback, coordinatedFeedback, discardedSurvey, metaAchievedFeedback }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addComment({ propertyId: id, comment }),
     refetch,

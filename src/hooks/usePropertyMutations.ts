@@ -150,6 +150,7 @@ export function usePropertyMutations() {
             contactedFeedback,
             coordinatedFeedback,
             discardedSurvey,
+            metaAchievedFeedback,
         }: {
             id: string;
             status: PropertyStatus;
@@ -167,6 +168,13 @@ export function usePropertyMutations() {
                 houseSecurity: number;
                 expectedSize: number;
                 photosReality: number;
+            };
+            metaAchievedFeedback?: {
+                agentPunctuality: number;
+                agentAttention: number;
+                appPerformance: number;
+                appSupport: number;
+                appPrice: number;
             };
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -211,6 +219,13 @@ export function usePropertyMutations() {
                 eventMetadata.discarded_house_security = discardedSurvey.houseSecurity;
                 eventMetadata.discarded_expected_size = discardedSurvey.expectedSize;
                 eventMetadata.discarded_photos_reality = discardedSurvey.photosReality;
+            }
+            if (metaAchievedFeedback) {
+                eventMetadata.meta_agent_punctuality = metaAchievedFeedback.agentPunctuality;
+                eventMetadata.meta_agent_attention = metaAchievedFeedback.agentAttention;
+                eventMetadata.meta_app_performance = metaAchievedFeedback.appPerformance;
+                eventMetadata.meta_app_support = metaAchievedFeedback.appSupport;
+                eventMetadata.meta_app_price = metaAchievedFeedback.appPrice;
             }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)

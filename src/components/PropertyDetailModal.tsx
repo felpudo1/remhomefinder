@@ -63,6 +63,13 @@ interface PropertyDetailModalProps {
       houseSecurity: number;
       expectedSize: number;
       photosReality: number;
+    },
+    metaAchievedFeedback?: {
+      agentPunctuality: number;
+      agentAttention: number;
+      appPerformance: number;
+      appSupport: number;
+      appPrice: number;
     }
   ) => void;
   onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => void;
