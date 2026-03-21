@@ -158,7 +158,7 @@ const AgentDashboard = () => {
           profileStatus === "active" ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
               {activeTab === "propiedades" && <AgentProperties agency={agency} profileStatus={profileStatus} activeGroupId={isOwner ? activeGroupId : null} />}
-              {activeTab === "listado" && <AgentPropertyListing />}
+              {activeTab === "listado" && <AgentPropertyListing agency={agency} />}
               {activeTab === "equipo" && canManageTeams && (
                 <AgentTeamProperties
                   activeGroupId={isOwner ? activeGroupId : agency.id}
