@@ -22,6 +22,10 @@ const AgentDashboard = routeLazy(() => import("./pages/AgentDashboard"));
 const NotFound = routeLazy(() => import("./pages/NotFound"));
 const PublicPropertyView = routeLazy(() => import("./pages/PublicPropertyView"));
 const Referral = routeLazy(() => import("./pages/Referral"));
+const LegalTerms = routeLazy(() => import("./pages/LegalTerms"));
+const LegalPrivacy = routeLazy(() => import("./pages/LegalPrivacy"));
+const AuthRecoverPassword = routeLazy(() => import("./pages/AuthRecoverPassword"));
+const AuthResetPassword = routeLazy(() => import("./pages/AuthResetPassword"));
 
 const queryClient = new QueryClient();
 
@@ -46,6 +50,10 @@ const App = () => (
             <Routes>
               <Route path={ROUTES.HOME} element={<Landing />} />
               <Route path={ROUTES.AUTH} element={<Auth />} />
+              <Route path={ROUTES.AUTH_RECOVER} element={<AuthRecoverPassword />} />
+              <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<AuthResetPassword />} />
+              <Route path={ROUTES.TERMS} element={<LegalTerms />} />
+              <Route path={ROUTES.PRIVACY} element={<LegalPrivacy />} />
               <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
               <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
               

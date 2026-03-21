@@ -12,6 +12,10 @@ function safeUUID(): string {
     return v.toString(16);
   });
 }
+
+function normalizeCurrency(value: unknown): "UYU" | "USD" {
+  return value === "USD" ? "USD" : "UYU";
+}
 import {
   Dialog,
   DialogContent,
@@ -100,6 +104,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   /** Caso 2: existe en app pero no en familia - info + permitir agregar */
   const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
+  /** Submit manual: el botón puede estar habilitado sin URL; al confirmar exigimos link y marcamos el campo. */
+  const [manualLinkRequiredError, setManualLinkRequiredError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
   // Ref para el input oculto de análisis de screenshots
@@ -173,7 +179,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         title: d.title || "",
         priceRent: d.priceRent ? String(d.priceRent) : "",
         priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "UYU",
+        currency: normalizeCurrency(d.currency),
         neighborhood: d.neighborhood || "",
         city: d.city || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
@@ -247,7 +253,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         title: d.title || "",
         priceRent: String(d.priceRent || ""),
         priceExpenses: String(d.priceExpenses || ""),
-        currency: d.currency || "UYU",
+        currency: normalizeCurrency(d.currency),
         neighborhood: d.neighborhood || "",
         city: d.city || "",
         sqMeters: String(d.sqMeters || ""),
@@ -337,7 +343,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         title: d.title || "",
         priceRent: String(d.priceRent || ""),
         priceExpenses: String(d.priceExpenses || ""),
-        currency: d.currency || "ARS",
+        currency: normalizeCurrency(d.currency),
         neighborhood: d.neighborhood || "",
         city: d.city || "",
         sqMeters: String(d.sqMeters || ""),
@@ -407,7 +413,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
         title: d.title || "",
         priceRent: d.priceRent ? String(d.priceRent) : "",
         priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "USD",
+        currency: normalizeCurrency(d.currency),
         neighborhood: d.neighborhood || "",
         city: d.city || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
@@ -490,14 +496,19 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   const handleSubmit = async () => {
     if (!url.trim()) {
-      toast.error("La URL de la publicación es obligatoria.");
+      setManualLinkRequiredError(true);
       return;
     }
-    const orgId = selectedGroupId || null;
-    const result = await checkUrlStatus(url.trim(), orgId);
-    if (result.case === "in_family") {
-      toast.error(`Este aviso fue ingresado por ${result.addedByName} ${formatDaysAgo(result.addedAt)}. Su estado es ${result.status}.`);
-      return;
+    setManualLinkRequiredError(false);
+
+    let result: Awaited<ReturnType<typeof checkUrlStatus>> = { case: "none" };
+    if (url.trim()) {
+      const orgId = selectedGroupId || null;
+      result = await checkUrlStatus(url.trim(), orgId);
+      if (result.case === "in_family") {
+        toast.error(`Este aviso fue ingresado por ${result.addedByName} ${formatDaysAgo(result.addedAt)}. Su estado es ${result.status}.`);
+        return;
+      }
     }
     const isRent = listingType === "rent";
     // Manual/cameFromImage: fotos van a privadas. Scraped: fotos públicas + privadas separadas
@@ -584,6 +595,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setUrlInFamily(null);
     setUrlInApp(null);
     setUrlInAppMsg(null);
+    setManualLinkRequiredError(false);
     setListingType("rent");
     setStep("url");
     setCameFromImage(false);
@@ -595,7 +607,18 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   };
 
 
-  const isFormValid = url.trim() && form.title && form.neighborhood && form.priceRent && !urlDuplicated && !urlInFamily;
+  const hasAnyPhoto = scrapedImages.length > 0 || privateImages.length > 0;
+  const hasTitle = String(form.title || "").trim().length > 0;
+  const hasPrice = String(form.priceRent || "").trim().length > 0;
+  const isFormValid = hasAnyPhoto && hasTitle && hasPrice && !urlDuplicated && !urlInFamily;
+
+  /** Textos para mostrar por qué el botón "Agregar" sigue deshabilitado (flujo manual). */
+  const manualSubmitBlockers: string[] = [];
+  if (!hasAnyPhoto) manualSubmitBlockers.push("al menos 1 foto");
+  if (!hasTitle) manualSubmitBlockers.push("título");
+  if (!hasPrice) manualSubmitBlockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
+  if (urlDuplicated) manualSubmitBlockers.push("resolver URL duplicada");
+  if (urlInFamily) manualSubmitBlockers.push("esta URL ya está en tu familia");
 
   return (
     <>
@@ -656,7 +679,14 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             handleFileUpload={handleFileUpload}
             isUploading={isUploading}
             url={url}
-            setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); setUrlInAppMsg(null); }}
+            setUrl={(v) => {
+              setUrl(v);
+              setUrlInFamily(null);
+              setUrlInApp(null);
+              setUrlInAppMsg(null);
+              setManualLinkRequiredError(false);
+            }}
+            linkRequiredError={manualLinkRequiredError}
             urlDuplicated={urlDuplicated}
             urlAddedByName={urlAddedByName}
             urlInFamily={urlInFamily}
@@ -669,6 +699,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             setStep={setStep}
             handleSubmit={handleSubmit}
             isFormValid={isFormValid}
+            manualSubmitBlockers={manualSubmitBlockers}
             onExtractFromUrl={handleScrape}
             isExtracting={isLoading}
           />

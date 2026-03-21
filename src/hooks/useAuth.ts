@@ -3,7 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ROLES, ROUTES } from "@/lib/constants";
-import { loginSchema, registerSchema } from "@/lib/schemas/auth";
+import {
+    loginSchema,
+    registerSchema,
+    passwordRecoveryRequestSchema,
+    passwordResetSchema,
+} from "@/lib/schemas/auth";
 
 /**
  * Hook que centraliza la lógica de autenticación con Supabase (registro, login y redirección por rol).
@@ -193,6 +198,68 @@ export const useAuth = () => {
      * @param password - Contraseña.
      * @returns { success: true, user } en éxito, o { success: false, error } con toast de error.
      */
+    /**
+     * Envía email con enlace para restablecer contraseña (usuarios y agentes: mismo Auth de Supabase).
+     * redirectTo debe estar en "Redirect URLs" del proyecto Supabase.
+     */
+    const requestPasswordReset = async (email: string) => {
+        setLoading(true);
+        try {
+            const validation = passwordRecoveryRequestSchema.safeParse({ email });
+            if (!validation.success) {
+                throw new Error(validation.error.errors[0].message);
+            }
+            const redirectTo = `${window.location.origin}${ROUTES.AUTH_RESET_PASSWORD}`;
+            const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {
+                redirectTo,
+            });
+            if (error) throw error;
+            toast({
+                title: "Revisá tu correo",
+                description:
+                    "Si el email está registrado, te enviamos las instrucciones para elegir una contraseña nueva.",
+            });
+            return { success: true as const };
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "No se pudo enviar.";
+            toast({ title: "Error", description: msg, variant: "destructive" });
+            return { success: false as const, error };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    /**
+     * Guarda la nueva contraseña cuando la sesión viene del link de recuperación.
+     * Cierra sesión después para que inicies sesión de nuevo con la clave nueva.
+     */
+    const completePasswordReset = async (password: string, confirmPassword: string) => {
+        setLoading(true);
+        try {
+            const validation = passwordResetSchema.safeParse({ password, confirmPassword });
+            if (!validation.success) {
+                throw new Error(validation.error.errors[0].message);
+            }
+            const { error } = await supabase.auth.updateUser({
+                password: validation.data.password,
+            });
+            if (error) throw error;
+            await supabase.auth.signOut();
+            toast({
+                title: "Contraseña actualizada",
+                description: "Ya podés iniciar sesión con tu nueva contraseña.",
+            });
+            navigate(ROUTES.AUTH);
+            return { success: true as const };
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "No se pudo actualizar la contraseña.";
+            toast({ title: "Error", description: msg, variant: "destructive" });
+            return { success: false as const, error };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const signIn = async (email: string, password: string) => {
         setLoading(true);
         try {
@@ -227,6 +294,8 @@ export const useAuth = () => {
         isSigningUp,
         signIn,
         signUp,
-        redirectByRole
+        redirectByRole,
+        requestPasswordReset,
+        completePasswordReset,
     };
 };

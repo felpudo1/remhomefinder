@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Star, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye, MapPin, DollarSign, Maximize2, MessageSquare, RefreshCw } from "lucide-react";
+import { Bookmark, Building2, CheckCircle, PauseCircle, Loader2, TrendingUp, Star, ExternalLink, ChevronUp, ChevronDown, BarChart3, Eye, MapPin, DollarSign, Maximize2, MessageSquare, RefreshCw, Users } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -29,7 +29,10 @@ const AGENT_STATS_COLS = [
     { key: 'status', label: 'Estado' },
     { key: 'average_rating', label: 'Rating', icon: Star },
     { key: 'views_count', label: 'Vistas', icon: Eye },
-    { key: 'total_votes', label: 'Votos', icon: Bookmark },
+    /** Cantidad de votos del rating (public_global_rating) */
+    { key: 'total_votes', label: 'Votos', icon: Users },
+    /** Usuarios distintos que guardaron la publicación en su listado familiar */
+    { key: 'saves_count', label: 'Guardados', icon: Bookmark },
     { key: 'discardReasons', label: 'Motivos descarte', icon: MessageSquare },
 ];
 
@@ -52,10 +55,14 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         queryKey: ["agency-dashboard-stats", agency.id],
         enabled: !!agency,
         queryFn: async () => {
-            // Count saves: user_listings with source_publication_id pointing to our publications
-            const pubIds = properties.map((p: any) => p.id || "").filter(Boolean);
-            if (pubIds.length === 0) return { total_saved: 0, top_properties: [] };
+            // Contar guardados: filas en user_listings que apuntan a nuestras publicaciones
+            const { data: pubs, error: pubErr } = await supabase
+                .from("agent_publications")
+                .select("id")
+                .eq("org_id", agency.id);
+            if (pubErr || !pubs?.length) return { total_saved: 0, top_properties: [] };
 
+            const pubIds = pubs.map((p) => p.id).filter(Boolean);
             const { data: saves, error } = await supabase
                 .from("user_listings")
                 .select("source_publication_id")
@@ -64,7 +71,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             if (error) return { total_saved: 0, top_properties: [] };
 
             const saveCountMap: Record<string, number> = {};
-            (saves || []).forEach(s => {
+            (saves || []).forEach((s) => {
                 if (s.source_publication_id) {
                     saveCountMap[s.source_publication_id] = (saveCountMap[s.source_publication_id] || 0) + 1;
                 }
@@ -128,6 +135,22 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             const ratingsData: { property_id: string; avg_rating: number | null; total_votes: number | null }[] =
                 (ratingsRes.data || []).filter((r: any) => propertyIds.includes(r.property_id));
             const insightsData: { property_id: string; attribute_name: string; total_scores: number }[] = (insightsRes.data || []).filter((r: any) => propertyIds.includes(r.property_id));
+
+            /** Guardados por publicación (misma lógica que la tarjeta de totales) */
+            const pubIdsForPage = pubData.map((p: any) => p.id).filter(Boolean);
+            let savesByPublication: Record<string, number> = {};
+            if (pubIdsForPage.length > 0) {
+                const { data: savesRows } = await supabase
+                    .from("user_listings")
+                    .select("source_publication_id")
+                    .in("source_publication_id", pubIdsForPage);
+                (savesRows || []).forEach((s) => {
+                    if (!s.source_publication_id) return;
+                    savesByPublication[s.source_publication_id] =
+                        (savesByPublication[s.source_publication_id] || 0) + 1;
+                });
+            }
+
             const discardReasonsMap: Record<string, { name: string; count: number }[]> = {};
             insightsData.forEach((row) => {
                 if (!row.property_id || !row.attribute_name || !propertyIds.includes(row.property_id)) return;
@@ -163,6 +186,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                     status: pub.status,
                     average_rating: stats ? stats.average : 0,
                     total_votes: stats ? stats.count : 0,
+                    saves_count: savesByPublication[pub.id] ?? 0,
                     views_count: pub.views_count || 0,
                     created_at: pub.created_at,
                     url: p.source_url || "",
@@ -376,6 +400,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                                         </td>
                                         <td className="p-3 text-muted-foreground font-medium">{p.views_count || 0}</td>
                                         <td className="p-3 text-muted-foreground font-medium">{(p.total_votes || 0) > 0 ? p.total_votes : "0"}</td>
+                                        <td className="p-3 text-muted-foreground font-medium">{(p.saves_count ?? 0) > 0 ? p.saves_count : "0"}</td>
                                         <td className="p-3 max-w-[180px]">
                                             {p.discardReasons && p.discardReasons.length > 0 ? (
                                                 <span className="text-[10px] text-muted-foreground" title={p.discardReasons.map(r => `${r.name}: ${r.count}`).join(", ")}>

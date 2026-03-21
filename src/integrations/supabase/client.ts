@@ -20,5 +20,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    /** Necesario para que el link de recuperación (#access_token / PKCE) deje sesión lista en /auth/restablecer */
+    detectSessionInUrl: true,
   }
 });

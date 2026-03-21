@@ -23,6 +23,16 @@ export const ROUTES = {
     HOME: "/",
     DASHBOARD: "/dashboard",
     AUTH: "/auth",
+    /** Pedir enlace de recuperación de contraseña (email) */
+    AUTH_RECOVER: "/auth/recuperar",
+    /** Establecer nueva contraseña (llegás desde el mail de Supabase) */
+    AUTH_RESET_PASSWORD: "/auth/restablecer",
+    /** Auth abriendo formulario de registro (vuelta desde páginas legales) */
+    AUTH_REGISTER: "/auth?register=1",
+    /** Términos y condiciones (página pública) */
+    TERMS: "/terminos",
+    /** Política de privacidad (página pública) */
+    PRIVACY: "/privacidad",
     ADMIN: "/admin",
     ADMIN_SECTION: (section: string) => `/admin/${section}`,
     ADMIN_SECTION_PATH: "/admin/:section",

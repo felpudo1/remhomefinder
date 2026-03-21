@@ -1,7 +1,9 @@
 import { Home, LogOut, ArrowLeft, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { useAdminDbStatus } from "@/hooks/useAdminDbStatus";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
+import { cn } from "@/lib/utils";
 
 interface AdminHeaderProps {
     activeSection: string;
@@ -12,6 +14,11 @@ interface AdminHeaderProps {
     userEmail?: string | null;
     displayName?: string | null;
     isPremium?: boolean;
+    scrapeCounts?: {
+        users: number;
+        agents: number;
+        total: number;
+    };
 }
 
 export const AdminHeader = ({
@@ -23,8 +30,10 @@ export const AdminHeader = ({
     userEmail,
     displayName,
     isPremium,
+    scrapeCounts,
 }: AdminHeaderProps) => {
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
+    const dbStatus = useAdminDbStatus();
     const StatusStar = () => (
         isPremium ? (
             <span title="PREMIUM">
@@ -60,10 +69,54 @@ export const AdminHeader = ({
                         </div>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 text-muted-foreground">
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Salir</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        title="Scrapers de users"
+                        className="h-8 min-w-8 rounded-full border border-border bg-muted/40 px-2 text-xs font-semibold text-foreground"
+                    >
+                        U {scrapeCounts?.users ?? 0}
+                    </button>
+                    <button
+                        type="button"
+                        title="Scrapers de agentes"
+                        className="h-8 min-w-8 rounded-full border border-border bg-muted/40 px-2 text-xs font-semibold text-foreground"
+                    >
+                        A {scrapeCounts?.agents ?? 0}
+                    </button>
+                    <button
+                        type="button"
+                        title="Scrapers totales"
+                        className="h-8 min-w-8 rounded-full border border-primary/30 bg-primary/10 px-2 text-xs font-bold text-primary"
+                    >
+                        T {scrapeCounts?.total ?? 0}
+                    </button>
+                    <button
+                        type="button"
+                        title={
+                            dbStatus === "ok"
+                                ? "Base de datos en línea"
+                                : dbStatus === "error"
+                                    ? "Base de datos sin conexión"
+                                    : "Comprobando base de datos…"
+                        }
+                        className={cn(
+                            "h-8 min-w-8 rounded-full border px-2 text-[10px] font-bold uppercase tracking-wide",
+                            dbStatus === "ok" &&
+                                "border-emerald-500/50 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+                            dbStatus === "error" &&
+                                "border-red-500/50 bg-red-500/15 text-red-700 dark:text-red-400",
+                            dbStatus === "checking" &&
+                                "border-border bg-muted/40 text-muted-foreground animate-pulse"
+                        )}
+                    >
+                        BD
+                    </button>
+                    <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2 text-muted-foreground">
+                        <LogOut className="w-4 h-4" />
+                        <span className="hidden sm:inline">Salir</span>
+                    </Button>
+                </div>
             </div>
 
             {/* Pestañas superiores — scroll horizontal en mobile */}

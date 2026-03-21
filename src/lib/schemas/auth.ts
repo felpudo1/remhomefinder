@@ -36,3 +36,26 @@ export const registerSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+/**
+ * Solo email para pedir el link de recuperación (Supabase envía el correo).
+ */
+export const passwordRecoveryRequestSchema = z.object({
+    email: z.string().email("El email no es válido."),
+});
+
+/**
+ * Nueva contraseña tras abrir el link del mail (recovery).
+ */
+export const passwordResetSchema = z
+    .object({
+        password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
+        confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: "Las contraseñas no coinciden.",
+        path: ["confirmPassword"],
+    });
+
+export type PasswordRecoveryRequestInput = z.infer<typeof passwordRecoveryRequestSchema>;
+export type PasswordResetInput = z.infer<typeof passwordResetSchema>;

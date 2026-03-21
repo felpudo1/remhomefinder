@@ -1,6 +1,7 @@
 import { Heart, Mail, Phone } from "lucide-react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 
+import { Link } from "react-router-dom";
 import {
     SUPPORT_EMAIL_CONFIG_KEY,
     SUPPORT_EMAIL_DEFAULT,
@@ -9,6 +10,7 @@ import {
     APP_BRAND_NAME_DEFAULT,
     APP_BRAND_NAME_KEY,
 } from "@/lib/config-keys";
+import { ROUTES } from "@/lib/constants";
 
 export const Footer = () => {
     const { value: supportEmail } = useSystemConfig(SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT);
@@ -28,6 +30,26 @@ export const Footer = () => {
                     © {new Date().getFullYear()} — Todos los derechos reservados.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-1">
+                    <Link
+                        to={ROUTES.TERMS}
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+                    >
+                        Términos
+                    </Link>
+                    <span className="text-muted-foreground/40 text-xs" aria-hidden>
+                        ·
+                    </span>
+                    <Link
+                        to={ROUTES.PRIVACY}
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+                    >
+                        Privacidad
+                    </Link>
+                    {(supportEmail || supportPhone) && (
+                        <span className="text-muted-foreground/40 text-xs hidden sm:inline" aria-hidden>
+                            ·
+                        </span>
+                    )}
                     {supportEmail && (
                         <a
                             href={`mailto:${supportEmail}`}

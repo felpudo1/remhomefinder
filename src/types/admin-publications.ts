@@ -63,7 +63,9 @@ export interface StatProperty {
     rooms: number;
     status: string;
     average_rating: number; // Promedio de 1 a 5 estrellas
-    total_votes: number; // Cuánta gente opinó
+    total_votes: number; // Cuánta gente opinó (ratings)
+    /** Usuarios distintos que guardaron esta publicación del marketplace en su listado */
+    saves_count?: number;
     created_at: string;
     url: string;
     views_count?: number; // Cuántos clics recibió

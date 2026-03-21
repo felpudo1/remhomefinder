@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Home, Mail, Lock, Eye, EyeOff, Loader2, Building2, Users, Phone } from "lucide-react";
 import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
@@ -17,13 +18,17 @@ import {
   APP_BRAND_NAME_DEFAULT,
   APP_BRAND_NAME_KEY,
 } from "@/lib/config-keys";
+import {
+  readAuthRegisterDraft,
+  writeAuthRegisterDraft,
+  clearAuthRegisterDraft,
+} from "@/lib/authRegisterDraftStorage";
 
 // Tipos posibles del estado de la base de datos
 type AccountType = "user" | "agency";
 
 /**
- * La lógica de DbStatusBadge se ha movido a /components/ui/DbStatusBadge.tsx
- * para mejorar la modularidad (Regla 2).
+ * DbStatusBadge solo se muestra si falla la conexión a la BD (ver componente).
  */
 
 const Auth = () => {
@@ -37,11 +42,19 @@ const Auth = () => {
   const [orgPhone, setOrgPhone] = useState("");
   const [userPhone, setUserPhone] = useState("");
   const [familyName, setFamilyName] = useState("");
+  /** Obligatorio solo en registro: aceptación de términos y privacidad */
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  /** Evita guardar el borrador vacío antes de hidratar desde sessionStorage */
+  const registerHydratedRef = useRef(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { loading, isSigningUp, signIn, signUp, redirectByRole } = useAuth();
   const { value: showVideo } = useSystemConfig(SHOW_AUTH_VIDEO_CONFIG_KEY, SHOW_AUTH_VIDEO_DEFAULT);
-  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
+  const { value: appBrandName, isLoading: brandLoading } = useSystemConfig(
+    APP_BRAND_NAME_KEY,
+    APP_BRAND_NAME_DEFAULT
+  );
 
   useEffect(() => {
     const {
@@ -57,13 +70,79 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate, redirectByRole, isSigningUp]);
 
+  /** Vuelta desde /terminos o /privacidad: abrir registro y limpiar ?register=1 de la URL */
+  useEffect(() => {
+    if (searchParams.get("register") !== "1") return;
+    setIsLogin(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete("register");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  /**
+   * Al entrar en modo registro: una vez hidratar desde sessionStorage.
+   * Después, cada cambio guarda el borrador para no perder datos al navegar a legales.
+   */
+  useEffect(() => {
+    if (isLogin) {
+      registerHydratedRef.current = false;
+      return;
+    }
+    if (!registerHydratedRef.current) {
+      registerHydratedRef.current = true;
+      const d = readAuthRegisterDraft();
+      if (d) {
+        setEmail(d.email);
+        setPassword(d.password);
+        setConfirmPassword(d.confirmPassword);
+        setAccountType(d.accountType);
+        setOrgName(d.orgName);
+        setOrgPhone(d.orgPhone);
+        setUserPhone(d.userPhone);
+        setFamilyName(d.familyName);
+        setAcceptedTerms(d.acceptedTerms);
+      }
+      return;
+    }
+    writeAuthRegisterDraft({
+      email,
+      password,
+      confirmPassword,
+      accountType,
+      orgName,
+      orgPhone,
+      userPhone,
+      familyName,
+      acceptedTerms,
+    });
+  }, [
+    isLogin,
+    email,
+    password,
+    confirmPassword,
+    accountType,
+    orgName,
+    orgPhone,
+    userPhone,
+    familyName,
+    acceptedTerms,
+  ]);
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isLogin) {
       await signIn(email, password);
     } else {
-      await signUp({
+      if (!acceptedTerms) {
+        toast({
+          title: "Aceptá los términos",
+          description: "Marcá la casilla para continuar con el registro.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const signUpResult = await signUp({
         email,
         password,
         confirmPassword, // Pasado para validación Zod
@@ -73,6 +152,9 @@ const Auth = () => {
         orgName: orgName.trim(),
         orgPhone: orgPhone.trim()
       });
+      if (signUpResult && typeof signUpResult === "object" && "success" in signUpResult && signUpResult.success) {
+        clearAuthRegisterDraft();
+      }
     }
   };
 
@@ -111,13 +193,20 @@ const Auth = () => {
             {/* Logo */}
             <div className="text-center space-y-2">
               <button
+                type="button"
                 onClick={() => navigate("/")}
                 className="group inline-flex flex-col items-center gap-2"
               >
                 <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto transition-transform group-hover:scale-110 shadow-lg shadow-primary/20">
                   <Home className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">{appBrandName}</h1>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight min-h-[2rem]">
+                  {brandLoading ? (
+                    <span className="inline-block h-8 w-40 max-w-[85%] mx-auto bg-muted/60 rounded-md animate-pulse" />
+                  ) : (
+                    appBrandName || "\u00a0"
+                  )}
+                </h1>
               </button>
               <p className="text-muted-foreground text-sm">
                 {isLogin ? "Iniciá sesión para continuar" : "Creá tu cuenta"}
@@ -280,6 +369,16 @@ const Auth = () => {
                     }
                   </button>
                 </div>
+                {isLogin && (
+                  <div className="text-right pt-1">
+                    <Link
+                      to={ROUTES.AUTH_RECOVER}
+                      className="text-xs font-medium text-foreground underline underline-offset-2 decoration-primary/70 hover:text-primary"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Campo de confirmación de contraseña (solo en registro) */}
@@ -302,10 +401,42 @@ const Auth = () => {
                 </div>
               }
 
+              {!isLogin && (
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="auth-accept-terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor="auth-accept-terms" className="text-sm leading-snug text-foreground font-medium cursor-pointer select-none">
+                      Acepto los{" "}
+                      <Link
+                        to={ROUTES.TERMS}
+                        className="font-semibold text-foreground underline underline-offset-2 decoration-primary decoration-2 hover:text-primary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Términos y condiciones
+                      </Link>{" "}
+                      y la{" "}
+                      <Link
+                        to={ROUTES.PRIVACY}
+                        className="font-semibold text-foreground underline underline-offset-2 decoration-primary decoration-2 hover:text-primary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Política de privacidad
+                      </Link>
+                      .
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full h-11 rounded-xl"
-                disabled={loading}>
+                disabled={loading || (!isLogin && !acceptedTerms)}>
 
                 {loading ?
                   "Cargando..." :
@@ -328,7 +459,11 @@ const Auth = () => {
             <p className="text-center text-sm text-muted-foreground">
               {isLogin ? "¿No tenés cuenta?" : "¿Ya tenés cuenta?"}{" "}
               <button
-                onClick={() => setIsLogin(!isLogin)}
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setAcceptedTerms(false);
+                }}
                 className="text-primary font-medium hover:underline">
 
                 {isLogin ? "Registrate" : "Iniciá sesión"}

@@ -25,6 +25,8 @@ export interface PropertyFormManualProps {
     isUploading: boolean;
     url: string;
     setUrl: (url: string) => void;
+    /** True si el usuario intentó agregar sin link (campo obligatorio al confirmar). */
+    linkRequiredError?: boolean;
     urlDuplicated: boolean;
     urlAddedByName?: string | null;
     urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
@@ -37,6 +39,8 @@ export interface PropertyFormManualProps {
     setStep: (step: "url" | "image-upload" | "manual") => void;
     handleSubmit: () => void | Promise<void>;
     isFormValid: boolean;
+    /** Si el botón está deshabilitado, qué falta (misma lógica que AddPropertyModal). */
+    manualSubmitBlockers?: string[];
     onExtractFromUrl?: () => void | Promise<void>;
     isExtracting?: boolean;
 }
@@ -60,6 +64,7 @@ export function PropertyFormManual({
     isUploading,
     url,
     setUrl,
+    linkRequiredError = false,
     urlDuplicated,
     urlAddedByName,
     urlInFamily,
@@ -71,9 +76,12 @@ export function PropertyFormManual({
     setStep,
     handleSubmit,
     isFormValid,
+    manualSubmitBlockers = [],
     onExtractFromUrl,
     isExtracting,
 }: PropertyFormManualProps) {
+    const safeCurrency = form.currency === "USD" || form.currency === "UYU" ? form.currency : "UYU";
+
     return (
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
             {/* URL + Extraer datos (chequeo aquí, no en submit) */}
@@ -82,13 +90,26 @@ export function PropertyFormManual({
                 <div className="flex gap-2">
                     <div className="relative flex-1">
                         <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input type="url" value={url} onChange={(e) => { setUrl(e.target.value); setUrlDuplicated(false); }} placeholder="http://intocasas.com.uy" className={`pl-9 rounded-xl text-sm ${urlDuplicated ? "border-destructive" : ""}`} />
+                        <Input
+                            type="url"
+                            value={url}
+                            onChange={(e) => {
+                                setUrl(e.target.value);
+                                setUrlDuplicated(false);
+                            }}
+                            placeholder="http://intocasas.com.uy"
+                            className={`pl-9 rounded-xl text-sm ${urlDuplicated || linkRequiredError ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            aria-invalid={linkRequiredError || undefined}
+                        />
                     </div>
                     <Button type="button" onClick={onExtractFromUrl} disabled={!url.trim() || isExtracting} className="rounded-xl gap-1.5 shrink-0">
                         {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                         {isExtracting ? "Verificando..." : "Extraer datos"}
                     </Button>
                 </div>
+                {linkRequiredError && !url.trim() && (
+                    <p className="text-xs text-destructive font-medium">Dato obligatorio</p>
+                )}
                 {urlInFamily && (
                     <p className="text-xs text-destructive font-medium">
                         Este aviso fue ingresado por {urlInFamily.addedByName} {formatDaysAgo && urlInFamily.addedAt ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es {urlInFamily.status}.
@@ -188,12 +209,12 @@ export function PropertyFormManual({
             </div>
 
             {/* Fotos privadas (solo tu familia) */}
-            <div className="space-y-1.5 bg-primary/5 border border-primary/20 rounded-xl p-3">
+            <div className="space-y-1.5 bg-primary/5 border border-primary/20 rounded-xl p-3 opacity-60">
                 <Label className="text-xs font-medium flex items-center gap-1">
                     <ImageIcon className="w-3 h-3" />
                     Fotos privadas (solo tu familia)
                 </Label>
-                <p className="text-[10px] text-muted-foreground">Fotos de visitas, capturas, etc. Solo las ve tu familia.</p>
+                <p className="text-[10px] text-muted-foreground">Esta función está temporalmente deshabilitada.</p>
                 {privateImages.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2 mt-2">
                         {privateImages.map((img, i) => (
@@ -208,10 +229,10 @@ export function PropertyFormManual({
                         ))}
                     </div>
                 ) : null}
-                <input ref={privateFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handlePrivateFileUpload(e.target.files); e.target.value = ""; }} />
-                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled={isUploading} onClick={() => privateFileInputRef.current?.click()}>
+                <input ref={privateFileInputRef} type="file" accept="image/*" multiple className="hidden" disabled />
+                <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" disabled>
                     {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                    {isUploading ? "Subiendo..." : "Agregar fotos privadas"}
+                    Deshabilitado
                 </Button>
             </div>
 
@@ -247,7 +268,18 @@ export function PropertyFormManual({
             <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium">Moneda</Label>
-                    <Input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} placeholder="USD" className="rounded-xl text-sm" />
+                    <Select
+                        value={safeCurrency}
+                        onValueChange={(value) => setForm({ ...form, currency: value })}
+                    >
+                        <SelectTrigger className="rounded-xl text-sm">
+                            <SelectValue placeholder="Moneda" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="UYU">$U</SelectItem>
+                            <SelectItem value="USD">US$</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium">m²</Label>
@@ -299,9 +331,16 @@ export function PropertyFormManual({
                 </div>
             )}
 
-            <div className="flex gap-2 pt-2">
-                <Button variant="outline" onClick={() => { setStep(cameFromImage ? "image-upload" : "url"); }} className="flex-1 rounded-xl">Volver</Button>
-                <Button onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">Agregar Propiedad</Button>
+            <div className="flex flex-col gap-2 pt-2">
+                {!isFormValid && manualSubmitBlockers.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground text-center leading-snug" role="status">
+                        Para habilitar <strong>Agregar propiedad</strong>: completá {manualSubmitBlockers.join(" · ")}.
+                    </p>
+                )}
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => { setStep(cameFromImage ? "image-upload" : "url"); }} className="flex-1 rounded-xl">Volver</Button>
+                    <Button onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">Agregar Propiedad</Button>
+                </div>
             </div>
         </div>
     );

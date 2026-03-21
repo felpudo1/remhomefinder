@@ -93,15 +93,29 @@ export function ScraperInput({
                 </div>
 
                 {urlInFamily ? (
-                    <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3">
-                        <p className="text-sm text-amber-900 font-medium">
-                            Este aviso ya existe en tu listado familiar. Fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo ? formatDaysAgo(urlInFamily.addedAt) : ""}.
-                        </p>
+                    <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3 text-center">
+                        <div className="space-y-2 text-amber-900 text-center">
+                            <p className="text-sm font-semibold">
+                                <strong className="text-2xl md:text-3xl leading-tight block">
+                                    ESTE AVISO YA EXISTE EN TU LISTADO FAMILIAR
+                                </strong>
+                            </p>
+                            <p className="text-base font-medium">
+                                Fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo ? formatDaysAgo(urlInFamily.addedAt) : ""}.
+                            </p>
+                        </div>
                         {onOpenExisting && (
-                            <Button variant="outline" size="sm" className="rounded-xl gap-2 border-amber-400 text-amber-800 hover:bg-amber-100" onClick={() => { onOpenExisting(urlInFamily.userListingId); }}>
-                                <ExternalLink className="w-4 h-4" />
-                                Para verlo hacé click acá
-                            </Button>
+                            <div className="flex justify-center">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="rounded-xl gap-2 border-amber-400 text-amber-800 hover:bg-amber-100" 
+                                    onClick={() => { onOpenExisting(urlInFamily.userListingId); }}
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Para verlo hacé click acá
+                                </Button>
+                            </div>
                         )}
                     </div>
                 ) : urlInApp ? (
@@ -142,21 +156,23 @@ export function ScraperInput({
                             )}
                         </div>
                         {onAddExistingFromApp && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-xl gap-2 border-blue-400 text-blue-800 hover:bg-blue-100"
-                                onClick={onAddExistingFromApp}
-                                disabled={isAddingExistingFromApp}
-                            >
-                                {isAddingExistingFromApp ? (
-                                    <><Loader2 className="w-4 h-4 animate-spin" />Agregando...</>
-                                ) : isAgent ? (
-                                    <><ExternalLink className="w-4 h-4" />Publicar en mi marketplace</>
-                                ) : (
-                                    <><ExternalLink className="w-4 h-4" />Para ingresarlo hace click aca</>
-                                )}
-                            </Button>
+                            <div className="flex justify-center">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-xl gap-2 border-blue-400 text-blue-800 hover:bg-blue-100"
+                                    onClick={onAddExistingFromApp}
+                                    disabled={isAddingExistingFromApp}
+                                >
+                                    {isAddingExistingFromApp ? (
+                                        <><Loader2 className="w-4 h-4 animate-spin" />Agregando...</>
+                                    ) : isAgent ? (
+                                        <><ExternalLink className="w-4 h-4" />Publicar en mi marketplace</>
+                                    ) : (
+                                        <><ExternalLink className="w-4 h-4" />Hace clik aca para ingresarlo en tu listado</>
+                                    )}
+                                </Button>
+                            </div>
                         )}
                     </div>
                 ) : (

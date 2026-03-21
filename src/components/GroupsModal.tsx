@@ -117,30 +117,66 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-    } else {
+  /**
+   * Fallback si clipboard.writeText falla (p. ej. permisos). Sin readonly: en Chrome
+   * execCommand("copy") a veces devuelve false con textarea readonly dentro de un modal.
+   */
+  const copyInviteCodeWithExecCommand = (text: string): boolean => {
+    try {
       const textArea = document.createElement("textarea");
       textArea.value = text;
       textArea.style.position = "fixed";
-      textArea.style.left = "-9999px";
-      document.body.appendChild(textArea);
-      textArea.focus();
+      textArea.style.left = "0";
+      textArea.style.top = "0";
+      textArea.style.width = "1px";
+      textArea.style.height = "1px";
+      textArea.style.padding = "0";
+      textArea.style.border = "none";
+      textArea.style.opacity = "0";
+      textArea.setAttribute("aria-hidden", "true");
+      textArea.setAttribute("tabindex", "-1");
+      // Dentro del dialog activo evita pelearse con el focus trap de Radix (Chrome + modal).
+      const host = document.querySelector<HTMLElement>('[role="dialog"]') ?? document.body;
+      host.appendChild(textArea);
+      textArea.focus({ preventScroll: true });
       textArea.select();
-      document.execCommand("copy");
+      textArea.setSelectionRange(0, text.length);
+      const ok = document.execCommand("copy");
       textArea.remove();
+      return ok;
+    } catch {
+      return false;
     }
   };
 
-  const handleCopyCode = async (code: string) => {
-    try {
-      await copyToClipboard(code);
-      toast({ title: "Código copiado", description: "Compartilo para que lo peguen en la pestaña Unirme." });
-    } catch (err) {
-      console.error("Error al copiar:", err);
-      toast({ title: "Error al copiar", description: "Copiá el código manualmente.", variant: "destructive" });
+  /** Copia solo el código; toast solo "Código copiado". */
+  const handleCopyCode = (code: string) => {
+    const text = String(code ?? "").trim();
+    if (!text) {
+      toast({ title: "Error al copiar", variant: "destructive" });
+      return;
     }
+
+    // 1) Mismo tick del click: execCommand suele funcionar mejor con el focus trap del Dialog.
+    if (copyInviteCodeWithExecCommand(text)) {
+      toast({ title: "Código copiado" });
+      return;
+    }
+
+    // 2) La llamada a writeText arranca en el mismo handler (gesto de usuario); el .then solo muestra toast.
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(
+        () => {
+          toast({ title: "Código copiado" });
+        },
+        () => {
+          toast({ title: "Error al copiar", variant: "destructive" });
+        }
+      );
+      return;
+    }
+
+    toast({ title: "Error al copiar", variant: "destructive" });
   };
 
 
@@ -200,6 +236,7 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
                     {detailGroup.invite_code}
                   </code>
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
                     className="shrink-0"

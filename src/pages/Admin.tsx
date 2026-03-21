@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,37 @@ const Admin = () => {
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
+  const [scrapeCounts, setScrapeCounts] = useState({
+    users: 0,
+    agents: 0,
+    total: 0,
+  });
+
+  const fetchScrapeCounts = async () => {
+    const [{ count: usersCount, error: usersError }, { count: agentsCount, error: agentsError }] = await Promise.all([
+      supabase
+        .from("scrape_usage_log")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "user"),
+      supabase
+        .from("scrape_usage_log")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "agent"),
+    ]);
+
+    if (usersError || agentsError) {
+      console.error("Error cargando contadores de scraping:", usersError || agentsError);
+      return;
+    }
+
+    const users = usersCount || 0;
+    const agents = agentsCount || 0;
+    setScrapeCounts({
+      users,
+      agents,
+      total: users + agents,
+    });
+  };
 
   useEffect(() => {
     // Redirect /admin to /admin/agentes
@@ -62,6 +93,10 @@ const Admin = () => {
       navigate(ROUTES.ADMIN_SECTION("agentes"), { replace: true });
     }
   }, [section, navigate]);
+
+  useEffect(() => {
+    fetchScrapeCounts();
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -95,6 +130,7 @@ const Admin = () => {
         userEmail={profile?.email}
         displayName={profile?.displayName}
         isPremium={isPremium}
+        scrapeCounts={scrapeCounts}
       />
 
       {/* Contenido principal */}
