@@ -57,18 +57,11 @@ export const ERROR_MESSAGES = {
  * Las keys coinciden con los valores del ENUM 'marketplace_property_status' en la DB.
  */
 export const AGENT_PROPERTY_STATUSES = {
-    RENT: ["active", "paused", "reserved", "rented", "deleted"],
-    SALE: ["active", "paused", "reserved", "sold", "deleted"],
+    RENT: ["disponible", "pausado", "reservado", "alquilado", "eliminado"],
+    SALE: ["disponible", "pausado", "reservado", "vendido", "eliminado"],
 } as const;
 
 export const PROPERTY_STATUS_LABELS: Record<string, string> = {
-    active: "Disponible",
-    paused: "Pausada",
-    reserved: "Reservada",
-    rented: "Alquilada",
-    sold: "Vendida",
-    deleted: "Eliminada",
-    eliminado_agencia: "Finalizado por Agencia",
     // agent_pub_status (marketplace)
     disponible: "Disponible",
     pausado: "Pausada",
@@ -76,6 +69,7 @@ export const PROPERTY_STATUS_LABELS: Record<string, string> = {
     vendido: "Vendida",
     alquilado: "Alquilada",
     eliminado: "Eliminada",
+    eliminado_agencia: "Finalizado por Agencia",
     // user_listing_status (personal)
     ingresado: "📝 Ingresado",
     contactado: "📞 Contactado",

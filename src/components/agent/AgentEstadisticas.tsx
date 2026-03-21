@@ -64,20 +64,14 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
 
             const pubIds = pubs.map((p) => p.id).filter(Boolean);
             const { data: saves, error } = await supabase
-                .from("user_listings")
-                .select("source_publication_id")
-                .in("source_publication_id", pubIds);
+                .rpc("get_publications_save_counts", { _publication_ids: pubIds });
 
-            if (error) return { total_saved: 0, top_properties: [] };
+            if (error) {
+                console.error("Error fetching total saves:", error);
+                return { total_saved: 0, top_properties: [] };
+            }
 
-            const saveCountMap: Record<string, number> = {};
-            (saves || []).forEach((s) => {
-                if (s.source_publication_id) {
-                    saveCountMap[s.source_publication_id] = (saveCountMap[s.source_publication_id] || 0) + 1;
-                }
-            });
-
-            const total_saved = Object.values(saveCountMap).reduce((a, b) => a + b, 0);
+            const total_saved = (saves || []).reduce((acc: number, curr: any) => acc + (curr.save_count || 0), 0);
             return { total_saved, top_properties: [] };
         },
     });
@@ -136,19 +130,18 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                 (ratingsRes.data || []).filter((r: any) => propertyIds.includes(r.property_id));
             const insightsData: { property_id: string; attribute_name: string; total_scores: number }[] = (insightsRes.data || []).filter((r: any) => propertyIds.includes(r.property_id));
 
-            /** Guardados por publicación (misma lógica que la tarjeta de totales) */
+            /** Guardados por publicación (vía RPC para evadir RLS) */
             const pubIdsForPage = pubData.map((p: any) => p.id).filter(Boolean);
             let savesByPublication: Record<string, number> = {};
             if (pubIdsForPage.length > 0) {
-                const { data: savesRows } = await supabase
-                    .from("user_listings")
-                    .select("source_publication_id")
-                    .in("source_publication_id", pubIdsForPage);
-                (savesRows || []).forEach((s) => {
-                    if (!s.source_publication_id) return;
-                    savesByPublication[s.source_publication_id] =
-                        (savesByPublication[s.source_publication_id] || 0) + 1;
-                });
+                const { data: savesRows, error: savesErr } = await supabase
+                    .rpc("get_publications_save_counts", { _publication_ids: pubIdsForPage });
+                
+                if (!savesErr && savesRows) {
+                    savesRows.forEach((s: any) => {
+                        savesByPublication[s.publication_id] = s.save_count || 0;
+                    });
+                }
             }
 
             const discardReasonsMap: Record<string, { name: string; count: number }[]> = {};
