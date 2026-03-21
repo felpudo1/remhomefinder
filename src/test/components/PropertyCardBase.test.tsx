@@ -1,14 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import React from "react";
-
-const screen = {
-  getByText: (matcher: string | ((content: string) => boolean)) => {
-    // Use document.body queries
-    throw new Error("Use within()");
-  },
-};
 
 describe("PropertyCardBase", () => {
   const defaultProps = {
