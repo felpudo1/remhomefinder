@@ -71,140 +71,123 @@ export function usePropertyQueries() {
 
             const listingIds = listings.map((l) => l.id);
             const addedByIds: string[] = [...new Set(listings.map((l: any) => l.added_by).filter(Boolean))] as string[];
+            const contactadoListingIds = listings.filter((l) => l.current_status === "contactado").map((l) => l.id);
+            const descartadoListingIds = listings.filter((l) => l.current_status === "descartado").map((l) => l.id);
+            const coordinadaListingIds = listings.filter((l) => l.current_status === "visita_coordinada").map((l) => l.id);
+            const sourcePublicationIds = Array.from(new Set(listings.map((l: any) => l.source_publication_id).filter(Boolean))) as string[];
+
+            // 1.1 Iniciar todas las consultas adicionales en paralelo para evitar el efecto cascada (Senior Performance Opt)
+            const [
+                readsResult,
+                profilesResult,
+                contactadoResult,
+                descartadoResult,
+                coordinadaResult,
+                commentsResult,
+                attachmentsResult,
+                contactsResult
+            ] = await Promise.all([
+                // Lectura de comentarios
+                (currentUserId && listingIds.length > 0) 
+                    ? (supabase as any).from("user_listing_comment_reads").select("user_listing_id, last_read_at").eq("user_id", currentUserId).in("user_listing_id", listingIds)
+                    : Promise.resolve({ data: [] }),
+                
+                // Perfiles de quienes agregaron los listings
+                addedByIds.length > 0 
+                  ? supabase.from("profiles").select("user_id, email, display_name").in("user_id", addedByIds)
+                  : Promise.resolve({ data: [] }),
+                
+                // Logs de estado: Contactado
+                contactadoListingIds.length > 0
+                  ? supabase.from("status_history_log").select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
+                  : Promise.resolve({ data: [] }),
+
+                // Logs de estado: Descartado
+                descartadoListingIds.length > 0
+                  ? supabase.from("status_history_log").select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
+                  : Promise.resolve({ data: [] }),
+
+                // Logs de estado: Visita Coordinada
+                coordinadaListingIds.length > 0
+                  ? supabase.from("status_history_log").select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
+                  : Promise.resolve({ data: [] }),
+
+                // Comentarios
+                listingIds.length > 0
+                  ? supabase.from("family_comments").select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
+                  : Promise.resolve({ data: [] }),
+
+                // Adjuntos privados
+                listingIds.length > 0
+                  ? supabase.from("user_listing_attachments").select("user_listing_id, image_url").in("user_listing_id", listingIds)
+                  : Promise.resolve({ data: [] }),
+
+                // Contactos de marketplace
+                sourcePublicationIds.length > 0
+                  ? supabase.rpc("get_marketplace_publication_contacts" as any, { _publication_ids: sourcePublicationIds })
+                  : Promise.resolve({ data: [] })
+            ]);
+
+            // 2. Mapeo de lecturas de comentarios
             const commentReadAtByListing: Record<string, string> = {};
-
-            // 1.1 Obtener última lectura de comentarios por listing para el usuario actual
-            // Si la tabla aún no existe en la BD del entorno, seguimos sin romper el flujo.
-            if (currentUserId && listingIds.length > 0) {
-                try {
-                    const { data: readRows, error: readsError } = await (supabase as any)
-                        .from("user_listing_comment_reads")
-                        .select("user_listing_id, last_read_at")
-                        .eq("user_id", currentUserId)
-                        .in("user_listing_id", listingIds);
-
-                    if (!readsError && readRows) {
-                        readRows.forEach((row: { user_listing_id: string; last_read_at: string }) => {
-                            commentReadAtByListing[row.user_listing_id] = row.last_read_at;
-                        });
-                    }
-                } catch (error) {
-                    console.warn("No se pudo leer user_listing_comment_reads:", error);
-                }
-            }
-
-            // 2. Obtener emails/nombres de quienes ingresaron cada listing (added_by -> profiles)
-            let addedByMap: Record<string, string> = {};
-            if (addedByIds.length > 0) {
-                const { data: profilesData } = await supabase
-                    .from("profiles")
-                    .select("user_id, email, display_name")
-                    .in("user_id", addedByIds);
-                profilesData?.forEach((pr) => {
-                    addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario";
+            if (readsResult.data) {
+                readsResult.data.forEach((row: any) => {
+                    commentReadAtByListing[row.user_listing_id] = row.last_read_at;
                 });
             }
 
-            // 3. Obtener contacted_name y changed_by de status_history_log para listings en estado "contactado"
-            const contactadoListingIds = listings.filter((l) => l.current_status === "contactado").map((l) => l.id);
-            let contactedNameMap: Record<string, string> = {};
-            let contactedByMap: Record<string, string> = {};
-            if (contactadoListingIds.length > 0) {
-                const { data: contactadoLogs } = await supabase
-                    .from("status_history_log")
-                    .select("user_listing_id, event_metadata, changed_by, created_at")
-                    .in("user_listing_id", contactadoListingIds)
-                    .eq("new_status", "contactado")
-                    .order("created_at", { ascending: false });
+            // 3. Mapeo de perfiles (added_by)
+            const addedByMap: Record<string, string> = {};
+            profilesResult.data?.forEach((pr: any) => {
+                addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario";
+            });
+
+            // 4. Mapeo de logs de estado: Contactado
+            const contactedNameMap: Record<string, string> = {};
+            const contactedByMap: Record<string, string> = {};
+            const contactadoChangedByIds: string[] = [];
+            
+            if (contactadoResult.data) {
                 const seen = new Set<string>();
-                const changedByIds: string[] = [];
-                contactadoLogs?.forEach((log) => {
+                contactadoResult.data.forEach((log: any) => {
                     if (seen.has(log.user_listing_id)) return;
                     seen.add(log.user_listing_id);
                     const meta = log.event_metadata as { contacted_name?: string } | null;
                     if (meta?.contacted_name) contactedNameMap[log.user_listing_id] = meta.contacted_name;
                     if (log.changed_by) {
                         contactedByMap[log.user_listing_id] = log.changed_by;
-                        changedByIds.push(log.changed_by);
+                        contactadoChangedByIds.push(log.changed_by);
                     }
                 });
-                // Obtener display_name de quienes hicieron el cambio
-                const uniqueChangedByIds = [...new Set(changedByIds)];
-                if (uniqueChangedByIds.length > 0) {
-                    const { data: changerProfiles } = await supabase
-                        .from("profiles")
-                        .select("user_id, display_name")
-                        .in("user_id", uniqueChangedByIds);
-                    const changerNameByUserId: Record<string, string> = {};
-                    changerProfiles?.forEach((pr) => {
-                        changerNameByUserId[pr.user_id] = pr.display_name || "Usuario";
-                    });
-                    Object.keys(contactedByMap).forEach((listingId) => {
-                        const userId = contactedByMap[listingId];
-                        contactedByMap[listingId] = changerNameByUserId[userId] || userId;
-                    });
-                }
             }
 
-            // 4. Obtener changed_by de status_history_log para listings en estado "descartado"
-            const descartadoListingIds = listings.filter((l) => l.current_status === "descartado").map((l) => l.id);
-            let discardedByMap: Record<string, string> = {};
-            let discardedReasonMap: Record<string, string> = {};
-            if (descartadoListingIds.length > 0) {
-                const { data: descartadoLogs } = await supabase
-                    .from("status_history_log")
-                    .select("user_listing_id, changed_by, event_metadata")
-                    .in("user_listing_id", descartadoListingIds)
-                    .eq("new_status", "descartado")
-                    .order("created_at", { ascending: false });
+            // 5. Mapeo de logs de estado: Descartado
+            const discardedByMap: Record<string, string> = {};
+            const discardedReasonMap: Record<string, string> = {};
+            const descartadoChangedByIds: string[] = [];
+
+            if (descartadoResult.data) {
                 const seen = new Set<string>();
-                const changedByIds: string[] = [];
-                descartadoLogs?.forEach((log) => {
+                descartadoResult.data.forEach((log: any) => {
                     if (seen.has(log.user_listing_id)) return;
                     seen.add(log.user_listing_id);
                     const meta = log.event_metadata as { reason?: string } | null;
                     if (meta?.reason) discardedReasonMap[log.user_listing_id] = meta.reason;
                     if (log.changed_by) {
                         discardedByMap[log.user_listing_id] = log.changed_by;
-                        changedByIds.push(log.changed_by);
+                        descartadoChangedByIds.push(log.changed_by);
                     }
                 });
-                const uniqueChangedByIds = [...new Set(changedByIds)];
-                if (uniqueChangedByIds.length > 0) {
-                    const { data: changerProfiles } = await supabase
-                        .from("profiles")
-                        .select("user_id, display_name")
-                        .in("user_id", uniqueChangedByIds);
-                    const changerNameByUserId: Record<string, string> = {};
-                    changerProfiles?.forEach((pr) => {
-                        changerNameByUserId[pr.user_id] = pr.display_name || "Usuario";
-                    });
-                    Object.keys(discardedByMap).forEach((listingId) => {
-                        const userId = discardedByMap[listingId];
-                        discardedByMap[listingId] = changerNameByUserId[userId] || userId;
-                    });
-                }
             }
 
-            // 5. Estado "eliminado" no existe en user_listing_status (tabla status_history_log).
-            // Se mantienen estos maps para compatibilidad con la UI (quedan vacíos en listados personales).
-            const deletedByMap: Record<string, string> = {};
-            const deletedReasonMap: Record<string, string> = {};
+            // 6. Mapeo de logs de estado: Visita Coordinada
+            const coordinatedDateMap: Record<string, Date> = {};
+            const coordinatedByMap: Record<string, string> = {};
+            const coordinadaChangedByIds: string[] = [];
 
-            // 6. Obtener coordinated_date y changed_by de status_history_log para listings en estado "visita_coordinada"
-            const coordinadaListingIds = listings.filter((l) => l.current_status === "visita_coordinada").map((l) => l.id);
-            let coordinatedDateMap: Record<string, Date> = {};
-            let coordinatedByMap: Record<string, string> = {};
-            if (coordinadaListingIds.length > 0) {
-                const { data: coordinadaLogs } = await supabase
-                    .from("status_history_log")
-                    .select("user_listing_id, event_metadata, changed_by, created_at")
-                    .in("user_listing_id", coordinadaListingIds)
-                    .eq("new_status", "visita_coordinada")
-                    .order("created_at", { ascending: false });
+            if (coordinadaResult.data) {
                 const seen = new Set<string>();
-                const changedByIds: string[] = [];
-                coordinadaLogs?.forEach((log) => {
+                coordinadaResult.data.forEach((log: any) => {
                     if (seen.has(log.user_listing_id)) return;
                     seen.add(log.user_listing_id);
                     const meta = log.event_metadata as { coordinated_date?: string } | null;
@@ -214,66 +197,52 @@ export function usePropertyQueries() {
                     }
                     if (log.changed_by) {
                         coordinatedByMap[log.user_listing_id] = log.changed_by;
-                        changedByIds.push(log.changed_by);
+                        coordinadaChangedByIds.push(log.changed_by);
                     }
                 });
-                const uniqueChangedByIds = [...new Set(changedByIds)];
-                if (uniqueChangedByIds.length > 0) {
-                    const { data: changerProfiles } = await supabase
-                        .from("profiles")
-                        .select("user_id, display_name")
-                        .in("user_id", uniqueChangedByIds);
-                    const changerNameByUserId: Record<string, string> = {};
-                    changerProfiles?.forEach((pr) => {
-                        changerNameByUserId[pr.user_id] = pr.display_name || "Usuario";
-                    });
-                    Object.keys(coordinatedByMap).forEach((listingId) => {
-                        const userId = coordinatedByMap[listingId];
-                        coordinatedByMap[listingId] = changerNameByUserId[userId] || userId;
-                    });
-                }
             }
 
-            // 7. Get family comments for these listings
-            let allComments: any[] = [];
-            if (listingIds.length > 0) {
-                const { data: commentsData, error: commentsError } = await supabase
-                    .from("family_comments")
-                    .select("*")
-                    .in("user_listing_id", listingIds)
-                    .order("created_at", { ascending: true });
+            // 7. Resolver nombres de quienes hicieron cambios de estado (Segunda fase de hidratación)
+            const allChangerIds = [...new Set([...contactadoChangedByIds, ...descartadoChangedByIds, ...coordinadaChangedByIds])];
+            if (allChangerIds.length > 0) {
+                const { data: changerProfiles } = await supabase
+                    .from("profiles")
+                    .select("user_id, display_name")
+                    .in("user_id", allChangerIds);
+                
+                const changerNameByUserId: Record<string, string> = {};
+                changerProfiles?.forEach((pr) => {
+                    changerNameByUserId[pr.user_id] = pr.display_name || "Usuario";
+                });
 
-                if (commentsError) throw commentsError;
-                allComments = commentsData || [];
+                // Actualizar los mapas con nombres reales
+                Object.keys(contactedByMap).forEach(id => contactedByMap[id] = changerNameByUserId[contactedByMap[id]] || contactedByMap[id]);
+                Object.keys(discardedByMap).forEach(id => discardedByMap[id] = changerNameByUserId[discardedByMap[id]] || discardedByMap[id]);
+                Object.keys(coordinatedByMap).forEach(id => coordinatedByMap[id] = changerNameByUserId[coordinatedByMap[id]] || coordinatedByMap[id]);
             }
 
-            // 8. Get private attachments (fotos privadas por familia)
-            let attachmentsByListing: Record<string, string[]> = {};
-            const { data: attachmentsData } = await supabase
-                .from("user_listing_attachments")
-                .select("user_listing_id, image_url")
-                .in("user_listing_id", listingIds);
-            attachmentsData?.forEach((a) => {
+            // 8. Mapeo de comentarios
+            const allComments = commentsResult.data || [];
+
+            // 9. Mapeo de adjuntos
+            const attachmentsByListing: Record<string, string[]> = {};
+            attachmentsResult.data?.forEach((a: any) => {
                 if (!attachmentsByListing[a.user_listing_id]) attachmentsByListing[a.user_listing_id] = [];
                 attachmentsByListing[a.user_listing_id].push(a.image_url);
             });
 
-            // 8.b Datos de agente para listings guardados desde marketplace
+            // 10. Mapeo de contactos de marketplace
             const marketplaceContactByPublicationId: Record<string, { name?: string; phone?: string }> = {};
-            const sourcePublicationIds = Array.from(
-                new Set(listings.map((l: any) => l.source_publication_id).filter(Boolean))
-            ) as string[];
-            if (sourcePublicationIds.length > 0) {
-                const { data: contactRows } = await supabase.rpc("get_marketplace_publication_contacts" as any, {
-                    _publication_ids: sourcePublicationIds,
-                });
-                ((contactRows as any[]) || []).forEach((row: any) => {
-                    marketplaceContactByPublicationId[row.publication_id] = {
-                        name: row.agent_name || undefined,
-                        phone: row.agent_phone || undefined,
-                    };
-                });
-            }
+            ((contactsResult.data as any[]) || []).forEach((row: any) => {
+                marketplaceContactByPublicationId[row.publication_id] = {
+                    name: row.agent_name || undefined,
+                    phone: row.agent_phone || undefined,
+                };
+            });
+
+            // 11. Eliminar estados no usados (Legacy compatibility)
+            const deletedByMap: Record<string, string> = {};
+            const deletedReasonMap: Record<string, string> = {};
 
             // 9. Map to UI model
             return listings.map((listing): Property => {

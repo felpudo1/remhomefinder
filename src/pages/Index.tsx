@@ -70,6 +70,7 @@ const Index = () => {
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [hideDiscarded, setHideDiscarded] = useState(true);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -128,6 +129,14 @@ const Index = () => {
       }
     }
   }, [isPremium, profile?.userId]);
+  
+  // Implementación de Debouncing para la búsqueda (REGLA 2: Performance)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId) || null,
@@ -296,8 +305,8 @@ const Index = () => {
     }
     // Eliminación lógica visual: nunca mostrar estado eliminado en listados de usuario.
     result = result.filter((p) => p.status !== "eliminado");
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.toLowerCase();
       result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
@@ -319,7 +328,7 @@ const Index = () => {
     }
     result.sort((a, b) => (a.status === "descartado" ? 1 : 0) - (b.status === "descartado" ? 1 : 0));
     return result;
-  }, [properties, selectedStatuses, sortBy, searchQuery, activeGroupId, hideDiscarded]);
+  }, [properties, selectedStatuses, sortBy, debouncedSearchQuery, activeGroupId, hideDiscarded]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<PropertyStatus, number> = {
