@@ -119,15 +119,12 @@ export function usePropertyMutations() {
 
             // Insertar fotos privadas (user_listing_attachments)
             if (form.privateImages?.length && listing) {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    const rows = form.privateImages.map((image_url) => ({
-                        user_listing_id: listing.id,
-                        image_url,
-                        added_by: user.id,
-                    }));
-                    await supabase.from("user_listing_attachments").insert(rows);
-                }
+                const rows = form.privateImages.map((image_url) => ({
+                    user_listing_id: listing.id,
+                    image_url,
+                    added_by: user.id,
+                }));
+                await supabase.from("user_listing_attachments").insert(rows);
             }
             return listing;
         },
@@ -299,23 +296,27 @@ export function usePropertyMutations() {
             return { id, status };
         },
         onMutate: async ({ id, status }) => {
-            await queryClient.cancelQueries({ queryKey: ["properties"] });
-            const previousProperties = queryClient.getQueryData<Property[]>(["properties"]);
+            const { data: { user } } = await supabase.auth.getUser();
+            const queryKey = ["properties", user?.id];
+            
+            await queryClient.cancelQueries({ queryKey });
+            const previousProperties = queryClient.getQueryData<Property[]>(queryKey);
+            
             if (previousProperties) {
                 queryClient.setQueryData<Property[]>(
-                    ["properties"],
+                    queryKey,
                     previousProperties.map((p) => (p.id === id ? { ...p, status } : p))
                 );
             }
-            return { previousProperties };
+            return { previousProperties, queryKey };
         },
         onError: (_err, _variables, context) => {
-            if (context?.previousProperties) {
-                queryClient.setQueryData(["properties"], context.previousProperties);
+            if (context?.previousProperties && context.queryKey) {
+                queryClient.setQueryData(context.queryKey, context.previousProperties);
             }
         },
         onSuccess: () => {
-            queryClient.refetchQueries({ queryKey: ["properties"] });
+            queryClient.invalidateQueries({ queryKey: ["properties"] });
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["properties"] });

@@ -1,712 +1,187 @@
-import { useState, useRef, useEffect } from "react";
-
-/** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
-function safeUUID(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  // Fallback para contextos no seguros
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-function normalizeCurrency(value: unknown): "UYU" | "USD" {
-  return value === "USD" ? "USD" : "UYU";
-}
+import { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Link, Sparkles, Loader2, Plus, X, ImageIcon, Upload, Users, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { checkUrlStatus, formatDaysAgo } from "@/lib/duplicateCheck";
+import { formatDaysAgo } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useGroups } from "@/hooks/useGroups";
 import { ScraperInput } from "./add-property/ScraperInput";
 import { PropertyFormManual } from "./add-property/PropertyFormManual";
+import { DuplicateAlert } from "./add-property/DuplicateAlert";
+import { usePropertyExtractor } from "@/hooks/usePropertyExtractor";
+import { useImageUploader } from "@/hooks/useImageUploader";
+import { useAddPropertyForm } from "@/hooks/useAddPropertyForm";
 
 interface AddPropertyModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (form: {
-    url: string;
-    title: string;
-    priceRent: number;
-    priceExpenses: number;
-    currency: string;
-    neighborhood: string;
-    city: string;
-    sqMeters: number;
-    rooms: number;
-    aiSummary: string;
-    images: string[];
-    /** Fotos privadas (solo familia) - van a user_listing_attachments */
-    privateImages?: string[];
-    groupId?: string | null;
-    listingType?: string;
-    ref?: string;
-    details?: string;
-  }) => void;
+  onAdd: (form: any) => void;
   activeGroupId?: string | null;
   scraper?: "firecrawl" | "zenrows";
-  /** Al detectar que ya está en la familia, abrir ese aviso en lugar de agregar */
   onOpenExisting?: (userListingId: string) => void;
 }
 
 export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl", onOpenExisting }: AddPropertyModalProps) {
-  const { groups } = useGroups();
-  const getDefaultFamilyGroupId = () => {
-    const firstFamilyGroup = groups.find((group) => group.type === "family");
-    return firstFamilyGroup?.id ?? null;
-  };
+  // Hooks de lógica extraída
+  const { isLoading, isAnalyzingUnified, handleScrape, handleImagesExtractor } = usePropertyExtractor();
+  const { isUploading, screenshotFile, screenshotPreview, handleScreenshotSelect, uploadFiles, uploadScreenshot, resetUploader } = useImageUploader();
+  const { 
+    form, setForm, updateForm, url, setUrl, step, setStep, listingType, setListingType, cameFromImage, setCameFromImage, 
+    selectedGroupId, setSelectedGroupId, scrapedImages, setScrapedImages, privateImages, setPrivateImages, 
+    urlDuplicated, setUrlDuplicated, urlInFamily, setUrlInFamily, urlInApp, setUrlInApp, 
+    manualLinkRequiredError, setManualLinkRequiredError, isFormValid, manualSubmitBlockers, resetForm, groups 
+  } = useAddPropertyForm(activeGroupId);
 
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || getDefaultFamilyGroupId());
-  const [listingType, setListingType] = useState<"rent" | "sale">("rent");
-  const [url, setUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"url" | "image-upload" | "manual">("url");
-  const [cameFromImage, setCameFromImage] = useState(false);
-
-  // Image upload state
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isAddingFromApp, setIsAddingFromApp] = useState(false);
+  const unifiedImageRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    // Prioridad 1: grupo activo del contexto. Prioridad 2: primer grupo familiar.
-    if (activeGroupId) {
-      setSelectedGroupId(activeGroupId);
-      return;
-    }
-
-    setSelectedGroupId((current) => current ?? getDefaultFamilyGroupId());
-  }, [open, activeGroupId, groups]);
-
-  const [scrapedImages, setScrapedImages] = useState<string[]>([]);
-  const [privateImages, setPrivateImages] = useState<string[]>([]);
-  const [manualImageUrl, setManualImageUrl] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [urlDuplicated, setUrlDuplicated] = useState(false);
-  const [urlAddedByName, setUrlAddedByName] = useState<string | null>(null);
-  /** Caso 1: ya en familia - bloquear y mostrar mensaje con link */
-  const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
-  /** Caso 2: existe en app pero no en familia - info + permitir agregar */
-  const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
-  const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
-  /** Submit manual: el botón puede estar habilitado sin URL; al confirmar exigimos link y marcamos el campo. */
-  const [manualLinkRequiredError, setManualLinkRequiredError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const privateFileInputRef = useRef<HTMLInputElement>(null);
-  // Ref para el input oculto de análisis de screenshots
-  const imageAnalysisRef = useRef<HTMLInputElement>(null);
-  // Ref para el nuevo botón unificado
-  const unifiedImageRef = useRef<HTMLInputElement>(null);
-  // Estado de carga para el análisis de imágenes
-  const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
-  const [isAnalyzingUnified, setIsAnalyzingUnified] = useState(false);
-  const [isAddingFromApp, setIsAddingFromApp] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    priceRent: "",
-    priceExpenses: "",
-    currency: "USD",
-    neighborhood: "",
-    city: "",
-    sqMeters: "",
-    rooms: "",
-    aiSummary: "",
-    ref: "",
-    details: "",
-  });
 
-  /**
-   * NUEVO: Botón unificado — sube 1-3 fotos a Storage y llama extract-from-image
-   * con URLs públicas. Usa el prompt configurable desde DB.
-   */
-  const handleUnifiedImageAnalysis = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setIsAnalyzingUnified(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Debés estar logueado"); setIsAnalyzingUnified(false); return; }
-
-      // Subir cada imagen a Storage (máx 3)
-      const uploadedUrls: string[] = [];
-      for (const file of Array.from(files).slice(0, 3)) {
-        if (!file.type.startsWith("image/")) continue;
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
-        if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
-        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
-        uploadedUrls.push(urlData.publicUrl);
-      }
-
-      if (uploadedUrls.length === 0) {
-        toast.error("No se pudieron subir las imágenes.");
-        setIsAnalyzingUnified(false);
-        return;
-      }
-
-      // Llamar extract-from-image con imageUrls (array)
-      const { data, error } = await supabase.functions.invoke("extract-from-image", {
-        body: { imageUrls: uploadedUrls, role: "user" },
-      });
-
-      if (error || !data?.success) {
-        const errMsg = data?.error || "No pudimos extraer datos de las imágenes. Completá manualmente.";
-        toast.info("📋 " + errMsg, { duration: 8000 });
-        setCameFromImage(true);
-        setStep("manual");
-        setIsAnalyzingUnified(false);
-        return;
-      }
-
-      const d = data.data;
-      setForm({
-        title: d.title || "",
-        priceRent: d.priceRent ? String(d.priceRent) : "",
-        priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
-        sqMeters: d.sqMeters ? String(d.sqMeters) : "",
-        rooms: d.rooms ? String(d.rooms) : "",
-        aiSummary: d.aiSummary || "",
-        ref: d.ref || "",
-        details: d.details || "",
-      });
-      if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
-      // Agregar las imágenes subidas a la galería para que se persistan
-      setScrapedImages(prev => [...prev, ...uploadedUrls]);
-      setCameFromImage(true);
-      setStep("manual");
-      toast.success("¡Datos extraídos de las imágenes con IA!");
-    } catch (err) {
-      console.error("Unified image analysis error:", err);
-      toast.error("Error al analizar las imágenes. Intentá de nuevo.");
-    } finally {
-      setIsAnalyzingUnified(false);
-      if (unifiedImageRef.current) unifiedImageRef.current.value = "";
-    }
-  };
-
-  /**
-   * Analiza screenshots de publicaciones inmobiliarias usando Gemini Vision.
-   * Convierte las imágenes a base64 y las envía a la Edge Function.
-   */
-  const handleImageAnalysis = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setIsAnalyzingImages(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Debés estar logueado"); setIsAnalyzingImages(false); return; }
-
-      // Subir cada imagen a Storage (máx 3)
-      const uploadedUrls: string[] = [];
-      for (const file of Array.from(files).slice(0, 3)) {
-        if (!file.type.startsWith("image/")) continue;
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
-        if (uploadErr) { console.error("Upload error:", uploadErr); continue; }
-        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
-        uploadedUrls.push(urlData.publicUrl);
-      }
-
-      if (uploadedUrls.length === 0) {
-        toast.error("No se pudieron subir las imágenes.");
-        setIsAnalyzingImages(false);
-        return;
-      }
-
-      // Llamar extract-from-image con URLs de Storage
-      const { data, error } = await supabase.functions.invoke("extract-from-image", {
-        body: { imageUrls: uploadedUrls, role: "user" },
-      });
-
-      if (error || !data?.success) {
-        const msg = data?.error || error?.message || "No se pudieron analizar las imágenes. Completá manualmente.";
-        toast.info("📋 " + msg, { duration: 8000 });
-        setCameFromImage(true);
-        setStep("manual");
-        setIsAnalyzingImages(false);
-        return;
-      }
-
-      // Llenar el formulario con los datos extraídos
-      const d = data.data;
-      setForm({
-        title: d.title || "",
-        priceRent: String(d.priceRent || ""),
-        priceExpenses: String(d.priceExpenses || ""),
-        currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
-        sqMeters: String(d.sqMeters || ""),
-        rooms: String(d.rooms || ""),
-        aiSummary: d.aiSummary || "",
-        ref: d.ref || "",
-        details: d.details || "",
-      });
-      if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
-      // Agregar las imágenes subidas a la galería
-      setScrapedImages(prev => [...prev, ...uploadedUrls]);
-      setCameFromImage(true);
-      setStep("manual");
-      toast.success("¡Datos extraídos de las imágenes con IA!");
-    } catch (err) {
-      console.error("Image analysis error:", err);
-      toast.error("Error al analizar las imágenes. Intentá de nuevo.");
-    } finally {
-      setIsAnalyzingImages(false);
-      if (imageAnalysisRef.current) imageAnalysisRef.current.value = "";
-    }
-  };
-
-  /**
-   * Scrapea una URL o pre-llena si otra familia ya la ingresó.
-   * Caso 1: ya en familia → bloquear. Caso 2: en app (otra familia) → pre-llenar con mensaje.
-   */
-  const handleScrape = async () => {
-    if (!url.trim()) return;
-    setIsLoading(true);
-    setUrlInFamily(null);
-    setUrlInApp(null);
-    setUrlInAppMsg(null);
-    try {
-      const orgId = selectedGroupId || null;
-      const result = await checkUrlStatus(url.trim(), orgId);
-
-      if (result.case === "in_family") {
-        setUrlInFamily({
-          addedByName: result.addedByName,
-          addedAt: result.addedAt,
-          status: result.status,
-          userListingId: result.userListingId,
-        });
-        setUrlDuplicated(true);
-        setIsLoading(false);
-        return;
-      }
-
-      if (result.case === "in_app") {
-        setUrlInApp({
-          firstAddedAt: result.firstAddedAt,
-          usersCount: result.usersCount,
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Caso none: scrapear
-
-      const { data, error } = await supabase.functions.invoke("scrape-property", {
-        body: { url: url.trim(), scraper, role: "user" },
-      });
-
-      if (error || !data?.success) {
-        let errorMsg = "No pudimos extraer datos automáticamente. Completá los datos manualmente.";
-        try {
-          const errBody = typeof error?.context === "string" ? JSON.parse(error.context) : error?.context;
-          if (errBody?.error === "MARKETPLACE_MANUAL" || errBody?.message) {
-            errorMsg = errBody.message || errorMsg;
-          } else if (data?.error === "MARKETPLACE_MANUAL" || data?.message) {
-            errorMsg = data.message || errorMsg;
-          }
-        } catch {
-          if (data?.message) errorMsg = data.message;
-          else if (data?.error && data.error !== "MARKETPLACE_MANUAL") errorMsg = data.error;
-        }
-        toast.info("📋 " + errorMsg, { duration: 8000 });
-        setStep("manual");
-        setIsLoading(false);
-        return;
-      }
-
-      const d = data.data;
-      setScrapedImages(d.images || []);
-      setForm({
-        title: d.title || "",
-        priceRent: String(d.priceRent || ""),
-        priceExpenses: String(d.priceExpenses || ""),
-        currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
-        sqMeters: String(d.sqMeters || ""),
-        rooms: String(d.rooms || ""),
-        aiSummary: d.aiSummary || "",
-        ref: d.ref || "",
-        details: d.details || "",
-      });
-      if (d.listingType === "sale" || d.listingType === "rent") {
-        setListingType(d.listingType);
-      }
-      setStep("manual");
-      toast.success("¡Datos extraídos con IA!");
-    } catch (err) {
-      console.error("Scrape error:", err);
-      toast.error("Error al conectar con el servicio de scraping");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // --- Image analysis ---
-  const handleScreenshotSelect = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    if (!file.type.startsWith("image/")) {
-      toast.error("Seleccioná una imagen");
-      return;
-    }
-    setScreenshotFile(file);
-    setScreenshotPreview(URL.createObjectURL(file));
-  };
-
-  const handleAnalyzeImage = async () => {
-    if (!screenshotFile) return;
-    setIsLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Debés estar logueado"); setIsLoading(false); return; }
-
-      // Upload screenshot to storage
-      const ext = screenshotFile.name.split(".").pop() || "jpg";
-      const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, screenshotFile);
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
-      const imageUrl = urlData.publicUrl;
-
-      // Call extract-from-image
-      const { data, error } = await supabase.functions.invoke("extract-from-image", {
-        body: { imageUrl, role: "user" },
-      });
-
-      if (error || !data?.success) {
-        const errMsg = data?.error || "No pudimos extraer datos de la imagen. Completá manualmente.";
-        toast.info("📋 " + errMsg, { duration: 8000 });
-        setCameFromImage(true);
-        setStep("manual");
-        setIsLoading(false);
-        return;
-      }
-
-      const d = data.data;
-      setScrapedImages(d.images || []);
-      setForm({
-        title: d.title || "",
-        priceRent: d.priceRent ? String(d.priceRent) : "",
-        priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
-        sqMeters: d.sqMeters ? String(d.sqMeters) : "",
-        rooms: d.rooms ? String(d.rooms) : "",
-        aiSummary: d.aiSummary || "",
-        ref: d.ref || "",
-        details: d.details || "",
-      });
-      if (d.listingType === "sale" || d.listingType === "rent") {
-        setListingType(d.listingType);
-      }
-      setCameFromImage(true);
-      setStep("manual");
-      toast.success("¡Datos extraídos de la imagen!");
-    } catch (err) {
-      console.error("Image analysis error:", err);
-      toast.error("Error al analizar la imagen");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setIsUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Debés estar logueado"); return; }
-
-      const uploaded: string[] = [];
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${safeUUID()}.${ext}`;
-        const { error } = await supabase.storage.from("property-images").upload(path, file);
-        if (error) { console.error("Upload error:", error); continue; }
-        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
-        uploaded.push(urlData.publicUrl);
-      }
-      if (uploaded.length > 0) {
-        setScrapedImages(prev => [...prev, ...uploaded]);
-        toast.success(`${uploaded.length} foto(s) subida(s)`);
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("Error al subir fotos");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handlePrivateFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setIsUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Debés estar logueado"); return; }
-      const uploaded: string[] = [];
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/private-${safeUUID()}.${ext}`;
-        const { error } = await supabase.storage.from("property-images").upload(path, file);
-        if (error) { console.error("Upload error:", error); continue; }
-        const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
-        uploaded.push(urlData.publicUrl);
-      }
-      if (uploaded.length > 0) {
-        setPrivateImages(prev => [...prev, ...uploaded]);
-        toast.success(`${uploaded.length} foto(s) privada(s) agregada(s)`);
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("Error al subir fotos");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!url.trim()) {
-      setManualLinkRequiredError(true);
-      return;
-    }
-    setManualLinkRequiredError(false);
-
-    let result: Awaited<ReturnType<typeof checkUrlStatus>> = { case: "none" };
-    if (url.trim()) {
-      const orgId = selectedGroupId || null;
-      result = await checkUrlStatus(url.trim(), orgId);
-      if (result.case === "in_family") {
-        toast.error(`Este aviso fue ingresado por ${result.addedByName} ${formatDaysAgo(result.addedAt)}. Su estado es ${result.status}.`);
-        return;
-      }
-    }
-    const isRent = listingType === "rent";
-    // Manual/cameFromImage: fotos van a privadas. Scraped: fotos públicas + privadas separadas
-    const publicImages = cameFromImage ? [] : scrapedImages;
-    const familyImages = cameFromImage ? scrapedImages : privateImages;
-    const formData = {
-      url: url || "",
-      title: form.title,
-      priceRent: isRent ? (Number(form.priceRent) || 0) : (Number(form.priceRent) || 0),
-      priceExpenses: isRent ? (Number(form.priceExpenses) || 0) : 0,
-      currency: form.currency,
-      neighborhood: form.neighborhood,
-      city: form.city,
-      sqMeters: Number(form.sqMeters) || 0,
-      rooms: Number(form.rooms) || 1,
-      aiSummary: form.aiSummary,
-      images: publicImages,
-      privateImages: familyImages.length > 0 ? familyImages : undefined,
-      groupId: selectedGroupId,
-      listingType,
-      ref: form.ref,
-      details: form.details,
-    };
-    if (result.case === "in_app") {
-      (formData as any)._successMessage = `Este aviso ya fue ingresado hace ${formatDaysAgo(result.firstAddedAt)} y ${result.usersCount} usuario${result.usersCount !== 1 ? "s" : ""} lo tienen entre sus favoritos.`;
-    }
-    try {
-      await onAdd(formData);
-      handleClose();
-    } catch {
-      // Error ya mostrado por handleAddProperty; modal permanece abierto
-    }
-  };
-
-  const handleAddFromExistingApp = async () => {
-    if (!url.trim()) return;
-
-    setIsAddingFromApp(true);
-    try {
-      const orgId = selectedGroupId || null;
-      const result = await checkUrlStatus(url.trim(), orgId);
-
-      if (result.case !== "in_app") {
-        return;
-      }
-
-      const formData = {
-        url: url.trim(),
-        title: "",
-        priceRent: 0,
-        priceExpenses: 0,
-        currency: "USD",
-        neighborhood: "",
-        city: "",
-        sqMeters: 0,
-        rooms: 1,
-        aiSummary: "",
-        images: [],
-        privateImages: undefined,
-        groupId: selectedGroupId,
-        listingType,
-        ref: "",
-        details: "",
-      };
-
-      (formData as any)._successMessage = "Publicación agregada correctamente a tu listado.";
-      await onAdd(formData);
-      handleClose();
-    } catch {
-      // Error ya mostrado por handleAddProperty; modal permanece abierto
-    } finally {
-      setIsAddingFromApp(false);
-    }
-  };
-
+  /** Cierre y limpieza del modal */
   const handleClose = () => {
-    setUrl("");
-    setForm({ title: "", priceRent: "", priceExpenses: "", currency: "USD", neighborhood: "", city: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
-    setScrapedImages([]);
-    setPrivateImages([]);
-    setManualImageUrl("");
-    setUrlDuplicated(false);
-    setUrlAddedByName(null);
-    setUrlInFamily(null);
-    setUrlInApp(null);
-    setUrlInAppMsg(null);
-    setManualLinkRequiredError(false);
-    setListingType("rent");
-    setStep("url");
-    setCameFromImage(false);
-    setScreenshotFile(null);
-    setScreenshotPreview(null);
-    setIsLoading(false);
+    resetForm();
+    resetUploader();
     setIsAddingFromApp(false);
     onClose();
   };
 
+  /** Flujo de Scraping desde URL */
+  const onHandleScrape = async () => {
+    const result = await handleScrape(url, selectedGroupId, scraper);
+    if (!result) return;
+    if (result.duplicateResult) {
+      if (result.duplicateResult.case === "in_family") {
+        setUrlInFamily(result.duplicateResult as any);
+        setUrlDuplicated(true);
+      } else if (result.duplicateResult.case === "in_app") {
+        setUrlInApp(result.duplicateResult as any);
+      }
+      return;
+    }
+    if (result.data) {
+      updateForm(result.data);
+      if (result.data.listingType) setListingType(result.data.listingType);
+      setScrapedImages(result.data.images || []);
+      setStep("manual");
+    }
+  };
 
-  const hasAnyPhoto = scrapedImages.length > 0 || privateImages.length > 0;
-  const hasTitle = String(form.title || "").trim().length > 0;
-  const hasPrice = String(form.priceRent || "").trim().length > 0;
-  const isFormValid = hasAnyPhoto && hasTitle && hasPrice && !urlDuplicated && !urlInFamily;
+  /** Flujo de Análisis de Imágenes (IA Vision) */
+  const onHandleImageAnalysis = async (files: FileList | null) => {
+    const result = await handleImagesExtractor(files, true);
+    if (!result) return;
+    if (result.data) {
+      updateForm(result.data);
+      if (result.data.listingType) setListingType(result.data.listingType);
+      setScrapedImages(result.data.images || []);
+      setCameFromImage(true);
+      setStep("manual");
+    }
+  };
 
-  /** Textos para mostrar por qué el botón "Agregar" sigue deshabilitado (flujo manual). */
-  const manualSubmitBlockers: string[] = [];
-  if (!hasAnyPhoto) manualSubmitBlockers.push("al menos 1 foto");
-  if (!hasTitle) manualSubmitBlockers.push("título");
-  if (!hasPrice) manualSubmitBlockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
-  if (urlDuplicated) manualSubmitBlockers.push("resolver URL duplicada");
-  if (urlInFamily) manualSubmitBlockers.push("esta URL ya está en tu familia");
+  /** Flujo de Envío Final */
+  const handleSubmit = async () => {
+    if (!url.trim()) { setManualLinkRequiredError(true); return; }
+    
+    const publicImages = cameFromImage ? [] : scrapedImages;
+    const familyImages = cameFromImage ? scrapedImages : privateImages;
+    
+    const formData = {
+      ...form,
+      url: url || "",
+      priceRent: Number(form.priceRent) || 0,
+      priceExpenses: Number(form.priceExpenses) || 0,
+      sqMeters: Number(form.sqMeters) || 0,
+      rooms: Number(form.rooms) || 1,
+      images: publicImages,
+      privateImages: familyImages.length > 0 ? familyImages : undefined,
+      groupId: selectedGroupId,
+      listingType,
+    };
+
+    try {
+      await onAdd(formData);
+      handleClose();
+    } catch (err) { console.error("Submit error:", err); }
+  };
 
   return (
-    <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md rounded-2xl">
+      <DialogContent className="max-w-md rounded-2xl overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
-            {step === "url"
-              ? "Agregar Propiedad"
-              : step === "image-upload"
-                ? "Analizar captura de RRSS"
-                : "Detalles de la Propiedad"}
+            {step === "url" ? "Agregar Propiedad" : "Detalles de la Propiedad"}
           </DialogTitle>
         </DialogHeader>
 
         <ScraperInput
           step={step}
           url={url}
-          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); setUrlInAppMsg(null); }}
+          setUrl={(v) => { setUrl(v); setUrlInFamily(null); setUrlInApp(null); }}
           isLoading={isLoading}
           urlInFamily={urlInFamily}
           urlInApp={urlInApp}
           onOpenExisting={onOpenExisting}
           formatDaysAgo={formatDaysAgo}
           isAnalyzingUnified={isAnalyzingUnified}
-          handleScrape={handleScrape}
+          handleScrape={onHandleScrape}
           unifiedImageRef={unifiedImageRef}
-          handleUnifiedImageAnalysis={handleUnifiedImageAnalysis}
+          handleUnifiedImageAnalysis={onHandleImageAnalysis}
           setStep={setStep}
           screenshotInputRef={screenshotInputRef}
           screenshotFile={screenshotFile}
           screenshotPreview={screenshotPreview}
           handleScreenshotSelect={handleScreenshotSelect}
-          setScreenshotFile={setScreenshotFile}
-          setScreenshotPreview={setScreenshotPreview}
-          handleAnalyzeImage={handleAnalyzeImage}
+          setScreenshotFile={() => {}} 
+          setScreenshotPreview={() => {}} 
+          handleAnalyzeImage={async () => {
+            if (!screenshotFile) return;
+            const result = await handleImagesExtractor([screenshotFile], true);
+            if (result?.data) {
+              updateForm(result.data);
+              if (result.data.listingType) setListingType(result.data.listingType);
+              setScrapedImages(result.data.images || []);
+              setCameFromImage(true);
+              setStep("manual");
+            }
+          }}
           setCameFromImage={setCameFromImage}
-          onAddExistingFromApp={handleAddFromExistingApp}
+          onAddExistingFromApp={async () => {
+             setIsAddingFromApp(true);
+             await onAdd({ url: url.trim(), groupId: selectedGroupId, listingType, _successMessage: "Publicación agregada correctamente." });
+             handleClose();
+          }}
           isAddingExistingFromApp={isAddingFromApp}
         />
 
-        {step === "manual" && (
-          <PropertyFormManual
-            form={form}
-            setForm={setForm}
-            listingType={listingType}
-            setListingType={setListingType}
-            cameFromImage={cameFromImage}
-            scrapedImages={scrapedImages}
-            setScrapedImages={setScrapedImages}
-            privateImages={privateImages}
-            setPrivateImages={setPrivateImages}
-            privateFileInputRef={privateFileInputRef}
-            handlePrivateFileUpload={handlePrivateFileUpload}
-            manualImageUrl={manualImageUrl}
-            setManualImageUrl={setManualImageUrl}
-            fileInputRef={fileInputRef}
-            handleFileUpload={handleFileUpload}
-            isUploading={isUploading}
-            url={url}
-            setUrl={(v) => {
-              setUrl(v);
-              setUrlInFamily(null);
-              setUrlInApp(null);
-              setUrlInAppMsg(null);
-              setManualLinkRequiredError(false);
-            }}
-            linkRequiredError={manualLinkRequiredError}
-            urlDuplicated={urlDuplicated}
-            urlAddedByName={urlAddedByName}
-            urlInFamily={urlInFamily}
-            urlInAppMsg={urlInAppMsg}
-            formatDaysAgo={formatDaysAgo}
-            setUrlDuplicated={setUrlDuplicated}
-            groups={groups}
-            selectedGroupId={selectedGroupId}
-            setSelectedGroupId={setSelectedGroupId}
-            setStep={setStep}
-            handleSubmit={handleSubmit}
-            isFormValid={isFormValid}
-            manualSubmitBlockers={manualSubmitBlockers}
-            onExtractFromUrl={handleScrape}
-            isExtracting={isLoading}
-          />
-        )}
+          {step === "manual" && (
+            <>
+              <DuplicateAlert urlInFamily={urlInFamily} urlInApp={urlInApp} onOpenExisting={onOpenExisting} formatDaysAgo={formatDaysAgo} />
+              <PropertyFormManual
+                form={form} setForm={setForm} listingType={listingType} setListingType={setListingType} cameFromImage={cameFromImage}
+                scrapedImages={scrapedImages} setScrapedImages={setScrapedImages} privateImages={privateImages} setPrivateImages={setPrivateImages}
+                privateFileInputRef={privateFileInputRef} 
+                handlePrivateFileUpload={async (f) => {
+                  const urls = await uploadFiles(f, true);
+                  setPrivateImages(prev => [...prev, ...urls]);
+                }}
+                manualImageUrl={""} setManualImageUrl={() => {}} fileInputRef={fileInputRef} 
+                handleFileUpload={async (f) => {
+                  const urls = await uploadFiles(f, false);
+                  setScrapedImages(prev => [...prev, ...urls]);
+                }}
+                isUploading={isUploading} url={url} setUrl={setUrl} linkRequiredError={manualLinkRequiredError} urlDuplicated={urlDuplicated}
+                urlAddedByName={null} urlInFamily={urlInFamily} urlInAppMsg={null} formatDaysAgo={formatDaysAgo} setUrlDuplicated={setUrlDuplicated}
+                groups={groups} selectedGroupId={selectedGroupId} setSelectedGroupId={setSelectedGroupId} setStep={setStep} handleSubmit={handleSubmit}
+                isFormValid={isFormValid} manualSubmitBlockers={manualSubmitBlockers} onExtractFromUrl={onHandleScrape} isExtracting={isLoading}
+              />
+            </>
+          )}
       </DialogContent>
     </Dialog>
-
-    </>
   );
 }
