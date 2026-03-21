@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
-import { XCircle, ExternalLink, CalendarIcon, CalendarPlus, Users, Star } from "lucide-react";
+import { XCircle, ExternalLink, CalendarIcon, CalendarPlus, Users, Star, Building2, MessageCircle, Trash2 } from "lucide-react";
+import { StarRating } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
