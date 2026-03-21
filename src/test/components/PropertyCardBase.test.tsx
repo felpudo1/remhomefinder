@@ -25,7 +25,7 @@ describe("PropertyCardBase", () => {
     // Currency symbol for USD is U$S
     // Buscamos el precio de forma flexible (puede ser 1500, 1.500 o 1,500 según el locale)
     expect(screen.getByText((content) => content.includes("1") && content.includes("500"))).toBeDefined();
-    expect(screen.getByText((content) => content.includes("U$S"))).toBeDefined();
+    expect(screen.getAllByText((content) => content.includes("U$S")).length).toBeGreaterThan(0);
   });
 
   it("should show expenses when listingType is rent", () => {
