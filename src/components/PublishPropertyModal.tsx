@@ -87,6 +87,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           currency: propertyToEdit.currency || "UYU",
           neighborhood: propertyToEdit.neighborhood || "",
           city: propertyToEdit.city || "",
+          address: propertyToEdit.address || "",
           sqMeters: String(propertyToEdit.sqMeters || propertyToEdit.m2_total || ""),
           rooms: String(propertyToEdit.rooms || ""),
           aiSummary: propertyToEdit.aiSummary || propertyToEdit.description || "",
