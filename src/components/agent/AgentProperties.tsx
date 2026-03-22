@@ -149,18 +149,16 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     const pNeighId = p.neighborhood_id;
                     
                     if (s.city_id) {
-                        if (pCityId && s.city_id !== pCityId) {
+                        if (!pCityId) {
                             geoOk = false;
-                        } else if (!pCityId && p.city && s.cities?.name) {
-                            if (p.city.toLowerCase() !== s.cities.name.toLowerCase()) {
-                                geoOk = false;
-                            }
+                        } else if (s.city_id !== pCityId) {
+                            geoOk = false;
                         }
                         
                         if (geoOk && s.neighborhood_ids && s.neighborhood_ids.length > 0) {
                             if (pNeighId) {
                                 geoOk = s.neighborhood_ids.includes(pNeighId);
-                            } else if (!p.neighborhood) {
+                            } else {
                                 geoOk = false;
                             }
                         }
