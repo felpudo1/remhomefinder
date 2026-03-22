@@ -90,7 +90,7 @@ export function PropertyFormManual({
 
     // Fetch cities initially
     useEffect(() => {
-        supabase.from("cities").select("*").order("name").then(({ data }) => setCitiesList(data || []));
+        supabase.from("cities").select("id, name").order("name").then(({ data }) => setCitiesList((data as any[]) || []));
     }, []);
 
     // Fetch neighborhoods when city changes
