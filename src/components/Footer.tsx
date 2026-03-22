@@ -11,6 +11,7 @@ import {
     APP_BRAND_NAME_KEY,
 } from "@/lib/config-keys";
 import { ROUTES } from "@/lib/constants";
+import { SupportWhatsAppLink } from "@/components/support/SupportWhatsAppLink";
 
 export const Footer = () => {
     const { value: supportEmail } = useSystemConfig(SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT);
@@ -60,15 +61,13 @@ export const Footer = () => {
                         </a>
                     )}
                     {supportPhone && (
-                        <a
-                            href={`https://wa.me/${supportPhone.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <SupportWhatsAppLink
+                            supportPhone={supportPhone}
                             className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium border-b border-transparent hover:border-primary/30 py-0.5"
                         >
                             <Phone className="w-3.5 h-3.5" />
                             WhatsApp Soporte
-                        </a>
+                        </SupportWhatsAppLink>
                     )}
                 </div>
             </div>
