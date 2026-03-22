@@ -23,6 +23,8 @@ import type { AgentPubStatus, TableRow } from "@/types/supabase";
 import { MatchLeadsList } from "./MatchLeadsList";
 
 type SearchProfile = TableRow<"user_search_profiles">;
+type LeadProfileContact = Pick<TableRow<"profiles">, "user_id" | "display_name" | "phone">;
+type SearchProfileWithLead = SearchProfile & { leadProfile?: LeadProfileContact };
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -60,7 +62,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     }, [isPremium, agency.created_by]);
 
     // Nuevo: Fetch para perfiles de búsqueda de usuarios (Matchmaking)
-    const { data: searchProfiles = [], isFetched: searchProfilesFetched } = useQuery<SearchProfile[]>({
+    const { data: searchProfiles = [], isFetched: searchProfilesFetched } = useQuery<SearchProfileWithLead[]>({
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
             const { data, error } = await supabase
@@ -70,8 +72,34 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 console.error("🔴 AI MATCHMAKER: Error de Supabase (RLS):", error);
                 throw error;
             }
-            console.log("🔵 AI MATCHMAKER: Perfiles obtenidos de Supabase:", data);
-            return (data || []) as SearchProfile[];
+
+            const baseProfiles = (data || []) as SearchProfile[];
+            const userIds = [...new Set(baseProfiles.map((profile) => profile.user_id).filter(Boolean))];
+
+            let contactByUserId: Record<string, LeadProfileContact> = {};
+            if (userIds.length > 0) {
+                const { data: contactsData, error: contactsError } = await supabase
+                    .from("profiles")
+                    .select("user_id, display_name, phone")
+                    .in("user_id", userIds);
+
+                if (contactsError) {
+                    console.warn("🟠 AI MATCHMAKER: No se pudieron cargar datos de contacto de perfiles:", contactsError.message);
+                } else {
+                    contactByUserId = (contactsData || []).reduce<Record<string, LeadProfileContact>>((acc, contact) => {
+                        acc[contact.user_id] = contact as LeadProfileContact;
+                        return acc;
+                    }, {});
+                }
+            }
+
+            const enrichedProfiles: SearchProfileWithLead[] = baseProfiles.map((profile) => ({
+                ...profile,
+                leadProfile: contactByUserId[profile.user_id],
+            }));
+
+            console.log("🔵 AI MATCHMAKER: Perfiles obtenidos de Supabase:", enrichedProfiles);
+            return enrichedProfiles;
         },
         enabled: isActive,
     });
@@ -177,7 +205,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     return isMatch;
                 });
 
-                const result: MarketplaceProperty & { matchCount: number; matches: any[] } = {
+                const result: MarketplaceProperty & { matchCount: number; matches: SearchProfileWithLead[] } = {
                     id: pub.id,
                     orgId: pub.org_id,
                     orgName: pub.organizations?.name || agency.name,
