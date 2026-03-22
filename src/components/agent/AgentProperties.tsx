@@ -79,15 +79,13 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
             let contactByUserId: Record<string, LeadProfileContact> = {};
             if (userIds.length > 0) {
                 const { data: contactsData, error: contactsError } = await supabase
-                    .from("profiles")
-                    .select("user_id, display_name, phone")
-                    .in("user_id", userIds);
+                    .rpc("get_search_profile_contacts", { _user_ids: userIds });
 
                 if (contactsError) {
                     console.warn("🟠 AI MATCHMAKER: No se pudieron cargar datos de contacto de perfiles:", contactsError.message);
                 } else {
-                    contactByUserId = (contactsData || []).reduce<Record<string, LeadProfileContact>>((acc, contact) => {
-                        acc[contact.user_id] = contact as LeadProfileContact;
+                    contactByUserId = (contactsData || []).reduce<Record<string, LeadProfileContact>>((acc, contact: any) => {
+                        acc[contact.user_id] = { user_id: contact.user_id, display_name: contact.display_name, phone: contact.phone };
                         return acc;
                     }, {});
                 }
