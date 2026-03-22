@@ -141,6 +141,7 @@ const Index = () => {
 
   // Chequear si el usuario común tiene perfil de búsqueda (AI Matchmaking)
   useEffect(() => {
+    if (showRegWelcome) return; // No abrir mientras el overlay de registro está activo
     if (profile?.userId) {
       const checkSearchProfile = async () => {
         const { data } = await supabase
