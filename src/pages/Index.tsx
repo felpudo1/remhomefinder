@@ -28,6 +28,7 @@ import {
   SUPPORT_PHONE_DEFAULT,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
+import { buildSupportWhatsappUrl } from "@/lib/whatsapp";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { BuyerProfileModal } from "@/components/BuyerProfileModal";
 import { AIProfileModal } from "@/components/AIProfileModal";
