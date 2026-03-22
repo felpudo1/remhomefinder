@@ -81,7 +81,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('user_search_profiles' as any).upsert({
+      const { error } = await supabase.from('user_search_profiles').upsert({
         user_id: userId,
         operation,
         currency,
@@ -89,7 +89,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
         max_budget: Number(budget) || 0,
         min_bedrooms: Number(bedrooms) || 1,
         city_id: selectedDept || null,
-        neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null
+        neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;

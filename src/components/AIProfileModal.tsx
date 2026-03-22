@@ -106,7 +106,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
     setSaving(true);
     
     try {
-      const { error } = await supabase.from('user_search_profiles' as any).upsert({
+      const { error } = await supabase.from('user_search_profiles').upsert({
         user_id: userId,
         operation,
         currency,
@@ -115,7 +115,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
         min_bedrooms: bedrooms === "4+" ? 4 : (Number(bedrooms) || 1),
         city_id: selectedDept || null,
         neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
-        // is_private: isPrivate  ← Columna pendiente de agregar a la BD
+        is_private: isPrivate,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;

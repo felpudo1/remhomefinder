@@ -66,6 +66,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     currency: "UYU",
     neighborhood: "",
     city: "",
+    address: "",
     sqMeters: "",
     rooms: "",
     aiSummary: "",
