@@ -41,15 +41,15 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("cities").select("*").order("name").then(({ data }) => {
-      if (data) setDepartments(data);
+    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+      if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("*").eq("city_id", selectedDept).order("name").then(({ data }) => {
-        if (data) setNeighborhoods(data);
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
       // Importante: No limpiamos selectedNeighborhoods aquí porque estamos CARGANDO el perfil al abrir
     } else {
