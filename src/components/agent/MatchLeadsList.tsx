@@ -2,7 +2,18 @@ import { Badge } from "@/components/ui/badge";
 import { User, Phone, Sparkles } from "lucide-react";
 
 interface MatchLeadsListProps {
-  matches: any[];
+  matches: {
+    id: string;
+    user_id: string;
+    leadProfile?: {
+      display_name?: string | null;
+      phone?: string | null;
+    } | null;
+    profiles?: {
+      display_name?: string | null;
+      phone?: string | null;
+    } | null;
+  }[];
 }
 
 /**
@@ -23,9 +34,11 @@ export const MatchLeadsList = ({ matches }: MatchLeadsListProps) => {
       
       <div className="grid gap-2">
         {matches.map((match, idx) => {
-          const profile = match.profiles;
-          const name = profile?.display_name || "Usuario interesado";
-          const phone = profile?.phone || "Sin teléfono";
+          const profile = match.leadProfile ?? match.profiles;
+          const name = profile?.display_name?.trim() || `Usuario ${match.user_id.slice(0, 6)}`;
+          const phone = profile?.phone?.trim() || "";
+          const normalizedPhone = phone.replace(/\D/g, "");
+          const canOpenWhatsapp = normalizedPhone.length > 0;
 
           return (
             <div 
@@ -40,25 +53,31 @@ export const MatchLeadsList = ({ matches }: MatchLeadsListProps) => {
                   <span className="text-xs font-bold text-foreground truncate">{name}</span>
                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
                     <Phone className="w-2.5 h-2.5" />
-                    {phone}
+                    {phone || "Sin teléfono visible"}
                   </div>
                 </div>
               </div>
 
-              <a 
-                href={`https://wa.me/${phone.replace(/\D/g, '')}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="ml-2"
-              >
-                <Badge 
-                  variant="outline" 
-                  className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px] font-bold cursor-pointer"
+              {canOpenWhatsapp ? (
+                <a 
+                  href={`https://wa.me/${normalizedPhone}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="ml-2"
                 >
-                  WhatsApp
+                  <Badge 
+                    variant="outline" 
+                    className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px] font-bold cursor-pointer"
+                  >
+                    WhatsApp
+                  </Badge>
+                </a>
+              ) : (
+                <Badge variant="outline" className="ml-2 text-[10px] font-bold">
+                  Sin WhatsApp
                 </Badge>
-              </a>
+              )}
             </div>
           );
         })}
