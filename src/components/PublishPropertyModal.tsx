@@ -176,6 +176,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         currency: d.currency || "UYU",
         neighborhood: d.neighborhood || "",
         city: d.city || "",
+        address: d.address || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
