@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
   Building2, Users, Bot, BarChart3,
-  Settings, FileText, KeyRound
+  Settings, FileText, KeyRound, MapPin
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
@@ -16,14 +16,15 @@ import { AdminSystem } from "@/components/admin/AdminSystem";
 import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
 import { AdminGrupos } from "@/components/admin/AdminGrupos";
 import { AdminDatosAdmin } from "@/components/admin/AdminDatosAdmin";
+import { AdminGeografia } from "@/components/admin/AdminGeografia";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin" | "geografia";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin", "geografia"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -35,6 +36,7 @@ const MENU_ITEMS: {
     { id: "usuarios", label: "Consola", icon: Users, description: "Gestión rápida de roles y estados" },
     { id: "publicaciones", label: "Publicaciones", icon: FileText, description: "Todas las publicaciones guardadas por usuarios" },
     { id: "grupos", label: "Grupos / Equipos", icon: Users, description: "Todos los grupos y equipos de la plataforma" },
+    { id: "geografia", label: "Geografía", icon: MapPin, description: "Gestión de Departamentos y Barrios" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
@@ -109,6 +111,7 @@ const Admin = () => {
       case "usuarios": return <AdminUsuarios toast={toast} />;
       case "publicaciones": return <AdminPublicaciones toast={toast} />;
       case "grupos": return <AdminGrupos toast={toast} />;
+      case "geografia": return <AdminGeografia toast={toast} />;
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;

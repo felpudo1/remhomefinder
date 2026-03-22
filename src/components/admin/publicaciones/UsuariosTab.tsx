@@ -1,7 +1,9 @@
-import { Loader2, ExternalLink, Trash2, Eye, EyeOff } from "lucide-react";
+import { Loader2, ExternalLink, Trash2, Eye, EyeOff, Building } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TabsContent } from "@/components/ui/tabs";
+import { useState } from "react";
 import { DeletePropertyDialog } from "@/components/property/DeletePropertyDialog";
 import { UserProperty } from "@/types/admin-publications";
 import { STATUS_CONFIG } from "@/types/property";
@@ -23,17 +25,37 @@ export function UsuariosTab({
     setDeleteUserTarget,
     deleteUserProperty,
 }: UsuariosTabProps) {
+    const [filterOwn, setFilterOwn] = useState(false);
+    const [filterAgency, setFilterAgency] = useState(false);
+
+    const filteredProps = userProps.filter(prop => {
+        if (filterOwn && prop.source_marketplace_id) return false;
+        if (filterAgency && !prop.isAgency) return false;
+        return true;
+    });
+
     return (
         <TabsContent value="usuarios">
-            <p className="text-sm text-muted-foreground mb-4">
-                Propiedades guardadas por usuarios en su listado de búsqueda personal.
-                El estado mostrado es el estado personal del usuario en su flujo de búsqueda.
-            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <p className="text-sm text-muted-foreground flex-1">
+                    Propiedades guardadas por usuarios en su listado personal. Aquí conviven las que guardan del market y las que crean ellos mismos.
+                </p>
+                <div className="flex flex-col gap-2 shrink-0 bg-muted/30 p-3 rounded-xl border border-border/50">
+                    <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                        <Checkbox checked={filterOwn} onCheckedChange={(c) => setFilterOwn(!!c)} />
+                        Solo creadas por ellos <span className="text-xs text-muted-foreground font-normal">(oculta las del market)</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                        <Checkbox checked={filterAgency} onCheckedChange={(c) => setFilterAgency(!!c)} />
+                        Solo de Agencias <span className="text-xs text-muted-foreground font-normal">(oculta familias comunes)</span>
+                    </label>
+                </div>
+            </div>
 
             {loadingUser ? (
                 <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-            ) : userProps.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">No hay propiedades guardadas por usuarios.</div>
+            ) : filteredProps.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">No hay propiedades que coincidan con los filtros.</div>
             ) : (
                 <div className="space-y-2">
                     <div className="hidden lg:block overflow-x-auto">
@@ -49,7 +71,7 @@ export function UsuariosTab({
                                 </tr>
                             </thead>
                             <tbody>
-                                {userProps.map(prop => {
+                                {filteredProps.map(prop => {
                                     const cfg = STATUS_CONFIG[prop.status];
                                     return (
                                         <tr key={prop.id} className="rounded-xl hover:bg-muted/50 transition-colors">
@@ -64,7 +86,19 @@ export function UsuariosTab({
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-xs text-muted-foreground max-w-[90px] truncate" title={prop.ref}>{prop.ref || "—"}</td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground max-w-[100px] truncate" title={prop.created_by_email}>{prop.created_by_email || "—"}</td>
+                                            <td className="px-4 py-3 text-xs max-w-[150px]">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="truncate text-foreground font-medium" title={prop.created_by_email}>
+                                                        {prop.created_by_email || "—"}
+                                                    </span>
+                                                    {prop.isAgency && (
+                                                        <Badge variant="outline" className="w-fit text-[10px] gap-1 px-1.5 py-0 border-primary/20 bg-primary/5 text-primary">
+                                                            <Building className="w-3 h-3" />
+                                                            <span className="truncate max-w-[100px]" title={prop.orgName}>{prop.orgName}</span>
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">
                                                     {prop.listing_type === "sale" ? "Venta" : "Alquiler"}
@@ -106,7 +140,7 @@ export function UsuariosTab({
                     </div>
 
                     <div className="lg:hidden space-y-3">
-                        {userProps.map(prop => {
+                        {filteredProps.map(prop => {
                             const cfg = STATUS_CONFIG[prop.status];
                             return (
                                 <div key={prop.id} className="rounded-xl border border-border p-4 space-y-2 bg-card">
@@ -120,8 +154,16 @@ export function UsuariosTab({
                                                     </a>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-muted-foreground block mt-0.5 truncate max-w-[200px]" title={prop.created_by_email}>{prop.created_by_email || "—"}</span>
-                                            {prop.ref && <span className="text-xs text-muted-foreground block mt-0.5">Ref: {prop.ref}</span>}
+                                            <span className="text-xs text-foreground font-medium block mt-1 truncate max-w-[200px]" title={prop.created_by_email}>
+                                                {prop.created_by_email || "—"}
+                                            </span>
+                                            {prop.isAgency && (
+                                                <Badge variant="outline" className="w-fit text-[10px] gap-1 px-1.5 py-0 mt-1 border-primary/20 bg-primary/5 text-primary">
+                                                    <Building className="w-3 h-3" />
+                                                    <span className="truncate max-w-[140px]" title={prop.orgName}>{prop.orgName}</span>
+                                                </Badge>
+                                            )}
+                                            {prop.ref && <span className="text-xs text-muted-foreground block mt-1">Ref: {prop.ref}</span>}
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
                                             <Badge variant={prop.listing_type === "sale" ? "default" : "secondary"} className="text-xs">

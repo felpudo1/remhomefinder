@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { useGroups, Group, GroupMember } from "@/hooks/useGroups";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Users, Plus, Copy, LogOut, Trash2, UserPlus, Crown, Loader2, ChevronRight, ArrowLeft, X, Building2, Network,
-} from "lucide-react";
+import { Users } from "lucide-react";
+
+// Componentes modulares
+import { GroupList } from "./admin/groups/GroupList";
+import { GroupDetail } from "./admin/groups/GroupDetail";
+import { CreateGroupForm, JoinGroupForm } from "./admin/groups/GroupForms";
 
 interface GroupsModalProps {
   open: boolean;
@@ -20,14 +17,27 @@ interface GroupsModalProps {
   activeGroupId: string | null;
   onSelectGroup: (groupId: string | null) => void;
   isAgent?: boolean;
-  /** Solo owners ven lista/crear; no-owners solo Unirme */
   isOwner?: boolean;
-  /** Agency (rol) ve código para invitar; AgencyMember solo pega */
   canManageTeams?: boolean;
 }
 
-export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAgent = false, isOwner = true, canManageTeams = true }: GroupsModalProps) {
-  const { groups, agencyOrg, loading, createGroup, joinGroup, leaveGroup, deleteGroup, fetchMembers, removeMember } = useGroups();
+/**
+ * Orquestador principal de la gestión de grupos y equipos (Regla 2).
+ * Refactorizado para delegar la complejidad visual a sub-componentes especializados.
+ */
+export function GroupsModal({ 
+  open, 
+  onClose, 
+  activeGroupId, 
+  onSelectGroup, 
+  isAgent = false, 
+  canManageTeams = true 
+}: GroupsModalProps) {
+  const { 
+    groups, agencyOrg, loading, createGroup, joinGroup, 
+    leaveGroup, deleteGroup, fetchMembers, removeMember 
+  } = useGroups();
+  
   const { toast } = useToast();
 
   const [tab, setTab] = useState<string>("groups");
@@ -38,12 +48,12 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
   const [joining, setJoining] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Detail view
+  // Vista de detalle y miembros
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
-  // Agency members (for inline display)
+  // Miembros de la agencia (para vista inline en lista)
   const [agencyMembers, setAgencyMembers] = useState<GroupMember[]>([]);
   const [loadingAgencyMembers, setLoadingAgencyMembers] = useState(false);
 
@@ -59,7 +69,6 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   }, [open]);
 
-  // Fetch agency members when modal opens and isAgent
   useEffect(() => {
     if (open && isAgent && agencyOrg) {
       setLoadingAgencyMembers(true);
@@ -70,7 +79,6 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   }, [open, isAgent, agencyOrg?.id]);
 
-  // Micro-copy helpers
   const groupLabel = isAgent ? "equipo" : "grupo";
   const groupLabelPlural = isAgent ? "Equipos" : "Grupos";
   const groupLabelPluralLower = isAgent ? "equipos" : "grupos";
@@ -79,12 +87,16 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await createGroup({ name: newName.trim(), description: newDesc.trim(), ...(isAgent && agencyOrg ? { parentOrgId: agencyOrg.id } : {}) });
+      await createGroup({ 
+        name: newName.trim(), 
+        description: newDesc.trim(), 
+        ...(isAgent && agencyOrg ? { parentOrgId: agencyOrg.id } : {}) 
+      });
       setNewName("");
       setNewDesc("");
       setTab("groups");
-    } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Error al crear", variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -97,8 +109,8 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
       await joinGroup(inviteCode.trim());
       setInviteCode("");
       setTab("groups");
-    } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Error al unirse", variant: "destructive" });
     } finally {
       setJoining(false);
     }
@@ -117,68 +129,13 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
     }
   };
 
-  /**
-   * Fallback si clipboard.writeText falla (p. ej. permisos). Sin readonly: en Chrome
-   * execCommand("copy") a veces devuelve false con textarea readonly dentro de un modal.
-   */
-  const copyInviteCodeWithExecCommand = (text: string): boolean => {
-    try {
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";
-      textArea.style.left = "0";
-      textArea.style.top = "0";
-      textArea.style.width = "1px";
-      textArea.style.height = "1px";
-      textArea.style.padding = "0";
-      textArea.style.border = "none";
-      textArea.style.opacity = "0";
-      textArea.setAttribute("aria-hidden", "true");
-      textArea.setAttribute("tabindex", "-1");
-      // Dentro del dialog activo evita pelearse con el focus trap de Radix (Chrome + modal).
-      const host = document.querySelector<HTMLElement>('[role="dialog"]') ?? document.body;
-      host.appendChild(textArea);
-      textArea.focus({ preventScroll: true });
-      textArea.select();
-      textArea.setSelectionRange(0, text.length);
-      const ok = document.execCommand("copy");
-      textArea.remove();
-      return ok;
-    } catch {
-      return false;
-    }
-  };
-
-  /** Copia solo el código; toast solo "Código copiado". */
   const handleCopyCode = (code: string) => {
     const text = String(code ?? "").trim();
-    if (!text) {
-      toast({ title: "Error al copiar", variant: "destructive" });
-      return;
-    }
-
-    // 1) Mismo tick del click: execCommand suele funcionar mejor con el focus trap del Dialog.
-    if (copyInviteCodeWithExecCommand(text)) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
       toast({ title: "Código copiado" });
-      return;
-    }
-
-    // 2) La llamada a writeText arranca en el mismo handler (gesto de usuario); el .then solo muestra toast.
-    if (navigator.clipboard?.writeText && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(
-        () => {
-          toast({ title: "Código copiado" });
-        },
-        () => {
-          toast({ title: "Error al copiar", variant: "destructive" });
-        }
-      );
-      return;
-    }
-
-    toast({ title: "Error al copiar", variant: "destructive" });
+    });
   };
-
 
   const handleRemoveMember = async (userId: string) => {
     if (!detailGroup) return;
@@ -186,177 +143,37 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
       await removeMember({ groupId: detailGroup.id, userId });
       const m = await fetchMembers(detailGroup.id);
       setMembers(m);
-    } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
-  const isAgencyTeamDetail = detailGroup?.type === "agency_team";
-
-  // Detail view
+  // Renderizado condicional: Vista de detalle
   if (detailGroup) {
-    // Owner = creador O tiene role 'owner' en organization_members (ej. agregado por admin)
-    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
-    const isOwner = detailGroup.created_by === currentUserId || currentUserMembership?.role === "owner";
-
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <button onClick={() => setDetailGroup(null)} className="text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              {isAgencyTeamDetail && <Building2 className="w-4 h-4 text-primary" />}
-              {detailGroup.name}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {isAgencyTeamDetail && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                  Organización principal
-                </span>
-              </div>
-            )}
-
-            {detailGroup.description && (
-              <p className="text-sm text-muted-foreground">{detailGroup.description}</p>
-            )}
-
-            {/* Código de invitación — owners: copiar código y link; no-owners en agency_team no ven */}
-            {(isOwner || !isAgencyTeamDetail) && (
-              <div className="bg-muted/50 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">
-                  Código de invitación
-                </p>
-                <div className="flex gap-2 min-w-0">
-                  <code className="flex-1 min-w-0 bg-background rounded-lg px-3 py-2 text-xs font-mono break-all border border-border">
-                    {detailGroup.invite_code}
-                  </code>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0"
-                    onClick={() => handleCopyCode(detailGroup.invite_code)}
-                    title="Copiar código"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                {isAgencyTeamDetail && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Compartí este código con tus agentes para que lo peguen en la pestaña Unirme.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Members */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Miembros ({members.length})</p>
-              {loadingMembers ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {members.map((m) => (
-                    <div key={m.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg bg-background border border-border group/member ${m.is_active === false ? "opacity-50" : ""}`}>
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                        {(m.display_name || "U")[0].toUpperCase()}
-                      </div>
-                      <span className="text-sm flex-1 truncate">{m.display_name || "Usuario"}</span>
-                      {m.is_active === false && (
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">Pausado</Badge>
-                      )}
-                      {m.role === "owner" && <Crown className="w-3.5 h-3.5 text-amber-500" />}
-                      {isOwner && m.user_id !== currentUserId && isAgencyTeamDetail && (
-                        <Switch
-                          checked={m.is_active !== false}
-                          disabled
-                          className="scale-75"
-                          aria-readonly="true"
-                        />
-                      )}
-                      {isOwner && m.user_id !== currentUserId && (
-                        <button
-                          onClick={() => handleRemoveMember(m.user_id)}
-                          className="p-1 hover:bg-destructive/10 rounded text-destructive transition-all"
-                          title="Eliminar miembro"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-2 pt-2">
-              <Button
-                variant={activeGroupId === detailGroup.id ? "default" : "outline"}
-                className="w-full rounded-xl"
-                onClick={() => {
-                  onSelectGroup(activeGroupId === detailGroup.id ? null : detailGroup.id);
-                  onClose();
-                }}
-              >
-                {activeGroupId === detailGroup.id ? `${isAgent ? "Equipo" : "Grupo"} activo ✓` : `Ver propiedades del ${groupLabel}`}
-              </Button>
-
-              {/* Hide abandon button for agency_team org */}
-              {!isAgencyTeamDetail && (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
-                    onClick={async () => {
-                      try {
-                        await leaveGroup(detailGroup.id);
-                        setDetailGroup(null);
-                      } catch (e: unknown) {
-                        toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
-                      }
-                    }}
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Abandonar {groupLabel}
-                  </Button>
-
-                  {isOwner && (
-                    <Button
-                      variant="ghost"
-                      className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
-                      onClick={async () => {
-                        if (!confirm(`¿Estás seguro de eliminar "${detailGroup.name}"? Se eliminarán todos los miembros.`)) return;
-                        try {
-                          await deleteGroup(detailGroup.id);
-                          setDetailGroup(null);
-                          onClose();
-                        } catch (e: unknown) {
-                          toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
-                        }
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Eliminar {groupLabel}
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+          <GroupDetail
+            group={detailGroup}
+            members={members}
+            loadingMembers={loadingMembers}
+            currentUserId={currentUserId}
+            activeGroupId={activeGroupId}
+            isAgent={isAgent}
+            onBack={() => setDetailGroup(null)}
+            onSelectGroup={onSelectGroup}
+            onClose={onClose}
+            handleCopyCode={handleCopyCode}
+            handleRemoveMember={handleRemoveMember}
+            leaveGroup={leaveGroup}
+            deleteGroup={deleteGroup}
+          />
         </DialogContent>
       </Dialog>
     );
   }
 
-  // AgencyMember: solo pestaña Unirme para pegar el código. Agency (canManageTeams) ve el modal completo con código.
+  // Renderizado condicional: Agente sin permisos de gestión (solo puede unirse)
   if (isAgent && !canManageTeams) {
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -367,29 +184,20 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
               Unirme al equipo
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <p className="text-sm text-muted-foreground">
-              Pegá el código que te pasó el owner de tu agencia para unirte.
-            </p>
-            <div className="space-y-2">
-              <Label>Código de invitación</Label>
-              <Input
-                placeholder="Pegá el código acá"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                className="rounded-xl font-mono tracking-wider"
-              />
-            </div>
-            <Button onClick={handleJoin} disabled={joining || !inviteCode.trim()} className="w-full rounded-xl">
-              {joining ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-              Unirme al equipo
-            </Button>
-          </div>
+          <JoinGroupForm 
+            inviteCode={inviteCode} 
+            setInviteCode={setInviteCode} 
+            onJoin={handleJoin} 
+            joining={joining} 
+            groupLabel={groupLabel} 
+            isAgent={isAgent}
+          />
         </DialogContent>
       </Dialog>
     );
   }
 
+  // Vista principal: Tabs de Mis Grupos, Crear y Unirme
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -400,54 +208,6 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
           </DialogTitle>
         </DialogHeader>
 
-        {/* Fixed agency section for agents (solo owners) */}
-        {isAgent && agencyOrg && (
-          <div className="space-y-3">
-            <button
-              onClick={() => openDetail(agencyOrg)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
-                activeGroupId === agencyOrg.id
-                  ? "border-primary bg-primary/5"
-                  : "border-primary/20 bg-primary/[0.02] hover:border-primary/40"
-              }`}
-            >
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Building2 className="w-4 h-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{agencyOrg.name}</p>
-                  <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full shrink-0">
-                    Principal
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {loadingAgencyMembers ? "Cargando..." : `${agencyMembers.length} miembros`}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {(agencyOrg.created_by === currentUserId || agencyMembers.find((m) => m.user_id === currentUserId)?.role === "owner") && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopyCode(agencyOrg.invite_code);
-                    }}
-                    title="Copiar código"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                  </Button>
-                )}
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </div>
-            </button>
-
-            <Separator />
-          </div>
-        )}
-
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="groups">Mis {groupLabelPluralLower}</TabsTrigger>
@@ -455,89 +215,45 @@ export function GroupsModal({ open, onClose, activeGroupId, onSelectGroup, isAge
             <TabsTrigger value="join">Unirme</TabsTrigger>
           </TabsList>
 
-          {/* List */}
-          <TabsContent value="groups" className="space-y-2 mt-4">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : groups.length === 0 ? (
-              <div className="text-center py-8 space-y-2 text-muted-foreground">
-                <Users className="w-10 h-10 mx-auto opacity-30" />
-                <p className="text-sm">No tenés {groupLabelPluralLower} adicionales</p>
-                <p className="text-xs">Creá uno o unite con un código de invitación</p>
-              </div>
-            ) : (
-              groups.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => openDetail(g)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${activeGroupId === g.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/30 bg-background"
-                    }`}
-                >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${g.type === "sub_team" ? "bg-accent/15" : "bg-primary/10"}`}>
-                    {g.type === "sub_team" ? <Network className="w-4 h-4 text-accent-foreground" /> : <Users className="w-4 h-4 text-primary" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-medium truncate">{g.name}</p>
-                      <Badge variant={g.type === "sub_team" ? "secondary" : "outline"} className="text-[10px] px-1.5 py-0 shrink-0">
-                        {g.type === "sub_team" ? "Equipo" : "Grupo"}
-                      </Badge>
-                    </div>
-                    {g.description && (
-                      <p className="text-xs text-muted-foreground truncate">{g.description}</p>
-                    )}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                </button>
-              ))
-            )}
+          <TabsContent value="groups" className="mt-4">
+            <GroupList
+              groups={groups}
+              activeGroupId={activeGroupId}
+              openDetail={openDetail}
+              loading={loading}
+              isAgent={isAgent}
+              agencyOrg={agencyOrg}
+              agencyMembers={agencyMembers}
+              loadingAgencyMembers={loadingAgencyMembers}
+              currentUserId={currentUserId}
+              handleCopyCode={handleCopyCode}
+              groupLabelPluralLower={groupLabelPluralLower}
+              onSelectGroup={onSelectGroup}
+            />
           </TabsContent>
 
-          {/* Create */}
-          <TabsContent value="create" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Nombre del {groupLabel}</Label>
-              <Input
-                placeholder={isAgent ? "Ej: Equipo Zona Sur" : "Ej: Familia González"}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Descripción (opcional)</Label>
-              <Input
-                placeholder={isAgent ? "Ej: Equipo de ventas zona 1" : "Ej: Buscando depto en Pocitos"}
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                className="rounded-xl"
-              />
-            </div>
-            <Button onClick={handleCreate} disabled={creating || !newName.trim()} className="w-full rounded-xl">
-              {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-              Crear {groupLabel}
-            </Button>
+          <TabsContent value="create">
+            <CreateGroupForm
+              newName={newName}
+              setNewName={setNewName}
+              newDesc={newDesc}
+              setNewDesc={setNewDesc}
+              onCreate={handleCreate}
+              creating={creating}
+              groupLabel={groupLabel}
+              isAgent={isAgent}
+            />
           </TabsContent>
 
-          {/* Join */}
-          <TabsContent value="join" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Código de invitación</Label>
-              <Input
-                placeholder="Pegá el código acá"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                className="rounded-xl font-mono tracking-wider"
-              />
-            </div>
-            <Button onClick={handleJoin} disabled={joining || !inviteCode.trim()} className="w-full rounded-xl">
-              {joining ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-              Unirme al {groupLabel}
-            </Button>
+          <TabsContent value="join">
+            <JoinGroupForm
+              inviteCode={inviteCode}
+              setInviteCode={setInviteCode}
+              onJoin={handleJoin}
+              joining={joining}
+              groupLabel={groupLabel}
+              isAgent={isAgent}
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

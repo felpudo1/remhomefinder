@@ -61,19 +61,44 @@ export function AdminPublicaciones({ toast }: Props) {
             addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario";
           });
         }
-        setUserProps(listings.map((d: any) => ({
-          id: d.id,
-          title: d.properties?.title || "Sin título",
-          url: d.properties?.source_url || "",
-          status: d.current_status,
-          created_by_email: addedByMap[d.added_by || ""] || "—",
-          source_marketplace_id: d.source_publication_id,
-          listing_type: d.listing_type,
-          created_at: d.created_at,
-          admin_hidden: d.admin_hidden ?? false,
-          property_id: d.property_id,
-          ref: d.properties?.ref || "",
-        })));
+
+        // Obtener la info de la agencia origen para las que vinieron del market
+        const sourceIds = [...new Set(listings.map((d: { source_publication_id?: string }) => d.source_publication_id).filter(Boolean))];
+        let mktOrgsMap: Record<string, {name: string, isAgency: boolean}> = {};
+        if (sourceIds.length > 0) {
+            const { data: pubsData } = await supabase
+                .from("agent_publications")
+                .select("id, organizations(name, type)")
+                // @ts-ignore
+                .in("id", sourceIds);
+            
+            pubsData?.forEach((pub: any) => {
+                mktOrgsMap[pub.id] = {
+                    name: pub.organizations?.name || "Desconocida",
+                    isAgency: pub.organizations?.type === "agency_team"
+                };
+            });
+        }
+
+        setUserProps(listings.map((d: any) => {
+          const mktInfo = d.source_publication_id ? mktOrgsMap[d.source_publication_id] : null;
+
+          return {
+            id: d.id,
+            title: d.properties?.title || "Sin título",
+            url: d.properties?.source_url || "",
+            status: d.current_status,
+            created_by_email: addedByMap[d.added_by || ""] || "—",
+            source_marketplace_id: d.source_publication_id,
+            listing_type: d.listing_type,
+            created_at: d.created_at,
+            admin_hidden: d.admin_hidden ?? false,
+            property_id: d.property_id,
+            ref: d.properties?.ref || "",
+            orgName: mktInfo?.name || "",
+            isAgency: mktInfo?.isAgency ?? false,
+          };
+        }));
       }
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });

@@ -6,7 +6,7 @@ import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
 
 /** Inserta una nueva property y devuelve su id */
 async function insertNewProperty(
-    form: { url?: string; title: string; priceRent: number; priceExpenses: number; currency: string; neighborhood: string; city: string; sqMeters: number; rooms: number; images?: string[]; ref?: string; aiSummary?: string; details?: string },
+    form: { url?: string; title: string; priceRent: number; priceExpenses: number; currency: string; neighborhood: string; neighborhood_id?: string; city: string; city_id?: string; sqMeters: number; rooms: number; images?: string[]; ref?: string; aiSummary?: string; details?: string },
     userId: string
 ) {
     const { data: prop, error: propError } = await supabase
@@ -19,7 +19,9 @@ async function insertNewProperty(
             total_cost: form.priceRent + form.priceExpenses,
             currency: form.currency as CurrencyCode,
             neighborhood: form.neighborhood,
+            neighborhood_id: form.neighborhood_id || null,
             city: form.city || "",
+            city_id: form.city_id || null,
             m2_total: form.sqMeters,
             rooms: form.rooms,
             images: form.images || [],
@@ -53,7 +55,9 @@ export function usePropertyMutations() {
             priceExpenses: number;
             currency: string;
             neighborhood: string;
+            neighborhood_id?: string;
             city: string;
+            city_id?: string;
             sqMeters: number;
             rooms: number;
             aiSummary: string;

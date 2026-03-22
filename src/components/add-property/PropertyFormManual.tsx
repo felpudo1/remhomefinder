@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Camera, Sparkles, ImageIcon, X, Plus, Upload, Link, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDaysAgo } from "@/lib/duplicateCheck";
 
 export interface PropertyFormManualProps {
@@ -81,6 +83,24 @@ export function PropertyFormManual({
     isExtracting,
 }: PropertyFormManualProps) {
     const safeCurrency = form.currency === "USD" || form.currency === "UYU" ? form.currency : "UYU";
+    
+    // Geographical State
+    const [citiesList, setCitiesList] = useState<any[]>([]);
+    const [neighborhoodsList, setNeighborhoodsList] = useState<any[]>([]);
+
+    // Fetch cities initially
+    useEffect(() => {
+        supabase.from("cities").select("*").order("name").then(({ data }) => setCitiesList(data || []));
+    }, []);
+
+    // Fetch neighborhoods when city changes
+    useEffect(() => {
+        if (form.city_id) {
+            supabase.from("neighborhoods").select("*").eq("city_id", form.city_id).order("name").then(({ data }) => setNeighborhoodsList(data || []));
+        } else {
+            setNeighborhoodsList([]);
+        }
+    }, [form.city_id]);
 
     return (
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
@@ -243,12 +263,43 @@ export function PropertyFormManual({
 
             <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Barrio *</Label>
-                    <Input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Ej: Buceo" className="rounded-xl text-sm" />
+                    <Label className="text-xs font-medium">Departamento *</Label>
+                    <Select
+                        value={form.city_id || ""}
+                        onValueChange={(val) => {
+                            const cityObj = citiesList.find((c) => c.id === val);
+                            setForm({ ...form, city_id: val, city: cityObj ? cityObj.name : "", neighborhood_id: "", neighborhood: "" });
+                        }}
+                    >
+                        <SelectTrigger className="rounded-xl text-sm">
+                            <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {citiesList.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Ciudad</Label>
-                    <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej: Montevideo" className="rounded-xl text-sm" />
+                    <Label className="text-xs font-medium">Barrio *</Label>
+                    <Select
+                        value={form.neighborhood_id || ""}
+                        onValueChange={(val) => {
+                            const neighObj = neighborhoodsList.find((n) => n.id === val);
+                            setForm({ ...form, neighborhood_id: val, neighborhood: neighObj ? neighObj.name : "" });
+                        }}
+                        disabled={!form.city_id}
+                    >
+                        <SelectTrigger className="rounded-xl text-sm">
+                            <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {neighborhoodsList.map((n) => (
+                                <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

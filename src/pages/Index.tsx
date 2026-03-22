@@ -28,6 +28,7 @@ import {
 import type { AddButtonConfig } from "@/types/property";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { IndexModals } from "@/components/IndexModals";
+import { BuyerProfileModal } from "@/components/BuyerProfileModal";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -99,6 +100,7 @@ const Index = () => {
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
+  const [showBuyerProfileModal, setShowBuyerProfileModal] = useState(false);
 
   const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
   const OWN_LINK_TIP_SHOWN_KEY = "hf_own_link_first_tip_shown";
@@ -127,6 +129,25 @@ const Index = () => {
         setIsPremiumWelcomeOpen(true);
         localStorage.setItem(key, "true");
       }
+
+      // Además, chequear si tiene perfil de búsqueda (AI Matchmaking)
+      const checkSearchProfile = async () => {
+        const { data } = await supabase
+          .from("user_search_profiles")
+          .select("id")
+          .eq("user_id", profile.userId)
+          .maybeSingle();
+        
+        if (!data) {
+          // Si no tiene perfil y no lo ha cerrado explícitamente en esta sesión (localStorage es fallback rápido)
+          const sessionDismissed = localStorage.getItem("hf_buyer_profile_completed") === "true";
+          if (!sessionDismissed) {
+             setShowBuyerProfileModal(true);
+          }
+        }
+      };
+      
+      checkSearchProfile();
     }
   }, [isPremium, profile?.userId]);
   
@@ -383,6 +404,10 @@ const Index = () => {
                 onClick={() => {
                   if (dontShowRegAgain) localStorage.setItem("hf_reg_welcome_hidden", "true");
                   setShowRegWelcome(false);
+                  
+                  if (localStorage.getItem("hf_buyer_profile_completed") !== "true") {
+                    setShowBuyerProfileModal(true);
+                  }
                 }}
               >
                 ¡Entendido, vamos! <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -606,6 +631,13 @@ const Index = () => {
           </Dialog>
         </>
       )}
+
+      <BuyerProfileModal 
+        isOpen={showBuyerProfileModal} 
+        onClose={() => setShowBuyerProfileModal(false)} 
+        userId={profile?.userId} 
+      />
+
       <Footer />
     </div>
   );

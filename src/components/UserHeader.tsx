@@ -1,7 +1,16 @@
-import { Home, User, Users, LogOut, Star, Medal } from "lucide-react";
+import { Home, User, Users, LogOut, Star, Medal, Sparkles } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 import { useEffect, useState } from "react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
@@ -126,22 +135,60 @@ export const UserHeader = ({
                     <Button
                         variant={activeGroupId ? "default" : "outline"}
                         size="sm"
-                        className="h-9 px-3 gap-2 rounded-xl text-sm font-medium"
+                        className="h-9 md:h-10 px-2 md:px-3 gap-1 md:gap-2 rounded-xl text-sm font-medium whitespace-normal"
                         onClick={() => setIsGroupsOpen(true)}
                         title="Grupos familiares"
                     >
-                        <Users className="w-4 h-4" />
-                        <span>Compartir en familia</span>
+                        <Users className="w-4 h-4 shrink-0" />
+                        <span className="hidden md:inline">Compartir en familia</span>
+                        <span className="md:hidden text-[10px] leading-[1.1] text-left max-w-[65px]">
+                            Compartir<br />en familia
+                        </span>
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleLogout}
-                        title="Cerrar sesión"
-                    >
-                        <LogOut className="w-4 h-4" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 rounded-full ml-1 md:ml-2"
+                                title="Menú de usuario"
+                            >
+                                <Avatar className="h-8 w-8 hover:opacity-80 transition-opacity">
+                                    <AvatarImage src="" alt="Avatar" />
+                                    <AvatarFallback className="bg-primary/10 text-primary">
+                                        <User className="w-4 h-4" />
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 mt-2">
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">{profile?.displayName || "Usuario"}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">
+                                        {userEmail}
+                                    </p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                                <span>Mi Perfil</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                                <Sparkles className="w-4 h-4 text-purple-500" />
+                                <span>Perfil IA de Búsqueda</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                                className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 py-2"
+                                onClick={handleLogout}
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span>Cerrar Sesión</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </header>

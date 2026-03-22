@@ -28,6 +28,8 @@ export interface UserProperty {
     property_id?: string;
     /** Referencia de la propiedad (ej: REF-12345) */
     ref?: string;
+    orgName?: string;
+    isAgency?: boolean;
 }
 
 export interface MktProperty {

@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw } from "lucide-react";
+import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw, Sparkles } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -55,6 +55,21 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         }
     }, [isPremium, agency.created_by]);
 
+    // Nuevo: Fetch para perfiles de búsqueda de usuarios (Matchmaking)
+    const { data: searchProfiles = [] } = useQuery({
+        queryKey: ["all-user-search-profiles"],
+        queryFn: async () => {
+            const { data, error } = await supabase.from("user_search_profiles").select("*");
+            if (error) {
+                console.error("🔴 AI MATCHMAKER: Error de Supabase (RLS):", error);
+                throw error;
+            }
+            console.log("🔵 AI MATCHMAKER: Perfiles obtenidos de Supabase:", data);
+            return data || [];
+        },
+        enabled: isActive,
+    });
+
     const { data: agencyProperties = [], isLoading: propsLoading, refetch: refetchProperties, isFetching: isRefreshing } = useQuery({
         queryKey: ["agency-marketplace-properties", agency.id],
         enabled: isActive,
@@ -79,8 +94,54 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 });
             }
 
-            return data.map((pub: any): MarketplaceProperty => {
+            return data.map((pub: any): MarketplaceProperty & { matchCount: number } => {
                 const p = pub.properties || {};
+                const listingType = pub.listing_type || "rent";
+                const opMatch = listingType === 'sale' ? 'Comprar' : 'Alquilar';
+                
+                // Calcular MATCHES (Matchmaking IA)
+                const matches = searchProfiles.filter((s: any) => {
+                    const opOk = s.operation === opMatch;
+
+                    // Moneda: U$S modal vs USD en DB, y $ en modal vs ARS/UYU en DB
+                    const isDollarProfile = s.currency === "U$S" || s.currency === "USD";
+                    const isDollarProp = p.currency === "USD" || p.currency === "U$S";
+                    const isPesosProfile = s.currency === "$" || s.currency === "ARS" || s.currency === "UYU";
+                    const isPesosProp = p.currency === "ARS" || p.currency === "UYU" || p.currency === "$";
+                    const curOk = (isDollarProfile && isDollarProp) || (isPesosProfile && isPesosProp);
+
+                    // Precio: Si no tiene total_cost, usamos price_amount
+                    const propPrice = Number(p.total_cost || p.price_amount || 0);
+                    const priceOk = s.max_budget > 0 ? propPrice <= s.max_budget : true;
+
+                    // Ambientes vs Dormitorios
+                    const propRooms = Number(p.rooms || 0);
+                    const userDorms = Number(s.min_bedrooms || 1);
+                    const roomsOk = propRooms >= userDorms;
+
+                    // Geografía estricta basada en IDs
+                    let geoOk = true;
+                    if (s.city_id) {
+                        if (s.city_id !== p.city_id) {
+                            geoOk = false;
+                        } else if (s.neighborhood_ids && s.neighborhood_ids.length > 0) {
+                            geoOk = s.neighborhood_ids.includes(p.neighborhood_id);
+                        }
+                    }
+
+                    const isMatch = priceOk && roomsOk && opOk && curOk && geoOk;
+                    
+                    if (searchProfiles.length > 0) {
+                        console.log(`🟡 EVALUANDO PROPIEDAD: ${p.title}`, {
+                            perfilUser: s,
+                            propiedadValores: { operacion: opMatch, precio: propPrice, moneda: p.currency, ambientes: propRooms, cityId: p.city_id, neighId: p.neighborhood_id },
+                            resultados: { opOk, curOk, priceOk, roomsOk, geoOk, isMatch }
+                        });
+                    }
+
+                    return isMatch;
+                });
+
                 return {
                     id: pub.id,
                     orgId: pub.org_id,
@@ -104,6 +165,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     updatedAt: new Date(pub.updated_at),
                     ref: p.ref || "",
                     publishedByName: pub.published_by ? publishedByMap[pub.published_by] : undefined,
+                    matchCount: matches.length,
                 };
             });
         },
@@ -193,6 +255,16 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                         Ingresado por {p.publishedByName}
                                     </span>
                                 ) : undefined}
+                                subImageContent={
+                                    p.matchCount > 0 ? (
+                                        <div className="w-full bg-primary/15 border-b border-primary/20 flex flex-row items-center justify-center gap-2 py-2 text-primary">
+                                            <Sparkles className="w-4 h-4 animate-pulse" />
+                                            <span className="text-xs font-bold uppercase tracking-wider">
+                                                {p.matchCount} {p.matchCount === 1 ? 'Match de IA' : 'Matches de IA'}
+                                            </span>
+                                        </div>
+                                    ) : undefined
+                                }
                                 statusOverlay={
                                     <Badge variant="outline" className={`text-xs font-bold border-none ${
                                         p.status === 'disponible' ? 'bg-green-500/90 text-white' :

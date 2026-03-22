@@ -80,15 +80,27 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
         queryKey: ["agency-historical-stats", agency.id],
         enabled: !!agency,
         queryFn: async () => {
-            const { data: viewsData } = await supabase
-                .from("property_views_log")
-                .select("created_at")
-                .gte("created_at", subDays(new Date(), 14).toISOString());
+            const { data: pubs } = await supabase
+                .from("agent_publications")
+                .select("property_id")
+                .eq("org_id", agency.id);
+
+            const propertyIds = pubs?.map(p => p.property_id).filter(Boolean) || [];
 
             const last14Days = Array.from({ length: 14 }, (_, i) => {
                 const date = subDays(new Date(), 13 - i);
                 return { dateLabel: format(date, 'dd MMM', { locale: es }), _idDate: date, saves: 0, views: 0 };
             });
+
+            if (propertyIds.length === 0) {
+                return last14Days.map(({ _idDate, ...rest }) => rest);
+            }
+
+            const { data: viewsData } = await supabase
+                .from("property_views_log")
+                .select("created_at")
+                .in("property_id", propertyIds)
+                .gte("created_at", subDays(new Date(), 14).toISOString());
 
             viewsData?.forEach((v: any) => {
                 const day = last14Days.find(d => isSameDay(d._idDate, parseISO(v.created_at)));

@@ -4,8 +4,9 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Bot } from "lucide-react";
+import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Bot, TrendingUp } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
+import { AdminInteres } from "./AdminInteres";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,7 +73,7 @@ export function AdminEstadisticas() {
     const [savingFeedbackAttributeId, setSavingFeedbackAttributeId] = useState<string | null>(null);
     const [newAttributeName, setNewAttributeName] = useState("");
     const [newAttributeOrder, setNewAttributeOrder] = useState<number>(1);
-    const [mainTab, setMainTab] = useState<"propiedades" | "scraping">("propiedades");
+    const [mainTab, setMainTab] = useState<"propiedades" | "interes" | "scraping">("propiedades");
     const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
 
@@ -556,9 +557,13 @@ export function AdminEstadisticas() {
                 </div>
             </div>
 
-            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "propiedades" | "scraping")} className="space-y-4">
-                <TabsList className="grid w-full max-w-[340px] grid-cols-2 rounded-xl">
+            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "propiedades" | "interes" | "scraping")} className="space-y-4">
+                <TabsList className="grid w-full max-w-[420px] grid-cols-3 rounded-xl">
                     <TabsTrigger value="propiedades">Propiedades</TabsTrigger>
+                    <TabsTrigger value="interes" className="flex items-center gap-1.5">
+                        <TrendingUp className="w-4 h-4" />
+                        Interés
+                    </TabsTrigger>
                     <TabsTrigger value="scraping" className="flex items-center gap-1.5">
                         <Bot className="w-4 h-4" />
                         Scraping
@@ -702,6 +707,10 @@ export function AdminEstadisticas() {
                 subTab={statsSubTab}
                 onSubTabChange={setStatsSubTab}
             />
+                </TabsContent>
+
+                <TabsContent value="interes" className="space-y-4">
+                    <AdminInteres />
                 </TabsContent>
 
                 <TabsContent value="scraping" className="space-y-4">
