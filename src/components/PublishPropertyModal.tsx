@@ -227,7 +227,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       const d = data.data;
       setForm({
         title: d.title || "", priceRent: d.priceRent ? String(d.priceRent) : "", priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "",
+        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "", address: d.address || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "", ref: d.ref || "", details: d.details || "",
       });
