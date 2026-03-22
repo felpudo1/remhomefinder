@@ -423,9 +423,11 @@ const Index = () => {
 
               <div className="pt-2">
                 <a
-                  href={`https://wa.me/${(supportPhone || "").replace(/\D/g, '')}?text=${encodeURIComponent(
-                    "Hola Soporte de HomeFinder \nMe registré recién pero *no encuentro el mail de validación*.\nNecesito que me activen la cuenta por favor.\n\n*Datos para el sistema:*\nEmail: " + (profile?.email || userEmail || 'No encontrado') + "\nID de Usuario: " + (profile?.userId || 'Desconocido') + "\nFecha: " + new Date().toLocaleString('es-UY')
-                  )}`}
+                  href={buildSupportWhatsappUrl(
+                    supportPhone || "",
+                    profile?.displayName || profile?.email || userEmail || "Usuario",
+                    profile?.userId || "Desconocido"
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
