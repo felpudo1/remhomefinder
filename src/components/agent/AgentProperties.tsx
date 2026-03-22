@@ -19,8 +19,10 @@ import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 import { useGroups } from "@/hooks/useGroups";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
-import type { AgentPubStatus } from "@/types/supabase";
+import type { AgentPubStatus, TableRow } from "@/types/supabase";
 import { MatchLeadsList } from "./MatchLeadsList";
+
+type SearchProfile = TableRow<"user_search_profiles">;
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -58,7 +60,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     }, [isPremium, agency.created_by]);
 
     // Nuevo: Fetch para perfiles de búsqueda de usuarios (Matchmaking)
-    const { data: searchProfiles = [] } = useQuery({
+    const { data: searchProfiles = [], isFetched: searchProfilesFetched } = useQuery<SearchProfile[]>({
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
             const { data, error } = await supabase
@@ -69,14 +71,19 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 throw error;
             }
             console.log("🔵 AI MATCHMAKER: Perfiles obtenidos de Supabase:", data);
-            return data || [];
+            return (data || []) as SearchProfile[];
         },
         enabled: isActive,
     });
 
+    const searchProfilesSignature = searchProfiles
+        .map((profile) => `${profile.id}:${profile.updated_at}`)
+        .sort()
+        .join("|");
+
     const { data: agencyProperties = [], isLoading: propsLoading, refetch: refetchProperties, isFetching: isRefreshing } = useQuery({
-        queryKey: ["agency-marketplace-properties", agency.id],
-        enabled: isActive,
+        queryKey: ["agency-marketplace-properties", agency.id, searchProfilesSignature],
+        enabled: isActive && searchProfilesFetched,
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("agent_publications")
@@ -104,14 +111,20 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 const opMatch = listingType === 'sale' ? 'Comprar' : 'Alquilar';
                 
                 // Calcular MATCHES (Matchmaking IA)
-                const matches = searchProfiles.filter((s: any) => {
-                    const opOk = s.operation === opMatch;
+                const matches = searchProfiles.filter((s) => {
+                    if (s.is_private) return false;
+
+                    const normalizedProfileOperation = String(s.operation || "").trim().toLowerCase();
+                    const normalizedExpectedOperation = opMatch.trim().toLowerCase();
+                    const opOk = normalizedProfileOperation === normalizedExpectedOperation;
 
                     // Moneda: U$S modal vs USD en DB, y $ en modal vs ARS/UYU en DB
-                    const isDollarProfile = s.currency === "U$S" || s.currency === "USD";
-                    const isDollarProp = p.currency === "USD" || p.currency === "U$S";
-                    const isPesosProfile = s.currency === "$" || s.currency === "ARS" || s.currency === "UYU";
-                    const isPesosProp = p.currency === "ARS" || p.currency === "UYU" || p.currency === "$";
+                    const normalizedProfileCurrency = String(s.currency || "").trim().toUpperCase();
+                    const normalizedPropCurrency = String(p.currency || "").trim().toUpperCase();
+                    const isDollarProfile = normalizedProfileCurrency === "U$S" || normalizedProfileCurrency === "USD";
+                    const isDollarProp = normalizedPropCurrency === "USD" || normalizedPropCurrency === "U$S";
+                    const isPesosProfile = normalizedProfileCurrency === "$" || normalizedProfileCurrency === "ARS" || normalizedProfileCurrency === "UYU";
+                    const isPesosProp = normalizedPropCurrency === "ARS" || normalizedPropCurrency === "UYU" || normalizedPropCurrency === "$";
                     const curOk = (isDollarProfile && isDollarProp) || (isPesosProfile && isPesosProp);
 
                     // Precio: Rango completo (min y max)
@@ -121,8 +134,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     const propPrice = rawTotal > 0 ? rawTotal : (rawRent + rawExp > 0 ? rawRent + rawExp : rawRent);
                     
                     const hasPropPrice = propPrice > 0;
-                    const priceMaxOk = (s.max_budget > 0 && hasPropPrice) ? propPrice <= s.max_budget : true;
-                    const priceMinOk = (s.min_budget > 0 && hasPropPrice) ? propPrice >= s.min_budget : true;
+                    const priceMaxOk = (Number(s.max_budget || 0) > 0 && hasPropPrice) ? propPrice <= Number(s.max_budget) : true;
+                    const priceMinOk = (Number(s.min_budget || 0) > 0 && hasPropPrice) ? propPrice >= Number(s.min_budget) : true;
                     const priceOk = priceMaxOk && priceMinOk;
 
                     // Ambientes vs Dormitorios
