@@ -381,22 +381,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-<<<<<<< HEAD
-      <RegistrationEmailWelcomeOverlay
-        open={showRegWelcome}
-        appBrandName={appBrandName}
-        supportPhone={supportPhone}
-        userEmail={userEmail}
-        profileEmail={profile?.email}
-        profileUserId={profile?.userId}
-        onDismiss={() => {
-          setShowRegWelcome(false);
-          if (localStorage.getItem(`hf_buyer_profile_completed_${profile?.userId}`) !== "true") {
-            setShowBuyerProfileModal(true);
-          }
-        }}
-      />
-=======
       {/* Overlay de Verificación de Email (Persistente y Manual) */}
       {showRegWelcome && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -430,7 +414,6 @@ const Index = () => {
                 className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
                 onClick={() => {
                   setShowRegWelcome(false);
-                  
                   if (localStorage.getItem(`hf_buyer_profile_completed_${profile?.userId}`) !== "true") {
                     setShowBuyerProfileModal(true);
                   }
@@ -457,7 +440,6 @@ const Index = () => {
           </div>
         </div>
       )}
->>>>>>> b4b6216787456923e5d0dd2b17d7fbbd27d076e5
 
       <UserHeader
         userEmail={userEmail}
