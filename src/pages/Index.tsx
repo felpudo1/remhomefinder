@@ -33,7 +33,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { BuyerProfileModal } from "@/components/BuyerProfileModal";
 import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
-import { RegistrationEmailWelcomeOverlay } from "@/components/dashboard/RegistrationEmailWelcomeOverlay";
+
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
