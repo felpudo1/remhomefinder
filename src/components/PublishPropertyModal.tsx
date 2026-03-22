@@ -142,7 +142,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           currency: (existing.currency as string) || "UYU",
           neighborhood: existing.neighborhood || "",
           city: existing.city || "",
-          address: existing.address || "",
+          address: (existing as any).address || "",
           sqMeters: String(existing.m2_total ?? ""),
           rooms: String(existing.rooms ?? ""),
           aiSummary: existing.details || "",

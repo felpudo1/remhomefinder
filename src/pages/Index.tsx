@@ -165,7 +165,7 @@ const Index = () => {
       };
       checkSearchProfile();
     }
-  }, [profile?.userId, profile?.role]);
+  }, [profile?.userId]);
   
   // Implementación de Debouncing para la búsqueda (REGLA 2: Performance)
   useEffect(() => {
