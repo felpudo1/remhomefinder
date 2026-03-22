@@ -62,8 +62,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from("user_search_profiles" as any)
-                .select("*, profiles:user_id(display_name, phone)");
+                .from("user_search_profiles")
+                .select("*");
             if (error) {
                 console.error("🔴 AI MATCHMAKER: Error de Supabase (RLS):", error);
                 throw error;
@@ -98,7 +98,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 });
             }
 
-            return data.map((pub: any): MarketplaceProperty & { matchCount: number } => {
+            return data.map((pub: any) => {
                 const p = pub.properties || {};
                 const listingType = pub.listing_type || "rent";
                 const opMatch = listingType === 'sale' ? 'Comprar' : 'Alquilar';
@@ -115,13 +115,11 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     const curOk = (isDollarProfile && isDollarProp) || (isPesosProfile && isPesosProp);
 
                     // Precio: Rango completo (min y max)
-                    // Calculamos el precio real de la propiedad: total_cost, o la suma de alquiler+gastos, o price_amount
                     const rawTotal = Number(p.total_cost || 0);
                     const rawRent = Number(p.price_amount || 0);
                     const rawExp = Number(p.price_expenses || 0);
                     const propPrice = rawTotal > 0 ? rawTotal : (rawRent + rawExp > 0 ? rawRent + rawExp : rawRent);
                     
-                    // Si la propiedad no tiene precio, no filtramos (datos incompletos)
                     const hasPropPrice = propPrice > 0;
                     const priceMaxOk = (s.max_budget > 0 && hasPropPrice) ? propPrice <= s.max_budget : true;
                     const priceMinOk = (s.min_budget > 0 && hasPropPrice) ? propPrice >= s.min_budget : true;
@@ -132,34 +130,24 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     const userDorms = Number(s.min_bedrooms || 1);
                     const roomsOk = propRooms >= userDorms;
 
-                    // Geografía: Comparación inteligente (ID o Nombre como fallback)
+                    // Geografía
                     let geoOk = true;
-                    const pCityId = (p as any).city_id;
-                    const pNeighId = (p as any).neighborhood_id;
+                    const pCityId = p.city_id;
+                    const pNeighId = p.neighborhood_id;
                     
                     if (s.city_id) {
-                        // 1. Intentar por ID (Exacto)
                         if (pCityId && s.city_id !== pCityId) {
                             geoOk = false;
-                        } 
-                        // 2. Fallback por Nombre si la propiedad no tiene ID (Compatibilidad legado)
-                        else if (!pCityId && p.city && s.cities?.name) {
+                        } else if (!pCityId && p.city && s.cities?.name) {
                             if (p.city.toLowerCase() !== s.cities.name.toLowerCase()) {
                                 geoOk = false;
                             }
                         }
                         
-                        // Si el departamento coincide (por ID o nombre), chequear barrio
                         if (geoOk && s.neighborhood_ids && s.neighborhood_ids.length > 0) {
                             if (pNeighId) {
                                 geoOk = s.neighborhood_ids.includes(pNeighId);
-                            } else if (p.neighborhood) {
-                                // Fallback: Aquí no tenemos los nombres de los barrios del perfil fácilmente,
-                                // pero asumimos que si el depto coincide y no hay ID de barrio en prop,
-                                // dejamos que pase (o podríamos ser más estrictos si tuviéramos la data).
-                                // Dejaremos que pase para no ser demasiado restrictivos con data vieja.
-                                geoOk = true; 
-                            } else {
+                            } else if (!p.neighborhood) {
                                 geoOk = false;
                             }
                         }
@@ -178,7 +166,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     return isMatch;
                 });
 
-                return {
+                const result: MarketplaceProperty & { matchCount: number; matches: any[] } = {
                     id: pub.id,
                     orgId: pub.org_id,
                     orgName: pub.organizations?.name || agency.name,
@@ -202,8 +190,9 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     ref: p.ref || "",
                     publishedByName: pub.published_by ? publishedByMap[pub.published_by] : undefined,
                     matchCount: matches.length,
-                    matches: matches, // Guardamos los perfiles que machearon
+                    matches: matches,
                 };
+                return result;
             });
         },
     });

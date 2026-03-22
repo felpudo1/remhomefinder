@@ -90,13 +90,13 @@ export function PropertyFormManual({
 
     // Fetch cities initially
     useEffect(() => {
-        supabase.from("cities").select("*").order("name").then(({ data }) => setCitiesList(data || []));
+        supabase.from("cities").select("id, name").order("name").then(({ data }) => setCitiesList((data as any[]) || []));
     }, []);
 
     // Fetch neighborhoods when city changes
     useEffect(() => {
         if (form.city_id) {
-            supabase.from("neighborhoods").select("*").eq("city_id", form.city_id).order("name").then(({ data }) => setNeighborhoodsList(data || []));
+            supabase.from("neighborhoods").select("id, name").eq("city_id", form.city_id).order("name").then(({ data }) => setNeighborhoodsList((data as any[]) || []));
         } else {
             setNeighborhoodsList([]);
         }

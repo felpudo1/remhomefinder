@@ -41,15 +41,15 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("cities").select("*").order("name").then(({ data }) => {
-      if (data) setDepartments(data);
+    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+      if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("*").eq("city_id", selectedDept).order("name").then(({ data }) => {
-        if (data) setNeighborhoods(data);
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
       // Importante: No limpiamos selectedNeighborhoods aquí porque estamos CARGANDO el perfil al abrir
     } else {
@@ -63,7 +63,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
         setLoading(true);
         try {
           const { data, error } = await supabase
-            .from('user_search_profiles' as any)
+            .from('user_search_profiles')
             .select('*')
             .eq('user_id', userId)
             .maybeSingle();
@@ -106,7 +106,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
     setSaving(true);
     
     try {
-      const { error } = await supabase.from('user_search_profiles' as any).upsert({
+      const { error } = await supabase.from('user_search_profiles').upsert({
         user_id: userId,
         operation,
         currency,
@@ -115,7 +115,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
         min_bedrooms: bedrooms === "4+" ? 4 : (Number(bedrooms) || 1),
         city_id: selectedDept || null,
         neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
-        // is_private: isPrivate  ← Columna pendiente de agregar a la BD
+        is_private: isPrivate,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;

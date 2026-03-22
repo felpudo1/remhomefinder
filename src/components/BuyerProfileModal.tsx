@@ -36,18 +36,17 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    // Obtenemos las ciudades al montar silenciosamente
-    supabase.from("cities").select("*").order("name").then(({ data }) => {
-      if (data) setDepartments(data);
+    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+      if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("*").eq("city_id", selectedDept).order("name").then(({ data }) => {
-        if (data) setNeighborhoods(data);
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
-      setSelectedNeighborhoods([]); // Limpia barrios al cambiar Depto
+      setSelectedNeighborhoods([]);
     } else {
       setNeighborhoods([]);
     }
@@ -82,7 +81,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('user_search_profiles' as any).upsert({
+      const { error } = await supabase.from('user_search_profiles').upsert({
         user_id: userId,
         operation,
         currency,
@@ -90,7 +89,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
         max_budget: Number(budget) || 0,
         min_bedrooms: Number(bedrooms) || 1,
         city_id: selectedDept || null,
-        neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null
+        neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;

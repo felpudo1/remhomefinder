@@ -66,6 +66,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     currency: "UYU",
     neighborhood: "",
     city: "",
+    address: "",
     sqMeters: "",
     rooms: "",
     aiSummary: "",
@@ -86,6 +87,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           currency: propertyToEdit.currency || "UYU",
           neighborhood: propertyToEdit.neighborhood || "",
           city: propertyToEdit.city || "",
+          address: propertyToEdit.address || "",
           sqMeters: String(propertyToEdit.sqMeters || propertyToEdit.m2_total || ""),
           rooms: String(propertyToEdit.rooms || ""),
           aiSummary: propertyToEdit.aiSummary || propertyToEdit.description || "",
@@ -98,7 +100,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         setUrl("");
         setScrapedImages([]);
         setListingType("rent");
-        setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", city: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
+        setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", city: "", address: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
         setCameFromImage(false);
         setUrlInApp(null);
         setScreenshotFile(null);
@@ -140,6 +142,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           currency: (existing.currency as string) || "UYU",
           neighborhood: existing.neighborhood || "",
           city: existing.city || "",
+          address: (existing as any).address || "",
           sqMeters: String(existing.m2_total ?? ""),
           rooms: String(existing.rooms ?? ""),
           aiSummary: existing.details || "",
@@ -173,6 +176,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         currency: d.currency || "UYU",
         neighborhood: d.neighborhood || "",
         city: d.city || "",
+        address: d.address || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
@@ -223,7 +227,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       const d = data.data;
       setForm({
         title: d.title || "", priceRent: d.priceRent ? String(d.priceRent) : "", priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "",
+        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "", address: d.address || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "", ref: d.ref || "", details: d.details || "",
       });
@@ -277,7 +281,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       const d = data.data;
       setForm({
         title: d.title || "", priceRent: d.priceRent ? String(d.priceRent) : "", priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "",
+        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "", address: d.address || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "", ref: d.ref || "", details: d.details || "",
       });
