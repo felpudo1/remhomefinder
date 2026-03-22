@@ -63,7 +63,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
         setLoading(true);
         try {
           const { data, error } = await supabase
-            .from('user_search_profiles' as any)
+            .from('user_search_profiles')
             .select('*')
             .eq('user_id', userId)
             .maybeSingle();
