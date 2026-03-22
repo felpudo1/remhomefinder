@@ -62,8 +62,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from("user_search_profiles" as any)
-                .select("*, profiles:user_id(display_name, phone)");
+                .from("user_search_profiles")
+                .select("*");
             if (error) {
                 console.error("🔴 AI MATCHMAKER: Error de Supabase (RLS):", error);
                 throw error;

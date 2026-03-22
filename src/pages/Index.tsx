@@ -138,7 +138,7 @@ const Index = () => {
 
   // Chequear si el usuario común tiene perfil de búsqueda (AI Matchmaking)
   useEffect(() => {
-    if (profile?.userId && profile.role === "user") {
+    if (profile?.userId) {
       const checkSearchProfile = async () => {
         const { data } = await supabase
           .from("user_search_profiles" as any)
