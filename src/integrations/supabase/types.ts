@@ -1358,6 +1358,14 @@ export type Database = {
           save_count: number
         }[]
       }
+      get_search_profile_contacts: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          display_name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
