@@ -36,18 +36,17 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    // Obtenemos las ciudades al montar silenciosamente
-    supabase.from("cities").select("*").order("name").then(({ data }) => {
-      if (data) setDepartments(data);
+    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+      if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("*").eq("city_id", selectedDept).order("name").then(({ data }) => {
-        if (data) setNeighborhoods(data);
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
-      setSelectedNeighborhoods([]); // Limpia barrios al cambiar Depto
+      setSelectedNeighborhoods([]);
     } else {
       setNeighborhoods([]);
     }
