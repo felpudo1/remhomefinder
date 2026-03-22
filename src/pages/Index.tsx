@@ -129,6 +129,7 @@ const Index = () => {
 
   // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
   useEffect(() => {
+    if (showRegWelcome) return; // No abrir mientras el overlay de registro está activo
     if (isPremium && profile?.userId) {
       const key = `hf_premium_welcome_shown_${profile.userId}`;
       if (localStorage.getItem(key) !== "true") {
@@ -136,10 +137,11 @@ const Index = () => {
         localStorage.setItem(key, "true");
       }
     }
-  }, [isPremium, profile?.userId]);
+  }, [isPremium, profile?.userId, showRegWelcome]);
 
   // Chequear si el usuario común tiene perfil de búsqueda (AI Matchmaking)
   useEffect(() => {
+    if (showRegWelcome) return; // No abrir mientras el overlay de registro está activo
     if (profile?.userId) {
       const checkSearchProfile = async () => {
         const { data } = await supabase
@@ -167,7 +169,7 @@ const Index = () => {
       };
       checkSearchProfile();
     }
-  }, [profile?.userId]);
+  }, [profile?.userId, showRegWelcome]);
   
   // Implementación de Debouncing para la búsqueda (REGLA 2: Performance)
   useEffect(() => {
