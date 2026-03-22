@@ -28,6 +28,7 @@ import {
   SUPPORT_PHONE_DEFAULT,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
+import { buildSupportWhatsappUrl } from "@/lib/whatsapp";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { BuyerProfileModal } from "@/components/BuyerProfileModal";
 import { AIProfileModal } from "@/components/AIProfileModal";
@@ -380,6 +381,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+<<<<<<< HEAD
       <RegistrationEmailWelcomeOverlay
         open={showRegWelcome}
         appBrandName={appBrandName}
@@ -394,6 +396,68 @@ const Index = () => {
           }
         }}
       />
+=======
+      {/* Overlay de Verificación de Email (Persistente y Manual) */}
+      {showRegWelcome && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-xl" />
+          <div className="relative bg-card border border-border rounded-[2.5rem] p-10 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-8 text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-2 relative">
+              <Mail className="w-12 h-12 text-primary animate-pulse" />
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black text-foreground tracking-tight">¡Casi listo! 🚀</h2>
+              <p className="text-muted-foreground leading-relaxed font-medium">
+                Bienvenido a <strong className="text-foreground">{appBrandName}</strong>. Donde la tecnología te ayuda a descubrir tu lugar en el mundo.
+              </p>
+            </div>
+
+            <div className="bg-muted/30 rounded-3xl p-6 flex items-start gap-4 text-left border border-border/50">
+              <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                <Mail className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                Te enviamos un enlace mágico a tu correo electrónico. Si no lo ves, revisá en la carpeta de <strong>Spam</strong>.
+              </p>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <Button
+                className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
+                onClick={() => {
+                  setShowRegWelcome(false);
+                  
+                  if (localStorage.getItem(`hf_buyer_profile_completed_${profile?.userId}`) !== "true") {
+                    setShowBuyerProfileModal(true);
+                  }
+                }}
+              >
+                ¡Entendido, vamos! <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+
+              <div className="pt-2">
+                <a
+                  href={buildSupportWhatsappUrl(
+                    supportPhone || "",
+                    profile?.displayName || profile?.email || userEmail || "Usuario",
+                    profile?.userId || "Desconocido"
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
+                >
+                  ¿Problemas con el correo? Contactá a soporte
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+>>>>>>> b4b6216787456923e5d0dd2b17d7fbbd27d076e5
 
       <UserHeader
         userEmail={userEmail}
