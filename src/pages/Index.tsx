@@ -11,7 +11,7 @@ import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Loader2, Users, SlidersHorizontal, Store, X, RefreshCw } from "lucide-react";
+import { Home, Plus, Loader2, Users, SlidersHorizontal, Store, X, RefreshCw, Mail, CheckCircle2, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
