@@ -20,6 +20,7 @@ import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
 import { useGroups } from "@/hooks/useGroups";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
 import type { AgentPubStatus } from "@/types/supabase";
+import { MatchLeadsList } from "./MatchLeadsList";
 
 interface AgentPropertiesProps {
     agency: Agency;
@@ -41,6 +42,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
+    const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
 
     const isActive = profileStatus === "active";
 
@@ -59,7 +61,9 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const { data: searchProfiles = [] } = useQuery({
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
-            const { data, error } = await supabase.from("user_search_profiles").select("*");
+            const { data, error } = await supabase
+                .from("user_search_profiles" as any)
+                .select("*, profiles:user_id(display_name, phone)");
             if (error) {
                 console.error("🔴 AI MATCHMAKER: Error de Supabase (RLS):", error);
                 throw error;
@@ -110,22 +114,54 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     const isPesosProp = p.currency === "ARS" || p.currency === "UYU" || p.currency === "$";
                     const curOk = (isDollarProfile && isDollarProp) || (isPesosProfile && isPesosProp);
 
-                    // Precio: Si no tiene total_cost, usamos price_amount
-                    const propPrice = Number(p.total_cost || p.price_amount || 0);
-                    const priceOk = s.max_budget > 0 ? propPrice <= s.max_budget : true;
+                    // Precio: Rango completo (min y max)
+                    // Calculamos el precio real de la propiedad: total_cost, o la suma de alquiler+gastos, o price_amount
+                    const rawTotal = Number(p.total_cost || 0);
+                    const rawRent = Number(p.price_amount || 0);
+                    const rawExp = Number(p.price_expenses || 0);
+                    const propPrice = rawTotal > 0 ? rawTotal : (rawRent + rawExp > 0 ? rawRent + rawExp : rawRent);
+                    
+                    // Si la propiedad no tiene precio, no filtramos (datos incompletos)
+                    const hasPropPrice = propPrice > 0;
+                    const priceMaxOk = (s.max_budget > 0 && hasPropPrice) ? propPrice <= s.max_budget : true;
+                    const priceMinOk = (s.min_budget > 0 && hasPropPrice) ? propPrice >= s.min_budget : true;
+                    const priceOk = priceMaxOk && priceMinOk;
 
                     // Ambientes vs Dormitorios
                     const propRooms = Number(p.rooms || 0);
                     const userDorms = Number(s.min_bedrooms || 1);
                     const roomsOk = propRooms >= userDorms;
 
-                    // Geografía estricta basada en IDs
+                    // Geografía: Comparación inteligente (ID o Nombre como fallback)
                     let geoOk = true;
+                    const pCityId = (p as any).city_id;
+                    const pNeighId = (p as any).neighborhood_id;
+                    
                     if (s.city_id) {
-                        if (s.city_id !== p.city_id) {
+                        // 1. Intentar por ID (Exacto)
+                        if (pCityId && s.city_id !== pCityId) {
                             geoOk = false;
-                        } else if (s.neighborhood_ids && s.neighborhood_ids.length > 0) {
-                            geoOk = s.neighborhood_ids.includes(p.neighborhood_id);
+                        } 
+                        // 2. Fallback por Nombre si la propiedad no tiene ID (Compatibilidad legado)
+                        else if (!pCityId && p.city && s.cities?.name) {
+                            if (p.city.toLowerCase() !== s.cities.name.toLowerCase()) {
+                                geoOk = false;
+                            }
+                        }
+                        
+                        // Si el departamento coincide (por ID o nombre), chequear barrio
+                        if (geoOk && s.neighborhood_ids && s.neighborhood_ids.length > 0) {
+                            if (pNeighId) {
+                                geoOk = s.neighborhood_ids.includes(pNeighId);
+                            } else if (p.neighborhood) {
+                                // Fallback: Aquí no tenemos los nombres de los barrios del perfil fácilmente,
+                                // pero asumimos que si el depto coincide y no hay ID de barrio en prop,
+                                // dejamos que pase (o podríamos ser más estrictos si tuviéramos la data).
+                                // Dejaremos que pase para no ser demasiado restrictivos con data vieja.
+                                geoOk = true; 
+                            } else {
+                                geoOk = false;
+                            }
                         }
                     }
 
@@ -166,6 +202,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     ref: p.ref || "",
                     publishedByName: pub.published_by ? publishedByMap[pub.published_by] : undefined,
                     matchCount: matches.length,
+                    matches: matches, // Guardamos los perfiles que machearon
                 };
             });
         },
@@ -257,12 +294,22 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                 ) : undefined}
                                 subImageContent={
                                     p.matchCount > 0 ? (
-                                        <div className="w-full bg-primary/15 border-b border-primary/20 flex flex-row items-center justify-center gap-2 py-2 text-primary">
-                                            <Sparkles className="w-4 h-4 animate-pulse" />
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setExpandedMatchId(expandedMatchId === p.id ? null : p.id);
+                                            }}
+                                            className={`w-full border-b flex flex-row items-center justify-center gap-2 py-2 transition-all hover:bg-primary/25 ${
+                                                expandedMatchId === p.id 
+                                                    ? 'bg-primary/30 border-primary/40 text-primary-foreground font-black' 
+                                                    : 'bg-primary/15 border-primary/20 text-primary'
+                                            }`}
+                                        >
+                                            <Sparkles className={`w-4 h-4 ${expandedMatchId === p.id ? 'animate-none' : 'animate-pulse'}`} />
                                             <span className="text-xs font-bold uppercase tracking-wider">
                                                 {p.matchCount} {p.matchCount === 1 ? 'Match de IA' : 'Matches de IA'}
                                             </span>
-                                        </div>
+                                        </button>
                                     ) : undefined
                                 }
                                 statusOverlay={
@@ -299,6 +346,11 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
+                                }
+                                bottomContent={
+                                    expandedMatchId === p.id && (
+                                        <MatchLeadsList matches={p.matches} />
+                                    )
                                 }
                             />
                         );

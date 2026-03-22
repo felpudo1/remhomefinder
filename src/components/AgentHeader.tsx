@@ -11,8 +11,8 @@ interface AgentHeaderProps {
     tabs: { id: string; label: string; icon: any }[];
     handleLogout: () => void;
     activeGroupId: string | null;
-    setIsGroupsOpen: (open: boolean) => void;
-    displayName?: string | null;
+    setIsGroupsOpen?: (open: boolean) => void;
+    displayName?: string;
     isPremium?: boolean;
     /** Solo owners pueden formar/gestionar equipos */
     isOwner?: boolean;
@@ -78,13 +78,14 @@ export const AgentHeader = ({
                             size="sm"
                             disabled={agencyStatus !== "approved"}
                             className="h-10 px-3 md:px-4 gap-2 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] disabled:opacity-50"
-                            onClick={() => setIsGroupsOpen(true)}
+                            onClick={() => setIsGroupsOpen && setIsGroupsOpen(true)}
                             title={agencyStatus === "approved" ? (isOwner ? "Formar equipo / Mis grupos" : "Unirme con código") : "Cuenta pendiente de activación"}
                         >
                             <Users className="w-4 h-4" />
                             <span className="hidden md:inline">Formar equipo</span>
                         </Button>
                     )}
+                    
                     <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-muted-foreground ml-1">
                         <LogOut className="w-4 h-4" />
                         <span className="hidden sm:inline">Salir</span>

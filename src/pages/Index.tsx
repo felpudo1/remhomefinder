@@ -24,11 +24,14 @@ import {
   ADD_BUTTON_DEFAULT,
   APP_BRAND_NAME_DEFAULT,
   APP_BRAND_NAME_KEY,
+  SUPPORT_PHONE_CONFIG_KEY,
+  SUPPORT_PHONE_DEFAULT,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { IndexModals } from "@/components/IndexModals";
 import { BuyerProfileModal } from "@/components/BuyerProfileModal";
+import { AIProfileModal } from "@/components/AIProfileModal";
+import { IndexModals } from "@/components/IndexModals";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -83,6 +86,7 @@ const Index = () => {
   // Configuración de botones
   const { value: addButtonConfigRaw } = useSystemConfig(ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT);
   const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
+  const { value: supportPhone } = useSystemConfig(SUPPORT_PHONE_CONFIG_KEY, SUPPORT_PHONE_DEFAULT);
   const addButtonConfig = (addButtonConfigRaw as AddButtonConfig) || ADD_BUTTON_DEFAULT;
 
   // Bienvenida
@@ -101,6 +105,7 @@ const Index = () => {
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
   const [showBuyerProfileModal, setShowBuyerProfileModal] = useState(false);
+  const [showAIProfileModal, setShowAIProfileModal] = useState(false);
 
   const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
   const OWN_LINK_TIP_SHOWN_KEY = "hf_own_link_first_tip_shown";
@@ -116,8 +121,7 @@ const Index = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get("registered") === "true") {
-      const isHidden = localStorage.getItem("hf_reg_welcome_hidden") === "true";
-      if (!isHidden) setShowRegWelcome(true);
+      setShowRegWelcome(true);
     }
   }, [location.search]);
 
@@ -129,27 +133,39 @@ const Index = () => {
         setIsPremiumWelcomeOpen(true);
         localStorage.setItem(key, "true");
       }
+    }
+  }, [isPremium, profile?.userId]);
 
-      // Además, chequear si tiene perfil de búsqueda (AI Matchmaking)
+  // Chequear si el usuario común tiene perfil de búsqueda (AI Matchmaking)
+  useEffect(() => {
+    if (profile?.userId && profile.role === "user") {
       const checkSearchProfile = async () => {
         const { data } = await supabase
-          .from("user_search_profiles")
+          .from("user_search_profiles" as any)
           .select("id")
           .eq("user_id", profile.userId)
           .maybeSingle();
         
         if (!data) {
-          // Si no tiene perfil y no lo ha cerrado explícitamente en esta sesión (localStorage es fallback rápido)
           const sessionDismissed = localStorage.getItem("hf_buyer_profile_completed") === "true";
+          const toastShown = sessionStorage.getItem("hf_buyer_profile_toast_shown") === "true";
+
           if (!sessionDismissed) {
              setShowBuyerProfileModal(true);
+          } else if (!toastShown) {
+             // Si lo cerró, le tiramos el toast sarcástico
+             toast({
+               title: "¡Vivimos en el S. XXI! 🤖",
+               description: "¿Aún no usás la Inteligencia Artificial? Tocá en 'Mi Perfil' y pasale tus filtros de búsqueda a nuestra IA. ¡No dejes que se te escape la casa de tus sueños!",
+               duration: 8000,
+             });
+             sessionStorage.setItem("hf_buyer_profile_toast_shown", "true");
           }
         }
       };
-      
       checkSearchProfile();
     }
-  }, [isPremium, profile?.userId]);
+  }, [profile?.userId, profile?.role]);
   
   // Implementación de Debouncing para la búsqueda (REGLA 2: Performance)
   useEffect(() => {
@@ -366,15 +382,8 @@ const Index = () => {
       {/* Overlay de Verificación de Email (Persistente y Manual) */}
       {showRegWelcome && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-xl" onClick={() => setShowRegWelcome(false)} />
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-xl" />
           <div className="relative bg-card border border-border rounded-[2.5rem] p-10 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-8 text-center animate-in fade-in zoom-in duration-300">
-            <button
-              onClick={() => setShowRegWelcome(false)}
-              className="absolute top-6 right-6 p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
             <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-2 relative">
               <Mail className="w-12 h-12 text-primary animate-pulse" />
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
@@ -402,10 +411,9 @@ const Index = () => {
               <Button
                 className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
                 onClick={() => {
-                  if (dontShowRegAgain) localStorage.setItem("hf_reg_welcome_hidden", "true");
                   setShowRegWelcome(false);
                   
-                  if (localStorage.getItem("hf_buyer_profile_completed") !== "true") {
+                  if (localStorage.getItem(`hf_buyer_profile_completed_${profile?.userId}`) !== "true") {
                     setShowBuyerProfileModal(true);
                   }
                 }}
@@ -413,19 +421,15 @@ const Index = () => {
                 ¡Entendido, vamos! <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
 
-              <div className="flex items-center justify-center space-x-3">
-                <Checkbox
-                  id="dont-show-reg"
-                  checked={dontShowRegAgain}
-                  onCheckedChange={(checked) => setDontShowRegAgain(checked as boolean)}
-                  className="rounded-md border-muted-foreground/30"
-                />
-                <label
-                  htmlFor="dont-show-reg"
-                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+              <div className="pt-2">
+                <a 
+                  href={`https://wa.me/${(supportPhone || "").replace(/\D/g, '')}?text=${encodeURIComponent(`Hola Soporte de HomeFinder 🏠\nMe registré recién pero *no encuentro el mail de validación*.\nNecesito que me activen la cuenta por favor.\n\n*Datos para el sistema:*\n📧 Email: ${profile?.email || userEmail || 'No encontrado'}\n🆔 ID de Usuario: ${profile?.userId || 'Desconocido'}\n🕒 Fecha: ${new Date().toLocaleString('es-UY')}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
                 >
-                  No volver a mostrar
-                </label>
+                  ¿Problemas con el correo? Contactá a soporte
+                </a>
               </div>
             </div>
           </div>
@@ -439,6 +443,7 @@ const Index = () => {
         statusCounts={statusCounts}
         activeGroupId={activeGroupId}
         setIsGroupsOpen={setIsGroupsOpen}
+        onAIProfileClick={() => setShowAIProfileModal(true)}
         handleLogout={handleLogout}
       />
 
@@ -636,6 +641,12 @@ const Index = () => {
         isOpen={showBuyerProfileModal} 
         onClose={() => setShowBuyerProfileModal(false)} 
         userId={profile?.userId} 
+      />
+
+      <AIProfileModal
+        isOpen={showAIProfileModal}
+        onClose={() => setShowAIProfileModal(false)}
+        userId={profile?.userId}
       />
 
       <Footer />

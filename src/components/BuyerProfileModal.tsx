@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Sparkles, Building, Coins, Loader2, Home, MapPin, X } from "lucide-react";
+import { Bot, Sparkles, Building, Coins, Loader2, Home, MapPin, X, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface BuyerProfileModalProps {
   isOpen: boolean;
@@ -21,8 +24,10 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
   
   const [operation, setOperation] = useState("Comprar");
   const [currency, setCurrency] = useState("U$S");
+  const [minBudget, setMinBudget] = useState("");
   const [budget, setBudget] = useState("");
   const [bedrooms, setBedrooms] = useState("1");
+  const [openNeighborhoods, setOpenNeighborhoods] = useState(false);
 
   // Nuevos estados para Matchmaker Geográfico
   const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
@@ -77,10 +82,11 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('user_search_profiles').upsert({
+      const { error } = await supabase.from('user_search_profiles' as any).upsert({
         user_id: userId,
         operation,
         currency,
+        min_budget: Number(minBudget) || 0,
         max_budget: Number(budget) || 0,
         min_bedrooms: Number(bedrooms) || 1,
         city_id: selectedDept || null,
@@ -90,7 +96,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
       if (error) throw error;
 
       // Marcamos localmente para no volver a abrirlo en esta sesión, optimizando checks
-      localStorage.setItem("hf_buyer_profile_completed", "true");
+      localStorage.setItem(`hf_buyer_profile_completed_${userId}`, "true");
       
       toast({
         title: "¡Perfil de IA creado con éxito!",
@@ -106,10 +112,14 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
+    <Dialog open={isOpen} onOpenChange={() => {
+      // Bloqueado a propósito: el usuario ESTÁ OBLIGADO a llenar el perfil.
     }}>
-      <DialogContent className="sm:max-w-xl rounded-3xl overflow-hidden border-border bg-card p-0 shadow-2xl">
+      <DialogContent 
+        className="sm:max-w-xl rounded-3xl overflow-hidden border-border bg-card p-0 shadow-2xl [&>button]:hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
         
         <div className="p-8">
@@ -163,7 +173,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
 
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5" /> Presupuesto Máximo
+                <Coins className="w-3.5 h-3.5" /> Rango de Presupuesto
               </Label>
               <div className="flex gap-2">
                 <div className="w-[120px]">
@@ -179,7 +189,14 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                 </div>
                 <Input 
                   type="number" 
-                  placeholder={operation === "Comprar" ? "Ej: 150000" : "Ej: 25000"} 
+                  placeholder="Mínimo" 
+                  value={minBudget} 
+                  onChange={(e) => setMinBudget(e.target.value)} 
+                  className="rounded-xl h-12 bg-background/50 border-input w-[100px]"
+                />
+                <Input 
+                  type="number" 
+                  placeholder={operation === "Comprar" ? "Máximo (Ej: 150000)" : "Máximo (Ej: 25000)"} 
                   value={budget} 
                   onChange={(e) => setBudget(e.target.value)} 
                   className="rounded-xl h-12 bg-background/50 border-input flex-1"
@@ -204,18 +221,48 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                   </SelectContent>
                 </Select>
 
-                <Select onValueChange={toggleNeighborhood} value="" disabled={!selectedDept || neighborhoods.length === 0}>
-                  <SelectTrigger className="rounded-xl h-12 bg-background/50 border-input font-medium">
-                    <SelectValue placeholder={!selectedDept ? "Elegí Depto primero" : "Elegí hasta 5 barrios"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {neighborhoods.map((n) => (
-                      <SelectItem key={n.id} value={n.id}>
-                        {selectedNeighborhoods.includes(n.id) ? "✓ " : ""}{n.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openNeighborhoods} onOpenChange={setOpenNeighborhoods}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openNeighborhoods}
+                      className="rounded-xl h-12 bg-background/50 border-input font-medium justify-between w-full"
+                      disabled={!selectedDept || neighborhoods.length === 0}
+                    >
+                      {!selectedDept ? "Elegí Depto primero" : "Elegí hasta 5 barrios"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[--radix-popover-trigger-width] rounded-xl border-border/50 shadow-xl overflow-hidden" align="start">
+                    <Command className="rounded-xl">
+                      <CommandInput placeholder="Buscar barrio..." className="h-10" />
+                      <CommandList className="max-h-[300px]">
+                        <CommandEmpty>No se encontró el barrio.</CommandEmpty>
+                        <CommandGroup>
+                          {neighborhoods.map((n) => (
+                            <CommandItem
+                              key={n.id}
+                              value={n.name}
+                              onSelect={() => {
+                                toggleNeighborhood(n.id);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4 text-primary",
+                                  selectedNeighborhoods.includes(n.id) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {n.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {selectedNeighborhoods.length > 0 && (
@@ -233,12 +280,13 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                 </div>
               )}
             </div>
+
           </div>
 
           <DialogFooter className="mt-8 sm:justify-stretch">
             <Button 
               onClick={handleSave} 
-              disabled={loading}
+              disabled={loading || !selectedDept || !budget.trim() || Number(budget) <= 0}
               className="w-full h-14 rounded-xl text-md font-bold shadow-lg shadow-primary/25 group transition-all"
             >
               {loading ? (

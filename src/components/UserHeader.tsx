@@ -23,6 +23,7 @@ interface HeaderProps {
     statusCounts: Record<PropertyStatus, number>;
     activeGroupId: string | null;
     setIsGroupsOpen: (open: boolean) => void;
+    onAIProfileClick: () => void;
     handleLogout: () => void;
 }
 
@@ -33,6 +34,7 @@ export const UserHeader = ({
     statusCounts,
     activeGroupId,
     setIsGroupsOpen,
+    onAIProfileClick,
     handleLogout,
 }: HeaderProps) => {
     const { isPremium } = useSubscription();
@@ -175,7 +177,10 @@ export const UserHeader = ({
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span>Mi Perfil</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                            <DropdownMenuItem 
+                                className="cursor-pointer gap-2 py-2"
+                                onClick={onAIProfileClick}
+                            >
                                 <Sparkles className="w-4 h-4 text-purple-500" />
                                 <span>Perfil IA de Búsqueda</span>
                             </DropdownMenuItem>

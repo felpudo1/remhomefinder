@@ -438,15 +438,18 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
                 price_expenses: priceExpenses,
                 total_cost: priceRent + priceExpenses,
                 currency: form.currency as CurrencyCode,
+                address: form.address?.trim() || "",
                 neighborhood: form.neighborhood.trim(),
                 city: form.city.trim(),
+                city_id: (form as any).city_id,
+                neighborhood_id: (form as any).neighborhood_id,
                 m2_total: Number(form.sqMeters) || 0,
                 rooms: Number(form.rooms) || 1,
                 images: scrapedImages,
                 created_by: user.id,
                 ref: form.ref || "",
                 details: form.aiSummary || form.details || "",
-              })
+              } as any)
               .select()
               .single();
             if (propError) throw propError;
@@ -464,13 +467,15 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
               currency: form.currency as CurrencyCode,
               neighborhood: form.neighborhood.trim(),
               city: form.city.trim(),
+              city_id: (form as any).city_id,
+              neighborhood_id: (form as any).neighborhood_id,
               m2_total: Number(form.sqMeters) || 0,
               rooms: Number(form.rooms) || 1,
               images: scrapedImages,
               created_by: user.id,
               ref: form.ref || "",
               details: form.aiSummary || form.details || "",
-            })
+            } as any)
             .select()
             .single();
           if (propError) throw propError;

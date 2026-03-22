@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
@@ -69,7 +69,7 @@ const AgentDashboard = () => {
         .from("organizations")
         .select("*")
         .eq("created_by", user.id)
-        .eq("type", "agency_team" satisfies OrgType)
+        .eq("type", "agency_team")
         .limit(1);
 
       let org = orgsCreated?.[0];
@@ -83,7 +83,7 @@ const AgentDashboard = () => {
           const { data: orgsMember } = await supabase
             .from("organizations")
             .select("*")
-            .eq("type", "agency_team" satisfies OrgType)
+            .eq("type", "agency_team")
             .in("id", orgIds)
             .limit(1);
           org = orgsMember?.[0];
