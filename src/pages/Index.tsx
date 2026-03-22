@@ -28,7 +28,7 @@ import {
   SUPPORT_PHONE_DEFAULT,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
-import { buildSupportWhatsappUrl } from "@/lib/whatsapp";
+import { SupportWhatsAppLink } from "@/components/support/SupportWhatsAppLink";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { BuyerProfileModal } from "@/components/BuyerProfileModal";
 import { AIProfileModal } from "@/components/AIProfileModal";
@@ -423,18 +423,13 @@ const Index = () => {
               </Button>
 
               <div className="pt-2">
-                <a
-                  href={buildSupportWhatsappUrl(
-                    supportPhone || "",
-                    profile?.displayName || profile?.email || userEmail || "Usuario",
-                    profile?.userId || "Desconocido"
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <SupportWhatsAppLink
+                  supportPhone={supportPhone || ""}
+                  message={`Soporte. Soy ${profile?.displayName || profile?.email || userEmail || "Usuario"} (usuario registrado) con UserID ${profile?.userId || "Desconocido"}. Estoy teniendo problemas con el registro. Quiero ya sumergirme en la app para encontrar la casa de mis sueños.`}
                   className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
                 >
                   ¿Problemas con el correo? Contactá a soporte
-                </a>
+                </SupportWhatsAppLink>
               </div>
             </div>
           </div>
