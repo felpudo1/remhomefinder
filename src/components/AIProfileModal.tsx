@@ -284,7 +284,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
                       role="combobox"
                       aria-expanded={openNeighborhoods}
                       className="rounded-xl h-11 bg-background/50 border-input font-medium justify-between w-full text-sm"
-                      disabled={!selectedDept}
+                      disabled={!selectedCity}
                     >
                       {selectedNeighborhoods.length > 0 ? `Seleccionados (${selectedNeighborhoods.length})` : "Elegí hasta 5 barrios"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
