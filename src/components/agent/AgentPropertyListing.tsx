@@ -374,7 +374,14 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                         }`}
                       >
                         <td className="py-3 px-3">
-                          <p className="font-medium text-foreground">{user.displayName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground">{user.displayName}</p>
+                            {user.isAgent && (
+                              <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                                Agente
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">

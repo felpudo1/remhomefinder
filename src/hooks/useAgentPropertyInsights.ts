@@ -47,6 +47,7 @@ export interface AgentUserInsight {
   displayName: string;
   emailMasked: string;
   phone: string;
+  isAgent?: boolean;
   currentStatus: string;
   updatedAt: string;
   updatedAtRelative: string;
@@ -103,7 +104,7 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
       // 1. Get agent publications
       const { data: pubs, error: pubErr } = await supabase
         .from("agent_publications")
-        .select("id, property_id, properties(title, neighborhood, ref), status")
+        .select("id, property_id, properties(title, neighborhood, ref), status, published_by, updated_at")
         .eq("org_id", agencyOrgId)
         .neq("status", "eliminado");
       if (pubErr) throw pubErr;
@@ -133,7 +134,12 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
       }
 
       const listingIds = listings.map((l: any) => l.id);
-      const userIds = [...new Set(listings.map((l: any) => l.added_by))];
+      const userIds = [
+        ...new Set([
+          ...listings.map((l: any) => l.added_by).filter(Boolean),
+          ...pubs.map((p: any) => p.published_by).filter(Boolean),
+        ]),
+      ];
 
       // 3. Get profiles for contact info
       const { data: profiles } = await supabase
@@ -174,7 +180,7 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
         // Accumulators for averages
         let totalInterest = 0, totalUrgency = 0, interestCount = 0;
 
-        const users: AgentUserInsight[] = pubListings.map((listing: any) => {
+        const usersFromListings: AgentUserInsight[] = pubListings.map((listing: any) => {
           const profile = profileMap[listing.added_by] || { display_name: "Usuario", email: null, phone: "" };
           const userLogs = logsByListing[listing.id] || [];
 
@@ -271,10 +277,40 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
           };
         });
 
+        const publisherId = pub.published_by as string | undefined;
+        const users = [...usersFromListings];
+        if (publisherId && !users.some((u) => u.userId === publisherId)) {
+          const publisherProfile = profileMap[publisherId] || { display_name: "Agente", email: null, phone: "" };
+          let agentUpdatedAtRelative = "";
+          const agentUpdatedAt = pub.updated_at || new Date().toISOString();
+          try {
+            agentUpdatedAtRelative = formatDistanceToNow(parseISO(agentUpdatedAt), { addSuffix: true, locale: es });
+          } catch {
+            agentUpdatedAtRelative = agentUpdatedAt;
+          }
+
+          users.unshift({
+            userId: publisherId,
+            displayName: publisherProfile.display_name || "Agente",
+            emailMasked: maskEmail(publisherProfile.email),
+            phone: publisherProfile.phone || "",
+            isAgent: true,
+            currentStatus: "ingresado",
+            updatedAt: agentUpdatedAt,
+            updatedAtRelative: agentUpdatedAtRelative,
+            coordinatedDate: undefined,
+            userListingId: `agent-${pub.id}`,
+            ratingsByStatus: {},
+          });
+        }
+
         // Status breakdown string
         const breakdownParts = Object.entries(statusCounts)
           .sort((a, b) => b[1] - a[1])
           .map(([status, count]) => `${count} ${status.replace("_", " ")}`);
+        if (users.some((u) => u.isAgent)) {
+          breakdownParts.push("1 agente");
+        }
 
         return {
           publicationId: pub.id,
@@ -282,7 +318,7 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
           title: pub.properties?.title || "",
           neighborhood: pub.properties?.neighborhood || "",
           ref: pub.properties?.ref || undefined,
-          usersSaved: pubListings.length,
+          usersSaved: users.length,
           avgContactedInterest: interestCount > 0 ? totalInterest / interestCount : 0,
           avgContactedUrgency: interestCount > 0 ? totalUrgency / interestCount : 0,
           statusBreakdown: breakdownParts.join(" · "),
