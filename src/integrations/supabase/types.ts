@@ -253,22 +253,33 @@ export type Database = {
         Row: {
           country: string | null
           created_at: string | null
+          department_id: string | null
           id: string
           name: string
         }
         Insert: {
           country?: string | null
           created_at?: string | null
+          department_id?: string | null
           id?: string
           name: string
         }
         Update: {
           country?: string | null
           created_at?: string | null
+          department_id?: string | null
           id?: string
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cities_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deletion_audit_log: {
         Row: {
@@ -306,6 +317,27 @@ export type Database = {
           plan_type?: string | null
           reason?: string
           status_before?: string | null
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -636,6 +668,8 @@ export type Database = {
           created_at: string
           created_by: string
           currency: Database["public"]["Enums"]["currency_code"]
+          department: string
+          department_id: string | null
           details: string
           id: string
           images: string[]
@@ -661,6 +695,8 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          department?: string
+          department_id?: string | null
           details?: string
           id?: string
           images?: string[]
@@ -686,6 +722,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          department?: string
+          department_id?: string | null
           details?: string
           id?: string
           images?: string[]
@@ -718,6 +756,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "properties_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "properties_neighborhood_id_fkey"
