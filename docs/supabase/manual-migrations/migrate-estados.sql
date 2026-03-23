@@ -1,3 +1,7 @@
+-- DOCUMENTACIÓN / REFERENCIA (no es migración CLI)
+-- El esquema oficial vive en supabase/migrations/. Este archivo queda por si hace falta
+-- ejecutar a mano en el SQL Editor (p. ej. entorno sin migraciones o tipo ausente).
+--
 -- Migración: agregar firme_candidato y posible_interes al enum user_listing_status
 -- Ejecutá este script en Supabase Dashboard → SQL Editor → New query
 --
