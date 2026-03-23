@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit, Trash2, MapPin, ChevronRight, Loader2, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, ChevronRight, Loader2, Save, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -18,9 +19,14 @@ interface Props {
 }
 
 export function AdminGeografia({ toast }: Props) {
+  // Departamentos
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(true);
+  const [selectedDept, setSelectedDept] = useState<any | null>(null);
+
   // Ciudades
   const [cities, setCities] = useState<any[]>([]);
-  const [loadingCities, setLoadingCities] = useState(true);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [selectedCity, setSelectedCity] = useState<any | null>(null);
 
   // Barrios
@@ -28,23 +34,30 @@ export function AdminGeografia({ toast }: Props) {
   const [loadingNeigh, setLoadingNeigh] = useState(false);
 
   // Formularios modales
+  const [deptDialog, setDeptDialog] = useState<{ open: boolean; mode: "add" | "edit"; data: any }>({ open: false, mode: "add", data: null });
   const [cityDialog, setCityDialog] = useState<{ open: boolean; mode: "add" | "edit"; data: any }>({ open: false, mode: "add", data: null });
   const [neighDialog, setNeighDialog] = useState<{ open: boolean; mode: "add" | "edit"; data: any }>({ open: false, mode: "add", data: null });
-  const [formData, setFormData] = useState({ name: "", country: "Uruguay" });
+  const [formData, setFormData] = useState({ name: "", country: "UY" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCities();
-  }, []);
+  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => { if (selectedDept) fetchCities(selectedDept.id); }, [selectedDept]);
+  useEffect(() => { if (selectedCity) fetchNeighborhoods(selectedCity.id); }, [selectedCity]);
 
-  useEffect(() => {
-    if (selectedCity) fetchNeighborhoods(selectedCity.id);
-  }, [selectedCity]);
+  const fetchDepartments = async () => {
+    setLoadingDepts(true);
+    const { data, error } = await supabase.from("departments").select("*").order("country").order("name");
+    if (error) toast({ title: "Error al cargar departamentos", description: error.message, variant: "destructive" });
+    else setDepartments(data || []);
+    setLoadingDepts(false);
+  };
 
-  const fetchCities = async () => {
+  const fetchCities = async (deptId: string) => {
     setLoadingCities(true);
-    const { data, error } = await supabase.from("cities").select("*").order("name");
-    if (error) toast({ title: "Error al cargar", description: error.message, variant: "destructive" });
+    setSelectedCity(null);
+    setNeighborhoods([]);
+    const { data, error } = await supabase.from("cities").select("*").eq("department_id", deptId).order("name");
+    if (error) toast({ title: "Error al cargar ciudades", description: error.message, variant: "destructive" });
     else setCities(data || []);
     setLoadingCities(false);
   };
@@ -57,42 +70,62 @@ export function AdminGeografia({ toast }: Props) {
     setLoadingNeigh(false);
   };
 
-  // --- CRUD CIUDADES ---
-  const handleSaveCity = async () => {
+  // --- CRUD DEPARTAMENTOS ---
+  const handleSaveDept = async () => {
     if (!formData.name.trim()) return;
     setIsSubmitting(true);
-    
-    if (cityDialog.mode === "add") {
-      const { error } = await supabase.from("cities").insert([{ name: formData.name, country: formData.country }]);
+    if (deptDialog.mode === "add") {
+      const { error } = await supabase.from("departments").insert([{ name: formData.name, country: formData.country }]);
       if (error) toast({ title: "Error al crear", description: error.message, variant: "destructive" });
       else toast({ title: "Departamento creado" });
     } else {
-      const { error } = await supabase.from("cities").update({ name: formData.name, country: formData.country }).eq("id", cityDialog.data.id);
+      const { error } = await supabase.from("departments").update({ name: formData.name, country: formData.country }).eq("id", deptDialog.data.id);
       if (error) toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
       else toast({ title: "Departamento actualizado" });
     }
-    
+    setIsSubmitting(false);
+    setDeptDialog({ ...deptDialog, open: false });
+    fetchDepartments();
+  };
+
+  const handleDeleteDept = async (id: string) => {
+    if (!window.confirm("¿Seguro? Fallará si tiene ciudades asociadas.")) return;
+    if (selectedDept?.id === id) { setSelectedDept(null); setCities([]); setSelectedCity(null); setNeighborhoods([]); }
+    const { error } = await supabase.from("departments").delete().eq("id", id);
+    if (error) toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
+    else { toast({ title: "Departamento eliminado" }); fetchDepartments(); }
+  };
+
+  // --- CRUD CIUDADES ---
+  const handleSaveCity = async () => {
+    if (!formData.name.trim() || !selectedDept) return;
+    setIsSubmitting(true);
+    if (cityDialog.mode === "add") {
+      const { error } = await supabase.from("cities").insert([{ name: formData.name, department_id: selectedDept.id }]);
+      if (error) toast({ title: "Error al crear", description: error.message, variant: "destructive" });
+      else toast({ title: "Ciudad creada" });
+    } else {
+      const { error } = await supabase.from("cities").update({ name: formData.name }).eq("id", cityDialog.data.id);
+      if (error) toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
+      else toast({ title: "Ciudad actualizada" });
+    }
     setIsSubmitting(false);
     setCityDialog({ ...cityDialog, open: false });
-    fetchCities();
+    fetchCities(selectedDept.id);
   };
 
   const handleDeleteCity = async (id: string) => {
-    if (!window.confirm("¿Estás seguro de eliminar este depto? Esto fallará si tiene propiedades asociadas.")) return;
-    if (selectedCity?.id === id) setSelectedCity(null);
+    if (!window.confirm("¿Seguro? Fallará si tiene barrios asociados.")) return;
+    if (selectedCity?.id === id) { setSelectedCity(null); setNeighborhoods([]); }
     const { error } = await supabase.from("cities").delete().eq("id", id);
     if (error) toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
-    else {
-      toast({ title: "Departamento eliminado" });
-      fetchCities();
-    }
+    else { toast({ title: "Ciudad eliminada" }); if (selectedDept) fetchCities(selectedDept.id); }
   };
 
   // --- CRUD BARRIOS ---
   const handleSaveNeigh = async () => {
     if (!formData.name.trim() || !selectedCity) return;
     setIsSubmitting(true);
-    
     if (neighDialog.mode === "add") {
       const { error } = await supabase.from("neighborhoods").insert([{ name: formData.name, city_id: selectedCity.id }]);
       if (error) toast({ title: "Error al crear", description: error.message, variant: "destructive" });
@@ -102,133 +135,201 @@ export function AdminGeografia({ toast }: Props) {
       if (error) toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
       else toast({ title: "Barrio actualizado" });
     }
-    
     setIsSubmitting(false);
     setNeighDialog({ ...neighDialog, open: false });
     fetchNeighborhoods(selectedCity.id);
   };
 
   const handleDeleteNeigh = async (id: string) => {
-    if (!window.confirm("¿Seguro que querés eliminar este barrio? Fallará si hay propiedades usándolo.")) return;
+    if (!window.confirm("¿Seguro? Fallará si hay propiedades usándolo.")) return;
     const { error } = await supabase.from("neighborhoods").delete().eq("id", id);
     if (error) toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
-    else {
-      toast({ title: "Barrio eliminado" });
-      if (selectedCity) fetchNeighborhoods(selectedCity.id);
-    }
+    else { toast({ title: "Barrio eliminado" }); if (selectedCity) fetchNeighborhoods(selectedCity.id); }
   };
 
+  const countryLabel = (code: string) => code === "UY" ? "🇺🇾 Uruguay" : code === "AR" ? "🇦🇷 Argentina" : code;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      {/* CUADRO 1: CIUDADES */}
-      <Card className="flex flex-col h-[75vh]">
-        <CardHeader className="border-b bg-muted/20 pb-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                Departamentos
-              </CardTitle>
-              <CardDescription>Gestioná el catálogo de departamentos o estados.</CardDescription>
-            </div>
-            <Button size="sm" onClick={() => { setFormData({ name: "", country: "Uruguay" }); setCityDialog({ open: true, mode: "add", data: null }); }}>
-              <Plus className="w-4 h-4 mr-1" /> Agregar
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-0">
-          {loadingCities ? (
-            <div className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-          ) : cities.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No hay departamentos cargados.</div>
-          ) : (
-            <div className="flex flex-col divide-y">
-              {cities.map((city) => (
-                <div 
-                  key={city.id} 
-                  onClick={() => setSelectedCity(city)}
-                  className={`flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors ${selectedCity?.id === city.id ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
-                >
-                  <div>
-                    <span className="font-medium text-sm">{city.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2 block sm:inline">{city.country}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setFormData({ name: city.name, country: city.country || "Uruguay" }); setCityDialog({ open: true, mode: "edit", data: city }); }}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteCity(city.id); }}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <ChevronRight className={`w-4 h-4 text-muted-foreground ml-2 transition-transform ${selectedCity?.id === city.id ? "translate-x-1 text-primary" : ""}`} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-4 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+        <Globe className="w-4 h-4" />
+        <span className="font-medium text-foreground">Geografía</span>
+        {selectedDept && (
+          <>
+            <ChevronRight className="w-3 h-3" />
+            <button onClick={() => { setSelectedDept(null); setCities([]); setSelectedCity(null); setNeighborhoods([]); }} className="hover:text-foreground transition-colors">{selectedDept.name}</button>
+          </>
+        )}
+        {selectedCity && (
+          <>
+            <ChevronRight className="w-3 h-3" />
+            <button onClick={() => { setSelectedCity(null); setNeighborhoods([]); }} className="hover:text-foreground transition-colors">{selectedCity.name}</button>
+          </>
+        )}
+      </div>
 
-      {/* CUADRO 2: BARRIOS */}
-      <Card className={`flex flex-col h-[75vh] transition-opacity duration-300 ${!selectedCity ? "opacity-50 pointer-events-none" : ""}`}>
-        <CardHeader className="border-b bg-muted/20 pb-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                Barrios
-              </CardTitle>
-              <CardDescription>
-                {selectedCity ? `Barrios de ${selectedCity.name}` : "Seleccioná un departamento primero."}
-              </CardDescription>
-            </div>
-            {selectedCity && (
-              <Button size="sm" onClick={() => { setFormData({ name: "", country: "" }); setNeighDialog({ open: true, mode: "add", data: null }); }}>
-                <Plus className="w-4 h-4 mr-1" /> Agregar Barrio
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* PANEL 1: DEPARTAMENTOS */}
+        <Card className="flex flex-col h-[70vh]">
+          <CardHeader className="border-b bg-muted/20 pb-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  Departamentos
+                </CardTitle>
+                <CardDescription className="text-xs">País → Departamento</CardDescription>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => { setFormData({ name: "", country: "UY" }); setDeptDialog({ open: true, mode: "add", data: null }); }}>
+                <Plus className="w-3 h-3 mr-1" /> Nuevo
               </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto p-0">
+            {loadingDepts ? (
+              <div className="p-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            ) : departments.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground text-sm">Sin departamentos.</div>
+            ) : (
+              <div className="flex flex-col divide-y">
+                {departments.map((dept) => (
+                  <div
+                    key={dept.id}
+                    onClick={() => setSelectedDept(dept)}
+                    className={`flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors text-sm ${selectedDept?.id === dept.id ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+                  >
+                    <div>
+                      <span className="font-medium">{dept.name}</span>
+                      <span className="text-[10px] text-muted-foreground ml-1.5">{countryLabel(dept.country)}</span>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setFormData({ name: dept.name, country: dept.country }); setDeptDialog({ open: true, mode: "edit", data: dept }); }}>
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteDept(dept.id); }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${selectedDept?.id === dept.id ? "translate-x-0.5 text-primary" : ""}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-0">
-          {!selectedCity ? (
-            <div className="p-12 text-center text-muted-foreground flex flex-col items-center">
-              <MapPin className="w-12 h-12 mb-4 opacity-20" />
-              <p>Seleccioná o creá un departamento en la lista de la izquierda para ver y cargar sus barrios.</p>
-            </div>
-          ) : loadingNeigh ? (
-            <div className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-          ) : neighborhoods.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <p>No hay barrios cargados en {selectedCity.name}.</p>
-              <Button variant="link" onClick={() => { setFormData({ name: "", country: "" }); setNeighDialog({ open: true, mode: "add", data: null }); }}>
-                Agregar el primer barrio
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col divide-y">
-              {neighborhoods.map((neigh) => (
-                <div key={neigh.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                  <span className="font-medium text-sm">{neigh.name}</span>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => { setFormData({ name: neigh.name, country: "" }); setNeighDialog({ open: true, mode: "edit", data: neigh }); }}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteNeigh(neigh.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* DIALOGOS */}
-      <Dialog open={cityDialog.open} onOpenChange={(open) => !open && setCityDialog({ ...cityDialog, open: false })}>
+        {/* PANEL 2: CIUDADES */}
+        <Card className={`flex flex-col h-[70vh] transition-opacity duration-300 ${!selectedDept ? "opacity-40 pointer-events-none" : ""}`}>
+          <CardHeader className="border-b bg-muted/20 pb-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-base">Ciudades</CardTitle>
+                <CardDescription className="text-xs">
+                  {selectedDept ? `Ciudades de ${selectedDept.name}` : "Seleccioná un depto."}
+                </CardDescription>
+              </div>
+              {selectedDept && (
+                <Button size="sm" variant="outline" onClick={() => { setFormData({ name: "", country: "" }); setCityDialog({ open: true, mode: "add", data: null }); }}>
+                  <Plus className="w-3 h-3 mr-1" /> Nueva
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto p-0">
+            {!selectedDept ? (
+              <div className="p-8 text-center text-muted-foreground text-xs">
+                <MapPin className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                Seleccioná un departamento.
+              </div>
+            ) : loadingCities ? (
+              <div className="p-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            ) : cities.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                <p>Sin ciudades en {selectedDept.name}.</p>
+                <Button variant="link" size="sm" onClick={() => { setFormData({ name: "", country: "" }); setCityDialog({ open: true, mode: "add", data: null }); }}>Agregar primera ciudad</Button>
+              </div>
+            ) : (
+              <div className="flex flex-col divide-y">
+                {cities.map((city) => (
+                  <div
+                    key={city.id}
+                    onClick={() => setSelectedCity(city)}
+                    className={`flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors text-sm ${selectedCity?.id === city.id ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+                  >
+                    <span className="font-medium">{city.name}</span>
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={(e) => { e.stopPropagation(); setFormData({ name: city.name, country: "" }); setCityDialog({ open: true, mode: "edit", data: city }); }}>
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteCity(city.id); }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${selectedCity?.id === city.id ? "translate-x-0.5 text-primary" : ""}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* PANEL 3: BARRIOS */}
+        <Card className={`flex flex-col h-[70vh] transition-opacity duration-300 ${!selectedCity ? "opacity-40 pointer-events-none" : ""}`}>
+          <CardHeader className="border-b bg-muted/20 pb-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-base">Barrios</CardTitle>
+                <CardDescription className="text-xs">
+                  {selectedCity ? `Barrios de ${selectedCity.name}` : "Seleccioná una ciudad."}
+                </CardDescription>
+              </div>
+              {selectedCity && (
+                <Button size="sm" variant="outline" onClick={() => { setFormData({ name: "", country: "" }); setNeighDialog({ open: true, mode: "add", data: null }); }}>
+                  <Plus className="w-3 h-3 mr-1" /> Nuevo
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto p-0">
+            {!selectedCity ? (
+              <div className="p-8 text-center text-muted-foreground text-xs">
+                <MapPin className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                Seleccioná una ciudad.
+              </div>
+            ) : loadingNeigh ? (
+              <div className="p-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            ) : neighborhoods.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                <p>Sin barrios en {selectedCity.name}.</p>
+                <Button variant="link" size="sm" onClick={() => { setFormData({ name: "", country: "" }); setNeighDialog({ open: true, mode: "add", data: null }); }}>Agregar primer barrio</Button>
+              </div>
+            ) : (
+              <div className="flex flex-col divide-y">
+                {neighborhoods.map((neigh) => (
+                  <div key={neigh.id} className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-sm">
+                    <span className="font-medium">{neigh.name}</span>
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => { setFormData({ name: neigh.name, country: "" }); setNeighDialog({ open: true, mode: "edit", data: neigh }); }}>
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteNeigh(neigh.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* DIALOG: DEPARTAMENTO */}
+      <Dialog open={deptDialog.open} onOpenChange={(open) => !open && setDeptDialog({ ...deptDialog, open: false })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{cityDialog.mode === "add" ? "Agregar Departamento" : "Editar Departamento"}</DialogTitle>
+            <DialogTitle>{deptDialog.mode === "add" ? "Agregar Departamento" : "Editar Departamento"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -237,8 +338,37 @@ export function AdminGeografia({ toast }: Props) {
             </div>
             <div className="space-y-2">
               <Label>País</Label>
-              <Input value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value })} placeholder="Ej: Uruguay" />
+              <Select value={formData.country} onValueChange={(v) => setFormData({ ...formData, country: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UY">🇺🇾 Uruguay</SelectItem>
+                  <SelectItem value="AR">🇦🇷 Argentina</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeptDialog({ ...deptDialog, open: false })}>Cancelar</Button>
+            <Button onClick={handleSaveDept} disabled={!formData.name.trim() || isSubmitting}>
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG: CIUDAD */}
+      <Dialog open={cityDialog.open} onOpenChange={(open) => !open && setCityDialog({ ...cityDialog, open: false })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{cityDialog.mode === "add" ? "Agregar Ciudad" : "Editar Ciudad"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nombre de la Ciudad</Label>
+              <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Ciudad de la Costa" />
+            </div>
+            {selectedDept && <p className="text-xs text-muted-foreground">Pertenecerá a <strong>{selectedDept.name}</strong>.</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCityDialog({ ...cityDialog, open: false })}>Cancelar</Button>
@@ -250,6 +380,7 @@ export function AdminGeografia({ toast }: Props) {
         </DialogContent>
       </Dialog>
 
+      {/* DIALOG: BARRIO */}
       <Dialog open={neighDialog.open} onOpenChange={(open) => !open && setNeighDialog({ ...neighDialog, open: false })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -260,9 +391,7 @@ export function AdminGeografia({ toast }: Props) {
               <Label>Nombre del Barrio</Label>
               <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Pocitos" />
             </div>
-            {selectedCity && (
-              <p className="text-xs text-muted-foreground">Este barrio pertenecerá a <strong>{selectedCity.name}</strong>.</p>
-            )}
+            {selectedCity && <p className="text-xs text-muted-foreground">Pertenecerá a <strong>{selectedCity.name}</strong> ({selectedDept?.name}).</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNeighDialog({ ...neighDialog, open: false })}>Cancelar</Button>

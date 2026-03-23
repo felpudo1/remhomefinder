@@ -85,13 +85,23 @@ export function PropertyFormManual({
     const safeCurrency = form.currency === "USD" || form.currency === "UYU" ? form.currency : "UYU";
     
     // Geographical State
+    const [deptsList, setDeptsList] = useState<any[]>([]);
     const [citiesList, setCitiesList] = useState<any[]>([]);
     const [neighborhoodsList, setNeighborhoodsList] = useState<any[]>([]);
 
-    // Fetch cities initially
+    // Fetch departments initially
     useEffect(() => {
-        supabase.from("cities").select("id, name").order("name").then(({ data }) => setCitiesList((data as any[]) || []));
+        supabase.from("departments").select("id, name, country").order("country").order("name").then(({ data }) => setDeptsList((data as any[]) || []));
     }, []);
+
+    // Fetch cities when department changes
+    useEffect(() => {
+        if (form.department_id) {
+            supabase.from("cities").select("id, name").eq("department_id", form.department_id).order("name").then(({ data }) => setCitiesList((data as any[]) || []));
+        } else {
+            setCitiesList([]);
+        }
+    }, [form.department_id]);
 
     // Fetch neighborhoods when city changes
     useEffect(() => {
@@ -261,18 +271,38 @@ export function PropertyFormManual({
                 <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej: Apartamento en Buceo" className="rounded-xl text-sm" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium">Departamento *</Label>
+                    <Select
+                        value={form.department_id || ""}
+                        onValueChange={(val) => {
+                            const deptObj = deptsList.find((d) => d.id === val);
+                            setForm({ ...form, department_id: val, department: deptObj ? deptObj.name : "", city_id: "", city: "", neighborhood_id: "", neighborhood: "" });
+                        }}
+                    >
+                        <SelectTrigger className="rounded-xl text-sm">
+                            <SelectValue placeholder="Depto." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {deptsList.map((d) => (
+                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Ciudad *</Label>
                     <Select
                         value={form.city_id || ""}
                         onValueChange={(val) => {
                             const cityObj = citiesList.find((c) => c.id === val);
                             setForm({ ...form, city_id: val, city: cityObj ? cityObj.name : "", neighborhood_id: "", neighborhood: "" });
                         }}
+                        disabled={!form.department_id}
                     >
                         <SelectTrigger className="rounded-xl text-sm">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder="Ciudad" />
                         </SelectTrigger>
                         <SelectContent>
                             {citiesList.map((c) => (
@@ -292,7 +322,7 @@ export function PropertyFormManual({
                         disabled={!form.city_id}
                     >
                         <SelectTrigger className="rounded-xl text-sm">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder="Barrio" />
                         </SelectTrigger>
                         <SelectContent>
                             {neighborhoodsList.map((n) => (

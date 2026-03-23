@@ -31,26 +31,38 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
 
   // Nuevos estados para Matchmaker Geográfico
   const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
+  const [cities, setCities] = useState<{id: string, name: string}[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<{id: string, name: string}[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+    supabase.from("departments").select("id, name").order("name").then(({ data }) => {
       if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+      supabase.from("cities").select("id, name").eq("department_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setCities(data as { id: string; name: string }[]);
+      });
+    } else {
+      setCities([]);
+    }
+  }, [selectedDept]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity).order("name").then(({ data }) => {
         if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
       setSelectedNeighborhoods([]);
     } else {
       setNeighborhoods([]);
     }
-  }, [selectedDept]);
+  }, [selectedCity]);
 
   const handleOperationChange = (val: string) => {
     setOperation(val);
@@ -208,7 +220,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                 <MapPin className="w-3.5 h-3.5" /> ¿Dónde estás buscando?
               </Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <Select value={selectedDept} onValueChange={(val) => { setSelectedDept(val); setSelectedCity(""); setSelectedNeighborhoods([]); }}>
                   <SelectTrigger className="rounded-xl h-12 bg-background/50 border-input font-medium">
                     <SelectValue placeholder="Departamento" />
                   </SelectTrigger>
@@ -220,6 +232,18 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                   </SelectContent>
                 </Select>
 
+                <Select value={selectedCity} onValueChange={(val) => { setSelectedCity(val); setSelectedNeighborhoods([]); }} disabled={!selectedDept}>
+                  <SelectTrigger className="rounded-xl h-12 bg-background/50 border-input font-medium">
+                    <SelectValue placeholder="Ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.length === 0 && <SelectItem value="disabled" disabled>{selectedDept ? "Sin ciudades" : "Elegí depto."}</SelectItem>}
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 <Popover open={openNeighborhoods} onOpenChange={setOpenNeighborhoods}>
                   <PopoverTrigger asChild>
                     <Button
@@ -227,9 +251,9 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                       role="combobox"
                       aria-expanded={openNeighborhoods}
                       className="rounded-xl h-12 bg-background/50 border-input font-medium justify-between w-full"
-                      disabled={!selectedDept || neighborhoods.length === 0}
+                      disabled={!selectedCity || neighborhoods.length === 0}
                     >
-                      {!selectedDept ? "Elegí Depto primero" : "Elegí hasta 5 barrios"}
+                      {!selectedCity ? "Elegí ciudad primero" : "Elegí hasta 5 barrios"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>

@@ -7,9 +7,11 @@ export type FormState = {
   priceExpenses: string;
   currency: "USD" | "UYU";
   neighborhood: string;
-  neighborhood_id: string; // Nuevo
+  neighborhood_id: string;
   city: string;
-  city_id: string; // Nuevo
+  city_id: string;
+  department: string;
+  department_id: string;
   sqMeters: string;
   rooms: string;
   aiSummary: string;
@@ -53,6 +55,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     neighborhood_id: "",
     city: "",
     city_id: "",
+    department: "",
+    department_id: "",
     sqMeters: "",
     rooms: "",
     aiSummary: "",
@@ -80,6 +84,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
       neighborhood_id: "",
       city: "",
       city_id: "",
+      department: "",
+      department_id: "",
       sqMeters: "",
       rooms: "",
       aiSummary: "",
@@ -107,14 +113,14 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
   const hasAnyPhoto = scrapedImages.length > 0 || privateImages.length > 0;
   const hasTitle = String(form.title || "").trim().length > 0;
   const hasPrice = String(form.priceRent || "").trim().length > 0;
-  const hasLocation = Boolean(form.city_id && form.neighborhood_id);
+  const hasLocation = Boolean(form.department_id && form.city_id && form.neighborhood_id);
   
   const isFormValid = hasAnyPhoto && hasTitle && hasPrice && hasLocation && !urlDuplicated && !urlInFamily;
 
   const getManualSubmitBlockers = () => {
     const blockers: string[] = [];
     if (!hasAnyPhoto) blockers.push("al menos 1 foto");
-    if (!hasLocation) blockers.push("departamento y barrio");
+    if (!hasLocation) blockers.push("departamento, ciudad y barrio");
     if (!hasTitle) blockers.push("título");
     if (!hasPrice) blockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
     if (urlDuplicated || urlInFamily) blockers.push("esta URL ya está en tu familia");
