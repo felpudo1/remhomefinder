@@ -250,7 +250,8 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
               <div className="grid grid-cols-1 gap-3">
                 <Select value={selectedDept} onValueChange={(val) => {
                   setSelectedDept(val);
-                  setSelectedNeighborhoods([]); // Limpiar solo en interacción manual
+                  setSelectedCity("");
+                  setSelectedNeighborhoods([]);
                 }}>
                   <SelectTrigger className="rounded-xl h-11 bg-background/50 border-input font-medium">
                     <SelectValue placeholder="Departamento" />
@@ -258,6 +259,20 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
                   <SelectContent>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedCity} onValueChange={(val) => {
+                  setSelectedCity(val);
+                  setSelectedNeighborhoods([]);
+                }} disabled={!selectedDept}>
+                  <SelectTrigger className="rounded-xl h-11 bg-background/50 border-input font-medium">
+                    <SelectValue placeholder="Ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
