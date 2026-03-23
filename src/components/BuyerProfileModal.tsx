@@ -251,7 +251,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                       role="combobox"
                       aria-expanded={openNeighborhoods}
                       className="rounded-xl h-12 bg-background/50 border-input font-medium justify-between w-full"
-                      disabled={!selectedDept || neighborhoods.length === 0}
+                      disabled={!selectedCity || neighborhoods.length === 0}
                     >
                       {!selectedDept ? "Elegí Depto primero" : "Elegí hasta 5 barrios"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
