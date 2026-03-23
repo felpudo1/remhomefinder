@@ -2,6 +2,11 @@
 
 > Documento de referencia para entender la jerarquía geográfica del sistema y cómo cargar datos.
 
+**Última actualización:** Marzo 2026  
+**Seed script disponible:** `20260323080000_seed_geografia_uruguay.sql`  
+**Triggers disponibles:** `20260323090000_triggers_sincronizacion_ubicacion.sql`  
+**Cobertura actual:** 55+ ciudades, 230+ barrios de Uruguay
+
 ---
 
 ## 1. Jerarquía de 4 niveles
@@ -230,4 +235,246 @@ FROM neighborhoods n
 JOIN cities c ON c.id = n.city_id
 WHERE c.name = 'Montevideo'
 ORDER BY n.name;
+
+-- Ver jerarquía completa de Montevideo con conteo de barrios
+SELECT
+  c.name AS ciudad,
+  COUNT(n.id) AS total_barrios
+FROM cities c
+LEFT JOIN neighborhoods n ON n.city_id = c.id
+WHERE c.department_id = (SELECT id FROM departments WHERE name = 'Montevideo' AND country = 'UY')
+GROUP BY c.name;
+```
+
+---
+
+## 9. Scripts de Seed Disponibles
+
+### `20260323080000_seed_geografia_uruguay.sql`
+
+Script completo que carga:
+
+**Montevideo:**
+- 3 ciudades (Montevideo, Santiago Vázquez, Paso de la Arena)
+- **67 barrios** de Montevideo capital (Pocitos, Punta Carretas, Cordón, Centro, Buceo, Prado, Palermo, Carrasco, etc.)
+
+**Canelones:**
+- 12 ciudades (Ciudad de la Costa, Las Piedras, Pando, Canelones, La Paz, Progreso, Santa Lucía, Atlántida, Solymar, Lagomar, Ciudad del Plata, San Ramón)
+- **10 barrios por ciudad** (120 barrios en total)
+
+**Otros 17 departamentos:**
+- 2-3 ciudades principales por departamento
+- Total: ~40 ciudades adicionales
+
+**Total aproximado:**
+- 55+ ciudades
+- 230+ barrios
+
+### Ejecutar el script
+
+```bash
+# Opción 1: Desde Supabase CLI
+supabase db push
+
+# Opción 2: Copiar y pegar en SQL Editor de Supabase
+# Ir a: https://app.supabase.com/project/_/sql
+```
+
+---
+
+## 10. Próximos Pasos
+
+### Pendientes
+
+1. **Agregar barrios a otras ciudades importantes:**
+   - Maldonado y Punta del Este
+   - Colonia del Sacramento
+   - Salto y Paysandú
+   - Rivera y Melo
+
+2. **Agregar índices de performance para búsquedas:**
+   ```sql
+   CREATE INDEX idx_neighborhoods_lower_name 
+     ON neighborhoods(LOWER(name));
+   ```
+
+3. **Crear vista materializada para consultas rápidas:**
+   ```sql
+   CREATE VIEW properties_con_ubicacion AS
+   SELECT p.*, d.name AS dept_name, c.name AS city_name, n.name AS barrio_name
+   FROM properties p
+   LEFT JOIN departments d ON p.department_id = d.id
+   LEFT JOIN cities c ON p.city_id = c.id
+   LEFT JOIN neighborhoods n ON p.neighborhood_id = n.id;
+   ```
+
+---
+
+## 11. Triggers de Sincronización
+
+### ¿Qué problema resuelven?
+
+Los triggers garantizan **consistencia automática** entre los campos de texto (`department`, `city`, `neighborhood`) y los campos normalizados (`department_id`, `city_id`, `neighborhood_id`).
+
+**Sin trigger:**
+```typescript
+// Posible inconsistencia:
+{
+  department: "Montevideo",      // texto
+  department_id: "uuid-canelones" // FK → INCONSISTENCIA ❌
+}
+```
+
+**Con trigger:**
+```typescript
+// El trigger actualiza automáticamente:
+{
+  department: "Canelones",       // actualizado automáticamente ✅
+  department_id: "uuid-canelones" // FK correcta
+}
+```
+
+### Triggers disponibles
+
+#### 1. `trg_sync_property_location` - Sincroniza TEXTO desde ID
+
+**Dirección:** `department_id` → `department`
+
+**Se ejecuta:** BEFORE INSERT OR UPDATE
+
+**Función:** `sync_property_location_fields()`
+
+```sql
+-- Ejemplo de uso:
+INSERT INTO properties (
+  title,
+  department_id,  -- Solo seteás el ID
+  ...
+) VALUES (
+  'Departamento en Pocitos',
+  'uuid-montevideo',
+  ...
+);
+
+-- El trigger actualiza automáticamente:
+-- department = 'Montevideo' ✅
+```
+
+---
+
+#### 2. `trg_resolve_property_location_ids` - Resuelve ID desde TEXTO
+
+**Dirección:** `department` → `department_id`
+
+**Se ejecuta:** BEFORE INSERT OR UPDATE
+
+**Función:** `resolve_property_location_ids()`
+
+```sql
+-- Ejemplo de uso (scraper):
+INSERT INTO properties (
+  title,
+  department,  -- Solo texto del scraping
+  city,
+  neighborhood,
+  ...
+) VALUES (
+  'Departamento en Pocitos',
+  'Montevideo',    -- texto
+  'Montevideo',    -- texto
+  'Pocitos',       -- texto
+  ...
+);
+
+-- El trigger resuelve automáticamente:
+-- department_id = 'uuid-montevideo' ✅
+-- city_id = 'uuid-montevideo-city' ✅
+-- neighborhood_id = 'uuid-pocitos' ✅
+```
+
+---
+
+### Migración disponible
+
+**Archivo:** `20260323090000_triggers_sincronizacion_ubicacion.sql`
+
+**Incluye:**
+- ✅ Función `sync_property_location_fields()`
+- ✅ Función `resolve_property_location_ids()`
+- ✅ Trigger `trg_sync_property_location`
+- ✅ Trigger `trg_resolve_property_location_ids`
+- ✅ Script de actualización para datos existentes
+- ✅ Queries de verificación
+
+---
+
+### Ejecutar migración de datos existentes
+
+El script incluye UPDATEs para sincronizar propiedades existentes:
+
+```sql
+-- Actualiza department_id desde department (texto)
+UPDATE properties p
+SET department_id = d.id
+FROM departments d
+WHERE LOWER(p.department) = LOWER(d.name)
+  AND d.country = 'UY'
+  AND p.department_id IS NULL;
+
+-- Actualiza city_id desde city + department_id
+UPDATE properties p
+SET city_id = c.id
+FROM cities c
+WHERE LOWER(p.city) = LOWER(c.name)
+  AND p.department_id = c.department_id
+  AND p.city_id IS NULL;
+
+-- Actualiza neighborhood_id desde neighborhood + city_id
+UPDATE properties p
+SET neighborhood_id = n.id
+FROM neighborhoods n
+WHERE LOWER(p.neighborhood) = LOWER(n.name)
+  AND p.city_id = n.city_id
+  AND p.neighborhood_id IS NULL;
+```
+
+---
+
+### Verificar sincronización
+
+```sql
+-- Ver resumen de sincronización
+SELECT
+  COUNT(*) AS total_properties,
+  COUNT(department_id) AS with_department_id,
+  COUNT(city_id) AS with_city_id,
+  COUNT(neighborhood_id) AS with_neighborhood_id,
+  ROUND(100.0 * COUNT(department_id) / NULLIF(COUNT(*), 0), 2) AS pct_department,
+  ROUND(100.0 * COUNT(city_id) / NULLIF(COUNT(*), 0), 2) AS pct_city,
+  ROUND(100.0 * COUNT(neighborhood_id) / NULLIF(COUNT(*), 0), 2) AS pct_neighborhood
+FROM properties;
+```
+
+**Resultado esperado:**
+```
+ total_properties | with_department_id | with_city_id | with_neighborhood_id | pct_department | pct_city | pct_neighborhood
+------------------+-------------------+--------------+---------------------+----------------+----------+------------------
+              100 |                95 |           90 |                  85 |          95.00 |    90.00 |            85.00
+```
+
+---
+
+### Flujo recomendado para scraping
+
+```
+1. Scraper guarda propiedad con solo texto:
+   { department: "Montevideo", city: "Montevideo", neighborhood: "Pocitos" }
+   
+2. Trigger `trg_resolve_property_location_ids` se ejecuta:
+   → Resuelve department_id, city_id, neighborhood_id automáticamente
+   
+3. Trigger `trg_sync_property_location_fields` verifica:
+   → Confirma que los nombres de texto coincidan con los IDs
+   
+4. Propiedad guardada con consistencia 100% ✅
 ```
