@@ -60,6 +60,8 @@ export function usePropertyMutations() {
             neighborhood_id?: string;
             city: string;
             city_id?: string;
+            department?: string;
+            department_id?: string;
             sqMeters: number;
             rooms: number;
             aiSummary: string;
