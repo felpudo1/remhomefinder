@@ -1,64 +1,65 @@
 
 
-# Plan: Backup de BD + Validación de persistencia multi-usuario
+## Plan: Migración SQL para jerarquía geográfica + Fix build errors
 
-## Diagnóstico
+### Mi opinión sobre esta estructura
 
-La BD ya está 100% alineada con el frontend. No se requieren migraciones.
+**PROS:**
+- Estructura limpia y profesional: País → Departamento → Ciudad → Barrio es el estándar geográfico correcto
+- No hay datos reales guardados, asi que la migración es limpia sin riesgo de pérdida de datos
+- `department_id` en `properties` como nullable + campo texto `department` mantiene compatibilidad con el scraper actual (no hay que tocarlo ahora)
+- Seed de Uruguay + Argentina prepara el sistema para expansión regional
+- `ON DELETE SET NULL` en `cities.department_id` es seguro: no rompe datos existentes si se borra un departamento
+- RLS coherente con el resto del sistema (lectura pública, escritura admin)
 
-La arquitectura ya soporta **múltiples usuarios** calificando la misma publicación porque:
-- Cada usuario tiene su propio `user_listing` (con `source_publication_id` apuntando a la `agent_publication`)
-- Cada cambio de estado genera un registro **independiente** en `status_history_log` con su propio `event_metadata`
-- La vista `agent_deserter_insights` ya agrega datos de descarte por publicación
-- No hay conflictos: N usuarios pueden calificar la misma propiedad y cada feedback queda en su propio log
+**CONTRAS / RIESGOS:**
+- Eliminar `cities.country` es destructivo e irreversible. Si hay ciudades cargadas con `country = 'Uruguay'`, esa info se pierde. Recomiendo: **no dropear** la columna ahora, solo deprecarla. Agregar `department_id` y dejar `country` como legacy hasta confirmar que todo funciona
+- La tabla `cities` actualmente actúa como "departamentos" en el frontend (`AdminGeografia.tsx` la llama "Departamentos"). Agregar una tabla `departments` real va a generar confusión hasta que se actualice el frontend
+- `user_search_profiles.city_id` apunta a `cities` (que hoy son departamentos). Después de esta migración, habrá que decidir si ese FK debería apuntar a `departments` en su lugar
+- Sin cambios en el frontend, el panel admin seguirá mostrando `cities` como "Departamentos" — inconsistencia temporal
 
-## Lo que se hará (2 pasos)
+**RECOMENDACION:** Hacer la migración pero **NO dropear** `cities.country`. Solo agregar `department_id`. Es más seguro y reversible.
 
-### Paso 1: Backup de 8 tablas críticas a CSV
+---
 
-Exportar a `/mnt/documents/backup-2026-03-20/`:
-- `user_listings` (18 registros)
-- `status_history_log` (50 registros)
-- `properties`
-- `profiles`
-- `organizations`
-- `organization_members`
-- `attribute_scores`
-- `family_comments`
+### Fase 1 — Fix build errors (MarketplaceView.tsx)
 
-Usando `psql` con las variables de entorno ya configuradas. Formato CSV con headers.
+**Archivo:** `src/components/MarketplaceView.tsx`
 
-### Paso 2: Verificar que el fix de PropertyCard está deployado
+1. Agregar import de `supabase` desde `@/integrations/supabase/client`
+2. Línea 136: cambiar `profile.neighborhood_ids` por `searchProfile.neighborhood_ids`
+3. Línea 140: cambiar `profile.neighborhood_ids` por `searchProfile.neighborhood_ids`
 
-El fix ya está aplicado localmente (líneas 706-726 pasan `closingFeedback`). Solo necesita deploy (que ocurre automáticamente al hacer cambios en Lovable).
+Esto desbloquea el deploy en Vercel inmediatamente.
 
-**No hay SQL que ejecutar. No hay migraciones. No hay cambios de RLS.**
+### Fase 2 — Migración SQL
 
-## Detalle técnico: Flujo multi-usuario
+**Archivo:** `supabase/migrations/20260323120000_add_departments_geo_hierarchy.sql`
 
-```text
-Usuario A (familia 1)          Usuario B (familia 2)
-    │                               │
-    ▼                               ▼
-user_listing (org_id=familia1)  user_listing (org_id=familia2)
-source_publication_id ──────┐   source_publication_id ──────┐
-                            ▼                               ▼
-                    agent_publication (propiedad X)
-                            │
-    ┌───────────────────────┼───────────────────────┐
-    ▼                       ▼                       ▼
-status_history_log      status_history_log      status_history_log
-(familia 1, contactado) (familia 2, descartado) (familia 1, firme_candidato)
-event_metadata: {       event_metadata: {       event_metadata: {
-  contacted_name,         reason,                 close_price_score,
-  contacted_interest,     discarded_survey...     close_condition_score...
-  contacted_urgency                             }
-}                       }
-```
+Contenido:
 
-Cada familia tiene su propio historial independiente. El agente puede agregar todos los logs por `source_publication_id` para ver insights globales.
+1. **Crear tabla `departments`** con `id`, `name`, `country` (default 'UY'), `created_at`
+2. **Habilitar RLS** + policies: SELECT para `public`, INSERT/UPDATE/DELETE solo admins
+3. **Índice** en `(country, LOWER(name))` para búsquedas y unicidad
+4. **Agregar `department_id`** a `cities` como FK nullable a `departments(id) ON DELETE SET NULL`
+5. **NO dropear `cities.country`** — se deja como legacy por seguridad
+6. **Agregar `department` (text)** y **`department_id` (uuid FK)** a `properties`
+7. **Seed Uruguay:** 19 departamentos con `country = 'UY'`
+8. **Seed Argentina:** 24 provincias con `country = 'AR'`
 
-## Riesgos
+Todo con `IF NOT EXISTS` donde sea posible para idempotencia.
 
-Ninguno. Solo lectura (backup) + deploy de fix ya aplicado.
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---|---|
+| `src/components/MarketplaceView.tsx` | Fix 2 build errors (import supabase + searchProfile ref) |
+| `supabase/migrations/20260323120000_...sql` | Crear migración completa |
+
+### Qué NO se toca
+
+- Scraper / edge functions
+- AdminGeografia.tsx (se actualizará en una fase posterior)
+- Formularios de propiedades
+- user_search_profiles (se evaluará después)
 
