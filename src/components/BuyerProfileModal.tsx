@@ -253,7 +253,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                       className="rounded-xl h-12 bg-background/50 border-input font-medium justify-between w-full"
                       disabled={!selectedCity || neighborhoods.length === 0}
                     >
-                      {!selectedDept ? "Elegí Depto primero" : "Elegí hasta 5 barrios"}
+                      {!selectedCity ? "Elegí ciudad primero" : "Elegí hasta 5 barrios"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
