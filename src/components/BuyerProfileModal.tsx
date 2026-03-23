@@ -31,26 +31,38 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
 
   // Nuevos estados para Matchmaker Geográfico
   const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
+  const [cities, setCities] = useState<{id: string, name: string}[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<{id: string, name: string}[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+    supabase.from("departments").select("id, name").order("name").then(({ data }) => {
       if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+      supabase.from("cities").select("id, name").eq("department_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setCities(data as { id: string; name: string }[]);
+      });
+    } else {
+      setCities([]);
+    }
+  }, [selectedDept]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity).order("name").then(({ data }) => {
         if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
       setSelectedNeighborhoods([]);
     } else {
       setNeighborhoods([]);
     }
-  }, [selectedDept]);
+  }, [selectedCity]);
 
   const handleOperationChange = (val: string) => {
     setOperation(val);
