@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList } from "@/hooks/useSaveToList";
 import { useProperties } from "@/hooks/useProperties";
@@ -133,11 +134,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       setSelectedListingType(searchProfile.operation === "Alquilar" ? "rent" : "sale");
 
           // Mapeo de barrios (MatchAI Pro) - Cargamos todos los barrios del perfil
-          if (profile.neighborhood_ids && profile.neighborhood_ids.length > 0) {
+          if (searchProfile.neighborhood_ids && searchProfile.neighborhood_ids.length > 0) {
             const { data: neighborhoodsData } = await supabase
               .from('neighborhoods')
               .select('name')
-              .in('id', profile.neighborhood_ids);
+              .in('id', searchProfile.neighborhood_ids);
             
             if (neighborhoodsData) {
               setSelectedNeighborhoods(neighborhoodsData.map(n => n.name));
