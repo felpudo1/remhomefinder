@@ -220,7 +220,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                 <MapPin className="w-3.5 h-3.5" /> ¿Dónde estás buscando?
               </Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <Select value={selectedDept} onValueChange={(val) => { setSelectedDept(val); setSelectedCity(""); setSelectedNeighborhoods([]); }}>
                   <SelectTrigger className="rounded-xl h-12 bg-background/50 border-input font-medium">
                     <SelectValue placeholder="Departamento" />
                   </SelectTrigger>
@@ -228,6 +228,18 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
                     {departments.length === 0 && <SelectItem value="disabled" disabled>Cargando...</SelectItem>}
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedCity} onValueChange={(val) => { setSelectedCity(val); setSelectedNeighborhoods([]); }} disabled={!selectedDept}>
+                  <SelectTrigger className="rounded-xl h-12 bg-background/50 border-input font-medium">
+                    <SelectValue placeholder="Ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.length === 0 && <SelectItem value="disabled" disabled>{selectedDept ? "Sin ciudades" : "Elegí depto."}</SelectItem>}
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
