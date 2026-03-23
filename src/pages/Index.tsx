@@ -154,7 +154,7 @@ const Index = () => {
           const toastShown = sessionStorage.getItem("hf_buyer_profile_toast_shown") === "true";
 
           if (!sessionDismissed) {
-             setShowBuyerProfileModal(true);
+             setShowAIProfileModal(true);
           } else if (!toastShown) {
              // Si lo cerró, le tiramos el toast sarcástico
              toast({
