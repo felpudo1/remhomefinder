@@ -98,8 +98,8 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
       localStorage.setItem(`hf_buyer_profile_completed_${userId}`, "true");
       
       toast({
-        title: "¡Perfil de IA creado con éxito!",
-        description: "Ahora te mostraremos propiedades altamente relevantes para vos.",
+        title: "Perfil IA creado con EXITO",
+        description: "Ahora a esperar que la magia fluya…",
       });
       onClose();
     } catch (e) {

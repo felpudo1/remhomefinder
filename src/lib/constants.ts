@@ -22,6 +22,8 @@ export type UserRole = (typeof ROLES)[keyof typeof ROLES];
 export const ROUTES = {
     HOME: "/",
     DASHBOARD: "/dashboard",
+    /** Completar perfil de búsqueda IA (user_search_profiles) antes del dashboard */
+    DASHBOARD_AI_PROFILE: "/dashboard/perfil-ia",
     AUTH: "/auth",
     /** Pedir enlace de recuperación de contraseña (email) */
     AUTH_RECOVER: "/auth/recuperar",

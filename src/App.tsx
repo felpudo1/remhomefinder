@@ -15,6 +15,7 @@ const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWi
 
 // Importaciones dinámicas para optimización de carga (Lazy Loading)
 const Index = routeLazy(() => import("./pages/Index"));
+const PerfilIAPage = routeLazy(() => import("./pages/PerfilIAPage"));
 const Landing = routeLazy(() => import("./pages/Landing"));
 const Auth = routeLazy(() => import("./pages/Auth"));
 const Admin = routeLazy(() => import("./pages/Admin"));
@@ -58,6 +59,14 @@ const App = () => (
               <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
               
               {/* Rutas Protegidas Simples (Solo requieren estar logeado) */}
+              <Route
+                path={ROUTES.DASHBOARD_AI_PROFILE}
+                element={
+                  <ProtectedRoute>
+                    <PerfilIAPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Index /></ProtectedRoute>} />
               
               {/* Rutas Protegidas con Roles Específicos */}

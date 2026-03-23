@@ -30,7 +30,6 @@ import {
 import type { AddButtonConfig } from "@/types/property";
 import { SupportWhatsAppLink } from "@/components/support/SupportWhatsAppLink";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { BuyerProfileModal } from "@/components/BuyerProfileModal";
 import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
 
@@ -54,6 +53,7 @@ type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { properties, loading, addProperty, updateStatus, addComment, refetch } = useProperties();
   const { data: marketplaceProperties = [] } = useMarketplaceProperties();
 
@@ -71,7 +71,7 @@ const Index = () => {
   };
 
   // Estado del perfil del usuario
-  const { data: profile } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const profileStatus = profile?.status ?? "active";
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -106,7 +106,6 @@ const Index = () => {
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
-  const [showBuyerProfileModal, setShowBuyerProfileModal] = useState(false);
   const [showAIProfileModal, setShowAIProfileModal] = useState(false);
 
   const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
@@ -414,10 +413,16 @@ const Index = () => {
             <div className="space-y-4 pt-2">
               <Button
                 className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
-                onClick={() => {
+                onClick={async () => {
                   setShowRegWelcome(false);
-                  if (localStorage.getItem(`hf_buyer_profile_completed_${profile?.userId}`) !== "true") {
-                    setShowBuyerProfileModal(true);
+                  if (!profile?.userId) return;
+                  const { data } = await supabase
+                    .from("user_search_profiles")
+                    .select("id")
+                    .eq("user_id", profile.userId)
+                    .maybeSingle();
+                  if (!data) {
+                    navigate(ROUTES.DASHBOARD_AI_PROFILE, { replace: true });
                   }
                 }}
               >
@@ -638,12 +643,6 @@ const Index = () => {
           </Dialog>
         </>
       )}
-
-      <BuyerProfileModal 
-        isOpen={showBuyerProfileModal} 
-        onClose={() => setShowBuyerProfileModal(false)} 
-        userId={profile?.userId} 
-      />
 
       <AIProfileModal
         isOpen={showAIProfileModal}
