@@ -7,6 +7,7 @@ import authBg from "@/assets/auth-bg.jpg";
 import { ROUTES } from "@/lib/constants";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
+import { Footer } from "@/components/Footer";
 
 const Landing = () => {
     const navigate = useNavigate();
@@ -117,23 +118,7 @@ const Landing = () => {
             {/* Testimonios rotativos */}
             <TestimonialCarousel />
 
-            {/* Footer */}
-            <footer className="py-12 border-t border-border bg-card">
-                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center">
-                            <Home className="w-3 h-3 text-primary-foreground" />
-                        </div>
-                        <span className="font-bold text-lg">{appBrandName}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">© 2024 {appBrandName}. El primer organizador grupal inmobiliario.</p>
-                    <div className="flex gap-6 text-sm text-muted-foreground font-medium">
-                        <a href="#" className="hover:text-primary">Términos</a>
-                        <a href="#" className="hover:text-primary">Privacidad</a>
-                        <a href="#" className="hover:text-primary">Contacto</a>
-                    </div>
-                </div>
-            </footer>
+            <Footer />
         </div>);
 
 };

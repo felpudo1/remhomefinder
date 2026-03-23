@@ -5,8 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface MarketplaceFilterSidebarProps {
   neighborhoods: string[];
-  selectedNeighborhood: string;
-  onNeighborhoodChange: (v: string) => void;
+  selectedNeighborhoods: string[];
+  onNeighborhoodsChange: (v: string[]) => void;
+  selectedCurrency: string;
+  onCurrencyChange: (v: string) => void;
+  minPrice: string;
+  onMinPriceChange: (v: string) => void;
   maxPrice: string;
   onMaxPriceChange: (v: string) => void;
   selectedRooms: string;
@@ -23,8 +27,12 @@ interface MarketplaceFilterSidebarProps {
 
 export function MarketplaceFilterSidebar({
   neighborhoods,
-  selectedNeighborhood,
-  onNeighborhoodChange,
+  selectedNeighborhoods,
+  onNeighborhoodsChange,
+  selectedCurrency,
+  onCurrencyChange,
+  minPrice,
+  onMinPriceChange,
   maxPrice,
   onMaxPriceChange,
   selectedRooms,
@@ -47,15 +55,6 @@ export function MarketplaceFilterSidebar({
           <span className="font-semibold text-sm text-foreground">Filtros</span>
         </div>
         <div className="flex items-center gap-2">
-          {hasFilters && (
-            <button
-              onClick={onClearFilters}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-            >
-              <X className="w-3 h-3" />
-              Limpiar
-            </button>
-          )}
           {onMobileClose && (
             <button
               onClick={onMobileClose}
@@ -68,11 +67,26 @@ export function MarketplaceFilterSidebar({
         </div>
       </div>
 
-      {/* Contador */}
-      <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-        Mostrando{" "}
-        <span className="font-semibold text-foreground">{filteredCount}</span> de{" "}
-        <span className="font-semibold text-foreground">{totalCount}</span> propiedades
+      {/* Contador y Limpiar */}
+      <div className="space-y-3">
+        <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 flex items-center justify-between">
+          <span>
+            Mostrando <span className="font-semibold text-foreground">{filteredCount}</span> de{" "}
+            <span className="font-semibold text-foreground">{totalCount}</span>
+          </span>
+        </div>
+        
+        {hasFilters && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClearFilters}
+            className="w-full rounded-xl border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 text-primary text-xs font-bold gap-2 h-9 transition-all animate-in fade-in slide-in-from-top-1"
+          >
+            <X className="w-3.5 h-3.5" />
+            Limpiar todos los filtros
+          </Button>
+        )}
       </div>
 
       {/* Tipo de operación */}
@@ -93,31 +107,93 @@ export function MarketplaceFilterSidebar({
         </div>
       </div>
 
-      {/* Barrio */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Barrio</p>
-        <Select value={selectedNeighborhood} onValueChange={onNeighborhoodChange}>
+      {/* Barrios Multi-selección */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Barrios</p>
+        <Select 
+          onValueChange={(value) => {
+            if (value && !selectedNeighborhoods.includes(value)) {
+              onNeighborhoodsChange([...selectedNeighborhoods, value]);
+            }
+          }}
+        >
           <SelectTrigger className="w-full h-9 rounded-xl bg-muted border-0 text-sm">
-            <SelectValue placeholder="Todos los barrios" />
+            <SelectValue placeholder="Agregar barrio..." />
           </SelectTrigger>
           <SelectContent>
-            {neighborhoods.map((n) => (
-              <SelectItem key={n} value={n}>{n}</SelectItem>
-            ))}
+            {neighborhoods
+              .filter(n => !selectedNeighborhoods.includes(n))
+              .map((n) => (
+                <SelectItem key={n} value={n}>{n}</SelectItem>
+              ))}
           </SelectContent>
         </Select>
+
+        {/* Lista de barrios seleccionados (Badges) */}
+        {selectedNeighborhoods.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {selectedNeighborhoods.map((n) => (
+              <div 
+                key={n} 
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-lg border border-primary/20 animate-in zoom-in-95 duration-200"
+              >
+                {n}
+                <button 
+                  onClick={() => onNeighborhoodsChange(selectedNeighborhoods.filter(item => item !== n))}
+                  className="hover:text-primary-foreground hover:bg-primary rounded-full p-0.5 transition-colors"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Precio máximo */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Precio máximo</p>
-        <Input
-          type="number"
-          placeholder="Sin límite"
-          value={maxPrice}
-          onChange={(e) => onMaxPriceChange(e.target.value)}
-          className="h-9 rounded-xl bg-muted border-0 text-sm"
-        />
+      {/* Precio y Moneda */}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Moneda</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[{ value: "U$S", label: "Dólares" }, { value: "$", label: "Pesos" }].map((opt) => (
+              <Button
+                key={opt.value}
+                variant={selectedCurrency === opt.value ? "default" : "outline"}
+                size="sm"
+                className="rounded-xl h-9 text-sm"
+                onClick={() => onCurrencyChange(selectedCurrency === opt.value ? "" : opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rango de Precio</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <span className="text-[10px] text-muted-foreground font-medium ml-1">Mínimo</span>
+              <Input
+                type="number"
+                placeholder="0"
+                value={minPrice}
+                onChange={(e) => onMinPriceChange(e.target.value)}
+                className="h-9 rounded-xl bg-muted border-0 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] text-muted-foreground font-medium ml-1">Máximo</span>
+              <Input
+                type="number"
+                placeholder="Sin límite"
+                value={maxPrice}
+                onChange={(e) => onMaxPriceChange(e.target.value)}
+                className="h-9 rounded-xl bg-muted border-0 text-sm"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Ambientes */}

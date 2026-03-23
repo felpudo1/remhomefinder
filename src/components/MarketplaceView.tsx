@@ -53,11 +53,15 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
+  const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [selectedRooms, setSelectedRooms] = useState<string>("");
   const [selectedListingType, setSelectedListingType] = useState<string>("");
   const [hideSaved, setHideSaved] = useState(true);
+  const [matchAI, setMatchAI] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const contactTipInterval = Number.isInteger(Number(contactTipIntervalRaw)) && Number(contactTipIntervalRaw) >= 1
@@ -77,13 +81,84 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     return Array.from(set).sort();
   }, [marketplaceProperties]);
 
-  const hasFilters = !!(selectedNeighborhood || maxPrice || selectedRooms || selectedListingType);
+  const hasFilters = !!(selectedNeighborhoods.length > 0 || minPrice || maxPrice || selectedRooms || selectedListingType || selectedCurrency);
 
   const clearFilters = () => {
-    setSelectedNeighborhood("");
+    setSelectedNeighborhoods([]);
+    setSelectedCurrency("");
+    setMinPrice("");
     setMaxPrice("");
     setSelectedRooms("");
     setSelectedListingType("");
+    setMatchAI(false);
+  };
+
+  const handleMatchAIToggle = async (checked: boolean) => {
+    setMatchAI(checked);
+    if (!checked) {
+      clearFilters();
+      return;
+    }
+
+    if (!profile?.userId) return;
+
+    setLoadingProfile(true);
+    try {
+      const { data: searchProfile, error } = await supabase
+        .from('user_search_profiles')
+        .select('*, neighborhoods(name)')
+        .eq('user_id', profile.userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!searchProfile) {
+        toast({
+          title: "Perfil IA no encontrado",
+          description: "Primero completá tus preferencias en 'Mi Perfil' para usar MatchAI.",
+          variant: "destructive"
+        });
+        setMatchAI(false);
+        return;
+      }
+
+      // Mapear valores del perfil a los filtros
+      setSelectedCurrency(searchProfile.currency || "U$S");
+      setMinPrice(searchProfile.min_budget?.toString() || "");
+      setMaxPrice(searchProfile.max_budget?.toString() || "");
+      
+      const rooms = searchProfile.min_bedrooms;
+      setSelectedRooms(rooms >= 4 ? "4+" : rooms?.toString() || "");
+      
+      setSelectedListingType(searchProfile.operation === "Alquilar" ? "rent" : "sale");
+
+          // Mapeo de barrios (MatchAI Pro) - Cargamos todos los barrios del perfil
+          if (profile.neighborhood_ids && profile.neighborhood_ids.length > 0) {
+            const { data: neighborhoodsData } = await supabase
+              .from('neighborhoods')
+              .select('name')
+              .in('id', profile.neighborhood_ids);
+            
+            if (neighborhoodsData) {
+              setSelectedNeighborhoods(neighborhoodsData.map(n => n.name));
+            }
+          }
+
+      toast({
+        title: "MatchAI Activado 🔮",
+        description: "Cargamos tus preferencias de búsqueda en los filtros.",
+      });
+    } catch (err) {
+      console.error("MatchAI Error:", err);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar tus preferencias.",
+        variant: "destructive"
+      });
+      setMatchAI(false);
+    } finally {
+      setLoadingProfile(false);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -103,8 +178,21 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       );
     }
 
-    if (selectedNeighborhood) {
-      result = result.filter((p) => p.neighborhood === selectedNeighborhood);
+    // Filtrado por barrios (OR entre los seleccionados)
+    if (selectedNeighborhoods.length > 0) {
+      result = result.filter((p) => p.neighborhood && selectedNeighborhoods.includes(p.neighborhood));
+    }
+
+    // Filtrado por moneda (solo si hay una seleccionada)
+    if (selectedCurrency) {
+      result = result.filter((p) => p.currency === selectedCurrency);
+    }
+
+    if (minPrice) {
+      const min = Number(minPrice);
+      if (!isNaN(min)) {
+        result = result.filter((p) => p.totalCost >= min);
+      }
     }
 
     if (maxPrice) {
@@ -156,7 +244,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     });
 
     return result;
-  }, [marketplaceProperties, searchQuery, selectedNeighborhood, maxPrice, selectedRooms, selectedListingType, hideSaved, savedMarketplaceIds, referredAgentId]);
+  }, [marketplaceProperties, searchQuery, selectedNeighborhoods, selectedCurrency, minPrice, maxPrice, selectedRooms, selectedListingType, hideSaved, savedMarketplaceIds, referredAgentId]);
 
   const handleSave = async (property: MarketplaceProperty) => {
     setSavingId(property.id);
@@ -189,14 +277,18 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     setDontShowAgain(false);
   };
 
-  const activeFilterCount = [selectedNeighborhood, maxPrice, selectedRooms, selectedListingType].filter(Boolean).length;
+  const activeFilterCount = [selectedNeighborhoods.length > 0, minPrice, maxPrice, selectedRooms, selectedListingType, selectedCurrency].filter(Boolean).length;
 
   return (
     <div className="flex gap-8">
       <MarketplaceFilterSidebar
         neighborhoods={neighborhoods}
-        selectedNeighborhood={selectedNeighborhood}
-        onNeighborhoodChange={setSelectedNeighborhood}
+          selectedNeighborhoods={selectedNeighborhoods}
+          onNeighborhoodsChange={setSelectedNeighborhoods}
+        selectedCurrency={selectedCurrency}
+        onCurrencyChange={setSelectedCurrency}
+        minPrice={minPrice}
+        onMinPriceChange={setMinPrice}
         maxPrice={maxPrice}
         onMaxPriceChange={setMaxPrice}
         selectedRooms={selectedRooms}
@@ -223,15 +315,33 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <Switch
-            id="hide-saved-marketplace"
-            checked={hideSaved}
-            onCheckedChange={setHideSaved}
-          />
-          <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground">
-            Ocultar avisos guardados
-          </Label>
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Switch
+              id="hide-saved-marketplace"
+              checked={hideSaved}
+              onCheckedChange={setHideSaved}
+            />
+            <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer">
+              Ocultar guardados
+            </Label>
+          </div>
+
+          <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-1 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Loader2 className={`w-10 h-10 text-purple-500 ${loadingProfile ? "animate-spin" : ""}`} />
+            </div>
+            <Switch
+              id="match-ai-toggle"
+              checked={matchAI}
+              onCheckedChange={handleMatchAIToggle}
+              disabled={loadingProfile}
+              className="data-[state=checked]:bg-purple-500"
+            />
+            <Label htmlFor="match-ai-toggle" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+              MatchAI <span className="text-xs">🔮</span>
+            </Label>
+          </div>
         </div>
 
         {isLoading ? (

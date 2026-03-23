@@ -65,7 +65,6 @@ const LegalTerms = () => {
         razonable.
       </p>
 
-      <h2>7. Contacto</h2>
       <p>
         Para consultas sobre estos términos{mail ? ":" : " configurá el correo de soporte en el panel de administración."}
         {mail && (
@@ -77,6 +76,13 @@ const LegalTerms = () => {
           </>
         )}
       </p>
+
+      <div className="pt-8 border-t border-border/50 mt-8">
+        <p className="text-[11px] text-muted-foreground leading-relaxed italic">
+          Estos términos y condiciones fueron actualizados por última vez en marzo de 2026. 
+          <strong>{appBrandName}</strong> se reserva el derecho de modificarlos para adaptarlos a novedades legislativas o prácticas del mercado.
+        </p>
+      </div>
     </LegalPageShell>
   );
 };

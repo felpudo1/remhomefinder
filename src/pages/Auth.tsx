@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLES, ROUTES } from "@/lib/constants";
+import { Footer } from "@/components/Footer";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import {
   SHOW_AUTH_VIDEO_CONFIG_KEY,
@@ -474,6 +475,7 @@ const Auth = () => {
       </div>
 
       <DbStatusBadge />
+      <Footer />
     </>);
 
 };
