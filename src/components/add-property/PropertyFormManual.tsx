@@ -85,13 +85,23 @@ export function PropertyFormManual({
     const safeCurrency = form.currency === "USD" || form.currency === "UYU" ? form.currency : "UYU";
     
     // Geographical State
+    const [deptsList, setDeptsList] = useState<any[]>([]);
     const [citiesList, setCitiesList] = useState<any[]>([]);
     const [neighborhoodsList, setNeighborhoodsList] = useState<any[]>([]);
 
-    // Fetch cities initially
+    // Fetch departments initially
     useEffect(() => {
-        supabase.from("cities").select("id, name").order("name").then(({ data }) => setCitiesList((data as any[]) || []));
+        supabase.from("departments").select("id, name, country").order("country").order("name").then(({ data }) => setDeptsList((data as any[]) || []));
     }, []);
+
+    // Fetch cities when department changes
+    useEffect(() => {
+        if (form.department_id) {
+            supabase.from("cities").select("id, name").eq("department_id", form.department_id).order("name").then(({ data }) => setCitiesList((data as any[]) || []));
+        } else {
+            setCitiesList([]);
+        }
+    }, [form.department_id]);
 
     // Fetch neighborhoods when city changes
     useEffect(() => {
