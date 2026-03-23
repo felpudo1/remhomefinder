@@ -36,26 +36,37 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [isPrivate, setIsPrivate] = useState(false);
 
   const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
+  const [cities, setCities] = useState<{id: string, name: string}[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<{id: string, name: string}[]>([]);
   const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("cities").select("id, name").order("name").then(({ data }) => {
+    supabase.from("departments").select("id, name").order("name").then(({ data }) => {
       if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedDept).order("name").then(({ data }) => {
+      supabase.from("cities").select("id, name").eq("department_id", selectedDept).order("name").then(({ data }) => {
+        if (data) setCities(data as { id: string; name: string }[]);
+      });
+    } else {
+      setCities([]);
+    }
+  }, [selectedDept]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity).order("name").then(({ data }) => {
         if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
-      // Importante: No limpiamos selectedNeighborhoods aquí porque estamos CARGANDO el perfil al abrir
     } else {
       setNeighborhoods([]);
     }
-  }, [selectedDept]);
+  }, [selectedCity]);
 
   useEffect(() => {
     if (isOpen && userId) {
