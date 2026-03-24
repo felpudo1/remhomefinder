@@ -417,7 +417,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 return (
                   <div
                     key={property.id}
-                    className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""}`}
+                    className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""} ${matchAI && !isInactive ? "matchai-card-glow rounded-2xl" : ""}`}
                     style={matchAI ? { animationDelay: `${i * 80}ms`, animationFillMode: "backwards" } : undefined}
                   >
                     <MarketplaceCard
