@@ -8,7 +8,7 @@ import { MarketplaceCard } from "@/components/MarketplaceCard";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceProperty } from "@/types/property";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, Store } from "lucide-react";
+import { Search, Loader2, Store, ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -61,6 +61,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [selectedRooms, setSelectedRooms] = useState<string>("");
   const [selectedListingType, setSelectedListingType] = useState<string>("");
   const [hideSaved, setHideSaved] = useState(true);
+  const [expandPhotos, setExpandPhotos] = useState(false);
   const [matchAI, setMatchAI] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
@@ -327,6 +328,16 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
               Ocultar guardados
             </Label>
           </div>
+          <div className="flex items-center gap-3">
+            <Switch
+              id="expand-photos-marketplace"
+              checked={expandPhotos}
+              onCheckedChange={setExpandPhotos}
+            />
+            <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Desplegar fotos
+            </Label>
+          </div>
 
           <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-1 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -370,6 +381,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                     isSaving={savingId === property.id}
                     alreadySaved={savedMarketplaceIds.has(property.id)}
                     isReferred={referredAgentId === property.agentId}
+                    forceExpandImages={expandPhotos}
                   />
                 </div>
               );

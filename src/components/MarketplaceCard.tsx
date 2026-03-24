@@ -13,6 +13,7 @@ interface MarketplaceCardProps {
   isSaving?: boolean;
   alreadySaved?: boolean;
   isReferred?: boolean;
+  forceExpandImages?: boolean;
 }
 
 /**
@@ -29,7 +30,7 @@ const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string }
   deleted: null,
 };
 
-export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred }: MarketplaceCardProps) {
+export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred, forceExpandImages }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
@@ -54,7 +55,7 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
           setCurrentImgIndex(index);
           setIsGalleryOpen(true);
         }}
-        collapsibleImages
+        collapsibleImages={!forceExpandImages}
         autoRotateImages
         imageTransitionMode="push"
         topOverlay={
