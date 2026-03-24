@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeUrl, getExistingPropertyByUrl, checkUrlStatus } from "@/lib/duplicateCheck";
 import { useToast } from "@/hooks/use-toast";
+import { resolveGeoIds } from "@/lib/resolveGeoIds";
 import {
   Dialog,
   DialogContent,
@@ -65,7 +66,11 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     priceExpenses: "",
     currency: "UYU",
     neighborhood: "",
+    neighborhood_id: "",
     city: "",
+    city_id: "",
+    department: "",
+    department_id: "",
     address: "",
     sqMeters: "",
     rooms: "",
@@ -86,7 +91,11 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           priceExpenses: String(propertyToEdit.priceExpenses || propertyToEdit.price_expenses || ""),
           currency: propertyToEdit.currency || "UYU",
           neighborhood: propertyToEdit.neighborhood || "",
+          neighborhood_id: propertyToEdit.neighborhood_id || "",
           city: propertyToEdit.city || "",
+          city_id: propertyToEdit.city_id || "",
+          department: propertyToEdit.department || "",
+          department_id: propertyToEdit.department_id || "",
           address: propertyToEdit.address || "",
           sqMeters: String(propertyToEdit.sqMeters || propertyToEdit.m2_total || ""),
           rooms: String(propertyToEdit.rooms || ""),
@@ -100,7 +109,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         setUrl("");
         setScrapedImages([]);
         setListingType("rent");
-        setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", city: "", address: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
+        setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", neighborhood_id: "", city: "", city_id: "", department: "", department_id: "", address: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
         setCameFromImage(false);
         setUrlInApp(null);
         setScreenshotFile(null);
@@ -141,7 +150,11 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           priceExpenses: String(existing.price_expenses ?? ""),
           currency: (existing.currency as string) || "UYU",
           neighborhood: existing.neighborhood || "",
+          neighborhood_id: (existing as any).neighborhood_id || "",
           city: existing.city || "",
+          city_id: (existing as any).city_id || "",
+          department: (existing as any).department || "",
+          department_id: (existing as any).department_id || "",
           address: (existing as any).address || "",
           sqMeters: String(existing.m2_total ?? ""),
           rooms: String(existing.rooms ?? ""),
@@ -169,13 +182,25 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
 
       const d = data.data;
       setScrapedImages(d.images || []);
+      
+      // Resolver IDs geográficos desde texto
+      const geoIds = await resolveGeoIds({
+        department: d.department || "",
+        city: d.city || "",
+        neighborhood: d.neighborhood || "",
+      });
+      
       setForm({
         title: d.title || "",
         priceRent: String(d.priceRent || ""),
         priceExpenses: String(d.priceExpenses || ""),
         currency: d.currency || "UYU",
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
+        neighborhood: geoIds.neighborhood || d.neighborhood || "",
+        neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "",
+        city_id: geoIds.city_id || "",
+        department: geoIds.department || d.department || "",
+        department_id: geoIds.department_id || "",
         address: d.address || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
@@ -225,10 +250,12 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       }
 
       const d = data.data;
+      const geoIds = await resolveGeoIds({ department: d.department || "", city: d.city || "", neighborhood: d.neighborhood || "" });
       setForm({
         title: d.title || "", priceRent: d.priceRent ? String(d.priceRent) : "", priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "", address: d.address || "",
-        sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
+        currency: d.currency || "UYU", neighborhood: geoIds.neighborhood || d.neighborhood || "", neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "", city_id: geoIds.city_id || "", department: geoIds.department || d.department || "", department_id: geoIds.department_id || "",
+        address: d.address || "", sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "", ref: d.ref || "", details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);
@@ -279,10 +306,12 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       }
 
       const d = data.data;
+      const geoIds = await resolveGeoIds({ department: d.department || "", city: d.city || "", neighborhood: d.neighborhood || "" });
       setForm({
         title: d.title || "", priceRent: d.priceRent ? String(d.priceRent) : "", priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
-        currency: d.currency || "UYU", neighborhood: d.neighborhood || "", city: d.city || "", address: d.address || "",
-        sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
+        currency: d.currency || "UYU", neighborhood: geoIds.neighborhood || d.neighborhood || "", neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "", city_id: geoIds.city_id || "", department: geoIds.department || d.department || "", department_id: geoIds.department_id || "",
+        address: d.address || "", sqMeters: d.sqMeters ? String(d.sqMeters) : "", rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "", ref: d.ref || "", details: d.details || "",
       });
       if (d.listingType === "sale" || d.listingType === "rent") setListingType(d.listingType);

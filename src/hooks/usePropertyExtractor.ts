@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { checkUrlStatus } from "@/lib/duplicateCheck";
+import { resolveGeoIds } from "@/lib/resolveGeoIds";
 
 /** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
 function safeUUID(): string {
@@ -25,8 +26,12 @@ export type PropertyData = {
   priceRent: string;
   priceExpenses: string;
   currency: "UYU" | "USD";
+  department: string;
+  department_id: string;
   neighborhood: string;
+  neighborhood_id: string;
   city: string;
+  city_id: string;
   sqMeters: string;
   rooms: string;
   aiSummary: string;
@@ -84,13 +89,22 @@ export function usePropertyExtractor() {
       }
 
       const d = data.data;
+      const geoIds = await resolveGeoIds({
+        department: d.department || "",
+        city: d.city || "",
+        neighborhood: d.neighborhood || "",
+      });
       const propertyData: PropertyData = {
         title: d.title || "",
         priceRent: String(d.priceRent || ""),
         priceExpenses: String(d.priceExpenses || ""),
         currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
+        department: geoIds.department || d.department || "",
+        department_id: geoIds.department_id || "",
+        neighborhood: geoIds.neighborhood || d.neighborhood || "",
+        neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "",
+        city_id: geoIds.city_id || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
         aiSummary: d.aiSummary || "",
@@ -160,13 +174,22 @@ export function usePropertyExtractor() {
       }
 
       const d = data.data;
+      const geoIds = await resolveGeoIds({
+        department: d.department || "",
+        city: d.city || "",
+        neighborhood: d.neighborhood || "",
+      });
       const propertyData: PropertyData = {
         title: d.title || "",
         priceRent: d.priceRent ? String(d.priceRent) : "",
         priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
         currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
+        department: geoIds.department || d.department || "",
+        department_id: geoIds.department_id || "",
+        neighborhood: geoIds.neighborhood || d.neighborhood || "",
+        neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "",
+        city_id: geoIds.city_id || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
