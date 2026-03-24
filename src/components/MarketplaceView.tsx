@@ -379,26 +379,45 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
             <p className="text-sm mt-1">Las organizaciones aún no publicaron propiedades.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filtered.map((property) => {
-              const isInactive = INACTIVE_STATUSES.has(property.status);
-              return (
-                <div
-                  key={property.id}
-                  className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""}`}
-                >
-                  <MarketplaceCard
-                    property={property}
-                    onSave={handleSave}
-                    isSaving={savingId === property.id}
-                    alreadySaved={savedMarketplaceIds.has(property.id)}
-                    isReferred={referredAgentId === property.agentId}
-                    forceExpandImages={expandPhotos}
-                  />
+          <>
+            {matchAI && filtered.length > 0 && (
+              <div className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 via-purple-400/10 to-purple-500/5 p-4 mb-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-400/10 via-transparent to-transparent pointer-events-none" />
+                <div className="relative flex items-center gap-3">
+                  <span className="text-2xl animate-pulse">🔮</span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      MatchAI encontró {filtered.length} {filtered.length === 1 ? "propiedad" : "propiedades"} para ti
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Resultados filtrados según tu perfil de búsqueda
+                    </p>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${matchAI ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}`}>
+              {filtered.map((property, i) => {
+                const isInactive = INACTIVE_STATUSES.has(property.status);
+                return (
+                  <div
+                    key={property.id}
+                    className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""}`}
+                    style={matchAI ? { animationDelay: `${i * 80}ms`, animationFillMode: "backwards" } : undefined}
+                  >
+                    <MarketplaceCard
+                      property={property}
+                      onSave={handleSave}
+                      isSaving={savingId === property.id}
+                      alreadySaved={savedMarketplaceIds.has(property.id)}
+                      isReferred={referredAgentId === property.agentId}
+                      forceExpandImages={expandPhotos}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </main>
 
