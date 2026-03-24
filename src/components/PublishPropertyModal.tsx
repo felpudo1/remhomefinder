@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeUrl, getExistingPropertyByUrl, checkUrlStatus } from "@/lib/duplicateCheck";
 import { useToast } from "@/hooks/use-toast";
+import { resolveGeoIds } from "@/lib/resolveGeoIds";
 import {
   Dialog,
   DialogContent,
