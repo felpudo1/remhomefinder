@@ -39,6 +39,8 @@ export type PropertyData = {
   details: string;
   listingType?: "rent" | "sale";
   images?: string[];
+  contactName?: string;
+  contactPhone?: string;
 };
 
 export function usePropertyExtractor() {
