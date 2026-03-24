@@ -137,7 +137,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
         min_budget: Number(minBudget) || 0,
         max_budget: Number(maxBudget) || 0,
         min_bedrooms: bedrooms === "4+" ? 4 : (Number(bedrooms) || 1),
-        city_id: selectedDept || null,
+        city_id: selectedCity || null,
         neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
         is_private: isPrivate,
       }, { onConflict: 'user_id' });
