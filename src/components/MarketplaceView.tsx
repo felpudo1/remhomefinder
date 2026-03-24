@@ -8,7 +8,7 @@ import { MarketplaceCard } from "@/components/MarketplaceCard";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceProperty } from "@/types/property";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, Store } from "lucide-react";
+import { Search, Loader2, Store, ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
