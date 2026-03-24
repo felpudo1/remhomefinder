@@ -37,7 +37,11 @@ import {
   Users,
   Building2,
   X,
+  Phone,
+  User,
+  Copy,
 } from "lucide-react";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { currencySymbol } from "@/lib/currency";
 import { useGroups } from "@/hooks/useGroups";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
