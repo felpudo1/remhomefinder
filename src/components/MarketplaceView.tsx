@@ -333,37 +333,52 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="hide-saved-marketplace"
-              checked={hideSaved}
-              onCheckedChange={setHideSaved}
-            />
-            <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer">
-              Ocultar guardados
-            </Label>
-          </div>
-          <div className="flex items-center gap-3">
-            <Switch
-              id="expand-photos-marketplace"
-              checked={expandPhotos}
-              onCheckedChange={setExpandPhotos}
-            />
-            <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer">
-              Desplegar fotos
-            </Label>
+        <div className="flex flex-col gap-3 sm:gap-0">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="hide-saved-marketplace"
+                checked={hideSaved}
+                onCheckedChange={setHideSaved}
+              />
+              <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer">
+                Ocultar guardados
+              </Label>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="expand-photos-marketplace"
+                checked={expandPhotos}
+                onCheckedChange={setExpandPhotos}
+              />
+              <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer">
+                Desplegar fotos
+              </Label>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm">
+              <Switch
+                id="match-ai-toggle"
+                checked={matchAI}
+                onCheckedChange={handleMatchAIToggle}
+                disabled={loadingProfile}
+                className="data-[state=checked]:bg-purple-500"
+              />
+              <Label htmlFor="match-ai-toggle" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                MatchAI <span className="text-xs">🔮</span>
+              </Label>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm">
+          <div className="flex sm:hidden items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm w-full justify-center">
             <Switch
-              id="match-ai-toggle"
+              id="match-ai-toggle-mobile"
               checked={matchAI}
               onCheckedChange={handleMatchAIToggle}
               disabled={loadingProfile}
               className="data-[state=checked]:bg-purple-500"
             />
-            <Label htmlFor="match-ai-toggle" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+            <Label htmlFor="match-ai-toggle-mobile" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5">
               MatchAI <span className="text-xs">🔮</span>
             </Label>
           </div>
