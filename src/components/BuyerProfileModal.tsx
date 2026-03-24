@@ -100,7 +100,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
         min_budget: Number(minBudget) || 0,
         max_budget: Number(budget) || 0,
         min_bedrooms: Number(bedrooms) || 1,
-        city_id: selectedDept || null,
+        city_id: selectedCity || null,
         neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
       }, { onConflict: 'user_id' });
 

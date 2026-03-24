@@ -115,7 +115,7 @@ export function MatchesDialog({ open, onClose, property }: MatchesDialogProps) {
                                                             {name}
                                                         </span>
                                                         {isPrivate && (
-                                                            <Lock className="w-3 h-3 text-purple-500 shrink-0" title="Perfil privado" />
+                                                            <Lock className="w-3 h-3 text-purple-500 shrink-0" />
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
