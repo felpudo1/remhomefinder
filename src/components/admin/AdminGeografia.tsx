@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit, Trash2, MapPin, ChevronRight, Loader2, Save, Globe } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, ChevronRight, Loader2, Save, Globe, Search, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,9 +40,41 @@ export function AdminGeografia({ toast }: Props) {
   const [formData, setFormData] = useState({ name: "", country: "UY" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => { fetchDepartments(); }, []);
+  // Estado para panel de barrios global
+  const [allNeighborhoods, setAllNeighborhoods] = useState<any[]>([]);
+  const [loadingAllNeigh, setLoadingAllNeigh] = useState(false);
+  const [neighSearch, setNeighSearch] = useState("");
+  const [deletingNeighId, setDeletingNeighId] = useState<string | null>(null);
+
+  useEffect(() => { fetchDepartments(); fetchAllNeighborhoods(); }, []);
   useEffect(() => { if (selectedDept) fetchCities(selectedDept.id); }, [selectedDept]);
   useEffect(() => { if (selectedCity) fetchNeighborhoods(selectedCity.id); }, [selectedCity]);
+
+  const fetchAllNeighborhoods = async () => {
+    setLoadingAllNeigh(true);
+    const { data, error } = await supabase
+      .from("neighborhoods")
+      .select("id, name, city_id, cities(name, department_id, departments(name))")
+      .order("name");
+    if (error) toast({ title: "Error al cargar barrios", description: error.message, variant: "destructive" });
+    else setAllNeighborhoods(data || []);
+    setLoadingAllNeigh(false);
+  };
+
+  const handleDeleteNeighGlobal = async (id: string, name: string) => {
+    if (!window.confirm(`¿Eliminar el barrio "${name}"? Fallará si hay propiedades usándolo.`)) return;
+    setDeletingNeighId(id);
+    const { error } = await supabase.from("neighborhoods").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Barrio "${name}" eliminado` });
+      setAllNeighborhoods((prev) => prev.filter((n) => n.id !== id));
+      // Refresh panel de barrios si hay ciudad seleccionada
+      if (selectedCity) fetchNeighborhoods(selectedCity.id);
+    }
+    setDeletingNeighId(null);
+  };
 
   const fetchDepartments = async () => {
     setLoadingDepts(true);
@@ -325,7 +357,71 @@ export function AdminGeografia({ toast }: Props) {
         </Card>
       </div>
 
-      {/* DIALOG: DEPARTAMENTO */}
+      {/* PANEL: GESTIÓN GLOBAL DE BARRIOS */}
+      <Card>
+        <CardHeader className="border-b bg-muted/20 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                Gestión global de barrios
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Buscá y eliminá barrios incorrectos de toda la base. Total: {allNeighborhoods.length}
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar barrio..."
+                value={neighSearch}
+                onChange={(e) => setNeighSearch(e.target.value)}
+                className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 max-h-[50vh] overflow-y-auto">
+          {loadingAllNeigh ? (
+            <div className="p-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : (() => {
+            const filtered = allNeighborhoods.filter((n) =>
+              n.name.toLowerCase().includes(neighSearch.toLowerCase()) ||
+              (n.cities?.name || "").toLowerCase().includes(neighSearch.toLowerCase()) ||
+              (n.cities?.departments?.name || "").toLowerCase().includes(neighSearch.toLowerCase())
+            );
+            if (filtered.length === 0) return (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                {neighSearch ? "Sin resultados para esa búsqueda." : "No hay barrios registrados."}
+              </div>
+            );
+            return (
+              <div className="flex flex-col divide-y">
+                {filtered.map((n) => (
+                  <div key={n.id} className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-sm gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">{n.name}</span>
+                      <span className="text-[11px] text-muted-foreground ml-2">
+                        {n.cities?.name || "Sin ciudad"} · {n.cities?.departments?.name || "Sin depto."}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                      disabled={deletingNeighId === n.id}
+                      onClick={() => handleDeleteNeighGlobal(n.id, n.name)}
+                    >
+                      {deletingNeighId === n.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
       <Dialog open={deptDialog.open} onOpenChange={(open) => !open && setDeptDialog({ ...deptDialog, open: false })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
