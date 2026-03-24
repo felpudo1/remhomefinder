@@ -37,7 +37,11 @@ import {
   Users,
   Building2,
   X,
+  Phone,
+  User,
+  Copy,
 } from "lucide-react";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { currencySymbol } from "@/lib/currency";
 import { useGroups } from "@/hooks/useGroups";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
@@ -333,6 +337,50 @@ export function PropertyDetailModal({
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-foreground">Ref:</span>
               <span className="text-sm text-muted-foreground">{property.ref}</span>
+            </div>
+          )}
+
+          {/* Contacto del aviso */}
+          {(property.contactName || property.contactPhone) && (
+            <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+              <div className="text-sm font-semibold text-foreground">Contacto del aviso</div>
+              {property.contactName && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="w-4 h-4 shrink-0" />
+                  <span>{property.contactName}</span>
+                </div>
+              )}
+              {property.contactPhone && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Phone className="w-4 h-4 shrink-0" />
+                  <span>{property.contactPhone}</span>
+                </div>
+              )}
+              {property.contactPhone && (
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl gap-1.5 text-xs"
+                    onClick={() => window.open(buildWhatsAppUrl(property.contactPhone!, `Hola, vi tu publicación "${property.title}" y me interesa.`), "_blank")}
+                  >
+                    <Phone className="w-3 h-3" />
+                    WhatsApp
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-xl gap-1.5 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(property.contactPhone!);
+                      toast({ title: "Copiado", description: "Teléfono copiado al portapapeles." });
+                    }}
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copiar
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

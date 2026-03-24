@@ -194,6 +194,8 @@ async function extractWithAI(markdown: string, role: string): Promise<Record<str
               aiSummary: { type: "string", description: "Resumen breve del aviso" },
               ref: { type: "string", description: "Código de referencia del aviso si existe (ej: REF-123). Vacío si no se detecta." },
               details: { type: "string", description: "Detalles adicionales: características, amenities, descripción extendida. Vacío si no se detecta." },
+              contactName: { type: "string", description: "Nombre de la persona o inmobiliaria de contacto. Vacío si no se detecta." },
+              contactPhone: { type: "string", description: "Teléfono de contacto del aviso. Vacío si no se detecta." },
             },
             required: ["title", "listingType", "department", "city", "neighborhood", "aiSummary"],
             additionalProperties: false,
@@ -273,6 +275,8 @@ async function extractWithVision(images: string[]): Promise<Record<string, any>>
               aiSummary: { type: "string", description: "Resumen breve del aviso" },
               ref: { type: "string", description: "Código de referencia del aviso si existe. Vacío si no se detecta." },
               details: { type: "string", description: "Detalles adicionales: características, amenities, descripción extendida. Vacío si no se detecta." },
+              contactName: { type: "string", description: "Nombre de la persona o inmobiliaria de contacto. Vacío si no se detecta." },
+              contactPhone: { type: "string", description: "Teléfono de contacto del aviso. Vacío si no se detecta." },
             },
             required: ["title", "listingType", "department", "city", "neighborhood", "aiSummary"],
             additionalProperties: false,
@@ -331,11 +335,13 @@ serve(async (req) => {
           sqMeters: extracted.sqMeters || 0,
           rooms: extracted.rooms || 1,
           aiSummary: extracted.aiSummary || "",
-          ref: extracted.ref || "",
-          details: extracted.details || "",
-          images: [], // no se pueden copiar fotos desde screenshots
-        },
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        ref: extracted.ref || "",
+        details: extracted.details || "",
+        contactName: extracted.contactName || "",
+        contactPhone: extracted.contactPhone || "",
+        images: [], // no se pueden copiar fotos desde screenshots
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ── PATH DE URL: scraping + IA (comportamiento original) ──
@@ -412,6 +418,8 @@ serve(async (req) => {
         aiSummary: extracted.aiSummary || "",
         ref: extracted.ref || "",
         details: extracted.details || "",
+        contactName: extracted.contactName || "",
+        contactPhone: extracted.contactPhone || "",
         images: result.imageUrls,
       },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

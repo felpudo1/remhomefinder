@@ -1084,6 +1084,9 @@ export type Database = {
         Row: {
           added_by: string
           admin_hidden: boolean
+          contact_name: string | null
+          contact_phone: string | null
+          contact_source: string | null
           created_at: string
           current_status: Database["public"]["Enums"]["user_listing_status"]
           id: string
@@ -1096,6 +1099,9 @@ export type Database = {
         Insert: {
           added_by: string
           admin_hidden?: boolean
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_source?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
           id?: string
@@ -1108,6 +1114,9 @@ export type Database = {
         Update: {
           added_by?: string
           admin_hidden?: boolean
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_source?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
           id?: string

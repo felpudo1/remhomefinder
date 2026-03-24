@@ -17,6 +17,8 @@ export type FormState = {
   aiSummary: string;
   ref: string;
   details: string;
+  contactName: string;
+  contactPhone: string;
 };
 
 export function useAddPropertyForm(activeGroupId?: string | null) {
@@ -62,6 +64,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     aiSummary: "",
     ref: "",
     details: "",
+    contactName: "",
+    contactPhone: "",
   });
 
   // Sync with activeGroupId or groups change
@@ -91,6 +95,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
       aiSummary: "",
       ref: "",
       details: "",
+      contactName: "",
+      contactPhone: "",
     });
     setScrapedImages([]);
     setPrivateImages([]);

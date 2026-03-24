@@ -44,6 +44,8 @@ const toolSchema = {
         aiSummary: { type: "string", description: "Resumen breve del aviso con lo que se pudo identificar" },
         ref: { type: "string", description: "Código de referencia del aviso si existe (ej: REF-123, ID del aviso). Vacío si no se detecta." },
         details: { type: "string", description: "Detalles adicionales del aviso: características, amenities, descripción extendida. Vacío si no se detecta." },
+        contactName: { type: "string", description: "Nombre de la persona o inmobiliaria de contacto. Vacío si no se detecta." },
+        contactPhone: { type: "string", description: "Teléfono de contacto del aviso. Vacío si no se detecta." },
       },
       required: ["title", "listingType", "aiSummary"],
       additionalProperties: false,
@@ -148,6 +150,8 @@ serve(async (req) => {
         aiSummary: extracted.aiSummary || "",
         ref: extracted.ref || "",
         details: extracted.details || "",
+        contactName: extracted.contactName || "",
+        contactPhone: extracted.contactPhone || "",
         images: [],
       },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

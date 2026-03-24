@@ -94,6 +94,13 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     const publicImages = cameFromImage ? [] : scrapedImages;
     const familyImages = cameFromImage ? scrapedImages : privateImages;
     
+    // Determinar contactSource
+    const hasContact = !!(form.contactName?.trim() || form.contactPhone?.trim());
+    let contactSource: string | undefined;
+    if (hasContact) {
+      contactSource = cameFromImage ? "image_ocr" : (scrapedImages.length > 0 ? "scrape" : "manual");
+    }
+
     const formData = {
       ...form,
       url: url || "",
@@ -105,6 +112,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       privateImages: familyImages.length > 0 ? familyImages : undefined,
       groupId: selectedGroupId,
       listingType,
+      contactName: form.contactName?.trim() || undefined,
+      contactPhone: form.contactPhone?.trim() || undefined,
+      contactSource,
     };
 
     try {

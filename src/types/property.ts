@@ -64,6 +64,9 @@ export interface Property {
   listingType: ListingType;
   ref: string;
   details: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactSource?: "manual" | "scrape" | "image_ocr" | "mixed";
   viewsCount?: number;
   /** True cuando el listing está compartido en un grupo (no personal) */
   isSharedListing?: boolean;
