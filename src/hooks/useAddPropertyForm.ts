@@ -93,6 +93,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
       aiSummary: "",
       ref: "",
       details: "",
+      contactName: "",
+      contactPhone: "",
     });
     setScrapedImages([]);
     setPrivateImages([]);
