@@ -375,7 +375,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 onCheckedChange={setExpandPhotos}
               />
               <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer">
-                Desplegar fotos
+                Mostrar fotos
               </Label>
             </div>
 

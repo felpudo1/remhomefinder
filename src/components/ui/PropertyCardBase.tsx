@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapPin, Maximize2, BedDouble, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
+import { MapPin, Maximize2, BedDouble, ChevronDown, ChevronUp, ImageIcon, ImageOff } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { ListingType } from "@/types/property";
 
@@ -80,9 +80,14 @@ export function PropertyCardBase({
 }: PropertyCardBaseProps) {
     const [currentImg, setCurrentImg] = useState(0);
     const [imagesExpanded, setImagesExpanded] = useState(!collapsibleImages);
-    const activeImageSrc = images[currentImg] || "/placeholder.svg";
+    const hasImages = images.length > 0;
+    const activeImageSrc = hasImages ? images[Math.min(currentImg, images.length - 1)] : "";
 
-    // Si el padre cambia collapsibleImages (ej. switch "Desplegar fotos" en marketplace),
+    useEffect(() => {
+        if (currentImg >= images.length) setCurrentImg(0);
+    }, [images.length, currentImg]);
+
+    // Si el padre cambia collapsibleImages (ej. switch "Mostrar fotos" en marketplace),
     // hay que sincronizar: modo expandido forzado → siempre fotos visibles; modo colapsable → empezar colapsado.
     useEffect(() => {
         if (!collapsibleImages) {
@@ -105,10 +110,9 @@ export function PropertyCardBase({
     }, [autoRotateImages, images.length, collapsibleImages, imagesExpanded]);
 
     const handleImageContainerClick = (e: React.MouseEvent) => {
-        if (onImageClick) {
-            e.stopPropagation();
-            onImageClick(currentImg);
-        }
+        if (!hasImages || !onImageClick) return;
+        e.stopPropagation();
+        onImageClick(Math.min(currentImg, images.length - 1));
     };
 
     const handleToggleImages = (e: React.MouseEvent) => {
@@ -121,8 +125,8 @@ export function PropertyCardBase({
             className={`bg-card rounded-2xl overflow-hidden border-[4px] border-foreground/40 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-fade-in flex flex-col h-full min-h-0 ${className}`}
             onClick={onClick}
         >
-            {/* Sección de Imagen (colapsable o fija) */}
-            {collapsibleImages && !imagesExpanded ? (
+            {/* Sección de Imagen (colapsable o fija). Sin fotos: nunca fila colapsada vacía; solo bloque “sin fotos”. */}
+            {collapsibleImages && !imagesExpanded && hasImages ? (
                 <div
                     className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 bg-muted/80 hover:bg-muted cursor-pointer border-b border-border"
                     onClick={handleToggleImages}
@@ -135,14 +139,14 @@ export function PropertyCardBase({
                 </div>
             ) : (
                 <div
-                    className="relative h-48 md:h-64 lg:h-72 shrink-0 overflow-hidden bg-muted cursor-zoom-in"
+                    className={`relative h-48 md:h-64 lg:h-72 shrink-0 overflow-hidden bg-muted ${hasImages ? "cursor-zoom-in" : "cursor-default"}`}
                     onClick={(e) => {
                         const target = e.target as HTMLElement;
                         if (target.closest("[data-collapse-btn]")) return;
                         handleImageContainerClick(e);
                     }}
                 >
-                    {collapsibleImages && (
+                    {collapsibleImages && hasImages && (
                         <button
                             data-collapse-btn
                             type="button"
@@ -153,6 +157,7 @@ export function PropertyCardBase({
                             <ChevronUp className="w-4 h-4 text-muted-foreground" />
                         </button>
                     )}
+                    {hasImages ? (
                     <img
                         key={activeImageSrc}
                         src={activeImageSrc}
@@ -167,6 +172,12 @@ export function PropertyCardBase({
                                     : "animate-fade-in"
                         }`}
                     />
+                    ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground px-4">
+                            <ImageOff className="w-10 h-10 opacity-50" />
+                            <span className="text-xs font-medium">Sin fotos</span>
+                        </div>
+                    )}
                     {images.length > 1 && (
                         <div
                             className="absolute bottom-3 right-3 flex gap-1.5"

@@ -3,28 +3,19 @@ import { resolveImages, mapListingToProperty } from "@/lib/mappers/propertyMappe
 
 describe("propertyMappers", () => {
   describe("resolveImages", () => {
-    it("should return a default image when dbImages is null or empty", () => {
-      const result = resolveImages(null);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toContain("default-house");
-
-      const resultEmpty = resolveImages([]);
-      expect(resultEmpty).toHaveLength(1);
+    it("should return empty array when dbImages is null or empty", () => {
+      expect(resolveImages(null)).toEqual([]);
+      expect(resolveImages([])).toEqual([]);
     });
 
     it("should resolve external URLs correctly", () => {
       const images = ["https://example.com/image.jpg", "http://test.com/photo.png"];
-      const result = resolveImages(images);
-      expect(result).toEqual(images);
+      expect(resolveImages(images)).toEqual(images);
     });
 
-    it("should resolve local default paths to assets", () => {
-      const images = ["default-house-1.jpg", "default-house-2.jpg"];
-      const result = resolveImages(images);
-      // As the mappers import the files, we check if it returns something that's not the string itself
-      // in a real environment it would be the imported asset path/object
-      expect(result[0]).not.toBe(images[0]);
-      expect(result[1]).not.toBe(images[1]);
+    it("should drop legacy default-house filenames (no generic stock photos)", () => {
+      expect(resolveImages(["default-house-1.jpg", "default-house-2.jpg"])).toEqual([]);
+      expect(resolveImages(["https://a.com/a.jpg", "default-house-1.jpg"])).toEqual(["https://a.com/a.jpg"]);
     });
   });
 

@@ -331,6 +331,7 @@ export function usePropertyQueries() {
                         isSharedListing,
                         hasUnreadComments: false,
                         unreadCommentsCount: 0,
+                        // Columnas en user_listings (texto plano), no JSON embebido
                         contactName: listing.contact_name || undefined,
                         contactPhone: listing.contact_phone || undefined,
                         contactSource: listing.contact_source || undefined,
@@ -424,6 +425,7 @@ export function usePropertyQueries() {
                     isSharedListing,
                     hasUnreadComments: unreadCommentsCount > 0,
                     unreadCommentsCount,
+                    // Columnas en user_listings (texto plano), no JSON embebido
                     contactName: listing.contact_name || undefined,
                     contactPhone: listing.contact_phone || undefined,
                     contactSource: listing.contact_source || undefined,

@@ -66,7 +66,7 @@ export function FullScreenGallery({ images, initialIndex = 0, isOpen, onClose }:
                 )}
 
                 <img
-                    src={images[activeImg] || "/placeholder.svg"}
+                    src={images[activeImg]}
                     alt=""
                     className="max-w-full max-h-[75vh] object-contain shadow-2xl transition-all duration-300 transform scale-100"
                 />

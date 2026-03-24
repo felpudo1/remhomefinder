@@ -104,15 +104,26 @@ export function MarketplacePropertyDetailModal({
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl">
                 {/* Image Gallery */}
-                <div className="relative h-64 bg-muted rounded-t-2xl overflow-hidden cursor-zoom-in" onClick={() => setIsGalleryOpen(true)}>
+                <div
+                    className={`relative h-64 bg-muted rounded-t-2xl overflow-hidden ${property.images.length > 0 ? "cursor-zoom-in" : "cursor-default"}`}
+                    onClick={() => property.images.length > 0 && setIsGalleryOpen(true)}
+                >
+                    {property.images.length > 0 ? (
+                        <>
                     <img
-                        src={property.images[activeImg] || "/placeholder.svg"}
+                        src={property.images[activeImg]}
                         alt={property.title}
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
                     </div>
+                        </>
+                    ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                            <span className="text-sm font-medium">Sin fotos</span>
+                        </div>
+                    )}
                     {property.images.length > 1 && (
                         <>
                             <button

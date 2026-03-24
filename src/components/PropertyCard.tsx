@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { Property, PropertyStatus, STATUS_CONFIG } from "@/types/property";
-import { ExternalLink, Building2, MessageCircle, Trash2 } from "lucide-react";
+import { ExternalLink, Building2, MessageCircle, Trash2, User } from "lucide-react";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { StarRating } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ export interface ProsAndConsAttributeIds {
 
 interface PropertyCardProps {
   property: Property;
+  /** Si true, las fotos se muestran expandidas (como HFMarket con “Mostrar fotos”). Si false, modo colapsable. */
+  forceExpandImages?: boolean;
   onStatusChange: (
     id: string,
     status: PropertyStatus,
@@ -83,7 +86,13 @@ const MARKETPLACE_STATUS_OVERLAY: Record<string, { label: string; className: str
  * Componente principal que representa una propiedad en formato de tarjeta.
  * Ahora refactorizado (Regla 2) para delegar estados y sub-vistas a hooks y componentes especializados.
  */
-export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: PropertyCardProps) {
+export function PropertyCard({
+  property,
+  forceExpandImages = true,
+  onStatusChange,
+  onClick,
+  ownerEmail,
+}: PropertyCardProps) {
   // Hook centralizado para estados de diálogos y galería
   const dialogs = usePropertyCardDialogs(property);
   
@@ -149,7 +158,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
           dialogs.setGalleryInitialImg(index);
           dialogs.setIsGalleryOpen(true);
         }}
-        collapsibleImages
+        collapsibleImages={!forceExpandImages}
         className={isEliminated || isDiscarded || isAgentDeleted ? "opacity-60" : ""}
         statusOverlay={
           mktOverlay ? (
@@ -198,6 +207,36 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                     <MessageCircle className="w-3 h-3" />
                     Enviar WhatsApp
                   </button>
+                </div>
+              ) : property.contactName || property.contactPhone ? (
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  {/* Publicaciones propias: user_listings.contact_name / contact_phone (columnas en BD, no JSON) */}
+                  {property.contactName && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium min-w-0">
+                      <User className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{property.contactName}</span>
+                    </span>
+                  )}
+                  {property.contactPhone && (
+                    <span className="text-[11px] text-muted-foreground truncate">{property.contactPhone}</span>
+                  )}
+                  {property.contactPhone && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(
+                          buildWhatsAppUrl(property.contactPhone!, `Hola, vi tu publicación "${property.title}" y me interesa.`),
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
+                      }}
+                      className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      Enviar WhatsApp
+                    </button>
+                  )}
                 </div>
               ) : ownerEmail ? (
                 <span className="text-[11px] text-muted-foreground">

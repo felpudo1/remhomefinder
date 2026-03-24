@@ -1,29 +1,30 @@
 import { Property, PropertyStatus, PropertyComment, MarketplacePropertyStatus, ListingType } from "@/types/property";
 
-import defaultHouse1 from "@/assets/default-house-1.jpg";
-import defaultHouse2 from "@/assets/default-house-2.jpg";
-import defaultHouse3 from "@/assets/default-house-3.jpg";
-import defaultHouse4 from "@/assets/default-house-4.jpg";
-import defaultHouse5 from "@/assets/default-house-5.jpg";
-
-const DEFAULT_HOUSE_IMAGES = [defaultHouse1, defaultHouse2, defaultHouse3, defaultHouse4, defaultHouse5];
-
 /**
- * Resuelve las imágenes de una propiedad, asignando una por defecto si no existen.
+ * Normaliza URLs de imágenes desde la DB.
+ * - Sin fotos → array vacío (no se usan imágenes genéricas de casas).
+ * - URLs http(s) se mantienen (scrape, OCR, links manuales).
+ * - Referencias históricas a default-house-*.jpg se omiten (ya no se muestran casas genéricas).
  */
 export function resolveImages(dbImages: string[] | null): string[] {
     if (!dbImages || dbImages.length === 0) {
-        return [DEFAULT_HOUSE_IMAGES[Math.floor(Math.random() * DEFAULT_HOUSE_IMAGES.length)]];
+        return [];
     }
-    return dbImages.map((img) => {
-        if (img.startsWith("http://") || img.startsWith("https://")) return img;
-        const match = img.match(/default-house-(\d+)\.jpg/);
-        if (match) {
-            const idx = parseInt(match[1], 10) - 1;
-            if (idx >= 0 && idx < DEFAULT_HOUSE_IMAGES.length) return DEFAULT_HOUSE_IMAGES[idx];
+    const out: string[] = [];
+    for (const raw of dbImages) {
+        if (raw == null) continue;
+        const img = String(raw).trim();
+        if (!img) continue;
+        if (img.startsWith("http://") || img.startsWith("https://")) {
+            out.push(img);
+            continue;
         }
-        return img;
-    });
+        if (/default-house-\d+\.jpg/i.test(img)) {
+            continue;
+        }
+        out.push(img);
+    }
+    return out;
 }
 
 /**

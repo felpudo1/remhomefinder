@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
@@ -78,12 +78,43 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [hideDiscarded, setHideDiscarded] = useState(true);
+  /** Misma lógica que HFMarket: ON = fotos expandidas en las tarjetas; OFF = colapsadas (“Ver fotos”). */
+  const [expandPhotos, setExpandPhotos] = useState(true);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddZenRowsOpen, setIsAddZenRowsOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("mi-listado");
+
+  /** Al entrar al dashboard: sin restauración de scroll del navegador y vista desde arriba (header + pestañas visibles). */
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const prev = window.history.scrollRestoration;
+    try {
+      window.history.scrollRestoration = "manual";
+    } catch {
+      /* ignore */
+    }
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return () => {
+      try {
+        window.history.scrollRestoration = prev;
+      } catch {
+        /* ignore */
+      }
+    };
+  }, []);
+
+  /** Un frame extra por si el layout (listado, HFMarket) mueve el scroll tras el primer paint. */
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // Configuración de botones
   const { value: addButtonConfigRaw } = useSystemConfig(ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT);
@@ -471,13 +502,7 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="marketplace">
-                <MarketplaceView
-                  mobileFiltersOpen={activeTab === "marketplace" && isMobileFiltersOpen}
-                  onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
-                />
-              </TabsContent>
-
+              {/* Orden: primero la pestaña por defecto (mi-listado) para que el DOM no deje “abajo” el HFMarket al hidratar. */}
               <TabsContent value="mi-listado">
                 {showWelcome ? (
                   <UserWelcome onDismiss={handleDismissWelcome} userName={userEmail?.split('@')[0] || ""} />
@@ -497,23 +522,14 @@ const Index = () => {
                       onMobileClose={() => setIsMobileFiltersOpen(false)}
                     />
                     <main className="flex-1 min-w-0">
-                      <div className="mb-6 flex items-start justify-between gap-4">
-                        <div>
-                          <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades ({filteredAndSorted.length})</h1>
-                          <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 bg-card">
-                            <Switch
-                              id="hide-discarded-list"
-                              checked={hideDiscarded}
-                              onCheckedChange={setHideDiscarded}
-                            />
-                            <Label htmlFor="hide-discarded-list" className="text-xs text-muted-foreground cursor-pointer">
-                              Ocultar descartados
-                            </Label>
+                      <div className="mb-6 space-y-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades ({filteredAndSorted.length})</h1>
+                            <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                           </div>
                           <button
+                            type="button"
                             onClick={handleRefreshProperties}
                             disabled={loading || isRefreshingList}
                             className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
@@ -521,6 +537,28 @@ const Index = () => {
                           >
                             <RefreshCw className={`w-4 h-4 ${isRefreshingList ? "animate-spin" : ""}`} />
                           </button>
+                        </div>
+                        <div className="flex flex-nowrap items-center justify-between gap-2 sm:justify-start sm:gap-6 w-full min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+                            <Switch
+                              id="hide-discarded-list"
+                              checked={hideDiscarded}
+                              onCheckedChange={setHideDiscarded}
+                            />
+                            <Label htmlFor="hide-discarded-list" className="text-xs sm:text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                              Ocultar descartados
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+                            <Switch
+                              id="expand-photos-listado"
+                              checked={expandPhotos}
+                              onCheckedChange={setExpandPhotos}
+                            />
+                            <Label htmlFor="expand-photos-listado" className="text-xs sm:text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                              Mostrar fotos
+                            </Label>
+                          </div>
                         </div>
                       </div>
                       {loading ? (
@@ -536,6 +574,7 @@ const Index = () => {
                             <PropertyCard
                               key={property.id}
                               property={property}
+                              forceExpandImages={expandPhotos}
                               onStatusChange={handleStatusChange}
                               onClick={() => handleCardClick(property)}
                               ownerEmail={property.createdByEmail || null}
@@ -546,6 +585,13 @@ const Index = () => {
                     </main>
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="marketplace">
+                <MarketplaceView
+                  mobileFiltersOpen={activeTab === "marketplace" && isMobileFiltersOpen}
+                  onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
+                />
               </TabsContent>
             </Tabs>
           </div>

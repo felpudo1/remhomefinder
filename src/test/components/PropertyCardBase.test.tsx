@@ -45,9 +45,9 @@ describe("PropertyCardBase", () => {
     expect(screen.getByText(ref)).toBeDefined();
   });
   
-  it("should handle empty images by showing placeholder", () => {
+  it("should handle empty images without loading a generic photo", () => {
     render(<PropertyCardBase {...defaultProps} images={[]} />);
-    const img = screen.getByAltText(defaultProps.title) as HTMLImageElement;
-    expect(img.src).toContain("placeholder.svg");
+    expect(screen.getByText("Sin fotos")).toBeDefined();
+    expect(screen.queryByAltText(defaultProps.title)).toBeNull();
   });
 });
