@@ -61,6 +61,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [selectedRooms, setSelectedRooms] = useState<string>("");
   const [selectedListingType, setSelectedListingType] = useState<string>("");
   const [hideSaved, setHideSaved] = useState(true);
+  const [expandPhotos, setExpandPhotos] = useState(false);
   const [matchAI, setMatchAI] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
