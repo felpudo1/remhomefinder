@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "db:push": "supabase db push",
+    "version": "node scripts/generate-version.js",
+    "prebuild": "node scripts/generate-version.js",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
