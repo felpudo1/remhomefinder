@@ -1,11 +1,14 @@
 /**
  * EstadisticasTab - tabla de auditoría con subpestañas Marketplace / Personal.
  */
-import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3, Eye, MessageSquare, Store, User } from "lucide-react";
+import { Loader2, ExternalLink, MapPin, DollarSign, Maximize2, Users, Building2, Star, ChevronUp, ChevronDown, BarChart3, Eye, MessageSquare, Store, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatProperty } from "@/types/admin-publications";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { MatchesDialog } from "@/components/admin/MatchesDialog";
 
 interface EstadisticasTabProps {
     statProps: StatProperty[];
@@ -33,6 +36,9 @@ export function EstadisticasTab({
     onSubTabChange,
 }: EstadisticasTabProps) {
     const isMarketplace = subTab === "marketplace";
+    const [selectedProperty, setSelectedProperty] = useState<StatProperty | null>(null);
+    const [isMatchesOpen, setIsMatchesOpen] = useState(false);
+    
     const baseCols = [
         { key: 'title', label: 'Propiedad', icon: Building2 },
         { key: 'creator', label: isMarketplace ? 'Agencia' : 'Usuario' },
@@ -43,6 +49,7 @@ export function EstadisticasTab({
         { key: 'average_rating', label: 'Rating', icon: Star },
         ...(isMarketplace ? [{ key: 'views_count', label: 'Vistas', icon: Eye }] : []),
         { key: 'total_votes', label: 'Votos', icon: Users },
+        { key: 'matchCount', label: 'Matches IA', icon: Sparkles },
         { key: 'discardReasons', label: 'Motivos descarte', icon: MessageSquare },
     ];
 
@@ -73,12 +80,18 @@ export function EstadisticasTab({
                 </TabsList>
 
                 <TabsContent value="marketplace" className="mt-4">
-                    <StatsTable statProps={statProps} loadingStats={loadingStats} sortConfig={sortConfig} handleSort={handleSort} baseCols={baseCols} isMarketplace={true} page={page} setPage={setPage} totalCount={totalCount} pageSize={pageSize} />
+                    <StatsTable statProps={statProps} loadingStats={loadingStats} sortConfig={sortConfig} handleSort={handleSort} baseCols={baseCols} isMarketplace={true} page={page} setPage={setPage} totalCount={totalCount} pageSize={pageSize} onMatchesClick={(prop) => { setSelectedProperty(prop); setIsMatchesOpen(true); }} />
                 </TabsContent>
                 <TabsContent value="personal" className="mt-4">
-                    <StatsTable statProps={statProps} loadingStats={loadingStats} sortConfig={sortConfig} handleSort={handleSort} baseCols={baseCols} isMarketplace={false} page={page} setPage={setPage} totalCount={totalCount} pageSize={pageSize} />
+                    <StatsTable statProps={statProps} loadingStats={loadingStats} sortConfig={sortConfig} handleSort={handleSort} baseCols={baseCols} isMarketplace={false} page={page} setPage={setPage} totalCount={totalCount} pageSize={pageSize} onMatchesClick={(prop) => { setSelectedProperty(prop); setIsMatchesOpen(true); }} />
                 </TabsContent>
             </Tabs>
+            
+            <MatchesDialog 
+                open={isMatchesOpen} 
+                onClose={() => setIsMatchesOpen(false)} 
+                property={selectedProperty} 
+            />
         </div>
     );
 }
@@ -94,6 +107,7 @@ function StatsTable({
     setPage,
     totalCount,
     pageSize,
+    onMatchesClick,
 }: {
     statProps: StatProperty[];
     loadingStats: boolean;
@@ -105,6 +119,7 @@ function StatsTable({
     setPage: (page: number | ((p: number) => number)) => void;
     totalCount: number;
     pageSize: number;
+    onMatchesClick: (prop: StatProperty) => void;
 }) {
     const cols = isMarketplace ? baseCols : baseCols.filter(c => c.key !== 'views_count');
     return (
@@ -166,6 +181,20 @@ function StatsTable({
                                         <td className="p-3 text-muted-foreground font-medium">{p.views_count || 0}</td>
                                     )}
                                     <td className="p-3 text-muted-foreground font-medium">{(p.total_votes || 0) > 0 ? p.total_votes : "0"}</td>
+                                    <td className="p-3">
+                                        {p.matchCount !== undefined && p.matchCount > 0 ? (
+                                            <Badge 
+                                                variant="outline" 
+                                                className="cursor-pointer hover:bg-purple-500/10 hover:border-purple-500/30 hover:text-purple-600 transition-all bg-purple-500/5 text-purple-600 border-purple-500/20 font-bold"
+                                                onClick={() => onMatchesClick(p)}
+                                            >
+                                                <Sparkles className="w-3 h-3 mr-1" />
+                                                {p.matchCount}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground/30">—</span>
+                                        )}
+                                    </td>
                                     <td className="p-3 max-w-[180px]">
                                         {p.discardReasons && p.discardReasons.length > 0 ? (
                                             <span className="text-[10px] text-muted-foreground" title={p.discardReasons.map(r => `${r.name}: ${r.count}`).join(", ")}>

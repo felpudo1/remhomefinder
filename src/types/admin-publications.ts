@@ -74,4 +74,14 @@ export interface StatProperty {
     cr?: number; // Tasa de éxito (Conversion Rate)
     /** Motivos de descarte: atributo y cuántas veces fue seleccionado (ej: Precio: 5, Humedad: 3) */
     discardReasons?: { name: string; count: number }[];
+    /** Cantidad de usuarios cuyos perfiles IA coinciden con esta propiedad */
+    matchCount?: number;
+    /** Lista de usuarios que coinciden (para mostrar al admin) */
+    matches?: Array<{
+        id: string;
+        user_id: string;
+        display_name?: string | null;
+        phone?: string | null;
+        is_private?: boolean | null;
+    }>;
 }

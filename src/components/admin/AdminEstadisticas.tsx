@@ -10,6 +10,7 @@ import { AdminInteres } from "./AdminInteres";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { calculateMatches, SearchProfile } from "@/hooks/usePropertyMatches";
 
 interface StatusCount {
     label: string;
@@ -186,18 +187,44 @@ export function AdminEstadisticas() {
         try {
             const from = pageMarket * PAGE_SIZE;
             const to = from + PAGE_SIZE - 1;
-            const [pubRes, ratingsRes, insightsRes] = await Promise.all([
+            const [pubRes, ratingsRes, insightsRes, searchProfilesRes] = await Promise.all([
                 supabase.from("agent_publications")
-                    .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms), organizations(name)", { count: "exact" })
+                    .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms, currency, city_id, neighborhood_id, price_amount, price_expenses), organizations(name)", { count: "exact" })
                     .order('created_at', { ascending: false })
                     .range(from, to),
                 supabase.from("property_reviews").select("property_id, rating"),
                 supabase.from("property_insights_summary").select("property_id, attribute_name, total_scores"),
+                supabase.from("user_search_profiles").select("*"),
             ]);
             if (pubRes.error) throw pubRes.error;
             const pubData = pubRes.data || [];
             const ratingsData: any[] = ratingsRes.data || [];
             const insightsData: { property_id: string; attribute_name: string; total_scores: number }[] = insightsRes.data || [];
+            const searchProfilesData: SearchProfile[] = searchProfilesRes.data || [];
+
+            // Obtener datos de contacto de los perfiles DIRECTAMENTE de profiles (admin puede ver todo)
+            const userIds = [...new Set(searchProfilesData.map((p) => p.user_id).filter(Boolean))];
+            let contactByUserId: Record<string, { display_name?: string | null; phone?: string | null }> = {};
+            if (userIds.length > 0) {
+                const { data: profilesData } = await supabase
+                    .from("profiles")
+                    .select("user_id, display_name, phone")
+                    .in("user_id", userIds);
+                
+                if (profilesData) {
+                    contactByUserId = profilesData.reduce<Record<string, { display_name?: string | null; phone?: string | null }>>((acc, profile) => {
+                        acc[profile.user_id] = { display_name: profile.display_name, phone: profile.phone };
+                        return acc;
+                    }, {});
+                }
+            }
+
+            // Enriquecer perfiles con datos de contacto
+            const enrichedSearchProfiles = searchProfilesData.map((profile) => ({
+                ...profile,
+                display_name: contactByUserId[profile.user_id]?.display_name,
+                phone: contactByUserId[profile.user_id]?.phone,
+            }));
 
             const discardReasonsMap: Record<string, { name: string; count: number }[]> = {};
             insightsData.forEach((row) => {
@@ -219,6 +246,21 @@ export function AdminEstadisticas() {
                 const p = (pub as any).properties || {};
                 const stats = ratingsMap[(pub as any).property_id];
                 const propId = (pub as any).property_id;
+                
+                // Calcular matches para esta propiedad
+                const propertyForMatch = {
+                    listing_type: pub.listing_type as "rent" | "sale",
+                    currency: p.currency,
+                    total_cost: Number(p.total_cost || 0),
+                    price_amount: Number(p.price_amount || 0),
+                    price_expenses: Number(p.price_expenses || 0),
+                    rooms: p.rooms || 0,
+                    city_id: p.city_id,
+                    neighborhood_id: p.neighborhood_id,
+                };
+
+                const matches = calculateMatches(propertyForMatch, enrichedSearchProfiles, true);
+                
                 return {
                     id: pub.id,
                     title: p.title || "",
@@ -237,6 +279,14 @@ export function AdminEstadisticas() {
                     created_at: pub.created_at,
                     url: p.source_url || "",
                     discardReasons: discardReasonsMap[propId] || [],
+                    matchCount: matches.length,
+                    matches: matches.map(m => ({
+                        id: m.id,
+                        user_id: m.user_id,
+                        display_name: m.display_name,
+                        phone: m.phone,
+                        is_private: m.is_private,
+                    })),
                 };
             });
             setMarketProps(market);
@@ -253,18 +303,44 @@ export function AdminEstadisticas() {
         try {
             const from = pagePersonal * PAGE_SIZE;
             const to = from + PAGE_SIZE - 1;
-            const [listingsRes, ratingsRes, insightsRes] = await Promise.all([
+            const [listingsRes, ratingsRes, insightsRes, searchProfilesRes] = await Promise.all([
                 supabase.from("user_listings")
-                    .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms)", { count: "exact" })
+                    .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms, currency, city_id, neighborhood_id, price_amount, price_expenses)", { count: "exact" })
                     .order('created_at', { ascending: false })
                     .range(from, to),
                 supabase.from("property_reviews").select("property_id, rating"),
                 supabase.from("property_insights_summary").select("property_id, attribute_name, total_scores"),
+                supabase.from("user_search_profiles").select("*"),
             ]);
             if (listingsRes.error) throw listingsRes.error;
             const listingsData = listingsRes.data || [];
             const ratingsData: any[] = ratingsRes.data || [];
             const insightsData: { property_id: string; attribute_name: string; total_scores: number }[] = insightsRes.data || [];
+            const searchProfilesData: SearchProfile[] = searchProfilesRes.data || [];
+
+            // Obtener datos de contacto de los perfiles DIRECTAMENTE de profiles (admin puede ver todo)
+            const userIds = [...new Set(searchProfilesData.map((p) => p.user_id).filter(Boolean))];
+            let contactByUserId: Record<string, { display_name?: string | null; phone?: string | null }> = {};
+            if (userIds.length > 0) {
+                const { data: profilesData } = await supabase
+                    .from("profiles")
+                    .select("user_id, display_name, phone")
+                    .in("user_id", userIds);
+                
+                if (profilesData) {
+                    contactByUserId = profilesData.reduce<Record<string, { display_name?: string | null; phone?: string | null }>>((acc, profile) => {
+                        acc[profile.user_id] = { display_name: profile.display_name, phone: profile.phone };
+                        return acc;
+                    }, {});
+                }
+            }
+
+            // Enriquecer perfiles con datos de contacto
+            const enrichedSearchProfiles = searchProfilesData.map((profile) => ({
+                ...profile,
+                display_name: contactByUserId[profile.user_id]?.display_name,
+                phone: contactByUserId[profile.user_id]?.phone,
+            }));
 
             const addedByIds = [...new Set((listingsData as { added_by?: string }[]).map((l) => l.added_by).filter(Boolean))];
             let addedByMap: Record<string, string> = {};
@@ -294,6 +370,21 @@ export function AdminEstadisticas() {
                 const stats = ratingsMap[(listing as any).property_id];
                 const propId = (listing as any).property_id;
                 const addedBy = (listing as any).added_by;
+                
+                // Calcular matches para esta propiedad
+                const propertyForMatch = {
+                    listing_type: listing.listing_type as "rent" | "sale",
+                    currency: p.currency,
+                    total_cost: Number(p.total_cost || 0),
+                    price_amount: Number(p.price_amount || 0),
+                    price_expenses: Number(p.price_expenses || 0),
+                    rooms: p.rooms || 0,
+                    city_id: p.city_id,
+                    neighborhood_id: p.neighborhood_id,
+                };
+
+                const matches = calculateMatches(propertyForMatch, enrichedSearchProfiles, true);
+                
                 return {
                     id: listing.id,
                     title: p.title || "",
@@ -311,6 +402,14 @@ export function AdminEstadisticas() {
                     created_at: listing.created_at,
                     url: p.source_url || "",
                     discardReasons: discardReasonsMap[propId] || [],
+                    matchCount: matches.length,
+                    matches: matches.map(m => ({
+                        id: m.id,
+                        user_id: m.user_id,
+                        display_name: m.display_name,
+                        phone: m.phone,
+                        is_private: m.is_private,
+                    })),
                 };
             });
             setPersonalProps(personal);
