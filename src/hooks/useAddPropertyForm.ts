@@ -17,6 +17,8 @@ export type FormState = {
   aiSummary: string;
   ref: string;
   details: string;
+  contactName: string;
+  contactPhone: string;
 };
 
 export function useAddPropertyForm(activeGroupId?: string | null) {
