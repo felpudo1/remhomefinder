@@ -108,7 +108,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     try {
       await onAdd(formData);
       handleClose();
-    } catch (err) { console.error("Submit error:", err); }
+    } catch (err) { 
+      console.error("Submit error:", err); 
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
