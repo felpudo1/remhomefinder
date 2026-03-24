@@ -349,7 +349,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         <div className="max-w-md relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por título, barrio u organización..."
+            placeholder="Buscar por título, barrio o agencia..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-10 rounded-xl bg-muted border-0 text-sm"
