@@ -203,8 +203,9 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     return isMatch;
                 });
 
-                const result: MarketplaceProperty & { matchCount: number; matches: SearchProfileWithLead[] } = {
+                const result: MarketplaceProperty & { matchCount: number; matches: SearchProfileWithLead[]; propertyId: string; department: string; department_id: string; city_id: string; neighborhood_id: string; address: string; source_url: string; details: string } = {
                     id: pub.id,
+                    propertyId: pub.property_id,
                     orgId: pub.org_id,
                     orgName: pub.organizations?.name || agency.name,
                     agentId: pub.published_by || agency.created_by,
