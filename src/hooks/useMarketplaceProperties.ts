@@ -65,7 +65,7 @@ export function useMarketplaceProperties() {
           propertyId: pub.property_id,
           orgId: pub.org_id,
           orgName: pub.organizations?.name || fallbackOrgNameById[pub.org_id] || "Organización",
-          agentId: pub.organizations?.created_by || "",
+          agentId: pub.published_by || pub.organizations?.created_by || "",
           title: p.title || pub.description || "",
           description: pub.description || "",
           url: p.source_url || "",
