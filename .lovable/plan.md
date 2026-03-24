@@ -1,65 +1,93 @@
 
 
-## Plan: Migración SQL para jerarquía geográfica + Fix build errors
+# Plan: Agregar campos contact_name y contact_phone a user listings
 
-### Mi opinión sobre esta estructura
+## Resumen
+Agregar campos de contacto (nombre y teléfono) en `user_listings` para que las familias tengan una agenda integrada. Los datos se intentan autocompletar desde scraping/fotos y se pueden editar manualmente.
 
-**PROS:**
-- Estructura limpia y profesional: País → Departamento → Ciudad → Barrio es el estándar geográfico correcto
-- No hay datos reales guardados, asi que la migración es limpia sin riesgo de pérdida de datos
-- `department_id` en `properties` como nullable + campo texto `department` mantiene compatibilidad con el scraper actual (no hay que tocarlo ahora)
-- Seed de Uruguay + Argentina prepara el sistema para expansión regional
-- `ON DELETE SET NULL` en `cities.department_id` es seguro: no rompe datos existentes si se borra un departamento
-- RLS coherente con el resto del sistema (lectura pública, escritura admin)
+## 1. Migración SQL
 
-**CONTRAS / RIESGOS:**
-- Eliminar `cities.country` es destructivo e irreversible. Si hay ciudades cargadas con `country = 'Uruguay'`, esa info se pierde. Recomiendo: **no dropear** la columna ahora, solo deprecarla. Agregar `department_id` y dejar `country` como legacy hasta confirmar que todo funciona
-- La tabla `cities` actualmente actúa como "departamentos" en el frontend (`AdminGeografia.tsx` la llama "Departamentos"). Agregar una tabla `departments` real va a generar confusión hasta que se actualice el frontend
-- `user_search_profiles.city_id` apunta a `cities` (que hoy son departamentos). Después de esta migración, habrá que decidir si ese FK debería apuntar a `departments` en su lugar
-- Sin cambios en el frontend, el panel admin seguirá mostrando `cities` como "Departamentos" — inconsistencia temporal
+Agregar 3 columnas nullable a `user_listings`:
+```sql
+ALTER TABLE public.user_listings
+  ADD COLUMN IF NOT EXISTS contact_name text,
+  ADD COLUMN IF NOT EXISTS contact_phone text,
+  ADD COLUMN IF NOT EXISTS contact_source text;
 
-**RECOMENDACION:** Hacer la migración pero **NO dropear** `cities.country`. Solo agregar `department_id`. Es más seguro y reversible.
+COMMENT ON COLUMN public.user_listings.contact_name IS 'Nombre del contacto del aviso (manual, scrape o imagen)';
+COMMENT ON COLUMN public.user_listings.contact_phone IS 'Teléfono del contacto del aviso';
+COMMENT ON COLUMN public.user_listings.contact_source IS 'Origen del dato: manual | scrape | image_ocr | mixed';
+```
 
----
+## 2. Edge Functions - Agregar extracción de contacto
 
-### Fase 1 — Fix build errors (MarketplaceView.tsx)
+**`scrape-property/index.ts`** y **`extract-from-image/index.ts`**: Agregar `contactName` y `contactPhone` al tool schema de Gemini en las 3 funciones de extracción (`extractWithAI`, `extractWithVision`, y el schema de `extract-from-image`).
 
-**Archivo:** `src/components/MarketplaceView.tsx`
+```
+contactName: { type: "string", description: "Nombre de la persona o inmobiliaria de contacto. Vacío si no se detecta." }
+contactPhone: { type: "string", description: "Teléfono de contacto. Vacío si no se detecta." }
+```
 
-1. Agregar import de `supabase` desde `@/integrations/supabase/client`
-2. Línea 136: cambiar `profile.neighborhood_ids` por `searchProfile.neighborhood_ids`
-3. Línea 140: cambiar `profile.neighborhood_ids` por `searchProfile.neighborhood_ids`
+## 3. Frontend - Tipos y modelos
 
-Esto desbloquea el deploy en Vercel inmediatamente.
+**`src/types/property.ts`**: Agregar al interface `Property`:
+```ts
+contactName?: string;
+contactPhone?: string;
+contactSource?: "manual" | "scrape" | "image_ocr" | "mixed";
+```
 
-### Fase 2 — Migración SQL
+**`src/hooks/usePropertyExtractor.ts`**: Agregar `contactName` y `contactPhone` a `PropertyData` type y mapearlos desde la respuesta de scrape/image.
 
-**Archivo:** `supabase/migrations/20260323120000_add_departments_geo_hierarchy.sql`
+## 4. Hook de formulario
 
-Contenido:
+**`src/hooks/useAddPropertyForm.ts`**: Agregar `contactName` y `contactPhone` a `FormState`, incluir en `resetForm` y `updateForm`.
 
-1. **Crear tabla `departments`** con `id`, `name`, `country` (default 'UY'), `created_at`
-2. **Habilitar RLS** + policies: SELECT para `public`, INSERT/UPDATE/DELETE solo admins
-3. **Índice** en `(country, LOWER(name))` para búsquedas y unicidad
-4. **Agregar `department_id`** a `cities` como FK nullable a `departments(id) ON DELETE SET NULL`
-5. **NO dropear `cities.country`** — se deja como legacy por seguridad
-6. **Agregar `department` (text)** y **`department_id` (uuid FK)** a `properties`
-7. **Seed Uruguay:** 19 departamentos con `country = 'UY'`
-8. **Seed Argentina:** 24 provincias con `country = 'AR'`
+## 5. Mutaciones (escritura)
 
-Todo con `IF NOT EXISTS` donde sea posible para idempotencia.
+**`src/hooks/usePropertyMutations.ts`**: En `addPropertyMutation`, aceptar `contactName`, `contactPhone`, `contactSource` y pasarlos al insert de `user_listings`.
 
-### Archivos a modificar
+## 6. Queries (lectura)
+
+**`src/hooks/usePropertyQueries.ts`**: En ambos bloques de mapeo (con y sin property join), leer `listing.contact_name`, `listing.contact_phone`, `listing.contact_source` y mapearlos a las propiedades del modelo UI.
+
+**`src/lib/mappers/propertyMappers.ts`**: Agregar campos de contacto a `mapListingToProperty`.
+
+## 7. Formulario UI (Add Property)
+
+**`src/components/add-property/PropertyFormManual.tsx`**: Agregar 2 inputs (Nombre de contacto, Teléfono de contacto) entre "Referencia" y "Detalles". Se prellenan automáticamente si la extracción IA los detecta.
+
+**`src/components/AddPropertyModal.tsx`**: Pasar `contactName`, `contactPhone` y calcular `contactSource` en `handleSubmit`.
+
+## 8. Detalle UI (Property Detail)
+
+**`src/components/PropertyDetailModal.tsx`**: Agregar sección de contacto debajo de la ubicación:
+- Icono de usuario + nombre (o "Sin contacto cargado")
+- Icono teléfono + número (o "Sin teléfono")
+- Botón WhatsApp (usa `buildWhatsAppUrl` existente)
+- Botón copiar número
+- Badge pequeño de origen (Manual/Scraping/Fotos/Mixto) -- opcional
+
+## Archivos tocados (resumen)
 
 | Archivo | Cambio |
 |---|---|
-| `src/components/MarketplaceView.tsx` | Fix 2 build errors (import supabase + searchProfile ref) |
-| `supabase/migrations/20260323120000_...sql` | Crear migración completa |
+| `supabase/migrations/XXXX_add_contact_fields.sql` | 3 columnas nuevas |
+| `supabase/functions/scrape-property/index.ts` | contactName/Phone en schema IA |
+| `supabase/functions/extract-from-image/index.ts` | contactName/Phone en schema IA |
+| `src/types/property.ts` | 3 campos nuevos en Property |
+| `src/hooks/usePropertyExtractor.ts` | Mapear contacto desde respuesta |
+| `src/hooks/useAddPropertyForm.ts` | FormState + reset |
+| `src/hooks/usePropertyMutations.ts` | Persistir contacto en insert |
+| `src/hooks/usePropertyQueries.ts` | Leer contacto del listing |
+| `src/lib/mappers/propertyMappers.ts` | Mapear contacto |
+| `src/components/add-property/PropertyFormManual.tsx` | 2 inputs nuevos |
+| `src/components/AddPropertyModal.tsx` | Pasar contacto al submit |
+| `src/components/PropertyDetailModal.tsx` | Mostrar contacto + WhatsApp |
 
-### Qué NO se toca
-
-- Scraper / edge functions
-- AdminGeografia.tsx (se actualizará en una fase posterior)
-- Formularios de propiedades
-- user_search_profiles (se evaluará después)
+## No se toca
+- Flujos de agencias/marketplace
+- Tabla `properties`
+- Lógica de estados
+- Paquetes nuevos
 
