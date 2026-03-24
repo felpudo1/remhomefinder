@@ -13,6 +13,7 @@ interface MarketplaceCardProps {
   isSaving?: boolean;
   alreadySaved?: boolean;
   isReferred?: boolean;
+  forceExpandImages?: boolean;
 }
 
 /**
