@@ -86,7 +86,8 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
             setMinBudget(data.min_budget?.toString() || "");
             setMaxBudget(data.max_budget?.toString() || "");
             setBedrooms(data.min_bedrooms?.toString() || "1");
-            setSelectedDept(data.city_id || "");
+            setSelectedDept(data.department_id || "");
+            setSelectedCity(data.city_id || "");
             setSelectedNeighborhoods(data.neighborhood_ids || []);
             setIsPrivate(!!data.is_private);
           }
