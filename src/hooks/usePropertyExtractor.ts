@@ -174,13 +174,22 @@ export function usePropertyExtractor() {
       }
 
       const d = data.data;
+      const geoIds = await resolveGeoIds({
+        department: d.department || "",
+        city: d.city || "",
+        neighborhood: d.neighborhood || "",
+      });
       const propertyData: PropertyData = {
         title: d.title || "",
         priceRent: d.priceRent ? String(d.priceRent) : "",
         priceExpenses: d.priceExpenses ? String(d.priceExpenses) : "",
         currency: normalizeCurrency(d.currency),
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
+        department: geoIds.department || d.department || "",
+        department_id: geoIds.department_id || "",
+        neighborhood: geoIds.neighborhood || d.neighborhood || "",
+        neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "",
+        city_id: geoIds.city_id || "",
         sqMeters: d.sqMeters ? String(d.sqMeters) : "",
         rooms: d.rooms ? String(d.rooms) : "",
         aiSummary: d.aiSummary || "",
