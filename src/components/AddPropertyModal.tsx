@@ -85,7 +85,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   /** Flujo de Envío Final */
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!url.trim()) { setManualLinkRequiredError(true); return; }
+    setIsSubmitting(true);
     
     const publicImages = cameFromImage ? [] : scrapedImages;
     const familyImages = cameFromImage ? scrapedImages : privateImages;
