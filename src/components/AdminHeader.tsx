@@ -1,4 +1,4 @@
-import { Home, LogOut, ArrowLeft, Star } from "lucide-react";
+import { Home, LogOut, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { useAdminDbStatus } from "@/hooks/useAdminDbStatus";
@@ -50,9 +50,6 @@ export const AdminHeader = ({
         <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                    <Button variant="ghost" size="icon" onClick={onGoBack} className="shrink-0 -ml-2">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
                     <div className="flex items-center gap-2 min-w-0">
                         <div className="w-7 h-7 md:w-8 md:h-8 bg-primary rounded-xl flex items-center justify-center shrink-0">
                             <Home className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
