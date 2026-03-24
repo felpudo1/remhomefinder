@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList } from "@/hooks/useSaveToList";
