@@ -82,6 +82,16 @@ export function PropertyCardBase({
     const [imagesExpanded, setImagesExpanded] = useState(!collapsibleImages);
     const activeImageSrc = images[currentImg] || "/placeholder.svg";
 
+    // Si el padre cambia collapsibleImages (ej. switch "Desplegar fotos" en marketplace),
+    // hay que sincronizar: modo expandido forzado → siempre fotos visibles; modo colapsable → empezar colapsado.
+    useEffect(() => {
+        if (!collapsibleImages) {
+            setImagesExpanded(true);
+        } else {
+            setImagesExpanded(false);
+        }
+    }, [collapsibleImages]);
+
     useEffect(() => {
         if (!autoRotateImages) return;
         if (images.length <= 1) return;

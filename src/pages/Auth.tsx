@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Home, Mail, Lock, Eye, EyeOff, Loader2, Building2, Users, Phone } from "lucide-react";
 import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
@@ -397,8 +398,26 @@ const Auth = () => {
                       className="pl-9 h-11 rounded-xl"
                       required
                       minLength={6} />
-
                   </div>
+                </div>
+              }
+
+              {/* Selector de país — UY activo, resto próximamente */}
+              {!isLogin &&
+                <div className="space-y-2">
+                  <Label htmlFor="country">País</Label>
+                  <Select value="uy">
+                    <SelectTrigger id="country" className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uy">🇺🇾 Uruguay</SelectItem>
+                      <SelectItem value="ar" disabled className="opacity-40">🇦🇷 Argentina</SelectItem>
+                      <SelectItem value="br" disabled className="opacity-40">🇧🇷 Brasil</SelectItem>
+                      <SelectItem value="cl" disabled className="opacity-40">🇨🇱 Chile</SelectItem>
+                      <SelectItem value="py" disabled className="opacity-40">🇵🇾 Paraguay</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               }
 

@@ -39,6 +39,10 @@ export interface PropertyFormManualProps {
     selectedGroupId: string | null;
     setSelectedGroupId: (id: string | null) => void;
     setStep: (step: "url" | "image-upload" | "manual") => void;
+    /** En el flujo lineal: volver al paso de URL (no se edita el link en este paso). */
+    onBackToUrl?: () => void;
+    /** Si true, el link ya quedó fijado en el paso anterior y no se puede editar aquí. */
+    urlLocked?: boolean;
     handleSubmit: () => void | Promise<void>;
     isFormValid: boolean;
     /** Si el botón está deshabilitado, qué falta (misma lógica que AddPropertyModal). */
@@ -76,6 +80,8 @@ export function PropertyFormManual({
     selectedGroupId,
     setSelectedGroupId,
     setStep,
+    onBackToUrl,
+    urlLocked = false,
     handleSubmit,
     isFormValid,
     manualSubmitBlockers = [],
@@ -114,29 +120,38 @@ export function PropertyFormManual({
 
     return (
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
-            {/* URL + Extraer datos (chequeo aquí, no en submit) */}
+            {/* URL fijada en el paso anterior o editable solo si no está bloqueada */}
             <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Link de la publicación *</Label>
-                <div className="flex gap-2">
-                    <div className="relative flex-1">
-                        <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                            type="url"
-                            value={url}
-                            onChange={(e) => {
-                                setUrl(e.target.value);
-                                setUrlDuplicated(false);
-                            }}
-                            placeholder="http://intocasas.com.uy"
-                            className={`pl-9 rounded-xl text-sm ${urlDuplicated || linkRequiredError ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                            aria-invalid={linkRequiredError || undefined}
-                        />
+                {urlLocked ? (
+                    <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground break-all">
+                        <Link className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
+                        <span>{url || "—"}</span>
                     </div>
-                    <Button type="button" onClick={onExtractFromUrl} disabled={!url.trim() || isExtracting} className="rounded-xl gap-1.5 shrink-0">
-                        {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                        {isExtracting ? "Verificando..." : "Extraer datos"}
-                    </Button>
-                </div>
+                ) : (
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                type="url"
+                                value={url}
+                                onChange={(e) => {
+                                    setUrl(e.target.value);
+                                    setUrlDuplicated(false);
+                                }}
+                                placeholder="http://intocasas.com.uy"
+                                className={`pl-9 rounded-xl text-sm ${urlDuplicated || linkRequiredError ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                aria-invalid={linkRequiredError || undefined}
+                            />
+                        </div>
+                        {onExtractFromUrl && (
+                            <Button type="button" onClick={onExtractFromUrl} disabled={!url.trim() || isExtracting} className="rounded-xl gap-1.5 shrink-0">
+                                {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                {isExtracting ? "Verificando..." : "Extraer datos"}
+                            </Button>
+                        )}
+                    </div>
+                )}
                 {linkRequiredError && !url.trim() && (
                     <p className="text-xs text-destructive font-medium">Dato obligatorio</p>
                 )}
@@ -426,8 +441,20 @@ export function PropertyFormManual({
 
             <div className="flex flex-col gap-2 pt-2">
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => { setStep(cameFromImage ? "image-upload" : "url"); }} className="flex-1 rounded-xl">Volver</Button>
-                    <Button onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">Agregar Propiedad</Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                            if (onBackToUrl) onBackToUrl();
+                            else setStep(cameFromImage ? "image-upload" : "url");
+                        }}
+                        className="flex-1 rounded-xl"
+                    >
+                        Volver
+                    </Button>
+                    <Button type="button" onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">
+                        Guardar publicación
+                    </Button>
                 </div>
                 {!isFormValid && manualSubmitBlockers.length > 0 && (
                     <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-2.5 text-center" role="status">

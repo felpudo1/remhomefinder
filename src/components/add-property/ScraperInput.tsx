@@ -1,18 +1,18 @@
-import { useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link, Sparkles, Loader2, Camera, Plus, ImageIcon, X, ExternalLink } from "lucide-react";
+import { Link, Sparkles, Loader2, ImageIcon, X, ExternalLink } from "lucide-react";
 
 export interface ScraperInputProps {
     step: "url" | "image-upload" | "manual";
     url: string;
     setUrl: (url: string) => void;
     isLoading: boolean;
-    isAnalyzingUnified: boolean;
+    /** Solo se usaba en el paso URL antiguo; opcional por compatibilidad. */
+    isAnalyzingUnified?: boolean;
     handleScrape: () => void;
-    unifiedImageRef: React.RefObject<HTMLInputElement>;
-    handleUnifiedImageAnalysis: (files: FileList | null) => void;
+    unifiedImageRef?: React.RefObject<HTMLInputElement | null>;
+    handleUnifiedImageAnalysis?: (files: FileList | null) => void;
     setStep: (step: "url" | "image-upload" | "manual") => void;
     // Para image-upload
     screenshotInputRef: React.RefObject<HTMLInputElement>;
@@ -38,10 +38,10 @@ export function ScraperInput({
     url,
     setUrl,
     isLoading,
-    isAnalyzingUnified,
+    isAnalyzingUnified = false,
     handleScrape,
-    unifiedImageRef,
-    handleUnifiedImageAnalysis,
+    unifiedImageRef: _unifiedImageRef,
+    handleUnifiedImageAnalysis: _handleUnifiedImageAnalysis,
     setStep,
     screenshotInputRef,
     screenshotFile,
@@ -175,11 +175,7 @@ export function ScraperInput({
                             </div>
                         )}
                     </div>
-                ) : (
-                    <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs text-destructive font-medium leading-relaxed">
-                        <strong>AVISO:</strong> Para ingresar publicaciones de MARKETPLACE y redes sociales, debe sacar captura con los datos y click en <strong>Analizar fotos de RRSS</strong> o agregar las publicaciones manualmente.
-                    </div>
-                )}
+                ) : null}
 
                 <Button onClick={handleScrape} disabled={!url.trim() || isLoading || isUrlActionsLocked} className="w-full rounded-xl gap-2">
                     {isLoading ? (
@@ -189,47 +185,9 @@ export function ScraperInput({
                     )}
                 </Button>
 
-                <input
-                    ref={unifiedImageRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleUnifiedImageAnalysis(e.target.files)}
-                />
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                    <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-                </div>
-
-                <Button
-                    variant="secondary"
-                    onClick={() => unifiedImageRef.current?.click()}
-                    disabled={isUrlActionsLocked || isAnalyzingUnified || isLoading}
-                    className="w-full rounded-xl gap-2"
-                >
-                    {isAnalyzingUnified ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" />Analizando imágenes...</>
-                    ) : (
-                        <><Camera className="w-4 h-4" />Analizar fotos de RRSS (1-3 imágenes)</>
-                    )}
-                </Button>
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                    <div className="relative flex justify-center"><span className="bg-background px-3 text-xs text-muted-foreground">o</span></div>
-                </div>
-
-                <Button
-                    variant="secondary"
-                    onClick={() => setStep("manual")}
-                    disabled={isUrlActionsLocked}
-                    className="w-full rounded-xl gap-2"
-                >
-                    <Plus className="w-4 h-4" />
-                    Agregar manualmente
-                </Button>
+                <p className="text-[11px] text-muted-foreground text-center leading-snug">
+                    Si el link es de redes sociales o no se puede leer automático, en el siguiente paso podrás pegar capturas de pantalla y la IA completará lo que pueda.
+                </p>
             </div>
         );
     }

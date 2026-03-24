@@ -229,3 +229,27 @@
     animation: none !important;
   }
 }
+
+/* Lista larga de barrios (MatchAI / marketplace): scroll táctil y barra ~el doble de ancha en móvil */
+.neighborhood-select-viewport,
+.neighborhood-cmd-list {
+  scrollbar-width: thick;
+  -webkit-overflow-scrolling: touch;
+}
+
+.neighborhood-select-viewport::-webkit-scrollbar,
+.neighborhood-cmd-list::-webkit-scrollbar {
+  width: 24px;
+}
+
+.neighborhood-select-viewport::-webkit-scrollbar-thumb,
+.neighborhood-cmd-list::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border-radius: 8px;
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.neighborhood-select-viewport::-webkit-scrollbar-track,
+.neighborhood-cmd-list::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.5);
+}

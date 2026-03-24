@@ -127,7 +127,6 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     const blockers: string[] = [];
     if (!hasUrl) blockers.push("link de la publicación");
     if (!hasLocation) blockers.push("departamento, ciudad y barrio");
-    if (!hasLocation) blockers.push("departamento, ciudad y barrio");
     if (!hasTitle) blockers.push("título");
     if (!hasPrice) blockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
     if (urlDuplicated || urlInFamily) blockers.push("esta URL ya está en tu familia");

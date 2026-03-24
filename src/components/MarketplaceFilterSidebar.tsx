@@ -120,7 +120,10 @@ export function MarketplaceFilterSidebar({
           <SelectTrigger className="w-full h-9 rounded-xl bg-muted border-0 text-sm">
             <SelectValue placeholder="Agregar barrio..." />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent
+            className="max-h-[min(75vh,26rem)] w-[min(calc(100vw-1.5rem),var(--radix-select-trigger-width))] min-w-[var(--radix-select-trigger-width)] sm:max-h-96 sm:w-auto"
+            viewportClassName="!h-auto max-h-[min(70vh,24rem)] min-h-[9rem] overflow-y-auto overscroll-y-contain touch-pan-y neighborhood-select-viewport"
+          >
             {neighborhoods
               .filter(n => !selectedNeighborhoods.includes(n))
               .map((n) => (

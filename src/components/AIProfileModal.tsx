@@ -46,7 +46,8 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("departments").select("id, name").order("name").then(({ data }) => {
+    // Filtra solo departamentos de Uruguay (country = "UY") — por ahora la app opera solo en UY
+    supabase.from("departments").select("id, name").eq("country", "UY").order("name").then(({ data }) => {
       if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
@@ -259,9 +260,29 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
             </div>
 
             <div className="border-t border-border/50 pt-4 space-y-4">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" /> Ubicación
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> Ubicación
+                </Label>
+                {/* Selector de país — UY activo, resto próximamente (internacionalización futura) */}
+                <Select value="uy">
+                  <SelectTrigger className="w-[140px] h-8 rounded-xl bg-muted/60 border-border/40 text-xs font-semibold text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-base leading-none">🇺🇾</span>
+                      Uruguay
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent align="end" className="w-[160px]">
+                    {/* País activo */}
+                    <SelectItem value="uy">🇺🇾 Uruguay</SelectItem>
+                    {/* Próximamente — solo visual, deshabilitados */}
+                    <SelectItem value="ar" disabled className="opacity-40">🇦🇷 Argentina</SelectItem>
+                    <SelectItem value="br" disabled className="opacity-40">🇧🇷 Brasil</SelectItem>
+                    <SelectItem value="cl" disabled className="opacity-40">🇨🇱 Chile</SelectItem>
+                    <SelectItem value="py" disabled className="opacity-40">🇵🇾 Paraguay</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-1 gap-3">
                 <Select value={selectedDept} onValueChange={(val) => {
                   setSelectedDept(val);
@@ -308,7 +329,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
                   <PopoverContent className="p-0 w-[--radix-popover-trigger-width] rounded-xl border-border/50 shadow-xl overflow-hidden" align="start">
                     <Command className="rounded-xl">
                       <CommandInput placeholder="Buscar barrio..." className="h-10" />
-                      <CommandList className="max-h-[250px]">
+                      <CommandList className="max-h-[min(55vh,320px)] overscroll-y-contain touch-pan-y neighborhood-cmd-list">
                         <CommandEmpty>No se encontró el barrio.</CommandEmpty>
                         <CommandGroup>
                           {neighborhoods.map((n) => (
