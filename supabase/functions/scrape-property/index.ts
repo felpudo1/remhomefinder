@@ -325,6 +325,7 @@ serve(async (req) => {
           priceRent: extracted.priceRent || 0,
           priceExpenses: extracted.priceExpenses || 0,
           currency: extracted.currency || "UYU",
+          department: extracted.department || "",
           neighborhood: extracted.neighborhood || "",
           city: extracted.city || "",
           sqMeters: extracted.sqMeters || 0,
