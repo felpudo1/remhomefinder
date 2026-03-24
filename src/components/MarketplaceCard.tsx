@@ -51,7 +51,6 @@ export function MarketplaceCard({
   return (
     <>
       <PropertyCardBase
-        className="h-full"
         title={property.title}
         neighborhood={property.neighborhood}
         city={property.city}
