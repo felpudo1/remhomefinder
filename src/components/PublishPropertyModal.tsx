@@ -440,8 +440,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       const priceExpenses = listingType === "rent" ? (Number(form.priceExpenses) || 0) : 0;
 
       if (propertyToEdit) {
-        // Update existing: update properties + agent_publications
-        // For simplicity, update the property metadata
+        // Update agent_publications
         const { error } = await supabase
           .from("agent_publications")
           .update({
@@ -449,8 +448,37 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
             listing_type: listingType as DbListingType,
           })
           .eq("id", propertyToEdit.id);
-
         if (error) throw error;
+
+        // Update underlying properties table
+        const propertyId = propertyToEdit.propertyId || propertyToEdit.property_id;
+        if (propertyId) {
+          const { error: propErr } = await supabase
+            .from("properties")
+            .update({
+              title: form.title.trim(),
+              price_amount: priceRent,
+              price_expenses: priceExpenses,
+              total_cost: priceRent + priceExpenses,
+              currency: form.currency as CurrencyCode,
+              address: form.address?.trim() || "",
+              neighborhood: form.neighborhood.trim(),
+              neighborhood_id: form.neighborhood_id || null,
+              city: form.city.trim(),
+              city_id: form.city_id || null,
+              department: (form as any).department?.trim() || "",
+              department_id: (form as any).department_id || null,
+              m2_total: Number(form.sqMeters) || 0,
+              rooms: Number(form.rooms) || 1,
+              images: scrapedImages,
+              ref: form.ref || "",
+              details: form.aiSummary || form.details || "",
+              source_url: url.trim() || null,
+            } as any)
+            .eq("id", propertyId);
+          if (propErr) console.warn("Error updating property:", propErr);
+        }
+
         toast({ title: "Actualizada", description: "La publicación fue actualizada correctamente." });
       } else {
         // Insert: reutilizar property existente si la URL ya existe, sino crear nueva

@@ -203,8 +203,9 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     return isMatch;
                 });
 
-                const result: MarketplaceProperty & { matchCount: number; matches: SearchProfileWithLead[] } = {
+                const result = {
                     id: pub.id,
+                    propertyId: pub.property_id,
                     orgId: pub.org_id,
                     orgName: pub.organizations?.name || agency.name,
                     agentId: pub.published_by || agency.created_by,
@@ -216,7 +217,12 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     totalCost: Number(p.total_cost || 0),
                     currency: p.currency || "USD",
                     neighborhood: p.neighborhood || "",
+                    neighborhood_id: p.neighborhood_id || "",
                     city: p.city || "",
+                    city_id: p.city_id || "",
+                    department: p.department || "",
+                    department_id: p.department_id || "",
+                    address: p.address || "",
                     sqMeters: Number(p.m2_total || 0),
                     rooms: p.rooms || 0,
                     images: resolveImages(p.images || []),
@@ -225,6 +231,8 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                     createdAt: new Date(pub.created_at),
                     updatedAt: new Date(pub.updated_at),
                     ref: p.ref || "",
+                    details: p.details || "",
+                    source_url: p.source_url || "",
                     publishedByName: pub.published_by ? publishedByMap[pub.published_by] : undefined,
                     matchCount: matches.length,
                     matches: matches,
