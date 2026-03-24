@@ -381,14 +381,14 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         ) : (
           <>
             {matchAI && filtered.length > 0 && (
-              <div className="relative overflow-hidden rounded-2xl p-4 mb-2 animate-in fade-in slide-in-from-top-4 duration-500 bg-gradient-to-r from-purple-500/5 via-purple-400/10 to-purple-500/5 shadow-[0_0_15px_rgba(168,85,247,0.15)]"
+              <div className="relative overflow-hidden rounded-xl py-1.5 px-3 mb-2 animate-in fade-in slide-in-from-top-4 duration-500 bg-gradient-to-r from-purple-500/5 via-purple-400/10 to-purple-500/5 shadow-[0_0_15px_rgba(168,85,247,0.15)]"
                 style={{
                   border: '1.5px solid transparent',
                   backgroundClip: 'padding-box',
                 }}
               >
                 {/* Animated glow border */}
-                <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{
+                <div className="absolute inset-0 rounded-xl pointer-events-none" style={{
                   background: 'linear-gradient(90deg, rgba(168,85,247,0.08), rgba(168,85,247,0.35), rgba(192,132,252,0.5), rgba(168,85,247,0.35), rgba(168,85,247,0.08))',
                   backgroundSize: '200% 100%',
                   animation: 'matchai-border-glow 3s ease-in-out infinite',
@@ -398,14 +398,12 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                   padding: '1.5px',
                   borderRadius: 'inherit',
                 }} />
-                {/* Sparkle accents */}
-                <div className="absolute top-2 right-3 text-purple-400/60 text-xs animate-pulse" style={{ animationDelay: '0.5s' }}>✦</div>
-                <div className="absolute bottom-2 right-8 text-purple-300/40 text-[10px] animate-pulse" style={{ animationDelay: '1.2s' }}>✧</div>
-                <div className="absolute top-3 right-12 text-purple-400/30 text-[8px] animate-pulse" style={{ animationDelay: '0.8s' }}>✦</div>
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-400/10 via-transparent to-transparent pointer-events-none rounded-2xl" />
-                <div className="relative flex items-center gap-3">
-                  <span className="text-2xl animate-pulse">🔮</span>
-                  <p className="text-sm font-semibold text-foreground">
+                <div className="absolute top-1 right-2 text-purple-400/60 text-[10px] animate-pulse" style={{ animationDelay: '0.5s' }}>✦</div>
+                <div className="absolute bottom-1 right-6 text-purple-300/40 text-[8px] animate-pulse" style={{ animationDelay: '1.2s' }}>✧</div>
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-400/10 via-transparent to-transparent pointer-events-none rounded-xl" />
+                <div className="relative flex items-center gap-2">
+                  <span className="text-base animate-pulse">🔮</span>
+                  <p className="text-xs font-semibold text-foreground">
                     MatchAI encontró {filtered.length} {filtered.length === 1 ? "propiedad" : "propiedades"} para ti
                   </p>
                 </div>
