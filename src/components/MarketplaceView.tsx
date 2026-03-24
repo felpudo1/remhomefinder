@@ -295,6 +295,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   };
 
   const activeFilterCount = [selectedNeighborhoods.length > 0, minPrice, maxPrice, selectedRooms, selectedListingType, selectedCurrency].filter(Boolean).length;
+  const isMatchAIMagicActive = matchAI && filtered.length > 0;
 
   return (
     <div className="flex gap-8">
@@ -415,7 +416,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 return (
                   <div
                     key={property.id}
-                    className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""} ${matchAI && !isInactive ? "matchai-card-glow rounded-2xl" : ""}`}
+                    className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""} ${isMatchAIMagicActive && !isInactive ? "matchai-card-glow rounded-2xl" : ""}`}
                     style={matchAI ? { animationDelay: `${i * 80}ms`, animationFillMode: "backwards" } : undefined}
                   >
                     <MarketplaceCard
@@ -425,6 +426,8 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                       alreadySaved={savedMarketplaceIds.has(property.id)}
                       isReferred={referredAgentId === property.agentId}
                       forceExpandImages={expandPhotos}
+                      isMatchAIMagicActive={isMatchAIMagicActive && !isInactive}
+                      matchAIRank={i}
                     />
                   </div>
                 );

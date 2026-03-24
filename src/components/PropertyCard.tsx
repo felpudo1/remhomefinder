@@ -180,7 +180,7 @@ export function PropertyCard({ property, onStatusChange, onClick, ownerEmail }: 
                 <div className="flex flex-col gap-0.5">
                   <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
                     <Building2 className="w-3 h-3" />
-                    De agencia
+                    {property.marketplaceOrgName || "Agencia"}
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     Agente: {property.marketplaceAgentName || "Agente no disponible"}

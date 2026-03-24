@@ -14,6 +14,8 @@ interface MarketplaceCardProps {
   alreadySaved?: boolean;
   isReferred?: boolean;
   forceExpandImages?: boolean;
+  isMatchAIMagicActive?: boolean;
+  matchAIRank?: number;
 }
 
 /**
@@ -30,11 +32,21 @@ const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string }
   deleted: null,
 };
 
-export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred, forceExpandImages }: MarketplaceCardProps) {
+export function MarketplaceCard({
+  property,
+  onSave,
+  isSaving,
+  alreadySaved,
+  isReferred,
+  forceExpandImages,
+  isMatchAIMagicActive = false,
+  matchAIRank = 0,
+}: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const overlay = STATUS_OVERLAY_CONFIG[property.status];
+  const isSaveCtaHighlighted = Boolean(isMatchAIMagicActive && !alreadySaved && !isSaving);
 
   return (
     <>
@@ -98,7 +110,8 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
           <Button
             size="sm"
             variant={alreadySaved ? "secondary" : "default"}
-            className="gap-1.5 rounded-lg"
+            className={`gap-1.5 rounded-lg ${isSaveCtaHighlighted ? "matchai-save-cta-glow" : ""}`}
+            style={isSaveCtaHighlighted ? { animationDelay: `${Math.min(matchAIRank * 90, 700)}ms` } : undefined}
             onClick={(e) => {
               e.stopPropagation();
               onSave(property);

@@ -62,7 +62,7 @@ export function usePropertyQueries() {
             // 1. Get user listings (includes org_id filter via RLS)
             const { data: listings, error: listingsError } = await (supabase
                 .from("user_listings")
-                .select("*, properties(*), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, published_by)") as any)
+                .select("*, properties(*), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, org_id, published_by, organizations(name))") as any)
                 .eq("admin_hidden", false)
                 .order("created_at", { ascending: false });
 
@@ -85,7 +85,8 @@ export function usePropertyQueries() {
                 coordinadaResult,
                 commentsResult,
                 attachmentsResult,
-                contactsResult
+                contactsResult,
+                orgNamesResult
             ] = await Promise.all([
                 // Lectura de comentarios
                 (currentUserId && listingIds.length > 0) 
@@ -125,6 +126,19 @@ export function usePropertyQueries() {
                 // Contactos de marketplace
                 sourcePublicationIds.length > 0
                   ? supabase.rpc("get_marketplace_publication_contacts" as any, { _publication_ids: sourcePublicationIds })
+                  : Promise.resolve({ data: [] }),
+
+                // Nombres de organizaciones para publicaciones de marketplace (fallback con SECURITY DEFINER)
+                sourcePublicationIds.length > 0
+                  ? (async () => {
+                      const { data: pubs } = await (supabase
+                        .from("agent_publications")
+                        .select("id, org_id")
+                        .in("id", sourcePublicationIds) as any);
+                      const orgIds = Array.from(new Set(((pubs || []) as any[]).map((p: any) => p.org_id).filter(Boolean)));
+                      if (orgIds.length === 0) return { data: [] };
+                      return supabase.rpc("get_marketplace_org_names" as any, { _org_ids: orgIds });
+                    })()
                   : Promise.resolve({ data: [] })
             ]);
 
@@ -239,6 +253,10 @@ export function usePropertyQueries() {
                     phone: row.agent_phone || undefined,
                 };
             });
+            const marketplaceOrgNameById: Record<string, string> = {};
+            ((orgNamesResult.data as any[]) || []).forEach((row: any) => {
+                if (row?.id && row?.name) marketplaceOrgNameById[row.id] = row.name;
+            });
 
             // 11. Eliminar estados no usados (Legacy compatibility)
             const deletedByMap: Record<string, string> = {};
@@ -258,6 +276,10 @@ export function usePropertyQueries() {
                     const publicationPhone = listing.source_publication_id
                         ? marketplaceContactByPublicationId[listing.source_publication_id]?.phone
                         : undefined;
+                    const publicationOrg = Array.isArray(listing.agent_publications?.organizations)
+                        ? listing.agent_publications.organizations[0]
+                        : listing.agent_publications?.organizations;
+                    const marketplaceOrgName = publicationOrg?.name || (listing.agent_publications?.org_id ? marketplaceOrgNameById[listing.agent_publications.org_id] : undefined) || undefined;
                     const marketplaceAgentName = relationName || publicationName;
                     const marketplaceAgentPhone = relationPhone || publicationPhone;
                     const marketplaceContactSource = !listing.source_publication_id
@@ -302,6 +324,7 @@ export function usePropertyQueries() {
                         details: "",
                         groupId: listing.org_id || null,
                         sourceMarketplaceId: listing.source_publication_id || null,
+                        marketplaceOrgName,
                         marketplaceAgentName,
                         marketplaceAgentPhone,
                         marketplaceContactSource,
@@ -342,6 +365,10 @@ export function usePropertyQueries() {
                 const publicationPhone = listing.source_publication_id
                     ? marketplaceContactByPublicationId[listing.source_publication_id]?.phone
                     : undefined;
+                const publicationOrg = Array.isArray(listing.agent_publications?.organizations)
+                    ? listing.agent_publications.organizations[0]
+                    : listing.agent_publications?.organizations;
+                const marketplaceOrgName = publicationOrg?.name || (listing.agent_publications?.org_id ? marketplaceOrgNameById[listing.agent_publications.org_id] : undefined) || undefined;
                 const marketplaceAgentName = relationName || publicationName;
                 const marketplaceAgentPhone = relationPhone || publicationPhone;
                 const marketplaceContactSource = !listing.source_publication_id
@@ -384,6 +411,7 @@ export function usePropertyQueries() {
                     coordinatedBy: coordinatedByMap[listing.id] || undefined,
                     groupId: listing.org_id || null,
                     sourceMarketplaceId: listing.source_publication_id || null,
+                    marketplaceOrgName,
                     marketplaceAgentName,
                     marketplaceAgentPhone,
                     marketplaceContactSource,

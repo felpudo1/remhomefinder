@@ -53,6 +53,8 @@ export interface Property {
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
   marketplaceStatus?: MarketplacePropertyStatus | null;
+  /** Nombre de la agencia dueña de la publicación en marketplace (si aplica) */
+  marketplaceOrgName?: string;
   /** Nombre del agente que publicó en marketplace (si aplica) */
   marketplaceAgentName?: string;
   /** Teléfono del agente para contacto directo (si aplica) */
