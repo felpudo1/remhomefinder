@@ -108,7 +108,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     try {
       const { data: searchProfile, error } = await supabase
         .from('user_search_profiles')
-        .select('*, neighborhoods(name)')
+        .select('*')
         .eq('user_id', profile.userId)
         .maybeSingle();
 
