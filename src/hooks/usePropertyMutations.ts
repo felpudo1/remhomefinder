@@ -71,6 +71,9 @@ export function usePropertyMutations() {
             listingType?: string;
             ref?: string;
             details?: string;
+            contactName?: string;
+            contactPhone?: string;
+            contactSource?: string;
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
