@@ -418,6 +418,8 @@ serve(async (req) => {
         aiSummary: extracted.aiSummary || "",
         ref: extracted.ref || "",
         details: extracted.details || "",
+        contactName: extracted.contactName || "",
+        contactPhone: extracted.contactPhone || "",
         images: result.imageUrls,
       },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
