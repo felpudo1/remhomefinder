@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT } from "@/lib/config-keys";
 
 interface AIProfileModalProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [bedrooms, setBedrooms] = useState("1");
   const [openNeighborhoods, setOpenNeighborhoods] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
+  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
   const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
   const [cities, setCities] = useState<{id: string, name: string}[]>([]);
@@ -182,8 +185,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
               Estado de Inteligencia Colectiva
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Tu perfil está siendo procesado por nuestra IA para encontrar propiedades que coincidan con tus gustos. 
-              Por defecto, los agentes pueden verte para ofrecerte oportunidades exclusivas.
+              Tu perfil está siendo analizado por nuestra IA y realiza la magia de encontrar propiedades que coincidan con tus gustos. Esto te facilita la busqueda y brinda la posibilidad que los agentes puedan ver lo que estas necesitando y ofrecerte oportunidades exclusivas.
             </p>
           </div>
 
@@ -348,43 +350,38 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
               )}
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-purple-500/5 rounded-2xl border border-purple-500/20 transition-all hover:bg-purple-500/10 shadow-sm relative overflow-hidden group">
-              <div className="space-y-1 relative z-10">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="ai-privacy" className="text-sm font-bold text-foreground cursor-pointer">Modo Privado</Label>
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-tight max-w-[200px]">
-                  Ocultar datos directos a agentes.
-                </p>
+          </div>
+
+          <div className="bg-purple-500/5 rounded-2xl border border-purple-500/10 p-5 space-y-4 relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-purple-500" />
+                <Label htmlFor="ai-privacy" className="text-sm font-bold text-foreground cursor-pointer">Modo Privado</Label>
               </div>
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               ) : (
-                <Switch 
+                <Switch
                   id="ai-privacy"
                   checked={isPrivate}
                   onCheckedChange={setIsPrivate}
                   disabled={saving}
-                  className="relative z-10 data-[state=checked]:bg-purple-500 scale-90"
+                  className="data-[state=checked]:bg-purple-500 scale-90"
                 />
               )}
             </div>
-          </div>
-
-          <div className="bg-purple-500/5 rounded-2xl border border-purple-500/10 p-5 space-y-3 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Shield className="w-12 h-12 text-purple-500" />
+            
+            <div className="border-t border-purple-500/10 pt-4 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-purple-500/80">
+                <Shield className="w-3.5 h-3.5" /> Compromiso de Privacidad
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed font-medium relative z-10">
+                En <span className="text-foreground font-bold italic">{appBrandName}</span>, el usuario es el único dueño de sus datos y tiene el control total del algoritmo.
+                Tenés la libertad de decidir cómo querés que nuestra tecnología trabaje para vos: podés usar la plataforma como un
+                <span className="text-foreground font-bold"> organizador personal privado y buscar casa como buscaron tus abuelos en 1930</span> o activar nuestra inteligencia colectiva como un puente hacia oportunidades exclusivas con agentes profesionales.
+                <span className="text-purple-500 font-bold ml-1">Vos tenés la llave.</span>
+              </p>
             </div>
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-purple-500/80">
-              <Shield className="w-3.5 h-3.5" /> Compromiso de Privacidad
-            </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed font-medium relative z-10">
-              En <span className="text-foreground font-bold italic">HomeFinder</span>, el usuario es el único dueño de sus datos y tiene el control total del algoritmo. 
-              Tenés la libertad de decidir cómo querés que nuestra tecnología trabaje para vos: podés usar la plataforma como un 
-              <span className="text-foreground font-bold"> organizador personal privado y buscar casa como buscaron tus abuelos en 1930</span> o activar nuestra inteligencia colectiva como un puente hacia oportunidades exclusivas con agentes profesionales. 
-              <span className="text-purple-500 font-bold ml-1">Vos tenés la llave.</span>
-            </p>
           </div>
         </div>
 
