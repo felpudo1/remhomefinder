@@ -327,6 +327,15 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
             <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer">
               Ocultar guardados
             </Label>
+          <div className="flex items-center gap-3">
+            <Switch
+              id="expand-photos-marketplace"
+              checked={expandPhotos}
+              onCheckedChange={setExpandPhotos}
+            />
+            <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Desplegar fotos
+            </Label>
           </div>
 
           <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm relative overflow-hidden group">
