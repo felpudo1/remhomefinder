@@ -39,7 +39,20 @@ export const Footer = () => {
     return (
         <footer className="w-full py-8 border-t border-border mt-auto bg-card/30">
             <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center gap-3">
-                {/* Línea 1: Términos y Privacidad */}
+                {/* Línea 1: Copyright y branding */}
+                <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                        <span>Hecho con</span>
+                        <Heart className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" />
+                        <span>por</span>
+                        <span className="font-bold text-foreground">{appBrandName}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/60">
+                        © {new Date().getFullYear()} — Todos los derechos reservados.
+                    </p>
+                </div>
+
+                {/* Línea 2: Términos y Privacidad */}
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
                     <Link
                         to={ROUTES.TERMS}
@@ -58,7 +71,7 @@ export const Footer = () => {
                     </Link>
                 </div>
 
-                {/* Línea 2: Contacto y Versión */}
+                {/* Línea 3: Contacto y Versión */}
                 <div className="flex flex-wrap items-center justify-center gap-3">
                     {supportEmail && (
                         <a
@@ -112,19 +125,6 @@ export const Footer = () => {
                             </>
                         )}
                     </button>
-                </div>
-
-                {/* Línea 3: Copyright y branding */}
-                <div className="flex flex-col items-center justify-center gap-1 mt-2 pt-3 border-t border-border/50">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                        <span>Hecho con</span>
-                        <Heart className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" />
-                        <span>por</span>
-                        <span className="font-bold text-foreground">{appBrandName}</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/60">
-                        © {new Date().getFullYear()} — Todos los derechos reservados.
-                    </p>
                 </div>
             </div>
 
