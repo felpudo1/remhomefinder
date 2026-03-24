@@ -159,7 +159,7 @@ export function usePropertyMatches(property: PropertyWithLocation | null) {
     },
   });
 
-  const matches = calculateMatches(property || {}, searchProfiles);
+  const matches = property ? calculateMatches(property, searchProfiles) : [];
 
   return { matches, isLoading };
 }
