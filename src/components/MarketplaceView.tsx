@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList } from "@/hooks/useSaveToList";
@@ -78,9 +78,32 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     );
   }, [userProperties]);
 
-  const neighborhoods = useMemo(() => {
-    const set = new Set(marketplaceProperties.map((p) => p.neighborhood).filter(Boolean));
-    return Array.from(set).sort();
+  // Traer barrios normalizados de la BD en vez del texto libre de las propiedades
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
+  useEffect(() => {
+    const fetchNeighborhoods = async () => {
+      // Obtener los neighborhood_ids únicos de las propiedades del marketplace
+      const propertyNeighborhoods = new Set(
+        marketplaceProperties.map((p) => p.neighborhood).filter(Boolean)
+      );
+      if (propertyNeighborhoods.size === 0) {
+        setNeighborhoods([]);
+        return;
+      }
+      const { data } = await supabase
+        .from("neighborhoods")
+        .select("name")
+        .order("name");
+      if (data) {
+        // Solo mostrar barrios que existan en la tabla normalizada Y que alguna propiedad los tenga
+        const normalizedNames = new Set(data.map((n) => n.name));
+        const filtered = Array.from(propertyNeighborhoods)
+          .filter((n) => normalizedNames.has(n))
+          .sort();
+        setNeighborhoods(filtered);
+      }
+    };
+    fetchNeighborhoods();
   }, [marketplaceProperties]);
 
   const hasFilters = !!(selectedNeighborhoods.length > 0 || minPrice || maxPrice || selectedRooms || selectedListingType || selectedCurrency);
