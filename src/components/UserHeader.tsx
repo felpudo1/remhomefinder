@@ -15,6 +15,7 @@ import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
 import { useEffect, useState } from "react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
+import { EditProfileModal } from "@/components/EditProfileModal";
 
 interface HeaderProps {
     userEmail: string | null;
@@ -40,6 +41,7 @@ export const UserHeader = ({
     const { isPremium } = useSubscription();
     const { data: profile } = useProfile();
     const [showStatusBubbles, setShowStatusBubbles] = useState(false);
+    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     const isReferred = !!profile?.referredById;
@@ -82,6 +84,7 @@ export const UserHeader = ({
         ) : null
     );
     return (
+        <>
         <header className="bg-card border-b border-border sticky top-0 z-40 card-shadow">
             <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between gap-2 md:gap-3">
                 {/* Logo + email en mobile debajo del nombre */}
@@ -156,9 +159,9 @@ export const UserHeader = ({
                                 title="Menú de usuario"
                             >
                                 <Avatar className="h-8 w-8 hover:opacity-80 transition-opacity">
-                                    <AvatarImage src="" alt="Avatar" />
+                                    <AvatarImage src={profile?.avatarUrl} alt={profile?.displayName || "Usuario"} />
                                     <AvatarFallback className="bg-primary/10 text-primary">
-                                        <User className="w-4 h-4" />
+                                        {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
@@ -173,7 +176,10 @@ export const UserHeader = ({
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                            <DropdownMenuItem
+                                className="cursor-pointer gap-2 py-2"
+                                onClick={() => setIsEditProfileOpen(true)}
+                            >
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span>Mi Perfil</span>
                             </DropdownMenuItem>
@@ -197,5 +203,13 @@ export const UserHeader = ({
                 </div>
             </div>
         </header>
+
+        <EditProfileModal 
+            isOpen={isEditProfileOpen} 
+            onClose={() => setIsEditProfileOpen(false)} 
+        />
+        </>
     );
 };
+
+export default UserHeader;

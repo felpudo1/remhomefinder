@@ -1,6 +1,15 @@
 import { z } from "zod";
 
 /**
+ * Valida formato de teléfono internacional: solo dígitos, mínimo 8 caracteres.
+ * El formato debe ser sin espacios, guiones ni otros caracteres especiales.
+ * Ejemplos válidos: "59899123456", "5491112345678"
+ */
+const phoneRegex = z.string()
+    .min(8, "El teléfono debe tener al menos 8 dígitos.")
+    .regex(/^\d+$/, "El teléfono solo debe contener dígitos.");
+
+/**
  * Esquema para validación de inicio de sesión.
  */
 export const loginSchema = z.object({
@@ -17,7 +26,7 @@ export const registerSchema = z.object({
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
     confirmPassword: z.string(),
     displayName: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
-    phone: z.string().min(8, "El teléfono no es válido."),
+    phone: phoneRegex,
     accountType: z.enum(["user", "agency"]),
     orgName: z.string().optional(),
     orgPhone: z.string().optional(),

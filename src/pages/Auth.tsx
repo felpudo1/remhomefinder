@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Mail, Lock, Eye, EyeOff, Loader2, Building2, Users, Phone } from "lucide-react";
+import { InputPhone } from "@/components/ui/InputPhone";
+import { Home, Mail, Lock, Eye, EyeOff, Loader2, Building2, Users } from "lucide-react";
 import authBgImg from "@/assets/auth-bg.jpg";
 import { useToast } from "@/hooks/use-toast";
 import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
@@ -296,36 +297,26 @@ const Auth = () => {
 
               {/* Teléfono de contacto personal (todos en registro) */}
               {!isLogin &&
-                <div className="space-y-2">
-                  <Label htmlFor="userPhone">Teléfono de contacto</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="userPhone"
-                      type="tel"
-                      placeholder="+598 99 123 456"
-                      value={userPhone}
-                      onChange={(e) => setUserPhone(e.target.value)}
-                      className="pl-9 h-11 rounded-xl" />
-                  </div>
-                </div>
+                <InputPhone
+                  id="userPhone"
+                  label="Teléfono de contacto"
+                  countryCode="+598"
+                  placeholder="99 123 456"
+                  value={userPhone}
+                  onChange={(e) => setUserPhone(e.target.value)}
+                />
               }
 
               {/* Teléfono empresa (solo agencias) */}
               {!isLogin && accountType === "agency" &&
-                <div className="space-y-2">
-                  <Label htmlFor="orgPhone">Teléfono empresa</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="orgPhone"
-                      type="tel"
-                      placeholder="+598 2 123 4567"
-                      value={orgPhone}
-                      onChange={(e) => setOrgPhone(e.target.value)}
-                      className="pl-9 h-11 rounded-xl" />
-                  </div>
-                </div>
+                <InputPhone
+                  id="orgPhone"
+                  label="Teléfono empresa"
+                  countryCode="+598"
+                  placeholder="2 123 4567"
+                  value={orgPhone}
+                  onChange={(e) => setOrgPhone(e.target.value)}
+                />
               }
 
               {/* Email */}
