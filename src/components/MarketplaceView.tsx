@@ -148,7 +148,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
       toast({
         title: "MatchAI Activado 🔮",
-        description: "Cargamos tus preferencias de búsqueda en los filtros.",
+        description: "Acá es donde empieza la magia, MatchAI trabajando para ti.",
       });
     } catch (err) {
       console.error("MatchAI Error:", err);
