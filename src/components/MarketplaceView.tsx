@@ -185,9 +185,18 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       result = result.filter((p) => p.neighborhood && selectedNeighborhoods.includes(p.neighborhood));
     }
 
-    // Filtrado por moneda (solo si hay una seleccionada)
+    // Filtrado por moneda (normalización entre UI y DB)
     if (selectedCurrency) {
-      result = result.filter((p) => p.currency === selectedCurrency);
+      result = result.filter((p) => {
+        const cur = (p.currency || "").toUpperCase();
+        if (selectedCurrency === "U$S" || selectedCurrency === "USD") {
+          return cur === "USD" || cur === "U$S";
+        }
+        if (selectedCurrency === "$" || selectedCurrency === "ARS" || selectedCurrency === "UYU") {
+          return cur === "ARS" || cur === "UYU" || cur === "$";
+        }
+        return cur === selectedCurrency.toUpperCase();
+      });
     }
 
     if (minPrice) {
