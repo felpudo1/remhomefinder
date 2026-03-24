@@ -40,6 +40,12 @@ export function AdminGeografia({ toast }: Props) {
   const [formData, setFormData] = useState({ name: "", country: "UY" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Estado para panel de barrios global
+  const [allNeighborhoods, setAllNeighborhoods] = useState<any[]>([]);
+  const [loadingAllNeigh, setLoadingAllNeigh] = useState(false);
+  const [neighSearch, setNeighSearch] = useState("");
+  const [deletingNeighId, setDeletingNeighId] = useState<string | null>(null);
+
   useEffect(() => { fetchDepartments(); }, []);
   useEffect(() => { if (selectedDept) fetchCities(selectedDept.id); }, [selectedDept]);
   useEffect(() => { if (selectedCity) fetchNeighborhoods(selectedCity.id); }, [selectedCity]);
