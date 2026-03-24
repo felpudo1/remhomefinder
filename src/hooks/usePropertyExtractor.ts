@@ -114,6 +114,8 @@ export function usePropertyExtractor() {
         details: d.details || "",
         listingType: d.listingType === "sale" || d.listingType === "rent" ? d.listingType : undefined,
         images: d.images || [],
+        contactName: d.contactName || "",
+        contactPhone: d.contactPhone || "",
       };
 
       toast.success("¡Datos extraídos con IA!");
