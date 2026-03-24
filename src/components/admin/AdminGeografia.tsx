@@ -46,9 +46,35 @@ export function AdminGeografia({ toast }: Props) {
   const [neighSearch, setNeighSearch] = useState("");
   const [deletingNeighId, setDeletingNeighId] = useState<string | null>(null);
 
-  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => { fetchDepartments(); fetchAllNeighborhoods(); }, []);
   useEffect(() => { if (selectedDept) fetchCities(selectedDept.id); }, [selectedDept]);
   useEffect(() => { if (selectedCity) fetchNeighborhoods(selectedCity.id); }, [selectedCity]);
+
+  const fetchAllNeighborhoods = async () => {
+    setLoadingAllNeigh(true);
+    const { data, error } = await supabase
+      .from("neighborhoods")
+      .select("id, name, city_id, cities(name, department_id, departments(name))")
+      .order("name");
+    if (error) toast({ title: "Error al cargar barrios", description: error.message, variant: "destructive" });
+    else setAllNeighborhoods(data || []);
+    setLoadingAllNeigh(false);
+  };
+
+  const handleDeleteNeighGlobal = async (id: string, name: string) => {
+    if (!window.confirm(`¿Eliminar el barrio "${name}"? Fallará si hay propiedades usándolo.`)) return;
+    setDeletingNeighId(id);
+    const { error } = await supabase.from("neighborhoods").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Barrio "${name}" eliminado` });
+      setAllNeighborhoods((prev) => prev.filter((n) => n.id !== id));
+      // Refresh panel de barrios si hay ciudad seleccionada
+      if (selectedCity) fetchNeighborhoods(selectedCity.id);
+    }
+    setDeletingNeighId(null);
+  };
 
   const fetchDepartments = async () => {
     setLoadingDepts(true);
