@@ -185,22 +185,37 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       result = result.filter((p) => p.neighborhood && selectedNeighborhoods.includes(p.neighborhood));
     }
 
-    // Filtrado por moneda (solo si hay una seleccionada)
+    // Filtrado por moneda (normalización entre UI y DB)
     if (selectedCurrency) {
-      result = result.filter((p) => p.currency === selectedCurrency);
+      result = result.filter((p) => {
+        const cur = (p.currency || "").toUpperCase();
+        if (selectedCurrency === "U$S" || selectedCurrency === "USD") {
+          return cur === "USD" || cur === "U$S";
+        }
+        if (selectedCurrency === "$" || selectedCurrency === "ARS" || selectedCurrency === "UYU") {
+          return cur === "ARS" || cur === "UYU" || cur === "$";
+        }
+        return cur === selectedCurrency.toUpperCase();
+      });
     }
 
     if (minPrice) {
       const min = Number(minPrice);
       if (!isNaN(min)) {
-        result = result.filter((p) => p.totalCost >= min);
+        result = result.filter((p) => {
+          const cost = p.totalCost > 0 ? p.totalCost : (p.priceRent + p.priceExpenses);
+          return cost <= 0 || cost >= min;
+        });
       }
     }
 
     if (maxPrice) {
       const max = Number(maxPrice);
       if (!isNaN(max)) {
-        result = result.filter((p) => p.totalCost <= max);
+        result = result.filter((p) => {
+          const cost = p.totalCost > 0 ? p.totalCost : (p.priceRent + p.priceExpenses);
+          return cost <= 0 || cost <= max;
+        });
       }
     }
 
