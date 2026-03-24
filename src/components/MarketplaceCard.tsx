@@ -65,9 +65,14 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
                 TU AGENTE
               </span>
             )}
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-md">
-              <Building2 className="w-3 h-3" />
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm shadow-md ${
+              isReferred
+                ? "bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 text-black font-bold shadow-[0_0_15px_rgba(234,179,8,0.6),0_0_30px_rgba(234,179,8,0.3),0_0_45px_rgba(234,179,8,0.15)] animate-[shimmer_2s_ease-in-out_infinite] border border-yellow-300/60"
+                : "bg-primary/90 text-primary-foreground"
+            }`}>
+              <Building2 className={`w-3 h-3 ${isReferred ? "drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]" : ""}`} />
               {property.orgName}
+              {isReferred && <Star className="w-3 h-3 fill-current drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]" />}
             </span>
           </div>
         }

@@ -144,3 +144,16 @@
   animation: hf-card-push-in 430ms cubic-bezier(0.2, 0.8, 0.2, 1);
   will-change: transform, opacity;
 }
+
+@keyframes shimmer {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: 0% 50%;
+    box-shadow: 0 0 15px rgba(234,179,8,0.5), 0 0 30px rgba(234,179,8,0.25), 0 0 45px rgba(234,179,8,0.1);
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: 100% 50%;
+    box-shadow: 0 0 20px rgba(234,179,8,0.7), 0 0 40px rgba(234,179,8,0.4), 0 0 60px rgba(234,179,8,0.2);
+  }
+}
