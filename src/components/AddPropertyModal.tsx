@@ -46,6 +46,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     resetForm();
     resetUploader();
     setIsAddingFromApp(false);
+    setIsSubmitting(false);
     onClose();
   };
 
