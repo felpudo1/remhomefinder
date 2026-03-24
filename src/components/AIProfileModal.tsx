@@ -86,7 +86,20 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
             setMinBudget(data.min_budget?.toString() || "");
             setMaxBudget(data.max_budget?.toString() || "");
             setBedrooms(data.min_bedrooms?.toString() || "1");
-            setSelectedDept(data.city_id || "");
+            // Resolve department from city_id to populate cascading selectors
+            if (data.city_id) {
+              const { data: cityData } = await supabase
+                .from("cities")
+                .select("id, department_id")
+                .eq("id", data.city_id)
+                .maybeSingle();
+              if (cityData) {
+                setSelectedCity(cityData.id);
+                if (cityData.department_id) {
+                  setSelectedDept(cityData.department_id);
+                }
+              }
+            }
             setSelectedNeighborhoods(data.neighborhood_ids || []);
             setIsPrivate(!!data.is_private);
           }
@@ -124,7 +137,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
         min_budget: Number(minBudget) || 0,
         max_budget: Number(maxBudget) || 0,
         min_bedrooms: bedrooms === "4+" ? 4 : (Number(bedrooms) || 1),
-        city_id: selectedDept || null,
+        city_id: selectedCity || null,
         neighborhood_ids: selectedNeighborhoods.length > 0 ? selectedNeighborhoods : null,
         is_private: isPrivate,
       }, { onConflict: 'user_id' });
