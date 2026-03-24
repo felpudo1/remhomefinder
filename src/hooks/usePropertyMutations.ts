@@ -112,14 +112,19 @@ export function usePropertyMutations() {
             }
 
             // Insert into user_listings (tracking)
-            const { data: listing, error: listingError } = await supabase
-                .from("user_listings")
-                .insert({
+            const listingInsert: any = {
                     property_id: propId,
                     org_id: orgId,
                     listing_type: (form.listingType as "rent" | "sale") || "rent",
                     added_by: user.id,
-                })
+                };
+            if (form.contactName?.trim()) listingInsert.contact_name = form.contactName.trim();
+            if (form.contactPhone?.trim()) listingInsert.contact_phone = form.contactPhone.trim();
+            if (form.contactSource) listingInsert.contact_source = form.contactSource;
+
+            const { data: listing, error: listingError } = await supabase
+                .from("user_listings")
+                .insert(listingInsert)
                 .select()
                 .single();
 

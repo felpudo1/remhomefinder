@@ -64,6 +64,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     aiSummary: "",
     ref: "",
     details: "",
+    contactName: "",
+    contactPhone: "",
   });
 
   // Sync with activeGroupId or groups change

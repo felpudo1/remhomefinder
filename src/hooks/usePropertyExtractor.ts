@@ -201,6 +201,8 @@ export function usePropertyExtractor() {
         details: d.details || "",
         listingType: d.listingType === "sale" || d.listingType === "rent" ? d.listingType : undefined,
         images: uploadedUrls,
+        contactName: d.contactName || "",
+        contactPhone: d.contactPhone || "",
       };
 
       toast.success("¡Datos extraídos de las imágenes con IA!");

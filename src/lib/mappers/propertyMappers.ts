@@ -71,6 +71,9 @@ export function mapListingToProperty(
         listingType: (listing.listing_type as "rent" | "sale") || "rent",
         ref: property?.ref || "",
         details: property?.details || "",
+        contactName: listing.contact_name || undefined,
+        contactPhone: listing.contact_phone || undefined,
+        contactSource: listing.contact_source || undefined,
     };
 }
 

@@ -424,6 +424,9 @@ export function usePropertyQueries() {
                     isSharedListing,
                     hasUnreadComments: unreadCommentsCount > 0,
                     unreadCommentsCount,
+                    contactName: listing.contact_name || undefined,
+                    contactPhone: listing.contact_phone || undefined,
+                    contactSource: listing.contact_source || undefined,
                 };
             });
         },

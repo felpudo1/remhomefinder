@@ -378,6 +378,18 @@ export function PropertyFormManual({
                 <Input value={form.ref} onChange={(e) => setForm({ ...form, ref: e.target.value })} placeholder="Ej: REF-12345" className="rounded-xl text-sm" />
             </div>
 
+            {/* Contacto del aviso */}
+            <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Nombre de contacto</Label>
+                    <Input value={form.contactName || ""} onChange={(e) => setForm({ ...form, contactName: e.target.value })} placeholder="Ej: Juan Pérez" className="rounded-xl text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Teléfono de contacto</Label>
+                    <Input value={form.contactPhone || ""} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} placeholder="Ej: 099 123 456" className="rounded-xl text-sm" />
+                </div>
+            </div>
+
             {/* Detalles */}
             <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Detalles</Label>
