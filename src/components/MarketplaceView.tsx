@@ -327,6 +327,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
             <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer">
               Ocultar guardados
             </Label>
+          </div>
           <div className="flex items-center gap-3">
             <Switch
               id="expand-photos-marketplace"
