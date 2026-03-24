@@ -170,13 +170,25 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
 
       const d = data.data;
       setScrapedImages(d.images || []);
+      
+      // Resolver IDs geográficos desde texto
+      const geoIds = await resolveGeoIds({
+        department: d.department || "",
+        city: d.city || "",
+        neighborhood: d.neighborhood || "",
+      });
+      
       setForm({
         title: d.title || "",
         priceRent: String(d.priceRent || ""),
         priceExpenses: String(d.priceExpenses || ""),
         currency: d.currency || "UYU",
-        neighborhood: d.neighborhood || "",
-        city: d.city || "",
+        neighborhood: geoIds.neighborhood || d.neighborhood || "",
+        neighborhood_id: geoIds.neighborhood_id || "",
+        city: geoIds.city || d.city || "",
+        city_id: geoIds.city_id || "",
+        department: geoIds.department || d.department || "",
+        department_id: geoIds.department_id || "",
         address: d.address || "",
         sqMeters: String(d.sqMeters || ""),
         rooms: String(d.rooms || ""),
