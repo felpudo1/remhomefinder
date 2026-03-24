@@ -118,13 +118,13 @@ export function PropertyCardBase({
 
     return (
         <div
-            className={`bg-card rounded-2xl overflow-hidden border-[4px] border-foreground/40 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-fade-in ${className}`}
+            className={`bg-card rounded-2xl overflow-hidden border-[4px] border-foreground/40 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-fade-in flex flex-col h-full min-h-0 ${className}`}
             onClick={onClick}
         >
             {/* Sección de Imagen (colapsable o fija) */}
             {collapsibleImages && !imagesExpanded ? (
                 <div
-                    className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/80 hover:bg-muted cursor-pointer border-b border-border"
+                    className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 bg-muted/80 hover:bg-muted cursor-pointer border-b border-border"
                     onClick={handleToggleImages}
                 >
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
@@ -135,7 +135,7 @@ export function PropertyCardBase({
                 </div>
             ) : (
                 <div
-                    className="relative h-48 md:h-64 lg:h-72 overflow-hidden bg-muted cursor-zoom-in"
+                    className="relative h-48 md:h-64 lg:h-72 shrink-0 overflow-hidden bg-muted cursor-zoom-in"
                     onClick={(e) => {
                         const target = e.target as HTMLElement;
                         if (target.closest("[data-collapse-btn]")) return;
@@ -201,90 +201,93 @@ export function PropertyCardBase({
                 </div>
             )}
 
-            {/* Contenido debajo de la imagen */}
-            {subImageContent}
+            {/* Contenido debajo de la imagen (badge alquiler/venta, etc.) */}
+            {subImageContent ? <div className="shrink-0">{subImageContent}</div> : null}
 
-            {/* Cuerpo de la tarjeta */}
-            <div className="p-4 space-y-3 text-left">
-                {/* Barrio + Ciudad | Ref */}
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-col gap-0.5 text-muted-foreground min-w-0">
-                        <div className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" />
-                            <span className="text-xs font-medium truncate">{neighborhood || "Sin barrio"}</span>
-                        </div>
-                        {city && (
-                            <span className="text-xs font-medium truncate pl-5">{city}</span>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        {refText !== undefined && (
+            {/* Cuerpo: crece para igualar altura en grillas; precio queda abajo */}
+            <div className="p-4 flex flex-col flex-1 min-h-0 text-left">
+                <div className="flex flex-col gap-3 shrink-0">
+                    {/* Barrio + Ciudad | Ref */}
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-0.5 text-muted-foreground min-w-0">
                             <div className="flex items-center gap-1">
-                                <span className="text-xs font-mono font-bold text-foreground bg-muted/80 px-3 py-1 rounded min-h-[2.5rem] inline-flex items-center justify-center">
-                                    ref:
-                                </span>
-                                <span className="text-xs font-mono font-bold text-foreground bg-muted/80 px-3 py-1 rounded min-w-[6rem] min-h-[2.5rem] inline-flex items-center justify-center tracking-widest">
-                                    {refText || "\u00A0"}
-                                </span>
+                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                <span className="text-xs font-medium truncate">{neighborhood || "Sin barrio"}</span>
                             </div>
-                        )}
-                        {statusBadge}
-                    </div>
-                </div>
-
-                {/* Título */}
-                <h3 className="font-semibold text-foreground leading-snug line-clamp-2 text-sm">
-                    {title}
-                </h3>
-
-                {/* Stats (m2, Ambientes) */}
-                <div className="flex items-center gap-3 text-muted-foreground text-xs">
-                    <span className="flex items-center gap-1">
-                        <Maximize2 className="w-3.5 h-3.5" />
-                        {sqMeters} m²
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <BedDouble className="w-3.5 h-3.5" />
-                        {rooms} {rooms === 1 ? "ambiente" : "ambientes"}
-                    </span>
-                </div>
-
-                {/* Contenido extra (motivos de descarte, descripción, etc) */}
-                {extraBodyContent}
-
-                <div className="border-t border-border" />
-
-                {/* Sección de Precio y Acciones */}
-                <div className="flex items-end justify-between">
-                    <div>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold text-foreground">
-                                {currencySymbol(currency)} {totalCost.toLocaleString()}
-                            </span>
-                            {listingType === "rent" && (
-                                <span className="text-xs text-muted-foreground">/mes</span>
+                            {city && (
+                                <span className="text-xs font-medium truncate pl-5">{city}</span>
                             )}
                         </div>
-                        {listingType === "rent" ? (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                                Alquiler {currencySymbol(currency)} {priceRent.toLocaleString()} +{" "}
-                                Gastos comunes {currencySymbol(currency)} {priceExpenses.toLocaleString()}
-                            </div>
-                        ) : (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                                Precio de venta
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                            {refText !== undefined && (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-xs font-mono font-bold text-foreground bg-muted/80 px-3 py-1 rounded min-h-[2.5rem] inline-flex items-center justify-center">
+                                        ref:
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-foreground bg-muted/80 px-3 py-1 rounded min-w-[6rem] min-h-[2.5rem] inline-flex items-center justify-center tracking-widest">
+                                        {refText || "\u00A0"}
+                                    </span>
+                                </div>
+                            )}
+                            {statusBadge}
+                        </div>
                     </div>
 
-                    {/* Botones o selectores de acción */}
-                    <div onClick={(e) => e.stopPropagation()}>
-                        {actions}
+                    {/* Título: altura fija para 2 líneas (text-sm + leading-snug) */}
+                    <h3 className="font-semibold text-foreground leading-snug line-clamp-2 text-sm min-h-[2.75rem]">
+                        {title}
+                    </h3>
+
+                    {/* Stats (m2, Ambientes) */}
+                    <div className="flex items-center gap-3 text-muted-foreground text-xs">
+                        <span className="flex items-center gap-1">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                            {sqMeters} m²
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <BedDouble className="w-3.5 h-3.5" />
+                            {rooms} {rooms === 1 ? "ambiente" : "ambientes"}
+                        </span>
                     </div>
+
+                    {/* Contenido extra (motivos de descarte, descripción, etc) */}
+                    {extraBodyContent}
                 </div>
 
-                {/* Contenido adicional del pie (ej: CTA contextual de calendario) */}
-                {bottomContent}
+                {/* Ocupa el espacio vertical sobrante en la misma fila de la grilla */}
+                <div className="flex-1 min-h-2" aria-hidden="true" />
+
+                <div className="border-t border-border shrink-0 pt-3 space-y-3">
+                    {/* Sección de Precio y Acciones */}
+                    <div className="flex items-end justify-between gap-2">
+                        <div className="min-w-0">
+                            <div className="flex items-baseline gap-1 flex-wrap">
+                                <span className="text-xl font-bold text-foreground">
+                                    {currencySymbol(currency)} {totalCost.toLocaleString()}
+                                </span>
+                                {listingType === "rent" && (
+                                    <span className="text-xs text-muted-foreground">/mes</span>
+                                )}
+                            </div>
+                            {listingType === "rent" ? (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                    Alquiler {currencySymbol(currency)} {priceRent.toLocaleString()} +{" "}
+                                    Gastos comunes {currencySymbol(currency)} {priceExpenses.toLocaleString()}
+                                </div>
+                            ) : (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                    Precio de venta
+                                </div>
+                            )}
+                        </div>
+
+                        <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                            {actions}
+                        </div>
+                    </div>
+
+                    {bottomContent}
+                </div>
             </div>
         </div>
     );

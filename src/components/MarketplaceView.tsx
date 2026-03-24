@@ -425,13 +425,13 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 </div>
               </div>
             )}
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${matchAI ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch ${matchAI ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}`}>
               {filtered.map((property, i) => {
                 const isInactive = INACTIVE_STATUSES.has(property.status);
                 return (
                   <div
                     key={property.id}
-                    className={`transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""} ${isMatchAIMagicActive && !isInactive ? "matchai-card-glow rounded-2xl" : ""}`}
+                    className={`h-full min-h-0 transition-opacity duration-300 ${isInactive ? "opacity-50 pointer-events-none" : ""} ${isMatchAIMagicActive && !isInactive ? "matchai-card-glow rounded-2xl" : ""}`}
                     style={matchAI ? { animationDelay: `${i * 80}ms`, animationFillMode: "backwards" } : undefined}
                   >
                     <MarketplaceCard
