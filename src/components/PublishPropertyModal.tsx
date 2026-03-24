@@ -109,7 +109,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         setUrl("");
         setScrapedImages([]);
         setListingType("rent");
-        setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", city: "", address: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
+        setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", neighborhood_id: "", city: "", city_id: "", department: "", department_id: "", address: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
         setCameFromImage(false);
         setUrlInApp(null);
         setScreenshotFile(null);
