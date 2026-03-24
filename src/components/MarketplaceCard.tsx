@@ -55,7 +55,7 @@ export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isRe
           setCurrentImgIndex(index);
           setIsGalleryOpen(true);
         }}
-        collapsibleImages
+        collapsibleImages={!forceExpandImages}
         autoRotateImages
         imageTransitionMode="push"
         topOverlay={
