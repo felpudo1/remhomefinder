@@ -202,14 +202,20 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     if (minPrice) {
       const min = Number(minPrice);
       if (!isNaN(min)) {
-        result = result.filter((p) => p.totalCost >= min);
+        result = result.filter((p) => {
+          const cost = p.totalCost > 0 ? p.totalCost : (p.priceRent + p.priceExpenses);
+          return cost <= 0 || cost >= min;
+        });
       }
     }
 
     if (maxPrice) {
       const max = Number(maxPrice);
       if (!isNaN(max)) {
-        result = result.filter((p) => p.totalCost <= max);
+        result = result.filter((p) => {
+          const cost = p.totalCost > 0 ? p.totalCost : (p.priceRent + p.priceExpenses);
+          return cost <= 0 || cost <= max;
+        });
       }
     }
 
