@@ -209,7 +209,7 @@ const Auth = () => {
                   )}
                 </h1>
               </button>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-primary text-sm">
                 {isLogin ? "Iniciá sesión para continuar" : "Creá tu cuenta"}
               </p>
             </div>
@@ -222,11 +222,11 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setAccountType("user")}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "user" ?
-                      "border-primary bg-primary/5 text-primary" :
-                      "border-border text-muted-foreground hover:border-primary/30"}`
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all text-sm ${accountType === "user" ?
+                      "border-4 border-primary bg-transparent text-primary" :
+                      "border-2 border-primary/40 bg-transparent text-foreground hover:border-primary/60"}`
                     }>
-
+                    
                     <Users className="w-5 h-5" />
                     <span className="font-medium">Familia</span>
                     <span className="text-[10px] leading-tight opacity-70">
@@ -236,9 +236,9 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setAccountType("agency")}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${accountType === "agency" ?
-                      "border-primary bg-primary/5 text-primary" :
-                      "border-border text-muted-foreground hover:border-primary/30"}`
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all text-sm ${accountType === "agency" ?
+                      "border-4 border-primary bg-transparent text-primary" :
+                      "border-2 border-primary/40 bg-transparent text-foreground hover:border-primary/60"}`
                     }>
 
                     <Building2 className="w-5 h-5" />
