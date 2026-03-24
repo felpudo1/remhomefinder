@@ -185,7 +185,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 isUploading={isUploading} url={url} setUrl={setUrl} linkRequiredError={manualLinkRequiredError} urlDuplicated={urlDuplicated}
                 urlAddedByName={null} urlInFamily={urlInFamily} urlInAppMsg={null} formatDaysAgo={formatDaysAgo} setUrlDuplicated={setUrlDuplicated}
                 groups={groups} selectedGroupId={selectedGroupId} setSelectedGroupId={setSelectedGroupId} setStep={setStep} handleSubmit={handleSubmit}
-                isFormValid={isFormValid} manualSubmitBlockers={manualSubmitBlockers} onExtractFromUrl={onHandleScrape} isExtracting={isLoading}
+                isFormValid={isFormValid && !isSubmitting} manualSubmitBlockers={manualSubmitBlockers} onExtractFromUrl={onHandleScrape} isExtracting={isLoading}
               />
             </>
           )}
