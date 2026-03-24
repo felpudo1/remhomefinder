@@ -413,15 +413,17 @@ export function PropertyFormManual({
             )}
 
             <div className="flex flex-col gap-2 pt-2">
-                {!isFormValid && manualSubmitBlockers.length > 0 && (
-                    <p className="text-[11px] text-muted-foreground text-center leading-snug" role="status">
-                        Para habilitar <strong>Agregar propiedad</strong>: completá {manualSubmitBlockers.join(" · ")}.
-                    </p>
-                )}
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => { setStep(cameFromImage ? "image-upload" : "url"); }} className="flex-1 rounded-xl">Volver</Button>
                     <Button onClick={handleSubmit} disabled={!isFormValid} className="flex-1 rounded-xl">Agregar Propiedad</Button>
                 </div>
+                {!isFormValid && manualSubmitBlockers.length > 0 && (
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-2.5 text-center" role="status">
+                        <p className="text-xs text-destructive font-medium leading-snug">
+                            ⚠️ Faltan datos obligatorios: {manualSubmitBlockers.join(", ")}.
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );
