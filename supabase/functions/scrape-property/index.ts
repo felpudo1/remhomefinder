@@ -335,11 +335,13 @@ serve(async (req) => {
           sqMeters: extracted.sqMeters || 0,
           rooms: extracted.rooms || 1,
           aiSummary: extracted.aiSummary || "",
-          ref: extracted.ref || "",
-          details: extracted.details || "",
-          images: [], // no se pueden copiar fotos desde screenshots
-        },
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        ref: extracted.ref || "",
+        details: extracted.details || "",
+        contactName: extracted.contactName || "",
+        contactPhone: extracted.contactPhone || "",
+        images: [], // no se pueden copiar fotos desde screenshots
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ── PATH DE URL: scraping + IA (comportamiento original) ──
