@@ -331,6 +331,9 @@ export function usePropertyQueries() {
                         isSharedListing,
                         hasUnreadComments: false,
                         unreadCommentsCount: 0,
+                        contactName: listing.contact_name || undefined,
+                        contactPhone: listing.contact_phone || undefined,
+                        contactSource: listing.contact_source || undefined,
                     };
                 }
 
