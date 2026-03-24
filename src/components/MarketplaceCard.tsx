@@ -30,7 +30,7 @@ const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string }
   deleted: null,
 };
 
-export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred }: MarketplaceCardProps) {
+export function MarketplaceCard({ property, onSave, isSaving, alreadySaved, isReferred, forceExpandImages }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);

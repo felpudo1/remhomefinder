@@ -381,6 +381,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                     isSaving={savingId === property.id}
                     alreadySaved={savedMarketplaceIds.has(property.id)}
                     isReferred={referredAgentId === property.agentId}
+                    forceExpandImages={expandPhotos}
                   />
                 </div>
               );
