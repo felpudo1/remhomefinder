@@ -86,8 +86,20 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
             setMinBudget(data.min_budget?.toString() || "");
             setMaxBudget(data.max_budget?.toString() || "");
             setBedrooms(data.min_bedrooms?.toString() || "1");
-            setSelectedDept(data.department_id || "");
-            setSelectedCity(data.city_id || "");
+            // Resolve department from city_id to populate cascading selectors
+            if (data.city_id) {
+              const { data: cityData } = await supabase
+                .from("cities")
+                .select("id, department_id")
+                .eq("id", data.city_id)
+                .maybeSingle();
+              if (cityData) {
+                setSelectedCity(cityData.id);
+                if (cityData.department_id) {
+                  setSelectedDept(cityData.department_id);
+                }
+              }
+            }
             setSelectedNeighborhoods(data.neighborhood_ids || []);
             setIsPrivate(!!data.is_private);
           }
