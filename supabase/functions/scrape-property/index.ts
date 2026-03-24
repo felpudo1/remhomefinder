@@ -275,6 +275,8 @@ async function extractWithVision(images: string[]): Promise<Record<string, any>>
               aiSummary: { type: "string", description: "Resumen breve del aviso" },
               ref: { type: "string", description: "Código de referencia del aviso si existe. Vacío si no se detecta." },
               details: { type: "string", description: "Detalles adicionales: características, amenities, descripción extendida. Vacío si no se detecta." },
+              contactName: { type: "string", description: "Nombre de la persona o inmobiliaria de contacto. Vacío si no se detecta." },
+              contactPhone: { type: "string", description: "Teléfono de contacto del aviso. Vacío si no se detecta." },
             },
             required: ["title", "listingType", "department", "city", "neighborhood", "aiSummary"],
             additionalProperties: false,
