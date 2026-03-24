@@ -528,7 +528,7 @@ const Index = () => {
                       ) : filteredAndSorted.length === 0 ? (
                         <div className="text-center py-20 text-muted-foreground">
                           <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                          <p className="font-medium">No se encontraron propiedades</p>
+                          <p className="font-medium">Copiá un link de cualquier portal y pegalo en el botón (+) acá para empezar</p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
