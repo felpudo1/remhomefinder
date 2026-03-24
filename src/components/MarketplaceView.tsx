@@ -339,10 +339,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
             </Label>
           </div>
 
-          <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-1 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Loader2 className={`w-10 h-10 text-purple-500 ${loadingProfile ? "animate-spin" : ""}`} />
-            </div>
+          <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm">
             <Switch
               id="match-ai-toggle"
               checked={matchAI}
