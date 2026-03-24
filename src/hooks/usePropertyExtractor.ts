@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { checkUrlStatus } from "@/lib/duplicateCheck";
+import { resolveGeoIds } from "@/lib/resolveGeoIds";
 
 /** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
 function safeUUID(): string {
