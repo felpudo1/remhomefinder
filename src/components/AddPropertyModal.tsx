@@ -36,6 +36,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   } = useAddPropertyForm(activeGroupId);
 
   const [isAddingFromApp, setIsAddingFromApp] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const unifiedImageRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
