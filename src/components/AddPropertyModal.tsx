@@ -36,6 +36,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   } = useAddPropertyForm(activeGroupId);
 
   const [isAddingFromApp, setIsAddingFromApp] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const unifiedImageRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +47,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     resetForm();
     resetUploader();
     setIsAddingFromApp(false);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -85,7 +87,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   /** Flujo de Envío Final */
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!url.trim()) { setManualLinkRequiredError(true); return; }
+    setIsSubmitting(true);
     
     const publicImages = cameFromImage ? [] : scrapedImages;
     const familyImages = cameFromImage ? scrapedImages : privateImages;
@@ -106,7 +110,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     try {
       await onAdd(formData);
       handleClose();
-    } catch (err) { console.error("Submit error:", err); }
+    } catch (err) { 
+      console.error("Submit error:", err); 
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -177,7 +185,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 isUploading={isUploading} url={url} setUrl={setUrl} linkRequiredError={manualLinkRequiredError} urlDuplicated={urlDuplicated}
                 urlAddedByName={null} urlInFamily={urlInFamily} urlInAppMsg={null} formatDaysAgo={formatDaysAgo} setUrlDuplicated={setUrlDuplicated}
                 groups={groups} selectedGroupId={selectedGroupId} setSelectedGroupId={setSelectedGroupId} setStep={setStep} handleSubmit={handleSubmit}
-                isFormValid={isFormValid} manualSubmitBlockers={manualSubmitBlockers} onExtractFromUrl={onHandleScrape} isExtracting={isLoading}
+                isFormValid={isFormValid && !isSubmitting} manualSubmitBlockers={manualSubmitBlockers} onExtractFromUrl={onHandleScrape} isExtracting={isLoading}
               />
             </>
           )}

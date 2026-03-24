@@ -110,16 +110,17 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     setForm((prev) => ({ ...prev, ...newData }));
   };
 
-  const hasAnyPhoto = scrapedImages.length > 0 || privateImages.length > 0;
   const hasTitle = String(form.title || "").trim().length > 0;
   const hasPrice = String(form.priceRent || "").trim().length > 0;
   const hasLocation = Boolean(form.department_id && form.city_id && form.neighborhood_id);
+  const hasUrl = String(url || "").trim().length > 0;
   
-  const isFormValid = hasAnyPhoto && hasTitle && hasPrice && hasLocation && !urlDuplicated && !urlInFamily;
+  const isFormValid = hasTitle && hasPrice && hasLocation && hasUrl && !urlDuplicated && !urlInFamily;
 
   const getManualSubmitBlockers = () => {
     const blockers: string[] = [];
-    if (!hasAnyPhoto) blockers.push("al menos 1 foto");
+    if (!hasUrl) blockers.push("link de la publicación");
+    if (!hasLocation) blockers.push("departamento, ciudad y barrio");
     if (!hasLocation) blockers.push("departamento, ciudad y barrio");
     if (!hasTitle) blockers.push("título");
     if (!hasPrice) blockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
