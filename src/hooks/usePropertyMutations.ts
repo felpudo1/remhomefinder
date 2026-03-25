@@ -331,9 +331,7 @@ export function usePropertyMutations() {
                 queryClient.setQueryData(context.queryKey, context.previousProperties);
             }
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["properties"] });
-        },
+        // Punto 3: una sola invalidación en onSettled (cubre tanto success como error con rollback)
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["properties"] });
         },

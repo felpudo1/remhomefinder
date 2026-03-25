@@ -235,8 +235,13 @@ export function usePropertyQueries() {
                 Object.keys(coordinatedByMap).forEach(id => coordinatedByMap[id] = changerNameByUserId[coordinatedByMap[id]] || coordinatedByMap[id]);
             }
 
-            // 8. Mapeo de comentarios
-            const allComments = commentsResult.data || [];
+            // 8. Mapeo de comentarios — pre-indexar con Map para evitar O(N×M) en el .map posterior (Punto 4)
+            const commentsByListingId = new Map<string, typeof commentsResult.data>();
+            (commentsResult.data || []).forEach((c: any) => {
+                const arr = commentsByListingId.get(c.user_listing_id) || [];
+                arr.push(c);
+                commentsByListingId.set(c.user_listing_id, arr);
+            });
 
             // 9. Mapeo de adjuntos
             const attachmentsByListing: Record<string, string[]> = {};
@@ -338,7 +343,7 @@ export function usePropertyQueries() {
                     };
                 }
 
-                const listingCommentsRaw = allComments.filter((c) => c.user_listing_id === listing.id);
+                const listingCommentsRaw = commentsByListingId.get(listing.id) || [];
 
                 const comments = listingCommentsRaw
                     .map((c): PropertyComment => ({
