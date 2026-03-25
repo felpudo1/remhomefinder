@@ -492,6 +492,7 @@ export type Database = {
           id: string
           invite_code: string
           is_personal: boolean
+          logo_url: string
           name: string
           parent_id: string | null
           plan_type: string
@@ -505,6 +506,7 @@ export type Database = {
           id?: string
           invite_code?: string
           is_personal?: boolean
+          logo_url?: string
           name: string
           parent_id?: string | null
           plan_type?: string
@@ -518,6 +520,7 @@ export type Database = {
           id?: string
           invite_code?: string
           is_personal?: boolean
+          logo_url?: string
           name?: string
           parent_id?: string | null
           plan_type?: string
@@ -612,6 +615,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
           avatar_url: string
           created_at: string
           display_name: string
@@ -625,6 +629,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
           avatar_url?: string
           created_at?: string
           display_name?: string
@@ -638,6 +643,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
           avatar_url?: string
           created_at?: string
           display_name?: string
@@ -1445,6 +1451,10 @@ export type Database = {
         Returns: boolean
       }
       is_system_delegate: { Args: { _user_id: string }; Returns: boolean }
+      update_organization_logo_url: {
+        Args: { _logo_url: string; _org_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       agent_pub_status:

@@ -14,6 +14,8 @@ export interface UserProfile {
     email: string | null;
     status: UserStatus;
     referredById: string | null;
+    /** Fecha de aprobación (cuenta activa); null si aún no aplica o datos viejos */
+    approvedAt: string | null;
 }
 
 /**
@@ -38,7 +40,7 @@ export function useProfile() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("user_id, display_name, avatar_url, phone, status, referred_by_id, email")
+                .select("user_id, display_name, avatar_url, phone, status, referred_by_id, email, approved_at")
                 .eq("user_id", user.id)
                 .single();
 
@@ -53,6 +55,7 @@ export function useProfile() {
                 email: data.email || null,
                 status: (data.status as UserStatus) || "active",
                 referredById: data.referred_by_id || null,
+                approvedAt: data.approved_at ?? null,
             };
         },
         // Refrescar cuando el componente monta — status puede cambiar desde el admin

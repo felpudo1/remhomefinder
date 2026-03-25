@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  Building2, Loader2, Home, BarChart3, UserCircle, Users, Gift, LineChart,
+  Building2, Loader2, Home, BarChart3, Users, Gift, LineChart,
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
@@ -17,12 +17,11 @@ import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
 import { UserStatus } from "@/types/property";
-import type { OrgType } from "@/types/supabase";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 
-type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias" | "perfil";
+type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
@@ -31,7 +30,6 @@ const TABS = [
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
   { id: "indicadores", label: "Indicadores", icon: LineChart },
   { id: "referencias", label: "Referencias", icon: Gift },
-  { id: "perfil", label: "Perfil", icon: UserCircle },
 ];
 
 const AgentDashboard = () => {
@@ -110,6 +108,7 @@ const AgentDashboard = () => {
           description: org.description || "",
           created_by: org.created_by,
           created_at: org.created_at,
+          logo_url: org.logo_url ?? "",
         } as Agency);
       }
 
@@ -140,7 +139,7 @@ const AgentDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AgentHeader
-        userEmail={null}
+        userEmail={profile?.email ?? null}
         agencyStatus={effectiveStatus}
         activeTab={activeTab}
         setActiveTab={(tab) => setActiveTab(tab)}
@@ -149,10 +148,18 @@ const AgentDashboard = () => {
         activeGroupId={activeGroupId}
         setIsGroupsOpen={setIsGroupsOpen}
         displayName={profile?.displayName}
+        avatarUrl={profile?.avatarUrl}
         isPremium={isPremium}
         isOwner={isOwner}
         canManageTeams={canManageTeams}
         showFormarEquipo={showFormarEquipo}
+        agencyId={agency?.id ?? null}
+        agencyLogoUrl={agency?.logo_url ?? ""}
+        onAgencyLogoUpdated={(url) =>
+          setAgency((prev) => (prev ? { ...prev, logo_url: url } : prev))
+        }
+        agency={agency}
+        profileStatus={profileStatus}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
@@ -171,12 +178,17 @@ const AgentDashboard = () => {
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "indicadores" && <AgentIndicadores />}
               {activeTab === "referencias" && <AgentReferralSection agency={agency} />}
-              {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>
           ) : profileStatus === "pending" ? (
             <AgentWelcome userName={agency.contact_name} />
           ) : (
-            <AgentProfile agency={agency} profileStatus={profileStatus} />
+            <AgentProfile
+              agency={agency}
+              profileStatus={profileStatus}
+              onAgencyLogoUpdated={(url) =>
+                setAgency((prev) => (prev ? { ...prev, logo_url: url } : prev))
+              }
+            />
           )
         ) : (
           <div className="border border-border rounded-2xl bg-card p-8 text-center space-y-3">

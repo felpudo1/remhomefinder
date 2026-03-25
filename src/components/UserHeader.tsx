@@ -155,13 +155,13 @@ export const UserHeader = ({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-full ml-1 md:ml-2"
+                                className="h-[43px] w-[43px] rounded-full ml-1 md:ml-2"
                                 title="Menú de usuario"
                             >
-                                <Avatar className="h-8 w-8 hover:opacity-80 transition-opacity">
+                                <Avatar className="h-[38px] w-[38px] hover:opacity-80 transition-opacity">
                                     <AvatarImage src={profile?.avatarUrl} alt={profile?.displayName || "Usuario"} />
-                                    <AvatarFallback className="bg-primary/10 text-primary">
-                                        {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                        {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : <User className="w-[18px] h-[18px]" />}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
