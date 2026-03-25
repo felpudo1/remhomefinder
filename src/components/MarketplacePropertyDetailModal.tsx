@@ -64,7 +64,7 @@ export function MarketplacePropertyDetailModal({
 
                 if (lastViewed === today) return;
 
-                await (supabase.rpc("increment_property_views", {
+                await supabase.rpc("increment_property_views" as any, {
                     p_property_id: property.propertyId,
                     p_publication_id: property.id,
                 });

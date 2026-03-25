@@ -132,7 +132,7 @@ export function PropertyDetailModal({
           const publicationId = property.sourceMarketplaceId || null;
 
           // Llamamos a la función mágica de Supabase (RPC) que sabe sumar +1 salteándose bloqueos
-          await (supabase.rpc('increment_property_views', {
+          await supabase.rpc('increment_property_views' as any, {
             p_property_id: realPropertyId,
             p_publication_id: publicationId
           });

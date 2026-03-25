@@ -112,7 +112,7 @@ export function AdminUsuarios({ toast }: Props) {
                     .select("id, name")
                     .eq("type", "agency_team" satisfies OrgType)
                     .eq("is_personal", false)
-                    .in("id", membershipOrgIds);
+                    .in("id", membershipOrgIds as any);
 
                 // Mapa: org_id -> nombre de agencia
                 const agencyOrgById: Record<string, string> = {};
@@ -264,7 +264,7 @@ export function AdminUsuarios({ toast }: Props) {
             setIsActionInProgress(true);
             // Obtener el admin que ejecuta la acción para el log de auditoría
             const { data: { user: adminUser } } = await supabase.auth.getUser();
-            const { error } = await (supabase.rpc("admin_physical_delete_user", {
+            const { error } = await supabase.rpc("admin_physical_delete_user" as any, {
                 _user_id: userId,
                 _reason: reason,
                 _deleted_by: adminUser?.id,

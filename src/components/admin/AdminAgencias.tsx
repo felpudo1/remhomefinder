@@ -66,13 +66,13 @@ export function AdminAgencias({ toast }: Props) {
                 return;
             }
 
-            const userIds = profiles.map(p => p.user_id);
+            const userIds = profiles.map((p: any) => p.user_id);
 
             // Get organizations (agency_team type) and publication counts
             const [orgsRes, pubCountsRes, referrersRes] = await Promise.all([
                 (supabase.from("organizations") as any).select("id, name, created_by, type").eq("type", "agency_team" satisfies OrgType),
                 (supabase.from("agent_publications") as any).select("org_id"),
-                (supabase.from("profiles") as any).select("user_id, display_name").in("user_id", [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))]),
+                (supabase.from("profiles") as any).select("user_id, display_name").in("user_id", [...new Set(profiles.map((p: any) => p.referred_by_id).filter(Boolean))]),
             ]);
 
             // Map orgs to users
@@ -94,7 +94,7 @@ export function AdminAgencias({ toast }: Props) {
             const referrerMap: Record<string, string> = {};
             for (const r of referrersRes.data || []) referrerMap[r.user_id] = r.display_name;
 
-            setRecords(profiles.map(p => {
+            setRecords(profiles.map((p: any) => {
                 const org = orgMap[p.user_id];
                 return {
                     id: p.user_id,
