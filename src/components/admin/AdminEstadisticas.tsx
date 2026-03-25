@@ -206,13 +206,13 @@ export function AdminEstadisticas() {
             const userIds = [...new Set(searchProfilesData.map((p) => p.user_id).filter(Boolean))];
             let contactByUserId: Record<string, { display_name?: string | null; phone?: string | null }> = {};
             if (userIds.length > 0) {
-                const { data: profilesData } = await supabase
-                    .from("profiles")
+                const { data: profilesData } = await (supabase
+                    .from("profiles") as any)
                     .select("user_id, display_name, phone")
                     .in("user_id", userIds);
                 
                 if (profilesData) {
-                    contactByUserId = profilesData.reduce<Record<string, { display_name?: string | null; phone?: string | null }>>((acc, profile) => {
+                    contactByUserId = profilesData.reduce<Record<string, { display_name?: string | null; phone?: string | null }>>((acc: any, profile: any) => {
                         acc[profile.user_id] = { display_name: profile.display_name, phone: profile.phone };
                         return acc;
                     }, {});

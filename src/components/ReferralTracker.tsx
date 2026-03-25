@@ -31,8 +31,8 @@ export const ReferralTracker = () => {
                         const { data: { user } } = await supabase.auth.getUser();
                         if (!user) return;
 
-                        const { error } = await supabase
-                            .from("profiles")
+                        const { error } = await (supabase
+                            .from("profiles") as any)
                             .update({ referred_by_id: refId })
                             .eq("user_id", user.id);
 
