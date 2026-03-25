@@ -44,13 +44,14 @@ Auditoría y corrección de 7 puntos críticos de saturación de BD, I/O y segur
 - **Después**: Se requiere JWT válido; respuesta 401 si no está autenticado
 - **Pendiente**: Rate limiting por `user_id`, restricción de CORS a dominio de producción
 
-### Punto 6 — Triggers y RLS sin índices
-- **Estado**: ⚠️ Pendiente — requiere `EXPLAIN ANALYZE` en producción para determinar qué índices faltan
-- **Recomendación**: Crear índices en:
-  - `user_listings(source_publication_id)` — usado en RLS de `attribute_scores` y `status_history_log`
-  - `user_listings(org_id, added_by)` — usado en múltiples policies
-  - `agent_publications(org_id)` — usado en visibilidad de agentes
-  - `organization_members(user_id, org_id)` — usado en `is_org_member()`
+### Punto 6 — Triggers y RLS sin índices ✅
+- **Cambio**: Creados 3 índices para columnas usadas en políticas RLS
+- **Índices creados**:
+  - `idx_user_listings_source_publication_id` — parcial (`WHERE source_publication_id IS NOT NULL`)
+  - `idx_user_listings_org_id_added_by` — compuesto para policies de org membership
+  - `idx_agent_publications_org_id` — visibilidad de agentes
+- **Nota**: `organization_members(org_id, user_id)` ya tenía índice UNIQUE existente
+- **Impacto**: Elimina sequential scans en tablas con RLS; cada query autenticada es más rápida
 
 ### Punto 7 — Migraciones idempotentes ✅ (previamente corregido)
 - Las migraciones ya usan `DROP IF EXISTS` y fueron consolidadas
