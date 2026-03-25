@@ -48,9 +48,13 @@ describe("usePropertyQueries", () => {
     mockedSupabase.from.mockImplementation((table: string) => {
       if (table === "user_listings") {
         return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({ data: [], error: null })
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: [], error: null })
+              })
+            })
+          })
         };
       }
       return mockedSupabase;
