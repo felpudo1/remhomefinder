@@ -7,8 +7,12 @@ import { waitFor } from "@testing-library/react";
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-123" } }, error: null }),
+      onAuthStateChange: vi.fn((cb: any) => {
+        // Fire immediately with a session so currentUserId is set before query runs
+        setTimeout(() => cb("SIGNED_IN", { user: { id: "user-123" } }), 0);
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      }),
     },
     from: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
