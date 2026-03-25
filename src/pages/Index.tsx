@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useLayoutEffect } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
@@ -640,22 +640,12 @@ const Index = () => {
                           ))}
                         </div>
                       )}
-                      {/* Paginación cursor-based: botón "Cargar más" */}
+                      {/* Punto 4 (Checklist): Prefetch agresivo — sentinel con IntersectionObserver */}
                       {hasNextPage && !loading && (
-                        <div className="flex justify-center py-6">
-                          <Button
-                            variant="outline"
-                            onClick={() => fetchNextPage()}
-                            disabled={isFetchingNextPage}
-                            className="gap-2"
-                          >
-                            {isFetchingNextPage ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Cargando...</>
-                            ) : (
-                              "Cargar más propiedades"
-                            )}
-                          </Button>
-                        </div>
+                        <LoadMoreSentinel
+                          fetchNextPage={fetchNextPage}
+                          isFetchingNextPage={isFetchingNextPage}
+                        />
                       )}
                     </main>
                   </div>
