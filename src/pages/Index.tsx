@@ -57,7 +57,7 @@ const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { properties, loading, addProperty, updateStatus, addComment, refetch } = useProperties();
+  const { properties, loading, addProperty, updateStatus, addComment, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProperties();
   const { data: marketplaceProperties = [] } = useMarketplaceProperties();
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -638,6 +638,23 @@ const Index = () => {
                               ownerEmail={property.createdByEmail || null}
                             />
                           ))}
+                        </div>
+                      )}
+                      {/* Paginación cursor-based: botón "Cargar más" */}
+                      {hasNextPage && !loading && (
+                        <div className="flex justify-center py-6">
+                          <Button
+                            variant="outline"
+                            onClick={() => fetchNextPage()}
+                            disabled={isFetchingNextPage}
+                            className="gap-2"
+                          >
+                            {isFetchingNextPage ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Cargando...</>
+                            ) : (
+                              "Cargar más propiedades"
+                            )}
+                          </Button>
                         </div>
                       )}
                     </main>
