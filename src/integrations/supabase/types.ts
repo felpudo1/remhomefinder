@@ -249,6 +249,57 @@ export type Database = {
           },
         ]
       }
+      cities: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      deletion_audit_log: {
+        Row: {
+          created_at: string
+          deleted_by: string
+          deleted_user_email: string | null
+          deleted_user_id: string
+          deleted_user_name: string | null
+          id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_by: string
+          deleted_user_email?: string | null
+          deleted_user_id: string
+          deleted_user_name?: string | null
+          id?: string
+          reason?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_by?: string
+          deleted_user_email?: string | null
+          deleted_user_id?: string
+          deleted_user_name?: string | null
+          id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       family_comments: {
         Row: {
           author: string
@@ -317,6 +368,35 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      neighborhoods: {
+        Row: {
+          city_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          city_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          city_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neighborhoods_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organization_members: {
         Row: {
@@ -540,6 +620,7 @@ export type Database = {
         Row: {
           address: string
           city: string
+          city_id: string | null
           created_at: string
           created_by: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -550,6 +631,7 @@ export type Database = {
           lng: number | null
           m2_total: number
           neighborhood: string
+          neighborhood_id: string | null
           price_amount: number
           price_expenses: number
           raw_ai_data: Json | null
@@ -563,6 +645,7 @@ export type Database = {
         Insert: {
           address?: string
           city?: string
+          city_id?: string | null
           created_at?: string
           created_by: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -573,6 +656,7 @@ export type Database = {
           lng?: number | null
           m2_total?: number
           neighborhood?: string
+          neighborhood_id?: string | null
           price_amount?: number
           price_expenses?: number
           raw_ai_data?: Json | null
@@ -586,6 +670,7 @@ export type Database = {
         Update: {
           address?: string
           city?: string
+          city_id?: string | null
           created_at?: string
           created_by?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -596,6 +681,7 @@ export type Database = {
           lng?: number | null
           m2_total?: number
           neighborhood?: string
+          neighborhood_id?: string | null
           price_amount?: number
           price_expenses?: number
           raw_ai_data?: Json | null
@@ -608,11 +694,25 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "properties_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "properties_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "properties_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -959,6 +1059,69 @@ export type Database = {
           },
         ]
       }
+      user_search_profiles: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          currency: string
+          department_id: string | null
+          id: string
+          is_private: boolean | null
+          max_budget: number | null
+          min_bedrooms: number | null
+          min_budget: number | null
+          neighborhood_ids: string[] | null
+          operation: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          currency?: string
+          department_id?: string | null
+          id?: string
+          is_private?: boolean | null
+          max_budget?: number | null
+          min_bedrooms?: number | null
+          min_budget?: number | null
+          neighborhood_ids?: string[] | null
+          operation?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          currency?: string
+          department_id?: string | null
+          id?: string
+          is_private?: boolean | null
+          max_budget?: number | null
+          min_bedrooms?: number | null
+          min_budget?: number | null
+          neighborhood_ids?: string[] | null
+          operation?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_search_profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_search_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       admin_scrape_usage_by_user: {
@@ -1110,6 +1273,14 @@ export type Database = {
         Returns: {
           publication_id: string
           save_count: number
+        }[]
+      }
+      get_search_profile_contacts: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          display_name: string
+          phone: string
+          user_id: string
         }[]
       }
       has_role: {
