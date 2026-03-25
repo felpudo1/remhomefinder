@@ -1398,6 +1398,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_user_listings_page: {
+        Args: { _cursor?: string; _page_size?: number }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
