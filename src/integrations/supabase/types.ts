@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string
+          cuenta: string
+          descripcion: string
+          estado: string
+          estado_updated_at: string
+          fecha: string | null
+          id: string
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name?: string
+          cuenta?: string
+          descripcion?: string
+          estado?: string
+          estado_updated_at?: string
+          fecha?: string | null
+          id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          cuenta?: string
+          descripcion?: string
+          estado?: string
+          estado_updated_at?: string
+          fecha?: string | null
+          id?: string
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       agency_comments: {
         Row: {
           agent_pub_id: string
@@ -655,6 +705,53 @@ export type Database = {
           },
         ]
       }
+      scrape_usage_log: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          role: string
+          scraper: string
+          source_url: string | null
+          success: boolean
+          token_charged: boolean
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          role?: string
+          scraper: string
+          source_url?: string | null
+          success?: boolean
+          token_charged?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          role?: string
+          scraper?: string
+          source_url?: string | null
+          success?: boolean
+          token_charged?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_usage_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       status_history_log: {
         Row: {
           changed_by: string
@@ -714,6 +811,45 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      user_listing_attachments: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          image_url: string
+          user_listing_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          image_url: string
+          user_listing_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          user_listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_listing_attachments_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_listing_attachments_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_listings: {
         Row: {
@@ -825,6 +961,29 @@ export type Database = {
       }
     }
     Views: {
+      admin_scrape_usage_by_user: {
+        Row: {
+          last_scrape_at: string | null
+          total_failed: number | null
+          total_image_scrapes: number | null
+          total_scrapes: number | null
+          total_success: number | null
+          total_token_charged: number | null
+          total_url_scrapes: number | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_usage_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       agent_deserter_insights: {
         Row: {
           agency_org_id: string | null
@@ -918,6 +1077,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      count_property_listing_users: {
+        Args: { _property_id: string }
+        Returns: number
+      }
       find_org_by_invite_code: {
         Args: { _code: string }
         Returns: {
@@ -927,6 +1090,28 @@ export type Database = {
           type: Database["public"]["Enums"]["org_type"]
         }[]
       }
+      get_marketplace_org_names: {
+        Args: { _org_ids: string[] }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
+      get_marketplace_publication_contacts: {
+        Args: { _publication_ids: string[] }
+        Returns: {
+          agent_name: string
+          agent_phone: string
+          publication_id: string
+        }[]
+      }
+      get_publications_save_counts: {
+        Args: { _publication_ids: string[] }
+        Returns: {
+          publication_id: string
+          save_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -934,10 +1119,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_property_views: {
-        Args: { p_is_publication?: boolean; p_property_id: string }
-        Returns: undefined
-      }
+      increment_property_views:
+        | {
+            Args: { p_is_publication?: boolean; p_property_id: string }
+            Returns: undefined
+          }
+        | {
+            Args: { p_property_id: string; p_publication_id?: string }
+            Returns: undefined
+          }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -956,7 +1146,7 @@ export type Database = {
         | "alquilado"
         | "eliminado"
         | "pausado"
-      app_role: "admin" | "agency" | "user"
+      app_role: "admin" | "agency" | "user" | "agencymember"
       currency_code: "USD" | "ARS" | "UYU" | "CLP"
       listing_type: "rent" | "sale"
       org_role: "owner" | "agent" | "member" | "system_admin_delegate"
@@ -968,6 +1158,9 @@ export type Database = {
         | "visitado"
         | "a_analizar"
         | "descartado"
+        | "firme_candidato"
+        | "posible_interes"
+        | "meta_conseguida"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
     CompositeTypes: {
@@ -1104,7 +1297,7 @@ export const Constants = {
         "eliminado",
         "pausado",
       ],
-      app_role: ["admin", "agency", "user"],
+      app_role: ["admin", "agency", "user", "agencymember"],
       currency_code: ["USD", "ARS", "UYU", "CLP"],
       listing_type: ["rent", "sale"],
       org_role: ["owner", "agent", "member", "system_admin_delegate"],
@@ -1116,6 +1309,9 @@ export const Constants = {
         "visitado",
         "a_analizar",
         "descartado",
+        "firme_candidato",
+        "posible_interes",
+        "meta_conseguida",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
     },
