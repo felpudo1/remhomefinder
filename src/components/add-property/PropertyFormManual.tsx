@@ -97,13 +97,13 @@ export function PropertyFormManual({
 
     // Fetch departments initially
     useEffect(() => {
-        supabase.from("departments").select("id, name, country").order("country").order("name").then(({ data }) => setDeptsList((data as any[]) || []));
+        (supabase.from("departments") as any).select("id, name, country").order("country").order("name").then(({ data }) => setDeptsList((data as any[]) || []));
     }, []);
 
     // Fetch cities when department changes
     useEffect(() => {
         if (form.department_id) {
-            supabase.from("cities").select("id, name").eq("department_id", form.department_id).order("name").then(({ data }) => setCitiesList((data as any[]) || []));
+            (supabase.from("cities") as any).select("id, name").eq("department_id", form.department_id).order("name").then(({ data }) => setCitiesList((data as any[]) || []));
         } else {
             setCitiesList([]);
         }
@@ -112,7 +112,7 @@ export function PropertyFormManual({
     // Fetch neighborhoods when city changes
     useEffect(() => {
         if (form.city_id) {
-            supabase.from("neighborhoods").select("id, name").eq("city_id", form.city_id).order("name").then(({ data }) => setNeighborhoodsList((data as any[]) || []));
+            (supabase.from("neighborhoods") as any).select("id, name").eq("city_id", form.city_id).order("name").then(({ data }) => setNeighborhoodsList((data as any[]) || []));
         } else {
             setNeighborhoodsList([]);
         }
