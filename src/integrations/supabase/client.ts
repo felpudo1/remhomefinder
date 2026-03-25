@@ -50,7 +50,7 @@ async function fetchWithRetry(
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+const _supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: typeof localStorage !== 'undefined' ? localStorage : undefined,
     persistSession: true,
@@ -59,3 +59,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   fetch: fetchWithRetry,
 });
+
+/**
+ * Cliente Supabase con tipado relajado.
+ * Mientras types.ts esté desincronizado con el esquema real,
+ * se castea a `any` para evitar SelectQueryError en .from()/.rpc().
+ * TODO: Quitar el cast cuando types.ts se regenere automáticamente.
+ */
+export const supabase = _supabase as any;
