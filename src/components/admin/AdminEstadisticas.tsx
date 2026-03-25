@@ -212,7 +212,7 @@ export function AdminEstadisticas() {
                     .in("user_id", userIds);
                 
                 if (profilesData) {
-                    contactByUserId = profilesData.reduce<Record<string, { display_name?: string | null; phone?: string | null }>>((acc: any, profile: any) => {
+                    contactByUserId = (profilesData as any[]).reduce((acc: any, profile: any) => {
                         acc[profile.user_id] = { display_name: profile.display_name, phone: profile.phone };
                         return acc;
                     }, {});
@@ -328,7 +328,7 @@ export function AdminEstadisticas() {
                     .in("user_id", userIds);
                 
                 if (profilesData) {
-                    contactByUserId = profilesData.reduce<Record<string, { display_name?: string | null; phone?: string | null }>>((acc, profile) => {
+                    contactByUserId = (profilesData as any[]).reduce((acc: any, profile: any) => {
                         acc[profile.user_id] = { display_name: profile.display_name, phone: profile.phone };
                         return acc;
                     }, {});

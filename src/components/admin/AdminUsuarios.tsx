@@ -112,7 +112,7 @@ export function AdminUsuarios({ toast }: Props) {
                     .select("id, name")
                     .eq("type", "agency_team" satisfies OrgType)
                     .eq("is_personal", false)
-                    .in("id", membershipOrgIds);
+                    .in("id", membershipOrgIds as any);
 
                 // Mapa: org_id -> nombre de agencia
                 const agencyOrgById: Record<string, string> = {};
