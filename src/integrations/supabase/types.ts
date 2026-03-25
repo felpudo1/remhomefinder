@@ -253,22 +253,33 @@ export type Database = {
         Row: {
           country: string
           created_at: string
+          department_id: string | null
           id: string
           name: string
         }
         Insert: {
           country?: string
           created_at?: string
+          department_id?: string | null
           id?: string
           name: string
         }
         Update: {
           country?: string
           created_at?: string
+          department_id?: string | null
           id?: string
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cities_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deletion_audit_log: {
         Row: {
@@ -297,6 +308,27 @@ export type Database = {
           deleted_user_name?: string | null
           id?: string
           reason?: string
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -624,6 +656,8 @@ export type Database = {
           created_at: string
           created_by: string
           currency: Database["public"]["Enums"]["currency_code"]
+          department: string
+          department_id: string | null
           details: string
           id: string
           images: string[]
@@ -649,6 +683,8 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          department?: string
+          department_id?: string | null
           details?: string
           id?: string
           images?: string[]
@@ -674,6 +710,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          department?: string
+          department_id?: string | null
           details?: string
           id?: string
           images?: string[]
@@ -706,6 +744,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "properties_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "properties_neighborhood_id_fkey"
@@ -954,6 +999,9 @@ export type Database = {
       user_listings: {
         Row: {
           added_by: string
+          contact_name: string | null
+          contact_phone: string | null
+          contact_source: string | null
           created_at: string
           current_status: Database["public"]["Enums"]["user_listing_status"]
           id: string
@@ -965,6 +1013,9 @@ export type Database = {
         }
         Insert: {
           added_by: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_source?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
           id?: string
@@ -976,6 +1027,9 @@ export type Database = {
         }
         Update: {
           added_by?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_source?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
           id?: string
