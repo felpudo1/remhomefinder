@@ -98,6 +98,8 @@ const AgentDashboard = () => {
         });
         if (ownerErr) console.warn("is_org_owner RPC:", ownerErr);
         setIsOwner(hasAgencyRole && Boolean(isOwnerResult));
+        // logo_url added via migration; cast to handle stale types
+        const orgAny = org as any;
         setAgency({
           id: org.id,
           name: org.name,
@@ -108,7 +110,7 @@ const AgentDashboard = () => {
           description: org.description || "",
           created_by: org.created_by,
           created_at: org.created_at,
-          logo_url: org.logo_url ?? "",
+          logo_url: orgAny.logo_url ?? "",
         } as Agency);
       }
 

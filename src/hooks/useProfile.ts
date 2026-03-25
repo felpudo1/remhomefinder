@@ -38,11 +38,12 @@ export function useProfile() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
+            // approved_at and logo_url added via migration; types.ts may lag behind
             const { data, error } = await supabase
                 .from("profiles")
                 .select("user_id, display_name, avatar_url, phone, status, referred_by_id, email, approved_at")
                 .eq("user_id", user.id)
-                .single();
+                .single() as { data: any; error: any };
 
             if (error) throw error;
             if (!data) return null;

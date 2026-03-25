@@ -15,7 +15,8 @@ export async function uploadAgencyLogoAndSave(orgId: string, file: File): Promis
   const { data: pub } = supabase.storage.from("agency-logos").getPublicUrl(path);
   const publicUrl = pub.publicUrl;
 
-  const { error: rpcErr } = await supabase.rpc("update_organization_logo_url", {
+  // RPC added via migration; cast to bypass stale generated types
+  const { error: rpcErr } = await (supabase.rpc as any)("update_organization_logo_url", {
     _org_id: orgId,
     _logo_url: publicUrl,
   });
