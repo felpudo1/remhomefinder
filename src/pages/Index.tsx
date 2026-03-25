@@ -6,16 +6,18 @@ import { useProperties } from "@/hooks/useProperties";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
+import { ListadoFiltersDropdown } from "@/components/ListadoFiltersDropdown";
 import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Loader2, Users, SlidersHorizontal, Store, X, RefreshCw, Mail, CheckCircle2, ChevronRight } from "lucide-react";
+import { Home, Plus, Loader2, Users, SlidersHorizontal, Store, X, RefreshCw, Mail, CheckCircle2, ChevronRight, Search, UserPlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/constants";
@@ -32,6 +34,7 @@ import { SupportWhatsAppLink } from "@/components/support/SupportWhatsAppLink";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
+import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -493,12 +496,22 @@ const Index = () => {
         <>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
             <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
-              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full flex h-12">
-                <TabsTrigger value="mi-listado" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-[2] transition-all">
-                  <Home className="w-4 h-4" /> Mi Listado <span className="text-xs opacity-70 ml-1">({properties.length})</span>
+              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-3 gap-1 h-auto min-h-12">
+                <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                  <Home className="w-4 h-4 shrink-0" />
+                  <span className="truncate">
+                    Mi Listado <span className="opacity-70">({properties.length})</span>
+                  </span>
                 </TabsTrigger>
-                <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex-1 transition-all">
-                  <Store className="w-4 h-4" /> HFMarket <span className="text-xs opacity-70 ml-1">({marketplaceProperties.length})</span>
+                <TabsTrigger value="marketplace" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                  <Store className="w-4 h-4 shrink-0" />
+                  <span className="truncate">
+                    HFMarket <span className="opacity-70">({marketplaceProperties.length})</span>
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="referidos" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                  <UserPlus className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Referidos</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -507,7 +520,7 @@ const Index = () => {
                 {showWelcome ? (
                   <UserWelcome onDismiss={handleDismissWelcome} userName={userEmail?.split('@')[0] || ""} />
                 ) : (
-                  <div className="flex gap-8">
+                  <div>
                     <FilterSidebar
                       selectedStatuses={selectedStatuses}
                       onStatusToggle={handleStatusToggle}
@@ -538,7 +551,52 @@ const Index = () => {
                             <RefreshCw className={`w-4 h-4 ${isRefreshingList ? "animate-spin" : ""}`} />
                           </button>
                         </div>
-                        <div className="flex flex-nowrap items-center justify-between gap-2 sm:justify-start sm:gap-6 w-full min-w-0">
+                        {/* Escritorio: debajo del título — filtro → buscador → switches */}
+                        <div className="hidden lg:flex flex-row flex-wrap items-center gap-4 min-w-0">
+                          <ListadoFiltersDropdown
+                            selectedStatuses={selectedStatuses}
+                            onStatusToggle={handleStatusToggle}
+                            sortBy={sortBy}
+                            onSortChange={setSortBy}
+                            onClearFilters={handleClearFilters}
+                            totalCount={properties.length}
+                            filteredCount={filteredAndSorted.length}
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                          />
+                          <div className="relative flex-1 min-w-[200px] max-w-md">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            <Input
+                              placeholder="Buscar propiedad..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="pl-9 h-10 w-full rounded-xl bg-muted border-0 text-sm"
+                            />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 shrink-0">
+                            <div className="flex items-center gap-3">
+                              <Switch
+                                id="hide-discarded-list-lg"
+                                checked={hideDiscarded}
+                                onCheckedChange={setHideDiscarded}
+                              />
+                              <Label htmlFor="hide-discarded-list-lg" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                                Ocultar descartados
+                              </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Switch
+                                id="expand-photos-listado-lg"
+                                checked={expandPhotos}
+                                onCheckedChange={setExpandPhotos}
+                              />
+                              <Label htmlFor="expand-photos-listado-lg" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                                Mostrar fotos
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-nowrap items-center justify-between gap-2 sm:justify-start sm:gap-6 w-full min-w-0 lg:hidden">
                           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
                             <Switch
                               id="hide-discarded-list"
@@ -569,7 +627,7 @@ const Index = () => {
                           <p className="font-medium">Copiá un link de cualquier portal y pegalo en el botón (+) acá para empezar</p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredAndSorted.map((property) => (
                             <PropertyCard
                               key={property.id}
@@ -593,12 +651,27 @@ const Index = () => {
                   onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
                 />
               </TabsContent>
+
+              <TabsContent value="referidos">
+                <ReferidosTabPanel />
+              </TabsContent>
             </Tabs>
           </div>
 
           {/* Botones Flotantes */}
-          <button onClick={() => setIsMobileFiltersOpen(true)} className="fixed bottom-8 left-8 lg:hidden flex items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow z-30 text-sm font-medium">
-            <SlidersHorizontal className="w-4 h-4" /> Filtros {selectedStatuses.length > 0 && <span className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold">{selectedStatuses.length}</span>}
+          <button
+            type="button"
+            onClick={() => setIsMobileFiltersOpen(true)}
+            className={`fixed bottom-8 left-8 lg:hidden items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow z-30 text-sm font-medium ${
+              activeTab === "referidos" ? "hidden" : "flex"
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" /> Filtros{" "}
+            {activeTab === "mi-listado" && selectedStatuses.length > 0 && (
+              <span className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center font-bold">
+                {selectedStatuses.length}
+              </span>
+            )}
           </button>
 
           {(addButtonConfig === "white" || addButtonConfig === "both") && (

@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
-export function UserReferralSection() {
+interface UserReferralSectionProps {
+  /** En el filtro lateral va separado con línea; en la pestaña dedicada no hace falta */
+  showTopDivider?: boolean;
+}
+
+export function UserReferralSection({ showTopDivider = true }: UserReferralSectionProps) {
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
 
@@ -83,7 +88,13 @@ export function UserReferralSection() {
     };
 
     return (
-        <div className="space-y-3 pt-4 border-t border-border/50">
+        <div
+            className={
+                showTopDivider
+                    ? "space-y-3 pt-4 border-t border-border/50"
+                    : "space-y-3"
+            }
+        >
             <div className="flex items-center justify-between">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <Users className="w-3 h-3 text-primary" />

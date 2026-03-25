@@ -6,6 +6,7 @@ import { useProperties } from "@/hooks/useProperties";
 import { useProfile } from "@/hooks/useProfile";
 import { MarketplaceCard } from "@/components/MarketplaceCard";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
+import { MarketplaceFiltersDropdown } from "@/components/MarketplaceFiltersDropdown";
 import { MarketplaceProperty } from "@/types/property";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, Store, ImageIcon } from "lucide-react";
@@ -317,54 +318,59 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     setDontShowAgain(false);
   };
 
-  const activeFilterCount = [selectedNeighborhoods.length > 0, minPrice, maxPrice, selectedRooms, selectedListingType, selectedCurrency].filter(Boolean).length;
   const isMatchAIMagicActive = matchAI && filtered.length > 0;
 
+  const filterPanelProps = {
+    neighborhoods,
+    selectedNeighborhoods,
+    onNeighborhoodsChange: setSelectedNeighborhoods,
+    selectedCurrency,
+    onCurrencyChange: setSelectedCurrency,
+    minPrice,
+    onMinPriceChange: setMinPrice,
+    maxPrice,
+    onMaxPriceChange: setMaxPrice,
+    selectedRooms,
+    onRoomsChange: setSelectedRooms,
+    selectedListingType,
+    onListingTypeChange: setSelectedListingType,
+    onClearFilters: clearFilters,
+    hasFilters,
+    totalCount: marketplaceProperties.length,
+    filteredCount: filtered.length,
+  };
+
   return (
-    <div className="flex gap-8">
+    <>
       <MarketplaceFilterSidebar
-        neighborhoods={neighborhoods}
-          selectedNeighborhoods={selectedNeighborhoods}
-          onNeighborhoodsChange={setSelectedNeighborhoods}
-        selectedCurrency={selectedCurrency}
-        onCurrencyChange={setSelectedCurrency}
-        minPrice={minPrice}
-        onMinPriceChange={setMinPrice}
-        maxPrice={maxPrice}
-        onMaxPriceChange={setMaxPrice}
-        selectedRooms={selectedRooms}
-        onRoomsChange={setSelectedRooms}
-        selectedListingType={selectedListingType}
-        onListingTypeChange={setSelectedListingType}
-        onClearFilters={clearFilters}
-        hasFilters={hasFilters}
-        totalCount={marketplaceProperties.length}
-        filteredCount={filtered.length}
+        {...filterPanelProps}
         mobileOpen={mobileFiltersOpen}
         onMobileClose={onMobileFiltersClose}
       />
 
       <main className="flex-1 min-w-0 space-y-6">
-        {/* Search */}
-        <div className="max-w-md relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por título, barrio o agencia..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 rounded-xl bg-muted border-0 text-sm"
-          />
-        </div>
-
-        <div className="flex flex-col gap-3 sm:gap-0">
-          <div className="flex flex-wrap items-center gap-6">
+        {/* Filtro → buscador → switches; en lg una misma línea (con wrap si falta espacio) */}
+        <div className="flex flex-col gap-4 min-w-0 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-4 lg:gap-y-3">
+          <div className="hidden lg:block shrink-0 order-first">
+            <MarketplaceFiltersDropdown {...filterPanelProps} />
+          </div>
+          <div className="relative w-full min-w-0 lg:flex-1 lg:max-w-md xl:max-w-lg lg:order-none order-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Buscar por título, barrio o agencia..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-10 w-full rounded-xl bg-muted border-0 text-sm"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 shrink-0 lg:order-none order-2">
             <div className="flex items-center gap-3">
               <Switch
                 id="hide-saved-marketplace"
                 checked={hideSaved}
                 onCheckedChange={setHideSaved}
               />
-              <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer">
+              <Label htmlFor="hide-saved-marketplace" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
                 Ocultar guardados
               </Label>
             </div>
@@ -374,12 +380,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 checked={expandPhotos}
                 onCheckedChange={setExpandPhotos}
               />
-              <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer">
+              <Label htmlFor="expand-photos-marketplace" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
                 Mostrar fotos
               </Label>
             </div>
-
-            <div className="hidden sm:flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm">
+            <div className="flex items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm">
               <Switch
                 id="match-ai-toggle"
                 checked={matchAI}
@@ -387,23 +392,10 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 disabled={loadingProfile}
                 className="data-[state=checked]:bg-purple-500"
               />
-              <Label htmlFor="match-ai-toggle" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+              <Label htmlFor="match-ai-toggle" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5 whitespace-nowrap">
                 MatchAI <span className="text-xs">🔮</span>
               </Label>
             </div>
-          </div>
-
-          <div className="flex sm:hidden items-center gap-3 bg-purple-500/5 px-3 py-1.5 rounded-xl border border-purple-500/10 transition-all hover:bg-purple-500/10 shadow-sm w-full justify-center">
-            <Switch
-              id="match-ai-toggle-mobile"
-              checked={matchAI}
-              onCheckedChange={handleMatchAIToggle}
-              disabled={loadingProfile}
-              className="data-[state=checked]:bg-purple-500"
-            />
-            <Label htmlFor="match-ai-toggle-mobile" className="text-sm font-bold text-foreground cursor-pointer flex items-center gap-1.5">
-              MatchAI <span className="text-xs">🔮</span>
-            </Label>
           </div>
         </div>
 
@@ -448,7 +440,9 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 </div>
               </div>
             )}
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch ${matchAI ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}`}>
+            <div
+              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch ${matchAI ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}`}
+            >
               {filtered.map((property, i) => {
                 const isInactive = INACTIVE_STATUSES.has(property.status);
                 return (
@@ -510,6 +504,6 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

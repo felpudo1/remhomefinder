@@ -188,7 +188,7 @@ export const UserHeader = ({
                                 onClick={onAIProfileClick}
                             >
                                 <Sparkles className="w-4 h-4 text-purple-500" />
-                                <span>Perfil IA de Búsqueda</span>
+                                <span>Perfil IA</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 

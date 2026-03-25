@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  Building2, Loader2, Home, BarChart3, UserCircle, Users, Gift
+  Building2, Loader2, Home, BarChart3, UserCircle, Users, Gift, LineChart,
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
 import { AgentProperties } from "@/components/agent/AgentProperties";
 import { AgentEstadisticas } from "@/components/agent/AgentEstadisticas";
+import { AgentIndicadores } from "@/components/agent/AgentIndicadores";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentReferralSection } from "@/components/agent/AgentReferralSection";
@@ -21,13 +22,14 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 
-type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "referencias" | "perfil";
+type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias" | "perfil";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
   { id: "listado", label: "Listado", icon: Building2 },
   { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
+  { id: "indicadores", label: "Indicadores", icon: LineChart },
   { id: "referencias", label: "Referencias", icon: Gift },
   { id: "perfil", label: "Perfil", icon: UserCircle },
 ];
@@ -167,6 +169,7 @@ const AgentDashboard = () => {
                 />
               )}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
+              {activeTab === "indicadores" && <AgentIndicadores />}
               {activeTab === "referencias" && <AgentReferralSection agency={agency} />}
               {activeTab === "perfil" && <AgentProfile agency={agency} profileStatus={profileStatus} />}
             </div>

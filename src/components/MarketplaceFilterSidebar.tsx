@@ -2,8 +2,10 @@ import { SlidersHorizontal, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
-interface MarketplaceFilterSidebarProps {
+/** Props compartidas entre drawer móvil y panel dentro del popover de escritorio */
+export interface MarketplaceFiltersPanelProps {
   neighborhoods: string[];
   selectedNeighborhoods: string[];
   onNeighborhoodsChange: (v: string[]) => void;
@@ -21,11 +23,16 @@ interface MarketplaceFilterSidebarProps {
   hasFilters: boolean;
   totalCount: number;
   filteredCount: number;
-  mobileOpen?: boolean;
+  /** drawer: barra lateral móvil con botón cerrar · popover: sin sticky, para desplegable */
+  panelVariant: "drawer" | "popover";
+  /** Solo en drawer: callback para la X del header */
   onMobileClose?: () => void;
 }
 
-export function MarketplaceFilterSidebar({
+/**
+ * Formulario de filtros del marketplace (misma lógica en drawer y en popover).
+ */
+export function MarketplaceFiltersPanel({
   neighborhoods,
   selectedNeighborhoods,
   onNeighborhoodsChange,
@@ -43,22 +50,29 @@ export function MarketplaceFilterSidebar({
   hasFilters,
   totalCount,
   filteredCount,
-  mobileOpen = false,
+  panelVariant,
   onMobileClose,
-}: MarketplaceFilterSidebarProps) {
-  const panelContent = (
-    <div className="bg-card rounded-2xl p-5 card-shadow sticky top-24 space-y-6">
-      {/* Header */}
+}: MarketplaceFiltersPanelProps) {
+  const isDrawer = panelVariant === "drawer";
+
+  return (
+    <div
+      className={cn(
+        "bg-card rounded-2xl p-5 card-shadow space-y-6",
+        panelVariant === "popover" && "rounded-xl shadow-none border-0"
+      )}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
           <span className="font-semibold text-sm text-foreground">Filtros</span>
         </div>
         <div className="flex items-center gap-2">
-          {onMobileClose && (
+          {isDrawer && onMobileClose && (
             <button
+              type="button"
               onClick={onMobileClose}
-              className="md:hidden text-muted-foreground hover:text-foreground transition-colors p-1"
+              className="text-muted-foreground hover:text-foreground transition-colors p-1"
               aria-label="Cerrar filtros"
             >
               <X className="w-4 h-4" />
@@ -67,7 +81,6 @@ export function MarketplaceFilterSidebar({
         </div>
       </div>
 
-      {/* Contador y Limpiar */}
       <div className="space-y-3">
         <div className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2 flex items-center justify-between">
           <span>
@@ -75,7 +88,7 @@ export function MarketplaceFilterSidebar({
             <span className="font-semibold text-foreground">{totalCount}</span>
           </span>
         </div>
-        
+
         {hasFilters && (
           <Button
             variant="outline"
@@ -89,7 +102,6 @@ export function MarketplaceFilterSidebar({
         )}
       </div>
 
-      {/* Tipo de operación */}
       <div className="space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</p>
         <div className="grid grid-cols-3 gap-1.5">
@@ -107,10 +119,9 @@ export function MarketplaceFilterSidebar({
         </div>
       </div>
 
-      {/* Barrios Multi-selección */}
       <div className="space-y-3">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Barrios</p>
-        <Select 
+        <Select
           onValueChange={(value) => {
             if (value && !selectedNeighborhoods.includes(value)) {
               onNeighborhoodsChange([...selectedNeighborhoods, value]);
@@ -125,24 +136,26 @@ export function MarketplaceFilterSidebar({
             viewportClassName="!h-auto max-h-[min(70vh,24rem)] min-h-[9rem] overflow-y-auto overscroll-y-contain touch-pan-y neighborhood-select-viewport"
           >
             {neighborhoods
-              .filter(n => !selectedNeighborhoods.includes(n))
+              .filter((n) => !selectedNeighborhoods.includes(n))
               .map((n) => (
-                <SelectItem key={n} value={n}>{n}</SelectItem>
+                <SelectItem key={n} value={n}>
+                  {n}
+                </SelectItem>
               ))}
           </SelectContent>
         </Select>
 
-        {/* Lista de barrios seleccionados (Badges) */}
         {selectedNeighborhoods.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {selectedNeighborhoods.map((n) => (
-              <div 
-                key={n} 
+              <div
+                key={n}
                 className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-lg border border-primary/20 animate-in zoom-in-95 duration-200"
               >
                 {n}
-                <button 
-                  onClick={() => onNeighborhoodsChange(selectedNeighborhoods.filter(item => item !== n))}
+                <button
+                  type="button"
+                  onClick={() => onNeighborhoodsChange(selectedNeighborhoods.filter((item) => item !== n))}
                   className="hover:text-primary-foreground hover:bg-primary rounded-full p-0.5 transition-colors"
                 >
                   <X className="w-2.5 h-2.5" />
@@ -153,7 +166,6 @@ export function MarketplaceFilterSidebar({
         )}
       </div>
 
-      {/* Precio y Moneda */}
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Moneda</p>
@@ -199,7 +211,6 @@ export function MarketplaceFilterSidebar({
         </div>
       </div>
 
-      {/* Ambientes */}
       <div className="space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ambientes</p>
         <div className="grid grid-cols-4 gap-1.5">
@@ -218,22 +229,29 @@ export function MarketplaceFilterSidebar({
       </div>
     </div>
   );
+}
+
+interface MarketplaceFilterSidebarProps extends Omit<MarketplaceFiltersPanelProps, "panelVariant"> {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+/**
+ * Solo drawer móvil del marketplace (md hacia abajo). En md+ los filtros van en MarketplaceFiltersDropdown.
+ */
+export function MarketplaceFilterSidebar({
+  mobileOpen = false,
+  onMobileClose,
+  ...panelProps
+}: MarketplaceFilterSidebarProps) {
+  if (!mobileOpen) return null;
 
   return (
     <>
-      <aside className="hidden md:block w-64 shrink-0">{panelContent}</aside>
-
-      {mobileOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/40 z-40 md:hidden"
-            onClick={onMobileClose}
-          />
-          <div className="fixed inset-y-0 left-0 w-72 z-50 md:hidden overflow-y-auto bg-background p-4 shadow-2xl animate-slide-in-from-left">
-            {panelContent}
-          </div>
-        </>
-      )}
+      <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onMobileClose} />
+      <div className="fixed inset-y-0 left-0 w-72 z-50 lg:hidden overflow-y-auto bg-background p-4 shadow-2xl animate-slide-in-from-left">
+        <MarketplaceFiltersPanel {...panelProps} panelVariant="drawer" onMobileClose={onMobileClose} />
+      </div>
     </>
   );
 }
