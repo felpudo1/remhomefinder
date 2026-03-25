@@ -160,13 +160,13 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
           // Mapeo de barrios (MatchAI Pro) - Cargamos todos los barrios del perfil
           if (searchProfile.neighborhood_ids && searchProfile.neighborhood_ids.length > 0) {
-            const { data: neighborhoodsData } = await supabase
+            const { data: neighborhoodsData } = await (supabase
               .from('neighborhoods')
               .select('name')
-              .in('id', searchProfile.neighborhood_ids);
+              .in('id', searchProfile.neighborhood_ids) as any);
             
             if (neighborhoodsData) {
-              setSelectedNeighborhoods(neighborhoodsData.map(n => n.name));
+              setSelectedNeighborhoods(neighborhoodsData.map((n: any) => n.name));
             }
           }
 

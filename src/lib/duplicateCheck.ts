@@ -160,10 +160,10 @@ export function formatDaysAgo(isoDate: string): string {
 export async function getExistingPropertyByUrl(url: string) {
   const normalized = normalizeUrl(url);
   if (!normalized) return null;
-  const { data } = await supabase
+  const { data } = await (supabase
     .from("properties")
     .select("id, title, price_amount, price_expenses, total_cost, currency, neighborhood, city, m2_total, rooms, images, ref, details")
     .eq("source_url", normalized)
-    .maybeSingle();
+    .maybeSingle() as any);
   return data;
 }
