@@ -67,28 +67,36 @@ Auditoría y corrección de 7 puntos críticos de saturación de BD, I/O y segur
 
 ---
 
+## Checklist de Rendimiento v2 (2026-03-25, tarde) ✅
+
+| # | Punto | Estado |
+|---|-------|--------|
+| 1 | `enabled: !!currentUserId` — no disparar query sin auth | ✅ |
+| 2 | Consolidar queries por página (3→1 status_history_log, 9→7 round-trips) | ✅ |
+| 3 | Invalidación Realtime fina con debounce + event payload inspection | ✅ |
+| 4 | Prefetch agresivo con IntersectionObserver (rootMargin 600px) | ✅ |
+| 5 | Select proyectado: excluye raw_ai_data, lat, lng, address, department* | ✅ |
+
 ## Archivos Modificados
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/hooks/usePropertyQueries.ts` | Debounce Realtime, Map para comments |
+| `src/hooks/usePropertyQueries.ts` | Puntos 1-5: enabled, select proyectado, 1 query status_history_log, invalidación fina |
 | `src/hooks/usePropertyMutations.ts` | Eliminada doble invalidación |
+| `src/pages/Index.tsx` | LoadMoreSentinel con IntersectionObserver (prefetch) |
 | `supabase/functions/scrape-property/index.ts` | JWT validation |
 | `supabase/functions/extract-from-image/index.ts` | JWT validation |
 | `src/integrations/supabase/typedClient.ts` | Helper de tipos (nuevo) |
-| 19+ archivos en `src/components/` y `src/hooks/` | Cast `as any` para tipos |
 
 ---
 
 ## Pendientes (Fase 2)
 
-1. ~~**Paginación cursor-based**~~ ✅ Implementado con `useInfiniteQuery` y PAGE_SIZE=30
-2. **RPC server-side** que devuelva el DTO completo (reemplazar las 10+ queries paralelas)
-3. **Rate limiting** por `user_id` en Edge Functions (ej. max 10 scrapes/hora)
-4. **CORS restringido** a `homefinderuy.lovable.app` en producción
-5. **Índices DB** tras análisis con `EXPLAIN ANALYZE`
-6. **Regeneración de types.ts** para eliminar casts temporales
+1. **RPC server-side** que devuelva el DTO completo (reemplazar las 7 queries paralelas restantes)
+2. **Rate limiting** por `user_id` en Edge Functions (ej. max 10 scrapes/hora)
+3. **CORS restringido** a `homefinderuy.lovable.app` en producción
+4. **Regeneración de types.ts** para eliminar casts temporales
 
 ---
 
-*Documento generado el 2026-03-25 por Lovable AI Engineering Assistant*
+*Documento actualizado el 2026-03-25 por Lovable AI Engineering Assistant*
