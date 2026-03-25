@@ -48,7 +48,7 @@ export const Footer = () => {
                         <span className="font-bold text-foreground">{appBrandName}</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground/60">
-                        © {new Date().getFullYear()} — Todos los derechos reservados.
+                        © 2025 — Todos los derechos reservados.
                     </p>
                 </div>
 
