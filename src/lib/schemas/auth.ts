@@ -30,7 +30,7 @@ export const registerSchema = z.object({
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
     confirmPassword: z.string(),
     displayName: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
-    phone: phoneRegex,
+    phone: phoneSchema,
     accountType: z.enum(["user", "agency"]),
     orgName: z.string().optional(),
     orgPhone: z.string().optional(),
