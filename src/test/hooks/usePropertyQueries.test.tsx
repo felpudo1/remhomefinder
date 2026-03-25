@@ -51,90 +51,63 @@ describe("usePropertyQueries", () => {
     mockedSupabase.rpc.mockResolvedValue({ data: [], error: null });
   });
 
-  it("should return empty list when no listings are found", async () => {
-    mockedSupabase.from.mockImplementation(() => ({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-      }),
-    }));
+  it("should return empty list when RPC returns empty", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const { result } = renderWithClient(() => usePropertyQueries());
-
-    // With enabled: !!currentUserId, query starts disabled (not loading)
-    // Trigger auth to enable it
     await triggerAuth();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.properties).toEqual([]);
   });
 
-  it("should return mapped properties when listings are found", async () => {
-    const mockListing = {
-      id: "listing-1",
-      property_id: "prop-1",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      current_status: "ingresado",
-      listing_type: "rent",
-      added_by: "user-123",
-      org_id: "org-1",
-      source_publication_id: null,
-      admin_hidden: false,
-      contact_name: null,
-      contact_phone: null,
-      contact_source: null,
-      organizations: { type: "family", is_personal: true },
-      agent_publications: null,
-      properties: {
-        id: "prop-1",
-        title: "Casa de prueba",
-        source_url: "https://example.com",
-        price_amount: 1000,
-        price_expenses: 200,
-        total_cost: 1200,
-        currency: "USD",
-        neighborhood: "Centro",
-        city: "Montevideo",
-        m2_total: 50,
-        rooms: 2,
-        images: [],
-        details: "Nice place",
-        ref: "REF-1",
-        updated_at: new Date().toISOString(),
+  it("should return mapped properties from RPC response", async () => {
+    const now = new Date().toISOString();
+    const mockRpcResponse = [
+      {
+        id: "listing-1",
+        property_id: "prop-1",
+        org_id: "org-1",
+        current_status: "ingresado",
+        listing_type: "rent",
+        added_by: "user-123",
+        created_at: now,
+        updated_at: now,
+        source_publication_id: null,
+        contact_name: null,
+        contact_phone: null,
+        contact_source: null,
+        property: {
+          id: "prop-1",
+          title: "Casa de prueba",
+          source_url: "https://example.com",
+          price_amount: 1000,
+          price_expenses: 200,
+          total_cost: 1200,
+          currency: "USD",
+          neighborhood: "Centro",
+          city: "Montevideo",
+          m2_total: 50,
+          rooms: 2,
+          images: [],
+          details: "Nice place",
+          ref: "REF-1",
+          updated_at: now,
+        },
+        organization: { type: "family", is_personal: true },
+        agent_publication: null,
+        _reads: {},
+        _profiles: { "user-123": "Test User" },
+        _status_history: [],
+        _changer_profiles: {},
+        _comments: [],
+        _attachments: [],
+        _contacts: {},
+        _org_names: {},
       },
-    };
+    ];
 
-    mockedSupabase.from.mockImplementation((table: string) => {
-      if (table === "user_listings") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: [mockListing], error: null }),
-              }),
-            }),
-          }),
-        };
-      }
-      // All other tables (profiles, status_history_log, family_comments, etc.)
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-          in: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-      };
-    });
+    mockedSupabase.rpc.mockResolvedValue({ data: mockRpcResponse, error: null });
 
     const { result } = renderWithClient(() => usePropertyQueries());
     await triggerAuth();
@@ -146,5 +119,26 @@ describe("usePropertyQueries", () => {
 
     expect(result.current.properties[0].title).toBe("Casa de prueba");
     expect(result.current.properties[0].priceRent).toBe(1000);
+    expect(result.current.properties[0].createdByEmail).toBe("Test User");
+
+    // Verify RPC was called with correct params
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith("get_user_listings_page", {
+      _cursor: null,
+      _page_size: 30,
+    });
+  });
+
+  it("should not fire query without authenticated user", async () => {
+    mockedSupabase.auth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+
+    const { result } = renderWithClient(() => usePropertyQueries());
+
+    // Don't trigger auth — query should stay disabled
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.properties).toEqual([]);
+    expect(mockedSupabase.rpc).not.toHaveBeenCalledWith("get_user_listings_page", expect.anything());
   });
 });
