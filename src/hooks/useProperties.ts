@@ -6,21 +6,11 @@ import { usePropertyMutations } from "./usePropertyMutations";
  * Hook de fachada (Facade) para el listado personal de propiedades del usuario.
  * Orquesta lectura (usePropertyQueries) y escritura (usePropertyMutations) sin exponer los hooks internos.
  *
- * @returns Objeto con:
- *   - properties: lista de propiedades del usuario (desde Supabase, tabla properties).
- *   - loading, error: estado de la query de listado.
- *   - addProperty: agrega una propiedad (ej. tras scraping o formulario).
- *   - updateStatus(id, status, ...): actualiza estado de una propiedad (y opcionales deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds).
- *   - addComment(id, comment): agrega un comentario a una propiedad.
- *   - refetch: fuerza refetch del listado.
- *
- * @example
- * const { properties, loading, addProperty, updateStatus } = useProperties();
- * await addProperty({ title: "Casa X", ... });
- * updateStatus(propId, "contacted", undefined, null, null, "Juan");
+ * Soporta paginación cursor-based: expone fetchNextPage / hasNextPage / isFetchingNextPage
+ * para que la UI pueda implementar "cargar más" sin refetch masivo.
  */
 export function useProperties() {
-  const { properties, loading, error, refetch } = usePropertyQueries();
+  const { properties, loading, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = usePropertyQueries();
   const { addProperty, updateStatus, addComment } = usePropertyMutations();
 
   return {
@@ -64,5 +54,8 @@ export function useProperties() {
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addComment({ propertyId: id, comment }),
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   };
 }
