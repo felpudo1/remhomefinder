@@ -264,7 +264,7 @@ export function AdminUsuarios({ toast }: Props) {
             setIsActionInProgress(true);
             // Obtener el admin que ejecuta la acción para el log de auditoría
             const { data: { user: adminUser } } = await supabase.auth.getUser();
-            const { error } = await (supabase.rpc("admin_physical_delete_user", {
+            const { error } = await supabase.rpc("admin_physical_delete_user" as any, {
                 _user_id: userId,
                 _reason: reason,
                 _deleted_by: adminUser?.id,

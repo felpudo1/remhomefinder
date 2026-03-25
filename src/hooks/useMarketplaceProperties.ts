@@ -29,7 +29,7 @@ export function useMarketplaceProperties() {
 
       let fallbackOrgNameById: Record<string, string> = {};
       if (missingOrgIds.length > 0) {
-        const { data: orgNames } = await (supabase.rpc("get_marketplace_org_names", {
+        const { data: orgNames } = await supabase.rpc("get_marketplace_org_names" as any, {
           _org_ids: missingOrgIds,
         });
 
