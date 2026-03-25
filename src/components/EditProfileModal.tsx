@@ -178,11 +178,11 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     reader.readAsDataURL(file);
   };
 
-  // Subir avatar a Supabase Storage
+  // Subir avatar a Supabase Storage (path: {userId}/avatar-{ts}.{ext} para RLS por carpeta)
   const uploadAvatar = async (userId: string, file: File): Promise<string> => {
     const fileExt = file.name.split(".").pop();
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileName = `avatar-${Date.now()}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("avatars")
