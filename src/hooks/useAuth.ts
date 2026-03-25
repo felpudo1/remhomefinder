@@ -137,7 +137,10 @@ export const useAuth = () => {
 
                 // Intentar guardar perfil con reintentos para evitar race conditions
                 const upsertProfile = async (retries = 3) => {
-                    const referralId = sessionStorage.getItem("hf_referral_id");
+                    // Leer referral de sessionStorage y también del query param ?ref= como fallback
+                    const referralId = sessionStorage.getItem("hf_referral_id") || null;
+                    // Evitar auto-referencia
+                    const safeReferralId = (referralId && referralId !== data.user!.id) ? referralId : null;
                     let lastError: unknown = null;
                     for (let i = 0; i < retries; i++) {
                         const { error: profileError } = await (supabase.from("profiles") as any).upsert({
@@ -145,7 +148,7 @@ export const useAuth = () => {
                             phone: phone,
                             display_name: displayName,
                             email: email,
-                            referred_by_id: referralId,
+                            referred_by_id: safeReferralId,
                             ...(accountType === ROLES.AGENCY ? { status: "pending" } : {}),
                         }, {
                             onConflict: "user_id"
@@ -160,6 +163,8 @@ export const useAuth = () => {
 
                 try {
                     await upsertProfile();
+                    // Limpiar referral de sessionStorage tras registro exitoso
+                    sessionStorage.removeItem("hf_referral_id");
                 } catch (e) {
                     console.error("Profile upsert error:", e);
                 }
