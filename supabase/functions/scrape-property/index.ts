@@ -300,12 +300,42 @@ async function extractWithVision(images: string[]): Promise<Record<string, any>>
   return JSON.parse(toolCall.function.arguments);
 }
 
+// ── Auth helper (Punto 5: validación JWT antes de gastar créditos) ──
+
+async function validateAuth(req: Request): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ success: false, error: "No autenticado" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const sb = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  const token = authHeader.replace("Bearer ", "");
+  const { data, error } = await sb.auth.getUser(token);
+  if (error || !data?.user) {
+    return new Response(JSON.stringify({ success: false, error: "Token inválido o expirado" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  return { userId: data.user.id };
+}
+
 // ── Main handler ──
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Punto 5: Validar autenticación ANTES de consumir recursos
+    const authResult = await validateAuth(req);
+    if (authResult instanceof Response) return authResult;
+
     // Desestructurar body: puede venir url (scraping) o images (visión)
     const { url, images, scraper = "firecrawl", role = "user" } = await req.json();
 
