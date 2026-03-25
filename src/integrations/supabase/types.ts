@@ -251,22 +251,22 @@ export type Database = {
       }
       cities: {
         Row: {
-          country: string | null
-          created_at: string | null
+          country: string
+          created_at: string
           department_id: string | null
           id: string
           name: string
         }
         Insert: {
-          country?: string | null
-          created_at?: string | null
+          country?: string
+          created_at?: string
           department_id?: string | null
           id?: string
           name: string
         }
         Update: {
-          country?: string | null
-          created_at?: string | null
+          country?: string
+          created_at?: string
           department_id?: string | null
           id?: string
           name?: string
@@ -283,40 +283,31 @@ export type Database = {
       }
       deletion_audit_log: {
         Row: {
-          deleted_at: string | null
+          created_at: string
           deleted_by: string
+          deleted_user_email: string | null
           deleted_user_id: string
-          display_name: string | null
-          email: string | null
+          deleted_user_name: string | null
           id: string
-          phone: string | null
-          plan_type: string | null
           reason: string
-          status_before: string | null
         }
         Insert: {
-          deleted_at?: string | null
+          created_at?: string
           deleted_by: string
+          deleted_user_email?: string | null
           deleted_user_id: string
-          display_name?: string | null
-          email?: string | null
+          deleted_user_name?: string | null
           id?: string
-          phone?: string | null
-          plan_type?: string | null
-          reason: string
-          status_before?: string | null
+          reason?: string
         }
         Update: {
-          deleted_at?: string | null
+          created_at?: string
           deleted_by?: string
+          deleted_user_email?: string | null
           deleted_user_id?: string
-          display_name?: string | null
-          email?: string | null
+          deleted_user_name?: string | null
           id?: string
-          phone?: string | null
-          plan_type?: string | null
           reason?: string
-          status_before?: string | null
         }
         Relationships: []
       }
@@ -412,20 +403,20 @@ export type Database = {
       }
       neighborhoods: {
         Row: {
-          city_id: string | null
-          created_at: string | null
+          city_id: string
+          created_at: string
           id: string
           name: string
         }
         Insert: {
-          city_id?: string | null
-          created_at?: string | null
+          city_id: string
+          created_at?: string
           id?: string
           name: string
         }
         Update: {
-          city_id?: string | null
-          created_at?: string | null
+          city_id?: string
+          created_at?: string
           id?: string
           name?: string
         }
@@ -486,6 +477,10 @@ export type Database = {
       }
       organizations: {
         Row: {
+          contact_email: string
+          contact_name: string
+          contact_person_phone: string
+          contact_phone: string
           created_at: string
           created_by: string
           description: string
@@ -500,6 +495,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_email?: string
+          contact_name?: string
+          contact_person_phone?: string
+          contact_phone?: string
           created_at?: string
           created_by: string
           description?: string
@@ -514,6 +513,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_email?: string
+          contact_name?: string
+          contact_person_phone?: string
+          contact_phone?: string
           created_at?: string
           created_by?: string
           description?: string
@@ -870,37 +873,34 @@ export type Database = {
       }
       publication_deletion_audit_log: {
         Row: {
-          deleted_at: string | null
+          created_at: string
           deleted_by: string
+          deleted_by_name: string | null
           id: string
           org_name: string | null
-          pub_id: string | null
-          pub_type: string | null
+          property_title: string | null
+          pub_id: string
           reason: string
-          status_before: string | null
-          title: string | null
         }
         Insert: {
-          deleted_at?: string | null
+          created_at?: string
           deleted_by: string
+          deleted_by_name?: string | null
           id?: string
           org_name?: string | null
-          pub_id?: string | null
-          pub_type?: string | null
-          reason: string
-          status_before?: string | null
-          title?: string | null
+          property_title?: string | null
+          pub_id: string
+          reason?: string
         }
         Update: {
-          deleted_at?: string | null
+          created_at?: string
           deleted_by?: string
+          deleted_by_name?: string | null
           id?: string
           org_name?: string | null
-          pub_id?: string | null
-          pub_type?: string | null
+          property_title?: string | null
+          pub_id?: string
           reason?: string
-          status_before?: string | null
-          title?: string | null
         }
         Relationships: []
       }
@@ -1050,42 +1050,6 @@ export type Database = {
           },
         ]
       }
-      user_listing_comment_reads: {
-        Row: {
-          last_read_at: string
-          updated_at: string
-          user_id: string
-          user_listing_id: string
-        }
-        Insert: {
-          last_read_at?: string
-          updated_at?: string
-          user_id: string
-          user_listing_id: string
-        }
-        Update: {
-          last_read_at?: string
-          updated_at?: string
-          user_id?: string
-          user_listing_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_listing_comment_reads_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "user_listing_comment_reads_user_listing_id_fkey"
-            columns: ["user_listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_listings: {
         Row: {
           added_by: string
@@ -1211,6 +1175,7 @@ export type Database = {
           city_id: string | null
           created_at: string
           currency: string
+          department_id: string | null
           id: string
           is_private: boolean | null
           max_budget: number | null
@@ -1224,14 +1189,15 @@ export type Database = {
         Insert: {
           city_id?: string | null
           created_at?: string
-          currency: string
+          currency?: string
+          department_id?: string | null
           id?: string
           is_private?: boolean | null
           max_budget?: number | null
           min_bedrooms?: number | null
           min_budget?: number | null
           neighborhood_ids?: string[] | null
-          operation: string
+          operation?: string
           updated_at?: string
           user_id: string
         }
@@ -1239,6 +1205,7 @@ export type Database = {
           city_id?: string | null
           created_at?: string
           currency?: string
+          department_id?: string | null
           id?: string
           is_private?: boolean | null
           max_budget?: number | null
@@ -1256,6 +1223,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_search_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1370,12 +1344,10 @@ export type Database = {
       }
     }
     Functions: {
-      admin_physical_delete_user:
-        | { Args: { _user_id: string }; Returns: undefined }
-        | {
-            Args: { _deleted_by: string; _reason: string; _user_id: string }
-            Returns: undefined
-          }
+      admin_physical_delete_user: {
+        Args: { _deleted_by: string; _reason: string; _user_id: string }
+        Returns: undefined
+      }
       admin_update_profile_status: {
         Args: {
           _status: Database["public"]["Enums"]["user_status"]
@@ -1478,7 +1450,6 @@ export type Database = {
         | "descartado"
         | "firme_candidato"
         | "posible_interes"
-        | "eliminado"
         | "meta_conseguida"
       user_status: "active" | "pending" | "suspended" | "rejected"
     }
@@ -1630,7 +1601,6 @@ export const Constants = {
         "descartado",
         "firme_candidato",
         "posible_interes",
-        "eliminado",
         "meta_conseguida",
       ],
       user_status: ["active", "pending", "suspended", "rejected"],
