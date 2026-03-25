@@ -781,4 +781,45 @@ const Index = () => {
   );
 };
 
+/**
+ * Punto 4 (Checklist): Sentinel invisible que dispara prefetch cuando el usuario
+ * está a ~2 pantallas del final del listado. Usa IntersectionObserver con rootMargin.
+ */
+function LoadMoreSentinel({
+  fetchNextPage,
+  isFetchingNextPage,
+}: {
+  fetchNextPage: () => void;
+  isFetchingNextPage: boolean;
+}) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "600px" } // ~2 pantallas antes del final
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchNextPage, isFetchingNextPage]);
+
+  return (
+    <div ref={sentinelRef} className="flex justify-center py-6">
+      {isFetchingNextPage && (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" /> Cargando más...
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default Index;
