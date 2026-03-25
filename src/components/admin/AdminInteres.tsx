@@ -39,18 +39,18 @@ export function AdminInteres() {
 
   const fetchAgents = async () => {
     // 1. Obtener todos los IDs de usuarios que tienen publicaciones en el marketplace
-    const { data: pubs } = await supabase.from('agent_publications').select('published_by');
+    const { data: pubs } = await (supabase.from('agent_publications') as any).select('published_by');
     const pubAgentIds = pubs ? pubs.map((p: any) => p.published_by).filter(Boolean) : [];
     
     // 2. Obtener creadores de organizaciones tipo agencia
-    const { data: orgs } = await supabase.from('organizations').select('id, created_by').eq('type', 'agency_team');
+    const { data: orgs } = await (supabase.from('organizations') as any).select('id, created_by').eq('type', 'agency_team');
     const orgCreators = orgs ? orgs.map((o: any) => o.created_by).filter(Boolean) : [];
     const orgIds = orgs ? orgs.map((o: any) => o.id).filter(Boolean) : [];
     
     // 3. Obtener miembros de las organizaciones tipo agencia
     let memberIds: string[] = [];
     if (orgIds.length > 0) {
-      const { data: members } = await supabase.from('organization_members').select('user_id').in('org_id', orgIds);
+      const { data: members } = await (supabase.from('organization_members') as any).select('user_id').in('org_id', orgIds);
       memberIds = members ? members.map((m: any) => m.user_id).filter(Boolean) : [];
     }
 

@@ -64,7 +64,7 @@ export function AdminGeografia({ toast }: Props) {
   const handleDeleteNeighGlobal = async (id: string, name: string) => {
     if (!window.confirm(`¿Eliminar el barrio "${name}"? Fallará si hay propiedades usándolo.`)) return;
     setDeletingNeighId(id);
-    const { error } = await supabase.from("neighborhoods").delete().eq("id", id);
+    const { error } = await (supabase.from("neighborhoods") as any).delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     } else {
@@ -78,7 +78,7 @@ export function AdminGeografia({ toast }: Props) {
 
   const fetchDepartments = async () => {
     setLoadingDepts(true);
-    const { data, error } = await supabase.from("departments").select("*").order("country").order("name");
+    const { data, error } = await (supabase.from("departments") as any).select("*").order("country").order("name");
     if (error) toast({ title: "Error al cargar departamentos", description: error.message, variant: "destructive" });
     else setDepartments(data || []);
     setLoadingDepts(false);
@@ -88,7 +88,7 @@ export function AdminGeografia({ toast }: Props) {
     setLoadingCities(true);
     setSelectedCity(null);
     setNeighborhoods([]);
-    const { data, error } = await supabase.from("cities").select("*").eq("department_id", deptId).order("name");
+    const { data, error } = await (supabase.from("cities") as any).select("*").eq("department_id", deptId).order("name");
     if (error) toast({ title: "Error al cargar ciudades", description: error.message, variant: "destructive" });
     else setCities(data || []);
     setLoadingCities(false);
@@ -96,7 +96,7 @@ export function AdminGeografia({ toast }: Props) {
 
   const fetchNeighborhoods = async (cityId: string) => {
     setLoadingNeigh(true);
-    const { data, error } = await supabase.from("neighborhoods").select("*").eq("city_id", cityId).order("name");
+    const { data, error } = await (supabase.from("neighborhoods") as any).select("*").eq("city_id", cityId).order("name");
     if (error) toast({ title: "Error al cargar barrios", description: error.message, variant: "destructive" });
     else setNeighborhoods(data || []);
     setLoadingNeigh(false);
@@ -107,11 +107,11 @@ export function AdminGeografia({ toast }: Props) {
     if (!formData.name.trim()) return;
     setIsSubmitting(true);
     if (deptDialog.mode === "add") {
-      const { error } = await supabase.from("departments").insert([{ name: formData.name, country: formData.country }]);
+      const { error } = await (supabase.from("departments") as any).insert([{ name: formData.name, country: formData.country }]);
       if (error) toast({ title: "Error al crear", description: error.message, variant: "destructive" });
       else toast({ title: "Departamento creado" });
     } else {
-      const { error } = await supabase.from("departments").update({ name: formData.name, country: formData.country }).eq("id", deptDialog.data.id);
+      const { error } = await (supabase.from("departments") as any).update({ name: formData.name, country: formData.country }).eq("id", deptDialog.data.id);
       if (error) toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
       else toast({ title: "Departamento actualizado" });
     }
@@ -123,7 +123,7 @@ export function AdminGeografia({ toast }: Props) {
   const handleDeleteDept = async (id: string) => {
     if (!window.confirm("¿Seguro? Fallará si tiene ciudades asociadas.")) return;
     if (selectedDept?.id === id) { setSelectedDept(null); setCities([]); setSelectedCity(null); setNeighborhoods([]); }
-    const { error } = await supabase.from("departments").delete().eq("id", id);
+    const { error } = await (supabase.from("departments") as any).delete().eq("id", id);
     if (error) toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     else { toast({ title: "Departamento eliminado" }); fetchDepartments(); }
   };
@@ -133,11 +133,11 @@ export function AdminGeografia({ toast }: Props) {
     if (!formData.name.trim() || !selectedDept) return;
     setIsSubmitting(true);
     if (cityDialog.mode === "add") {
-      const { error } = await supabase.from("cities").insert([{ name: formData.name, department_id: selectedDept.id }]);
+      const { error } = await (supabase.from("cities") as any).insert([{ name: formData.name, department_id: selectedDept.id }]);
       if (error) toast({ title: "Error al crear", description: error.message, variant: "destructive" });
       else toast({ title: "Ciudad creada" });
     } else {
-      const { error } = await supabase.from("cities").update({ name: formData.name }).eq("id", cityDialog.data.id);
+      const { error } = await (supabase.from("cities") as any).update({ name: formData.name }).eq("id", cityDialog.data.id);
       if (error) toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
       else toast({ title: "Ciudad actualizada" });
     }
@@ -149,7 +149,7 @@ export function AdminGeografia({ toast }: Props) {
   const handleDeleteCity = async (id: string) => {
     if (!window.confirm("¿Seguro? Fallará si tiene barrios asociados.")) return;
     if (selectedCity?.id === id) { setSelectedCity(null); setNeighborhoods([]); }
-    const { error } = await supabase.from("cities").delete().eq("id", id);
+    const { error } = await (supabase.from("cities") as any).delete().eq("id", id);
     if (error) toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     else { toast({ title: "Ciudad eliminada" }); if (selectedDept) fetchCities(selectedDept.id); }
   };
@@ -159,11 +159,11 @@ export function AdminGeografia({ toast }: Props) {
     if (!formData.name.trim() || !selectedCity) return;
     setIsSubmitting(true);
     if (neighDialog.mode === "add") {
-      const { error } = await supabase.from("neighborhoods").insert([{ name: formData.name, city_id: selectedCity.id }]);
+      const { error } = await (supabase.from("neighborhoods") as any).insert([{ name: formData.name, city_id: selectedCity.id }]);
       if (error) toast({ title: "Error al crear", description: error.message, variant: "destructive" });
       else toast({ title: "Barrio creado" });
     } else {
-      const { error } = await supabase.from("neighborhoods").update({ name: formData.name }).eq("id", neighDialog.data.id);
+      const { error } = await (supabase.from("neighborhoods") as any).update({ name: formData.name }).eq("id", neighDialog.data.id);
       if (error) toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
       else toast({ title: "Barrio actualizado" });
     }
@@ -174,7 +174,7 @@ export function AdminGeografia({ toast }: Props) {
 
   const handleDeleteNeigh = async (id: string) => {
     if (!window.confirm("¿Seguro? Fallará si hay propiedades usándolo.")) return;
-    const { error } = await supabase.from("neighborhoods").delete().eq("id", id);
+    const { error } = await (supabase.from("neighborhoods") as any).delete().eq("id", id);
     if (error) toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     else { toast({ title: "Barrio eliminado" }); if (selectedCity) fetchNeighborhoods(selectedCity.id); }
   };

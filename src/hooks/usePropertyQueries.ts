@@ -102,32 +102,32 @@ export function usePropertyQueries() {
                 
                 // Perfiles de quienes agregaron los listings
                 addedByIds.length > 0 
-                  ? supabase.from("profiles").select("user_id, email, display_name").in("user_id", addedByIds)
+                  ? (supabase.from("profiles") as any).select("user_id, email, display_name").in("user_id", addedByIds)
                   : Promise.resolve({ data: [] }),
                 
                 // Logs de estado: Contactado
                 contactadoListingIds.length > 0
-                  ? supabase.from("status_history_log").select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
+                  ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [] }),
 
                 // Logs de estado: Descartado
                 descartadoListingIds.length > 0
-                  ? supabase.from("status_history_log").select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
+                  ? (supabase.from("status_history_log") as any).select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [] }),
 
                 // Logs de estado: Visita Coordinada
                 coordinadaListingIds.length > 0
-                  ? supabase.from("status_history_log").select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
+                  ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [] }),
 
                 // Comentarios
                 listingIds.length > 0
-                  ? supabase.from("family_comments").select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
+                  ? (supabase.from("family_comments") as any).select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
                   : Promise.resolve({ data: [] }),
 
                 // Adjuntos privados
                 listingIds.length > 0
-                  ? supabase.from("user_listing_attachments").select("user_listing_id, image_url").in("user_listing_id", listingIds)
+                  ? (supabase.from("user_listing_attachments") as any).select("user_listing_id, image_url").in("user_listing_id", listingIds)
                   : Promise.resolve({ data: [] }),
 
                 // Contactos de marketplace

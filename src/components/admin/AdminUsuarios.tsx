@@ -96,11 +96,11 @@ export function AdminUsuarios({ toast }: Props) {
 
             // Obtenemos membresías de cada usuario para luego buscar la agencia a la que pertenecen
             const [rolesRes, listingsRes, membershipsRes, referralsRes, referrersNamesRes] = await Promise.all([
-                supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
-                supabase.from("user_listings").select("added_by, source_publication_id").in("added_by", userIds),
-                supabase.from("organization_members").select("user_id, org_id").in("user_id", userIds),
-                supabase.from("profiles").select("user_id, referred_by_id").in("referred_by_id", userIds),
-                supabase.from("profiles").select("user_id, display_name").in("user_id", referrerIds),
+                (supabase.from("user_roles") as any).select("user_id, role").in("user_id", userIds),
+                (supabase.from("user_listings") as any).select("added_by, source_publication_id").in("added_by", userIds),
+                (supabase.from("organization_members") as any).select("user_id, org_id").in("user_id", userIds),
+                (supabase.from("profiles") as any).select("user_id, referred_by_id").in("referred_by_id", userIds),
+                (supabase.from("profiles") as any).select("user_id, display_name").in("user_id", referrerIds),
             ]);
 
             // Buscar nombres de agencias (agency_team, no personal) para las orgs encontradas
@@ -199,7 +199,7 @@ export function AdminUsuarios({ toast }: Props) {
     const updateStatus = async (userId: string, newStatus: UserProfile["status"]) => {
         const previousUsers = users;
         setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, status: newStatus } : u));
-        const { error } = await supabase.rpc("admin_update_profile_status", { _user_id: userId, _status: newStatus });
+        const { error } = await (supabase.rpc("admin_update_profile_status", { _user_id: userId, _status: newStatus }) as any);
         if (error) {
             setUsers(previousUsers);
             toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -211,7 +211,7 @@ export function AdminUsuarios({ toast }: Props) {
     const updatePlan = async (userId: string, newPlan: "free" | "premium") => {
         const previousUsers = users;
         setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, plan_type: newPlan } : u));
-        const { error } = await supabase.from("profiles").update({ plan_type: newPlan }).eq("user_id", userId);
+        const { error } = await (supabase.from("profiles") as any).update({ plan_type: newPlan }).eq("user_id", userId);
         if (error) {
             setUsers(previousUsers);
             toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -264,7 +264,7 @@ export function AdminUsuarios({ toast }: Props) {
             setIsActionInProgress(true);
             // Obtener el admin que ejecuta la acción para el log de auditoría
             const { data: { user: adminUser } } = await supabase.auth.getUser();
-            const { error } = await supabase.rpc("admin_physical_delete_user", {
+            const { error } = await (supabase.rpc("admin_physical_delete_user", {
                 _user_id: userId,
                 _reason: reason,
                 _deleted_by: adminUser?.id,

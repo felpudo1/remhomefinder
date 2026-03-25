@@ -140,7 +140,7 @@ export function usePropertyMutations() {
                     image_url,
                     added_by: user.id,
                 }));
-                await supabase.from("user_listing_attachments").insert(rows);
+                await (supabase.from("user_listing_attachments") as any).insert(rows);
             }
             return listing;
         },
@@ -278,7 +278,7 @@ export function usePropertyMutations() {
                     attribute_id,
                     score: 1,
                 }));
-                const { error: scoresError } = await supabase.from("attribute_scores").insert(rows);
+                const { error: scoresError } = await (supabase.from("attribute_scores") as any).insert(rows);
                 if (scoresError) throw scoresError;
             }
 
@@ -296,7 +296,7 @@ export function usePropertyMutations() {
                 }));
                 const allRows = [...positiveRows, ...negativeRows];
                 if (allRows.length > 0) {
-                    const { error: scoresError } = await supabase.from("attribute_scores").insert(allRows);
+                    const { error: scoresError } = await (supabase.from("attribute_scores") as any).insert(allRows);
                     if (scoresError) throw scoresError;
                 }
             }
@@ -349,7 +349,7 @@ export function usePropertyMutations() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No autenticado");
 
-            const { data, error } = await supabase.from("family_comments").insert({
+            const { data, error } = await (supabase.from("family_comments") as any).insert({
                 user_listing_id: propertyId,
                 user_id: user.id,
                 author: comment.author,

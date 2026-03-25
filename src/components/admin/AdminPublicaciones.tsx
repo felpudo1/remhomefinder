@@ -212,7 +212,7 @@ export function AdminPublicaciones({ toast }: Props) {
       return;
     }
 
-    const { error } = await supabase.from("user_listings").delete().eq("id", id);
+    const { error } = await (supabase.from("user_listings") as any).delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     } else {
@@ -231,7 +231,7 @@ export function AdminPublicaciones({ toast }: Props) {
           .eq("property_id", propertyId);
 
         if ((listingsCount ?? 0) === 0 && (pubsCount ?? 0) === 0) {
-          await supabase.from("properties").delete().eq("id", propertyId);
+          await (supabase.from("properties") as any).delete().eq("id", propertyId);
         }
       }
       setUserProps(p => p.filter(prop => prop.id !== id));
@@ -298,7 +298,7 @@ export function AdminPublicaciones({ toast }: Props) {
 
     const propertyId = deleteMktTarget.property_id;
 
-    const { error } = await supabase.from("agent_publications").delete().eq("id", id);
+    const { error } = await (supabase.from("agent_publications") as any).delete().eq("id", id);
     if (error) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
       fetchMktProperties();
@@ -316,7 +316,7 @@ export function AdminPublicaciones({ toast }: Props) {
           .eq("property_id", propertyId);
 
         if ((listingsCount ?? 0) === 0 && (pubsCount ?? 0) === 0) {
-          await supabase.from("properties").delete().eq("id", propertyId);
+          await (supabase.from("properties") as any).delete().eq("id", propertyId);
         }
       }
       toast({ title: "Publicación eliminada del marketplace" });

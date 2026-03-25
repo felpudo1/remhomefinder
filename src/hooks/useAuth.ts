@@ -140,7 +140,7 @@ export const useAuth = () => {
                     const referralId = sessionStorage.getItem("hf_referral_id");
                     let lastError: unknown = null;
                     for (let i = 0; i < retries; i++) {
-                        const { error: profileError } = await supabase.from("profiles").upsert({
+                        const { error: profileError } = await (supabase.from("profiles") as any).upsert({
                             user_id: data.user!.id,
                             phone: phone,
                             display_name: displayName,

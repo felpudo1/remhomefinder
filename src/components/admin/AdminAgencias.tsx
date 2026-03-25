@@ -70,9 +70,9 @@ export function AdminAgencias({ toast }: Props) {
 
             // Get organizations (agency_team type) and publication counts
             const [orgsRes, pubCountsRes, referrersRes] = await Promise.all([
-                supabase.from("organizations").select("id, name, created_by, type").eq("type", "agency_team" satisfies OrgType),
-                supabase.from("agent_publications").select("org_id"),
-                supabase.from("profiles").select("user_id, display_name").in("user_id", [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))]),
+                (supabase.from("organizations") as any).select("id, name, created_by, type").eq("type", "agency_team" satisfies OrgType),
+                (supabase.from("agent_publications") as any).select("org_id"),
+                (supabase.from("profiles") as any).select("user_id, display_name").in("user_id", [...new Set(profiles.map(p => p.referred_by_id).filter(Boolean))]),
             ]);
 
             // Map orgs to users

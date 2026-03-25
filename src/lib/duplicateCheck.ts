@@ -101,7 +101,7 @@ export async function checkUrlStatus(
 
   // Contar cuántos usuarios (distintos) guardaron esta property en toda la app.
   // Se usa RPC para evitar limitaciones de visibilidad por RLS entre organizaciones.
-  const { data: rpcUsersCount } = await supabase.rpc("count_property_listing_users", {
+  const { data: rpcUsersCount } = await (supabase.rpc("count_property_listing_users", {
     _property_id: prop.id,
   });
 

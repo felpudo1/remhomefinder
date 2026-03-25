@@ -38,7 +38,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("departments").select("id, name").order("name").then(({ data }) => {
+    (supabase.from("departments") as any).select("id, name").order("name").then(({ data }) => {
       if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);

@@ -258,7 +258,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
 
     // Map agent_pub_status values for status changes
     const handleChangeStatus = async (id: string, newStatus: string) => {
-        const { error } = await supabase.from("agent_publications").update({ status: newStatus as AgentPubStatus }).eq("id", id);
+        const { error } = await (supabase.from("agent_publications") as any).update({ status: newStatus as AgentPubStatus }).eq("id", id);
         if (error) { toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" }); }
         else {
             toast({ title: "Estado actualizado", description: `La propiedad ahora está ${PROPERTY_STATUS_LABELS[newStatus] || newStatus}` });
