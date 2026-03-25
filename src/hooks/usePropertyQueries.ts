@@ -200,62 +200,46 @@ export function usePropertyQueries() {
                 addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario";
             });
 
+            // Procesar resultado consolidado de status_history_log (1 query en vez de 3)
             const contactedNameMap: Record<string, string> = {};
             const contactedByMap: Record<string, string> = {};
-            const contactadoChangedByIds: string[] = [];
-            if (contactadoResult.data) {
-                const seen = new Set<string>();
-                contactadoResult.data.forEach((log: any) => {
-                    if (seen.has(log.user_listing_id)) return;
-                    seen.add(log.user_listing_id);
-                    const meta = log.event_metadata as { contacted_name?: string } | null;
-                    if (meta?.contacted_name) contactedNameMap[log.user_listing_id] = meta.contacted_name;
-                    if (log.changed_by) {
-                        contactedByMap[log.user_listing_id] = log.changed_by;
-                        contactadoChangedByIds.push(log.changed_by);
-                    }
-                });
-            }
-
             const discardedByMap: Record<string, string> = {};
             const discardedReasonMap: Record<string, string> = {};
-            const descartadoChangedByIds: string[] = [];
-            if (descartadoResult.data) {
-                const seen = new Set<string>();
-                descartadoResult.data.forEach((log: any) => {
-                    if (seen.has(log.user_listing_id)) return;
-                    seen.add(log.user_listing_id);
-                    const meta = log.event_metadata as { reason?: string } | null;
-                    if (meta?.reason) discardedReasonMap[log.user_listing_id] = meta.reason;
-                    if (log.changed_by) {
-                        discardedByMap[log.user_listing_id] = log.changed_by;
-                        descartadoChangedByIds.push(log.changed_by);
-                    }
-                });
-            }
-
             const coordinatedDateMap: Record<string, Date> = {};
             const coordinatedByMap: Record<string, string> = {};
-            const coordinadaChangedByIds: string[] = [];
-            if (coordinadaResult.data) {
-                const seen = new Set<string>();
-                coordinadaResult.data.forEach((log: any) => {
-                    if (seen.has(log.user_listing_id)) return;
-                    seen.add(log.user_listing_id);
-                    const meta = log.event_metadata as { coordinated_date?: string } | null;
-                    if (meta?.coordinated_date) {
-                        const d = new Date(meta.coordinated_date);
-                        if (!isNaN(d.getTime())) coordinatedDateMap[log.user_listing_id] = d;
-                    }
-                    if (log.changed_by) {
-                        coordinatedByMap[log.user_listing_id] = log.changed_by;
-                        coordinadaChangedByIds.push(log.changed_by);
+            const allChangerIdSet = new Set<string>();
+
+            if (statusHistoryResult.data) {
+                const seenContactado = new Set<string>();
+                const seenDescartado = new Set<string>();
+                const seenCoordinada = new Set<string>();
+
+                (statusHistoryResult.data as any[]).forEach((log: any) => {
+                    const lid = log.user_listing_id;
+                    if (log.new_status === "contactado" && !seenContactado.has(lid)) {
+                        seenContactado.add(lid);
+                        const meta = log.event_metadata as { contacted_name?: string } | null;
+                        if (meta?.contacted_name) contactedNameMap[lid] = meta.contacted_name;
+                        if (log.changed_by) { contactedByMap[lid] = log.changed_by; allChangerIdSet.add(log.changed_by); }
+                    } else if (log.new_status === "descartado" && !seenDescartado.has(lid)) {
+                        seenDescartado.add(lid);
+                        const meta = log.event_metadata as { reason?: string } | null;
+                        if (meta?.reason) discardedReasonMap[lid] = meta.reason;
+                        if (log.changed_by) { discardedByMap[lid] = log.changed_by; allChangerIdSet.add(log.changed_by); }
+                    } else if (log.new_status === "visita_coordinada" && !seenCoordinada.has(lid)) {
+                        seenCoordinada.add(lid);
+                        const meta = log.event_metadata as { coordinated_date?: string } | null;
+                        if (meta?.coordinated_date) {
+                            const d = new Date(meta.coordinated_date);
+                            if (!isNaN(d.getTime())) coordinatedDateMap[lid] = d;
+                        }
+                        if (log.changed_by) { coordinatedByMap[lid] = log.changed_by; allChangerIdSet.add(log.changed_by); }
                     }
                 });
             }
 
             // Resolver nombres de changers
-            const allChangerIds = [...new Set([...contactadoChangedByIds, ...descartadoChangedByIds, ...coordinadaChangedByIds])];
+            const allChangerIds = [...allChangerIdSet];
             if (allChangerIds.length > 0) {
                 const { data: changerProfiles } = await supabase
                     .from("profiles")
