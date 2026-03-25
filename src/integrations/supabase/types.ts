@@ -434,6 +434,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           is_system_delegate: boolean
           org_id: string
           role: Database["public"]["Enums"]["org_role"]
@@ -442,6 +443,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           is_system_delegate?: boolean
           org_id: string
           role?: Database["public"]["Enums"]["org_role"]
@@ -450,6 +452,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           is_system_delegate?: boolean
           org_id?: string
           role?: Database["public"]["Enums"]["org_role"]
@@ -474,12 +477,17 @@ export type Database = {
       }
       organizations: {
         Row: {
+          contact_email: string
+          contact_name: string
+          contact_person_phone: string
+          contact_phone: string
           created_at: string
           created_by: string
           description: string
           id: string
           invite_code: string
           is_personal: boolean
+          logo_url: string
           name: string
           parent_id: string | null
           plan_type: string
@@ -487,12 +495,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_email?: string
+          contact_name?: string
+          contact_person_phone?: string
+          contact_phone?: string
           created_at?: string
           created_by: string
           description?: string
           id?: string
           invite_code?: string
           is_personal?: boolean
+          logo_url?: string
           name: string
           parent_id?: string | null
           plan_type?: string
@@ -500,12 +513,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_email?: string
+          contact_name?: string
+          contact_person_phone?: string
+          contact_phone?: string
           created_at?: string
           created_by?: string
           description?: string
           id?: string
           invite_code?: string
           is_personal?: boolean
+          logo_url?: string
           name?: string
           parent_id?: string | null
           plan_type?: string
@@ -600,6 +618,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
           avatar_url: string
           created_at: string
           display_name: string
@@ -613,6 +632,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
           avatar_url?: string
           created_at?: string
           display_name?: string
@@ -626,6 +646,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
           avatar_url?: string
           created_at?: string
           display_name?: string
@@ -850,6 +871,39 @@ export type Database = {
           },
         ]
       }
+      publication_deletion_audit_log: {
+        Row: {
+          created_at: string
+          deleted_by: string
+          deleted_by_name: string | null
+          id: string
+          org_name: string | null
+          property_title: string | null
+          pub_id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_by: string
+          deleted_by_name?: string | null
+          id?: string
+          org_name?: string | null
+          property_title?: string | null
+          pub_id: string
+          reason?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_by?: string
+          deleted_by_name?: string | null
+          id?: string
+          org_name?: string | null
+          property_title?: string | null
+          pub_id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       scrape_usage_log: {
         Row: {
           channel: string
@@ -999,6 +1053,7 @@ export type Database = {
       user_listings: {
         Row: {
           added_by: string
+          admin_hidden: boolean
           contact_name: string | null
           contact_phone: string | null
           contact_source: string | null
@@ -1013,6 +1068,7 @@ export type Database = {
         }
         Insert: {
           added_by: string
+          admin_hidden?: boolean
           contact_name?: string | null
           contact_phone?: string | null
           contact_source?: string | null
@@ -1027,6 +1083,7 @@ export type Database = {
         }
         Update: {
           added_by?: string
+          admin_hidden?: boolean
           contact_name?: string | null
           contact_phone?: string | null
           contact_source?: string | null
@@ -1287,6 +1344,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_physical_delete_user: {
+        Args: { _deleted_by: string; _reason: string; _user_id: string }
+        Returns: undefined
+      }
       admin_update_profile_status: {
         Args: {
           _status: Database["public"]["Enums"]["user_status"]
@@ -1362,6 +1423,10 @@ export type Database = {
         Returns: boolean
       }
       is_system_delegate: { Args: { _user_id: string }; Returns: boolean }
+      update_organization_logo_url: {
+        Args: { _logo_url: string; _org_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       agent_pub_status:
