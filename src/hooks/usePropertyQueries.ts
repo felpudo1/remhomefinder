@@ -103,26 +103,25 @@ export function usePropertyQueries() {
 
     const query = useInfiniteQuery({
         queryKey: ["properties", currentUserId],
+        // Punto 1 (Checklist): No disparar query sin usuario autenticado
+        enabled: !!currentUserId,
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage: Property[]) => {
-            if (lastPage.length < PAGE_SIZE) return undefined; // No more pages
-            // Cursor = created_at ISO string del último item de la página
+            if (lastPage.length < PAGE_SIZE) return undefined;
             const lastItem = lastPage[lastPage.length - 1];
             return lastItem?.createdAt?.toISOString() ?? undefined;
         },
         queryFn: async ({ pageParam }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            const userId = user?.id || null;
+            const userId = currentUserId;
 
-            // 1. Get user listings with cursor-based pagination
+            // Punto 5 (Checklist): Select proyectado — solo columnas usadas en tarjetas
             let listingsQuery = (supabase
                 .from("user_listings")
-                .select("*, properties(*), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, org_id, published_by, organizations(name))") as any)
+                .select(`*, properties(${PROPERTY_COLUMNS}), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, org_id, published_by, organizations(name))`) as any)
                 .eq("admin_hidden", false)
                 .order("created_at", { ascending: false })
                 .limit(PAGE_SIZE);
 
-            // Cursor: cargar items más antiguos que el cursor
             if (pageParam) {
                 listingsQuery = listingsQuery.lt("created_at", pageParam);
             }
@@ -134,18 +133,19 @@ export function usePropertyQueries() {
 
             const listingIds = listings.map((l: any) => l.id);
             const addedByIds: string[] = [...new Set(listings.map((l: any) => l.added_by).filter(Boolean))] as string[];
-            const contactadoListingIds = listings.filter((l: any) => l.current_status === "contactado").map((l: any) => l.id);
-            const descartadoListingIds = listings.filter((l: any) => l.current_status === "descartado").map((l: any) => l.id);
-            const coordinadaListingIds = listings.filter((l: any) => l.current_status === "visita_coordinada").map((l: any) => l.id);
             const sourcePublicationIds = Array.from(new Set(listings.map((l: any) => l.source_publication_id).filter(Boolean))) as string[];
 
-            // Queries paralelas para datos complementarios (solo IDs de esta página)
+            // Punto 2 (Checklist): Consolidar 3 queries de status_history_log en 1
+            // En vez de 3 queries separadas (contactado, descartado, visita_coordinada),
+            // hacemos UNA sola query con los IDs de todos los listings que necesitan historial.
+            const statusListingIds = listings
+                .filter((l: any) => ["contactado", "descartado", "visita_coordinada"].includes(l.current_status))
+                .map((l: any) => l.id);
+
             const [
                 readsResult,
                 profilesResult,
-                contactadoResult,
-                descartadoResult,
-                coordinadaResult,
+                statusHistoryResult,
                 commentsResult,
                 attachmentsResult,
                 contactsResult,
@@ -157,14 +157,13 @@ export function usePropertyQueries() {
                 addedByIds.length > 0
                     ? (supabase.from("profiles") as any).select("user_id, email, display_name").in("user_id", addedByIds)
                     : Promise.resolve({ data: [] }),
-                contactadoListingIds.length > 0
-                    ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
-                    : Promise.resolve({ data: [] }),
-                descartadoListingIds.length > 0
-                    ? (supabase.from("status_history_log") as any).select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
-                    : Promise.resolve({ data: [] }),
-                coordinadaListingIds.length > 0
-                    ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
+                // UNA sola query de status_history_log para todos los estados relevantes
+                statusListingIds.length > 0
+                    ? (supabase.from("status_history_log") as any)
+                        .select("user_listing_id, new_status, event_metadata, changed_by, created_at")
+                        .in("user_listing_id", statusListingIds)
+                        .in("new_status", ["contactado", "descartado", "visita_coordinada"])
+                        .order("created_at", { ascending: false })
                     : Promise.resolve({ data: [] }),
                 listingIds.length > 0
                     ? (supabase.from("family_comments") as any).select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
