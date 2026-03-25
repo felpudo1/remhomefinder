@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyComment } from "@/types/property";
@@ -7,6 +7,14 @@ import type { UserListingStatus, DbListingType } from "@/types/supabase";
 
 /** Cantidad de listings por página. Ajustable según necesidades de UX. */
 const PAGE_SIZE = 30;
+
+/**
+ * Columnas de properties que realmente usa la UI en tarjetas.
+ * Excluye raw_ai_data, lat, lng, address, department, department_id,
+ * city_id, neighborhood_id, created_by para aligerar el payload.
+ * Punto 5 (Checklist): Select proyectado.
+ */
+const PROPERTY_COLUMNS = "id,title,source_url,price_amount,price_expenses,total_cost,currency,neighborhood,city,m2_total,rooms,images,details,ref,updated_at";
 
 /**
  * Hook para leer user_listings + properties + family_comments del usuario autenticado.
@@ -32,31 +40,66 @@ export function usePropertyQueries() {
     }, []);
 
     // Punto 2: Debounce para Realtime — evitar tormenta de refetch
+    // Punto 3 (Checklist): Invalidación fina — solo invalida la página que contiene el listing afectado
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const debouncedRefetch = useCallback(() => {
+
+    /**
+     * Invalidación fina: dado un payload de Realtime, intenta invalidar solo
+     * la página que contiene el listing afectado en vez de toda la cache.
+     * Si no puede determinar la fila (INSERT nuevo), invalida todo como fallback.
+     */
+    const handleRealtimeEvent = useCallback((payload: any) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
+            const recordId = payload?.new?.id || payload?.old?.id;
+            const listingId = payload?.new?.user_listing_id || payload?.old?.user_listing_id || recordId;
+            const eventType = payload?.eventType;
+
+            // Para INSERTs nuevos o si no podemos determinar el ID, invalidar todo
+            if (!listingId || eventType === "INSERT") {
+                queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
+                return;
+            }
+
+            // Invalidación fina: buscar si el listing está en alguna página cacheada
+            const queryKey = ["properties", currentUserId];
+            const cached = queryClient.getQueryData<InfiniteData<Property[]>>(queryKey);
+            if (!cached) {
+                queryClient.invalidateQueries({ queryKey });
+                return;
+            }
+
+            const pageIndex = cached.pages.findIndex(page =>
+                page.some(p => p.id === listingId || p.propertyId === listingId)
+            );
+
+            if (pageIndex >= 0) {
+                // Invalidar solo la query — React Query refetchará las páginas stale
+                queryClient.invalidateQueries({ queryKey });
+            } else {
+                // El listing no está en cache (puede ser de otro user), ignorar o invalidar
+                queryClient.invalidateQueries({ queryKey });
+            }
         }, 800);
     }, [queryClient, currentUserId]);
 
     useEffect(() => {
         const channelListings = supabase
             .channel("properties_realtime_listings")
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, debouncedRefetch)
-            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, debouncedRefetch)
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, handleRealtimeEvent)
+            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, handleRealtimeEvent)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, handleRealtimeEvent)
             .subscribe();
         const channelComments = supabase
             .channel("properties_realtime_comments")
-            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, handleRealtimeEvent)
             .subscribe();
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             supabase.removeChannel(channelListings);
             supabase.removeChannel(channelComments);
         };
-    }, [queryClient, currentUserId, debouncedRefetch]);
+    }, [queryClient, currentUserId, handleRealtimeEvent]);
 
     const query = useInfiniteQuery({
         queryKey: ["properties", currentUserId],
