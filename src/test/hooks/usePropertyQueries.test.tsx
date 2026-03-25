@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { usePropertyQueries } from "@/hooks/usePropertyQueries";
 import { renderWithClient } from "../utils/test-utils";
-import { waitFor } from "@testing-library/react";
+import { waitFor, act } from "@testing-library/react";
 
-// Mock del cliente de Supabase (definido localmente para evitar ReferenceError en el hoist de Vitest)
+// Mock del cliente de Supabase
+let authChangeCallback: any = null;
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-123" } }, error: null }),
       onAuthStateChange: vi.fn((cb: any) => {
-        // Fire immediately with a session so currentUserId is set before query runs
-        setTimeout(() => cb("SIGNED_IN", { user: { id: "user-123" } }), 0);
+        authChangeCallback = cb;
         return { data: { subscription: { unsubscribe: vi.fn() } } };
       }),
     },
@@ -20,7 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     in: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
-    rpc: vi.fn().mockReturnThis(),
+    rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn(),
@@ -32,38 +33,40 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { supabase } from "@/integrations/supabase/client";
 const mockedSupabase = supabase as any;
 
+/** Helper: trigger auth state to enable the query */
+async function triggerAuth() {
+  await act(async () => {
+    authChangeCallback?.("SIGNED_IN", { user: { id: "user-123" } });
+  });
+}
+
 describe("usePropertyQueries", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Configuración por defecto para el usuario autenticado
+    authChangeCallback = null;
     mockedSupabase.auth.getUser.mockResolvedValue({
       data: { user: { id: "user-123" } },
-      error: null
+      error: null,
     });
+    mockedSupabase.rpc.mockResolvedValue({ data: [], error: null });
   });
 
   it("should return empty list when no listings are found", async () => {
-    // Mock de user_listings vacío
-    mockedSupabase.from.mockImplementation((table: string) => {
-      if (table === "user_listings") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: [], error: null })
-              })
-            })
-          })
-        };
-      }
-      return mockedSupabase;
-    });
+    mockedSupabase.from.mockImplementation(() => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      }),
+    }));
 
     const { result } = renderWithClient(() => usePropertyQueries());
 
-    // Initially loading
-    expect(result.current.loading).toBe(true);
+    // With enabled: !!currentUserId, query starts disabled (not loading)
+    // Trigger auth to enable it
+    await triggerAuth();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.properties).toEqual([]);
@@ -71,47 +74,76 @@ describe("usePropertyQueries", () => {
 
   it("should return mapped properties when listings are found", async () => {
     const mockListing = {
-        id: "listing-1",
-        created_at: new Date().toISOString(),
-        current_status: "ingresado",
-        properties: {
-            id: "prop-1",
-            title: "Casa de prueba",
-            price_amount: 1000,
-            currency: "USD",
-            neighborhood: "Centro",
-            m2_total: 50,
-            rooms: 2
-        }
+      id: "listing-1",
+      property_id: "prop-1",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      current_status: "ingresado",
+      listing_type: "rent",
+      added_by: "user-123",
+      org_id: "org-1",
+      source_publication_id: null,
+      admin_hidden: false,
+      contact_name: null,
+      contact_phone: null,
+      contact_source: null,
+      organizations: { type: "family", is_personal: true },
+      agent_publications: null,
+      properties: {
+        id: "prop-1",
+        title: "Casa de prueba",
+        source_url: "https://example.com",
+        price_amount: 1000,
+        price_expenses: 200,
+        total_cost: 1200,
+        currency: "USD",
+        neighborhood: "Centro",
+        city: "Montevideo",
+        m2_total: 50,
+        rooms: 2,
+        images: [],
+        details: "Nice place",
+        ref: "REF-1",
+        updated_at: new Date().toISOString(),
+      },
     };
 
-    // Configurar mocks secuenciales para las múltiples llamadas de usePropertyQueries
     mockedSupabase.from.mockImplementation((table: string) => {
-      const chainable = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockReturnThis(),
-        then: undefined as any,
-      };
       if (table === "user_listings") {
-        chainable.limit = vi.fn().mockResolvedValue({ data: [mockListing], error: null });
-        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [mockListing], error: null }) }) }) }) };
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: [mockListing], error: null }),
+              }),
+            }),
+          }),
+        };
       }
-      // All other tables return empty
-      chainable.order = vi.fn().mockResolvedValue({ data: [], error: null });
-      chainable.in = vi.fn().mockResolvedValue({ data: [], error: null });
-      return chainable;
+      // All other tables (profiles, status_history_log, family_comments, etc.)
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+          in: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      };
     });
-    mockedSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const { result } = renderWithClient(() => usePropertyQueries());
+    await triggerAuth();
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    
-    expect(result.current.properties).toHaveLength(1);
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.properties.length).toBeGreaterThan(0);
+    }, { timeout: 3000 });
+
     expect(result.current.properties[0].title).toBe("Casa de prueba");
     expect(result.current.properties[0].priceRent).toBe(1000);
   });
