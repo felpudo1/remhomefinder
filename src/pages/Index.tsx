@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useLayoutEffect } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
@@ -640,22 +640,12 @@ const Index = () => {
                           ))}
                         </div>
                       )}
-                      {/* Paginación cursor-based: botón "Cargar más" */}
+                      {/* Punto 4 (Checklist): Prefetch agresivo — sentinel con IntersectionObserver */}
                       {hasNextPage && !loading && (
-                        <div className="flex justify-center py-6">
-                          <Button
-                            variant="outline"
-                            onClick={() => fetchNextPage()}
-                            disabled={isFetchingNextPage}
-                            className="gap-2"
-                          >
-                            {isFetchingNextPage ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Cargando...</>
-                            ) : (
-                              "Cargar más propiedades"
-                            )}
-                          </Button>
-                        </div>
+                        <LoadMoreSentinel
+                          fetchNextPage={fetchNextPage}
+                          isFetchingNextPage={isFetchingNextPage}
+                        />
                       )}
                     </main>
                   </div>
@@ -790,5 +780,46 @@ const Index = () => {
     </div>
   );
 };
+
+/**
+ * Punto 4 (Checklist): Sentinel invisible que dispara prefetch cuando el usuario
+ * está a ~2 pantallas del final del listado. Usa IntersectionObserver con rootMargin.
+ */
+function LoadMoreSentinel({
+  fetchNextPage,
+  isFetchingNextPage,
+}: {
+  fetchNextPage: () => void;
+  isFetchingNextPage: boolean;
+}) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "600px" } // ~2 pantallas antes del final
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchNextPage, isFetchingNextPage]);
+
+  return (
+    <div ref={sentinelRef} className="flex justify-center py-6">
+      {isFetchingNextPage && (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" /> Cargando más...
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default Index;

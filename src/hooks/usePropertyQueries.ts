@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyComment } from "@/types/property";
@@ -7,6 +7,14 @@ import type { UserListingStatus, DbListingType } from "@/types/supabase";
 
 /** Cantidad de listings por página. Ajustable según necesidades de UX. */
 const PAGE_SIZE = 30;
+
+/**
+ * Columnas de properties que realmente usa la UI en tarjetas.
+ * Excluye raw_ai_data, lat, lng, address, department, department_id,
+ * city_id, neighborhood_id, created_by para aligerar el payload.
+ * Punto 5 (Checklist): Select proyectado.
+ */
+const PROPERTY_COLUMNS = "id,title,source_url,price_amount,price_expenses,total_cost,currency,neighborhood,city,m2_total,rooms,images,details,ref,updated_at";
 
 /**
  * Hook para leer user_listings + properties + family_comments del usuario autenticado.
@@ -32,54 +40,88 @@ export function usePropertyQueries() {
     }, []);
 
     // Punto 2: Debounce para Realtime — evitar tormenta de refetch
+    // Punto 3 (Checklist): Invalidación fina — solo invalida la página que contiene el listing afectado
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const debouncedRefetch = useCallback(() => {
+
+    /**
+     * Invalidación fina: dado un payload de Realtime, intenta invalidar solo
+     * la página que contiene el listing afectado en vez de toda la cache.
+     * Si no puede determinar la fila (INSERT nuevo), invalida todo como fallback.
+     */
+    const handleRealtimeEvent = useCallback((payload: any) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
+            const recordId = payload?.new?.id || payload?.old?.id;
+            const listingId = payload?.new?.user_listing_id || payload?.old?.user_listing_id || recordId;
+            const eventType = payload?.eventType;
+
+            // Para INSERTs nuevos o si no podemos determinar el ID, invalidar todo
+            if (!listingId || eventType === "INSERT") {
+                queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
+                return;
+            }
+
+            // Invalidación fina: buscar si el listing está en alguna página cacheada
+            const queryKey = ["properties", currentUserId];
+            const cached = queryClient.getQueryData<InfiniteData<Property[]>>(queryKey);
+            if (!cached) {
+                queryClient.invalidateQueries({ queryKey });
+                return;
+            }
+
+            const pageIndex = cached.pages.findIndex(page =>
+                page.some(p => p.id === listingId || p.propertyId === listingId)
+            );
+
+            if (pageIndex >= 0) {
+                // Invalidar solo la query — React Query refetchará las páginas stale
+                queryClient.invalidateQueries({ queryKey });
+            } else {
+                // El listing no está en cache (puede ser de otro user), ignorar o invalidar
+                queryClient.invalidateQueries({ queryKey });
+            }
         }, 800);
     }, [queryClient, currentUserId]);
 
     useEffect(() => {
         const channelListings = supabase
             .channel("properties_realtime_listings")
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, debouncedRefetch)
-            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, debouncedRefetch)
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, handleRealtimeEvent)
+            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, handleRealtimeEvent)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, handleRealtimeEvent)
             .subscribe();
         const channelComments = supabase
             .channel("properties_realtime_comments")
-            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, handleRealtimeEvent)
             .subscribe();
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             supabase.removeChannel(channelListings);
             supabase.removeChannel(channelComments);
         };
-    }, [queryClient, currentUserId, debouncedRefetch]);
+    }, [queryClient, currentUserId, handleRealtimeEvent]);
 
     const query = useInfiniteQuery({
         queryKey: ["properties", currentUserId],
+        // Punto 1 (Checklist): No disparar query sin usuario autenticado
+        enabled: !!currentUserId,
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage: Property[]) => {
-            if (lastPage.length < PAGE_SIZE) return undefined; // No more pages
-            // Cursor = created_at ISO string del último item de la página
+            if (lastPage.length < PAGE_SIZE) return undefined;
             const lastItem = lastPage[lastPage.length - 1];
             return lastItem?.createdAt?.toISOString() ?? undefined;
         },
         queryFn: async ({ pageParam }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            const userId = user?.id || null;
+            const userId = currentUserId;
 
-            // 1. Get user listings with cursor-based pagination
+            // Punto 5 (Checklist): Select proyectado — solo columnas usadas en tarjetas
             let listingsQuery = (supabase
                 .from("user_listings")
-                .select("*, properties(*), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, org_id, published_by, organizations(name))") as any)
+                .select(`*, properties(${PROPERTY_COLUMNS}), organizations(type, is_personal), agent_publications!user_listings_source_publication_id_fkey(id, org_id, published_by, organizations(name))`) as any)
                 .eq("admin_hidden", false)
                 .order("created_at", { ascending: false })
                 .limit(PAGE_SIZE);
 
-            // Cursor: cargar items más antiguos que el cursor
             if (pageParam) {
                 listingsQuery = listingsQuery.lt("created_at", pageParam);
             }
@@ -91,18 +133,19 @@ export function usePropertyQueries() {
 
             const listingIds = listings.map((l: any) => l.id);
             const addedByIds: string[] = [...new Set(listings.map((l: any) => l.added_by).filter(Boolean))] as string[];
-            const contactadoListingIds = listings.filter((l: any) => l.current_status === "contactado").map((l: any) => l.id);
-            const descartadoListingIds = listings.filter((l: any) => l.current_status === "descartado").map((l: any) => l.id);
-            const coordinadaListingIds = listings.filter((l: any) => l.current_status === "visita_coordinada").map((l: any) => l.id);
             const sourcePublicationIds = Array.from(new Set(listings.map((l: any) => l.source_publication_id).filter(Boolean))) as string[];
 
-            // Queries paralelas para datos complementarios (solo IDs de esta página)
+            // Punto 2 (Checklist): Consolidar 3 queries de status_history_log en 1
+            // En vez de 3 queries separadas (contactado, descartado, visita_coordinada),
+            // hacemos UNA sola query con los IDs de todos los listings que necesitan historial.
+            const statusListingIds = listings
+                .filter((l: any) => ["contactado", "descartado", "visita_coordinada"].includes(l.current_status))
+                .map((l: any) => l.id);
+
             const [
                 readsResult,
                 profilesResult,
-                contactadoResult,
-                descartadoResult,
-                coordinadaResult,
+                statusHistoryResult,
                 commentsResult,
                 attachmentsResult,
                 contactsResult,
@@ -114,14 +157,13 @@ export function usePropertyQueries() {
                 addedByIds.length > 0
                     ? (supabase.from("profiles") as any).select("user_id, email, display_name").in("user_id", addedByIds)
                     : Promise.resolve({ data: [] }),
-                contactadoListingIds.length > 0
-                    ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
-                    : Promise.resolve({ data: [] }),
-                descartadoListingIds.length > 0
-                    ? (supabase.from("status_history_log") as any).select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
-                    : Promise.resolve({ data: [] }),
-                coordinadaListingIds.length > 0
-                    ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
+                // UNA sola query de status_history_log para todos los estados relevantes
+                statusListingIds.length > 0
+                    ? (supabase.from("status_history_log") as any)
+                        .select("user_listing_id, new_status, event_metadata, changed_by, created_at")
+                        .in("user_listing_id", statusListingIds)
+                        .in("new_status", ["contactado", "descartado", "visita_coordinada"])
+                        .order("created_at", { ascending: false })
                     : Promise.resolve({ data: [] }),
                 listingIds.length > 0
                     ? (supabase.from("family_comments") as any).select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
@@ -158,62 +200,46 @@ export function usePropertyQueries() {
                 addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario";
             });
 
+            // Procesar resultado consolidado de status_history_log (1 query en vez de 3)
             const contactedNameMap: Record<string, string> = {};
             const contactedByMap: Record<string, string> = {};
-            const contactadoChangedByIds: string[] = [];
-            if (contactadoResult.data) {
-                const seen = new Set<string>();
-                contactadoResult.data.forEach((log: any) => {
-                    if (seen.has(log.user_listing_id)) return;
-                    seen.add(log.user_listing_id);
-                    const meta = log.event_metadata as { contacted_name?: string } | null;
-                    if (meta?.contacted_name) contactedNameMap[log.user_listing_id] = meta.contacted_name;
-                    if (log.changed_by) {
-                        contactedByMap[log.user_listing_id] = log.changed_by;
-                        contactadoChangedByIds.push(log.changed_by);
-                    }
-                });
-            }
-
             const discardedByMap: Record<string, string> = {};
             const discardedReasonMap: Record<string, string> = {};
-            const descartadoChangedByIds: string[] = [];
-            if (descartadoResult.data) {
-                const seen = new Set<string>();
-                descartadoResult.data.forEach((log: any) => {
-                    if (seen.has(log.user_listing_id)) return;
-                    seen.add(log.user_listing_id);
-                    const meta = log.event_metadata as { reason?: string } | null;
-                    if (meta?.reason) discardedReasonMap[log.user_listing_id] = meta.reason;
-                    if (log.changed_by) {
-                        discardedByMap[log.user_listing_id] = log.changed_by;
-                        descartadoChangedByIds.push(log.changed_by);
-                    }
-                });
-            }
-
             const coordinatedDateMap: Record<string, Date> = {};
             const coordinatedByMap: Record<string, string> = {};
-            const coordinadaChangedByIds: string[] = [];
-            if (coordinadaResult.data) {
-                const seen = new Set<string>();
-                coordinadaResult.data.forEach((log: any) => {
-                    if (seen.has(log.user_listing_id)) return;
-                    seen.add(log.user_listing_id);
-                    const meta = log.event_metadata as { coordinated_date?: string } | null;
-                    if (meta?.coordinated_date) {
-                        const d = new Date(meta.coordinated_date);
-                        if (!isNaN(d.getTime())) coordinatedDateMap[log.user_listing_id] = d;
-                    }
-                    if (log.changed_by) {
-                        coordinatedByMap[log.user_listing_id] = log.changed_by;
-                        coordinadaChangedByIds.push(log.changed_by);
+            const allChangerIdSet = new Set<string>();
+
+            if (statusHistoryResult.data) {
+                const seenContactado = new Set<string>();
+                const seenDescartado = new Set<string>();
+                const seenCoordinada = new Set<string>();
+
+                (statusHistoryResult.data as any[]).forEach((log: any) => {
+                    const lid = log.user_listing_id;
+                    if (log.new_status === "contactado" && !seenContactado.has(lid)) {
+                        seenContactado.add(lid);
+                        const meta = log.event_metadata as { contacted_name?: string } | null;
+                        if (meta?.contacted_name) contactedNameMap[lid] = meta.contacted_name;
+                        if (log.changed_by) { contactedByMap[lid] = log.changed_by; allChangerIdSet.add(log.changed_by); }
+                    } else if (log.new_status === "descartado" && !seenDescartado.has(lid)) {
+                        seenDescartado.add(lid);
+                        const meta = log.event_metadata as { reason?: string } | null;
+                        if (meta?.reason) discardedReasonMap[lid] = meta.reason;
+                        if (log.changed_by) { discardedByMap[lid] = log.changed_by; allChangerIdSet.add(log.changed_by); }
+                    } else if (log.new_status === "visita_coordinada" && !seenCoordinada.has(lid)) {
+                        seenCoordinada.add(lid);
+                        const meta = log.event_metadata as { coordinated_date?: string } | null;
+                        if (meta?.coordinated_date) {
+                            const d = new Date(meta.coordinated_date);
+                            if (!isNaN(d.getTime())) coordinatedDateMap[lid] = d;
+                        }
+                        if (log.changed_by) { coordinatedByMap[lid] = log.changed_by; allChangerIdSet.add(log.changed_by); }
                     }
                 });
             }
 
             // Resolver nombres de changers
-            const allChangerIds = [...new Set([...contactadoChangedByIds, ...descartadoChangedByIds, ...coordinadaChangedByIds])];
+            const allChangerIds = [...allChangerIdSet];
             if (allChangerIds.length > 0) {
                 const { data: changerProfiles } = await supabase
                     .from("profiles")
