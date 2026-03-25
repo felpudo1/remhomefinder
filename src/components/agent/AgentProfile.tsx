@@ -150,11 +150,25 @@ export const AgentProfile = ({ agency, profileStatus, onAgencyLogoUpdated }: Age
                         )}
                         <h2 className="text-xl font-semibold text-foreground">{agency.name}</h2>
                     </div>
-                    {agency.contact_name && <p className="text-sm text-foreground/80">Contacto: {agency.contact_name}</p>}
+                     {agency.contact_name && <p className="text-sm text-foreground/80">Contacto: {agency.contact_name}</p>}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         {agency.contact_email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{agency.contact_email}</span>}
                         {agency.contact_phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />Empresa: {agency.contact_phone}</span>}
                         {agency.contact_person_phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />Personal: {agency.contact_person_phone}</span>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                        {profile?.userId && (
+                            <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Ingreso: {new Date(agency.created_at).toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
+                            </span>
+                        )}
+                        {status === "active" && profile?.approvedAt && (
+                            <span className="flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Aprobado: {new Date(profile.approvedAt).toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
+                            </span>
+                        )}
                     </div>
                 </div>
                 {sc && StatusIcon && (
