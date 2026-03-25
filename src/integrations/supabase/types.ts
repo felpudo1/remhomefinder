@@ -1387,10 +1387,7 @@ export type Database = {
           publication_id: string
         }[]
       }
-      get_my_referrer_display_name: {
-        Args: Record<string, never>
-        Returns: string | null
-      }
+      get_my_referrer_display_name: { Args: never; Returns: string }
       get_publications_save_counts: {
         Args: { _publication_ids: string[] }
         Returns: {
