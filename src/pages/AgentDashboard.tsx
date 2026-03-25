@@ -92,7 +92,7 @@ const AgentDashboard = () => {
 
       if (org) {
         // Owner = solo si tiene role 'owner' en organization_members (RPC de BD, source of truth)
-        const { data: isOwnerResult, error: ownerErr } = await supabase.rpc("is_org_owner", {
+        const { data: isOwnerResult, error: ownerErr } = await (supabase.rpc("is_org_owner", {
           _user_id: user.id,
           _org_id: org.id,
         });

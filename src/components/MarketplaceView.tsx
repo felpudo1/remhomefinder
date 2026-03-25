@@ -91,10 +91,10 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         setNeighborhoods([]);
         return;
       }
-      const { data } = await supabase
+      const { data } = await (supabase
         .from("neighborhoods")
         .select("name")
-        .order("name");
+        .order("name") as any);
       if (data) {
         // Solo mostrar barrios que existan en la tabla normalizada Y que alguna propiedad los tenga
         const normalizedNames = new Set(data.map((n) => n.name));
@@ -130,11 +130,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
     setLoadingProfile(true);
     try {
-      const { data: searchProfile, error } = await supabase
+      const { data: searchProfile, error } = await (supabase
         .from('user_search_profiles')
         .select('*')
-        .eq('user_id', profile.userId)
-        .maybeSingle();
+        .eq('user_id', profile.userId as any)
+        .maybeSingle() as any);
 
       if (error) throw error;
 
@@ -160,13 +160,13 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
           // Mapeo de barrios (MatchAI Pro) - Cargamos todos los barrios del perfil
           if (searchProfile.neighborhood_ids && searchProfile.neighborhood_ids.length > 0) {
-            const { data: neighborhoodsData } = await supabase
+            const { data: neighborhoodsData } = await (supabase
               .from('neighborhoods')
               .select('name')
-              .in('id', searchProfile.neighborhood_ids);
+              .in('id', searchProfile.neighborhood_ids) as any);
             
             if (neighborhoodsData) {
-              setSelectedNeighborhoods(neighborhoodsData.map(n => n.name));
+              setSelectedNeighborhoods(neighborhoodsData.map((n: any) => n.name));
             }
           }
 

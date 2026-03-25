@@ -94,8 +94,8 @@ export function AdminEstadisticas() {
         setLoading(true);
         try {
             const [profilesRes, rolesRes] = await Promise.all([
-                supabase.from("profiles").select("user_id, status"),
-                supabase.from("user_roles").select("user_id, role"),
+                (supabase.from("profiles") as any).select("user_id, status"),
+                (supabase.from("user_roles") as any).select("user_id, role"),
             ]);
 
             if (profilesRes.error) throw profilesRes.error;
@@ -135,8 +135,8 @@ export function AdminEstadisticas() {
             });
 
             // Count agent_publications
-            const pubTotal = await supabase.from("agent_publications").select("id", { count: "exact", head: true });
-            const { data: pubData } = await supabase.from("agent_publications").select("status");
+            const pubTotal = await (supabase.from("agent_publications") as any).select("id", { count: "exact", head: true });
+            const { data: pubData } = await (supabase.from("agent_publications") as any).select("status");
 
             const propStats = { active: 0, paused: 0, closed: 0 };
             pubData?.forEach((p) => {
@@ -188,13 +188,13 @@ export function AdminEstadisticas() {
             const from = pageMarket * PAGE_SIZE;
             const to = from + PAGE_SIZE - 1;
             const [pubRes, ratingsRes, insightsRes, searchProfilesRes] = await Promise.all([
-                supabase.from("agent_publications")
+                (supabase.from("agent_publications") as any)
                     .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms, currency, city_id, neighborhood_id, price_amount, price_expenses), organizations(name)", { count: "exact" })
                     .order('created_at', { ascending: false })
                     .range(from, to),
-                supabase.from("property_reviews").select("property_id, rating"),
-                supabase.from("property_insights_summary").select("property_id, attribute_name, total_scores"),
-                supabase.from("user_search_profiles").select("*"),
+                (supabase.from("property_reviews") as any).select("property_id, rating"),
+                (supabase.from("property_insights_summary") as any).select("property_id, attribute_name, total_scores"),
+                (supabase.from("user_search_profiles") as any).select("*"),
             ]);
             if (pubRes.error) throw pubRes.error;
             const pubData = pubRes.data || [];
@@ -304,13 +304,13 @@ export function AdminEstadisticas() {
             const from = pagePersonal * PAGE_SIZE;
             const to = from + PAGE_SIZE - 1;
             const [listingsRes, ratingsRes, insightsRes, searchProfilesRes] = await Promise.all([
-                supabase.from("user_listings")
+                (supabase.from("user_listings") as any)
                     .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms, currency, city_id, neighborhood_id, price_amount, price_expenses)", { count: "exact" })
                     .order('created_at', { ascending: false })
                     .range(from, to),
-                supabase.from("property_reviews").select("property_id, rating"),
-                supabase.from("property_insights_summary").select("property_id, attribute_name, total_scores"),
-                supabase.from("user_search_profiles").select("*"),
+                (supabase.from("property_reviews") as any).select("property_id, rating"),
+                (supabase.from("property_insights_summary") as any).select("property_id, attribute_name, total_scores"),
+                (supabase.from("user_search_profiles") as any).select("*"),
             ]);
             if (listingsRes.error) throw listingsRes.error;
             const listingsData = listingsRes.data || [];
@@ -345,7 +345,7 @@ export function AdminEstadisticas() {
             const addedByIds = [...new Set((listingsData as { added_by?: string }[]).map((l) => l.added_by).filter(Boolean))];
             let addedByMap: Record<string, string> = {};
             if (addedByIds.length > 0) {
-                const { data: profilesData } = await supabase.from("profiles").select("user_id, display_name, email").in("user_id", addedByIds);
+                const { data: profilesData } = await (supabase.from("profiles") as any).select("user_id, display_name, email").in("user_id", addedByIds);
                 profilesData?.forEach((pr) => { addedByMap[pr.user_id] = pr.display_name || pr.email || "Usuario"; });
             }
 

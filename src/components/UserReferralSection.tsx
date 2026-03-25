@@ -20,7 +20,7 @@ export function UserReferralSection({ showTopDivider = true }: UserReferralSecti
         queryFn: async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
-            const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+            const { data } = await (supabase.from("profiles") as any).select("*").eq("user_id", user.id).single();
             return data;
         }
     });

@@ -398,8 +398,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         return;
       }
 
-      const { error: pubError } = await supabase
-        .from("agent_publications")
+      const { error: pubError } = await (supabase
+        .from("agent_publications") as any)
         .insert({
           property_id: existing.id,
           org_id: orgId,
@@ -441,8 +441,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
 
       if (propertyToEdit) {
         // Update agent_publications
-        const { error } = await supabase
-          .from("agent_publications")
+        const { error } = await (supabase
+          .from("agent_publications") as any)
           .update({
             description: form.aiSummary || form.details || "",
             listing_type: listingType as DbListingType,
@@ -453,8 +453,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         // Update underlying properties table
         const propertyId = propertyToEdit.propertyId || propertyToEdit.property_id;
         if (propertyId) {
-          const { error: propErr } = await supabase
-            .from("properties")
+          const { error: propErr } = await (supabase
+            .from("properties") as any)
             .update({
               title: form.title.trim(),
               price_amount: priceRent,
@@ -490,8 +490,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           if (existing) {
             propertyId = existing.id;
           } else {
-            const { data: prop, error: propError } = await supabase
-              .from("properties")
+            const { data: prop, error: propError } = await (supabase
+              .from("properties") as any)
               .insert({
                 source_url: normalizedUrl,
                 title: form.title.trim(),
@@ -519,8 +519,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
             propertyId = prop.id;
           }
         } else {
-          const { data: prop, error: propError } = await supabase
-            .from("properties")
+          const { data: prop, error: propError } = await (supabase
+            .from("properties") as any)
             .insert({
               source_url: null,
               title: form.title.trim(),
@@ -547,8 +547,8 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           propertyId = prop.id;
         }
 
-        const { error: pubError } = await supabase
-          .from("agent_publications")
+        const { error: pubError } = await (supabase
+          .from("agent_publications") as any)
           .insert({
             property_id: propertyId,
             org_id: orgId,

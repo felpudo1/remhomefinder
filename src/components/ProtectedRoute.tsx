@@ -47,12 +47,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         previousUserId = currentUserId;
 
         // Obtener roles del usuario (siempre lo necesitamos para redirect por rol)
-        const { data: roles } = await supabase
+        const { data: roles } = await (supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", session.user.id);
+          .eq("user_id", session.user.id as any) as any);
 
-        const userRoles = roles?.map((r) => r.role as AppRole) || [];
+        const userRoles = roles?.map((r: any) => r.role as AppRole) || [];
 
         // Si estamos en /dashboard y el usuario es admin o rol agente, redirigir a su panel
         const isDashboard = location.pathname === ROUTES.DASHBOARD;

@@ -125,15 +125,15 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             const from = statsPage * PAGE_SIZE;
             const to = from + PAGE_SIZE - 1;
             const [pubRes, ratingsRes, insightsRes] = await Promise.all([
-                supabase.from("agent_publications")
+                (supabase.from("agent_publications") as any)
                     .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms), organizations(name)", { count: "exact" })
                     .eq("org_id", agency.id)
                     .order('created_at', { ascending: false })
                     .range(from, to),
                 // Usamos el agregado global para que el rating no dependa de permisos
                 // de lectura fila a fila en property_reviews.
-                supabase.from("public_global_rating").select("property_id, avg_rating, total_votes"),
-                supabase.from("property_insights_summary").select("property_id, attribute_name, total_scores"),
+                (supabase.from("public_global_rating") as any).select("property_id, avg_rating, total_votes"),
+                (supabase.from("property_insights_summary") as any).select("property_id, attribute_name, total_scores"),
             ]);
             const propertyIds = (pubRes.data || []).map((p: any) => p.property_id).filter(Boolean);
             if (pubRes.error) throw pubRes.error;

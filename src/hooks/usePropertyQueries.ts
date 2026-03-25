@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyComment } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
@@ -31,27 +31,34 @@ export function usePropertyQueries() {
         };
     }, []);
 
-    useEffect(() => {
-        const onCommentsChange = () => queryClient.refetchQueries({ queryKey: ["properties", currentUserId] });
+    // Punto 2: Debounce para Realtime — evitar tormenta de refetch
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const debouncedRefetch = useCallback(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
+        }, 800); // 800ms debounce: agrupa eventos Realtime cercanos
+    }, [queryClient, currentUserId]);
 
+    useEffect(() => {
         const channelListings = supabase
             .channel("properties_realtime_listings")
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, onCommentsChange)
-            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, onCommentsChange)
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, debouncedRefetch)
             .subscribe();
 
         const channelComments = supabase
             .channel("properties_realtime_comments")
-            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, onCommentsChange)
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_comment_reads" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, debouncedRefetch)
             .subscribe();
 
         return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
             supabase.removeChannel(channelListings);
             supabase.removeChannel(channelComments);
         };
-    }, [queryClient, currentUserId]);
+    }, [queryClient, currentUserId, debouncedRefetch]);
 
     const query = useQuery({
         queryKey: ["properties", currentUserId],
@@ -95,32 +102,32 @@ export function usePropertyQueries() {
                 
                 // Perfiles de quienes agregaron los listings
                 addedByIds.length > 0 
-                  ? supabase.from("profiles").select("user_id, email, display_name").in("user_id", addedByIds)
+                  ? (supabase.from("profiles") as any).select("user_id, email, display_name").in("user_id", addedByIds)
                   : Promise.resolve({ data: [] }),
                 
                 // Logs de estado: Contactado
                 contactadoListingIds.length > 0
-                  ? supabase.from("status_history_log").select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
+                  ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", contactadoListingIds).eq("new_status", "contactado").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [] }),
 
                 // Logs de estado: Descartado
                 descartadoListingIds.length > 0
-                  ? supabase.from("status_history_log").select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
+                  ? (supabase.from("status_history_log") as any).select("user_listing_id, changed_by, event_metadata").in("user_listing_id", descartadoListingIds).eq("new_status", "descartado").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [] }),
 
                 // Logs de estado: Visita Coordinada
                 coordinadaListingIds.length > 0
-                  ? supabase.from("status_history_log").select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
+                  ? (supabase.from("status_history_log") as any).select("user_listing_id, event_metadata, changed_by, created_at").in("user_listing_id", coordinadaListingIds).eq("new_status", "visita_coordinada").order("created_at", { ascending: false })
                   : Promise.resolve({ data: [] }),
 
                 // Comentarios
                 listingIds.length > 0
-                  ? supabase.from("family_comments").select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
+                  ? (supabase.from("family_comments") as any).select("*").in("user_listing_id", listingIds).order("created_at", { ascending: true })
                   : Promise.resolve({ data: [] }),
 
                 // Adjuntos privados
                 listingIds.length > 0
-                  ? supabase.from("user_listing_attachments").select("user_listing_id, image_url").in("user_listing_id", listingIds)
+                  ? (supabase.from("user_listing_attachments") as any).select("user_listing_id, image_url").in("user_listing_id", listingIds)
                   : Promise.resolve({ data: [] }),
 
                 // Contactos de marketplace
@@ -235,8 +242,13 @@ export function usePropertyQueries() {
                 Object.keys(coordinatedByMap).forEach(id => coordinatedByMap[id] = changerNameByUserId[coordinatedByMap[id]] || coordinatedByMap[id]);
             }
 
-            // 8. Mapeo de comentarios
-            const allComments = commentsResult.data || [];
+            // 8. Mapeo de comentarios — pre-indexar con Map para evitar O(N×M) en el .map posterior (Punto 4)
+            const commentsByListingId = new Map<string, typeof commentsResult.data>();
+            (commentsResult.data || []).forEach((c: any) => {
+                const arr = commentsByListingId.get(c.user_listing_id) || [];
+                arr.push(c);
+                commentsByListingId.set(c.user_listing_id, arr);
+            });
 
             // 9. Mapeo de adjuntos
             const attachmentsByListing: Record<string, string[]> = {};
@@ -338,7 +350,7 @@ export function usePropertyQueries() {
                     };
                 }
 
-                const listingCommentsRaw = allComments.filter((c) => c.user_listing_id === listing.id);
+                const listingCommentsRaw = commentsByListingId.get(listing.id) || [];
 
                 const comments = listingCommentsRaw
                     .map((c): PropertyComment => ({

@@ -254,8 +254,8 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       }
 
       // Actualizar perfil en Supabase
-      const { error } = await supabase
-        .from("profiles")
+      const { error } = await (supabase
+        .from("profiles") as any)
         .update({
           display_name: displayName.trim(),
           phone: phone.trim(),

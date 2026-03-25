@@ -101,7 +101,7 @@ export async function checkUrlStatus(
 
   // Contar cuántos usuarios (distintos) guardaron esta property en toda la app.
   // Se usa RPC para evitar limitaciones de visibilidad por RLS entre organizaciones.
-  const { data: rpcUsersCount } = await supabase.rpc("count_property_listing_users", {
+  const { data: rpcUsersCount } = await (supabase.rpc("count_property_listing_users", {
     _property_id: prop.id,
   });
 
@@ -160,10 +160,10 @@ export function formatDaysAgo(isoDate: string): string {
 export async function getExistingPropertyByUrl(url: string) {
   const normalized = normalizeUrl(url);
   if (!normalized) return null;
-  const { data } = await supabase
+  const { data } = await (supabase
     .from("properties")
     .select("id, title, price_amount, price_expenses, total_cost, currency, neighborhood, city, m2_total, rooms, images, ref, details")
     .eq("source_url", normalized)
-    .maybeSingle();
+    .maybeSingle() as any);
   return data;
 }

@@ -120,14 +120,14 @@ export function useGroups() {
 
       if (error) throw error;
 
-      const { error: memberError } = await supabase.from("organization_members").insert({
+      const { error: memberError } = await (supabase.from("organization_members") as any).insert({
         org_id: data.id,
         user_id: user.id,
         role: "owner" satisfies OrgRole,
       });
 
       if (memberError) {
-        await supabase.from("organizations").delete().eq("id", data.id);
+        await (supabase.from("organizations") as any).delete().eq("id", data.id);
         throw new Error("No se pudo crear la membresía del grupo.");
       }
 
@@ -193,7 +193,7 @@ export function useGroups() {
 
   const deleteGroupMutation = useMutation({
     mutationFn: async (groupId: string) => {
-      const { error } = await supabase.from("organizations").delete().eq("id", groupId);
+      const { error } = await (supabase.from("organizations") as any).delete().eq("id", groupId);
       if (error) throw error;
     },
     onSuccess: () => {
