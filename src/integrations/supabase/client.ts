@@ -2,15 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// La config del Supabase client vive en variables de entorno para poder separar dev/staging/prod.
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error(
-    "Faltan variables de entorno para Supabase. Definí VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY."
-  );
-}
+const SUPABASE_URL = "https://cuyfrpuiokvqvhvoerga.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1eWZycHVpb2t2cXZodm9lcmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDgxMjUsImV4cCI6MjA5MDAyNDEyNX0.ErCSJvCwcI24b3GG-ZYvq29XCV27wN1mxvO6Uk3ocac";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +13,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    /** Necesario para que el link de recuperación (#access_token / PKCE) deje sesión lista en /auth/restablecer */
-    detectSessionInUrl: true,
   }
 });
