@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property, PropertyComment } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
@@ -31,27 +31,34 @@ export function usePropertyQueries() {
         };
     }, []);
 
-    useEffect(() => {
-        const onCommentsChange = () => queryClient.refetchQueries({ queryKey: ["properties", currentUserId] });
+    // Punto 2: Debounce para Realtime — evitar tormenta de refetch
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const debouncedRefetch = useCallback(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
+        }, 800); // 800ms debounce: agrupa eventos Realtime cercanos
+    }, [queryClient, currentUserId]);
 
+    useEffect(() => {
         const channelListings = supabase
             .channel("properties_realtime_listings")
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, onCommentsChange)
-            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, onCommentsChange)
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, debouncedRefetch)
+            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, debouncedRefetch)
             .subscribe();
 
         const channelComments = supabase
             .channel("properties_realtime_comments")
-            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, onCommentsChange)
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_comment_reads" }, onCommentsChange)
+            .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, debouncedRefetch)
             .subscribe();
 
         return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
             supabase.removeChannel(channelListings);
             supabase.removeChannel(channelComments);
         };
-    }, [queryClient, currentUserId]);
+    }, [queryClient, currentUserId, debouncedRefetch]);
 
     const query = useQuery({
         queryKey: ["properties", currentUserId],

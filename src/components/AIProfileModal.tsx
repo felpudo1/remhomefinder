@@ -47,14 +47,14 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
 
   useEffect(() => {
     // Filtra solo departamentos de Uruguay (country = "UY") — por ahora la app opera solo en UY
-    supabase.from("departments").select("id, name").eq("country", "UY").order("name").then(({ data }) => {
+    (supabase.from("departments").select("id, name").eq("country", "UY" as any).order("name") as any).then(({ data }: any) => {
       if (data) setDepartments(data as { id: string; name: string }[]);
     });
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("cities").select("id, name").eq("department_id", selectedDept).order("name").then(({ data }) => {
+      (supabase.from("cities").select("id, name").eq("department_id", selectedDept as any).order("name") as any).then(({ data }: any) => {
         if (data) setCities(data as { id: string; name: string }[]);
       });
     } else {
@@ -64,7 +64,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
 
   useEffect(() => {
     if (selectedCity) {
-      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity).order("name").then(({ data }) => {
+      (supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity as any).order("name") as any).then(({ data }: any) => {
         if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
     } else {
@@ -77,11 +77,11 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
       const fetchProfile = async () => {
         setLoading(true);
         try {
-          const { data, error } = await supabase
+          const { data, error } = await (supabase
             .from('user_search_profiles')
             .select('*')
-            .eq('user_id', userId)
-            .maybeSingle();
+            .eq('user_id', userId as any)
+            .maybeSingle() as any);
 
           if (error) throw error;
           if (data) {
@@ -90,13 +90,12 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
             setMinBudget(data.min_budget?.toString() || "");
             setMaxBudget(data.max_budget?.toString() || "");
             setBedrooms(data.min_bedrooms?.toString() || "1");
-            // Resolve department from city_id to populate cascading selectors
             if (data.city_id) {
-              const { data: cityData } = await supabase
+              const { data: cityData } = await (supabase
                 .from("cities")
                 .select("id, department_id")
-                .eq("id", data.city_id)
-                .maybeSingle();
+                .eq("id", data.city_id as any)
+                .maybeSingle() as any);
               if (cityData) {
                 setSelectedCity(cityData.id);
                 if (cityData.department_id) {
@@ -134,7 +133,7 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
     setSaving(true);
     
     try {
-      const { error } = await supabase.from('user_search_profiles').upsert({
+      const { error } = await (supabase.from('user_search_profiles') as any).upsert({
         user_id: userId,
         operation,
         currency,

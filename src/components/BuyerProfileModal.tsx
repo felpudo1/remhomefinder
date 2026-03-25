@@ -45,7 +45,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
 
   useEffect(() => {
     if (selectedDept) {
-      supabase.from("cities").select("id, name").eq("department_id", selectedDept).order("name").then(({ data }) => {
+      (supabase.from("cities").select("id, name").eq("department_id", selectedDept as any).order("name") as any).then(({ data }: any) => {
         if (data) setCities(data as { id: string; name: string }[]);
       });
     } else {
@@ -55,7 +55,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
 
   useEffect(() => {
     if (selectedCity) {
-      supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity).order("name").then(({ data }) => {
+      (supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity as any).order("name") as any).then(({ data }: any) => {
         if (data) setNeighborhoods(data as { id: string; name: string }[]);
       });
       setSelectedNeighborhoods([]);
@@ -93,7 +93,7 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('user_search_profiles').upsert({
+      const { error } = await (supabase.from('user_search_profiles') as any).upsert({
         user_id: userId,
         operation,
         currency,
