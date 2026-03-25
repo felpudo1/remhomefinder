@@ -1,5 +1,10 @@
 -- Fecha en que el perfil pasó a activo (aprobación de agente / cuenta)
 
+-- Si en algún entorno corrió la versión antigua de 20260325034204, quitar el trigger duplicado
+-- (solo BEFORE UPDATE); este archivo define el trigger completo INSERT+UPDATE.
+DROP TRIGGER IF EXISTS set_approved_at ON public.profiles;
+DROP FUNCTION IF EXISTS public.trg_set_approved_at();
+
 ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS approved_at timestamptz;
 

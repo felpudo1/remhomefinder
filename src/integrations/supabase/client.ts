@@ -12,15 +12,50 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   );
 }
 
+/**
+ * Fetch con retry para manejar 504 timeouts de Supabase
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  retries = 2
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    
+    if (response.status === 504 && retries > 0) {
+      console.warn(`Supabase 504 timeout, reintentando... (${retries} intentos restantes)`);
+      clearTimeout(timeoutId);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    
+    return response;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError' && retries > 0) {
+      console.warn(`Request timeout, reintentando... (${retries} intentos restantes)`);
+      clearTimeout(timeoutId);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: typeof localStorage !== 'undefined' ? localStorage : undefined,
     persistSession: true,
     autoRefreshToken: true,
-    /** Necesario para que el link de recuperación (#access_token / PKCE) deje sesión lista en /auth/restablecer */
     detectSessionInUrl: true,
-  }
+  },
+  fetch: fetchWithRetry,
 });

@@ -10,29 +10,8 @@ ALTER TABLE public.profiles
 ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS logo_url text DEFAULT '' NOT NULL;
 
--- 3) Trigger: auto-set approved_at when status → active
-CREATE OR REPLACE FUNCTION public.trg_set_approved_at()
-  RETURNS trigger
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path = public
-AS $$
-BEGIN
-  IF NEW.status = 'active'
-     AND (OLD.status IS DISTINCT FROM 'active')
-     AND NEW.approved_at IS NULL
-  THEN
-    NEW.approved_at := now();
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS set_approved_at ON public.profiles;
-CREATE TRIGGER set_approved_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION public.trg_set_approved_at();
+-- 3) approved_at: la migración 20260325120000_profiles_approved_at.sql define
+--    trg_profiles_set_approved_at (INSERT + UPDATE). No duplicar set_approved_at aquí.
 
 -- 4) RPC: update_organization_logo_url
 CREATE OR REPLACE FUNCTION public.update_organization_logo_url(
@@ -54,16 +33,8 @@ BEGIN
 END;
 $$;
 
--- 5) STORAGE: agency-logos bucket (2 MB, images only)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'agency-logos', 'agency-logos', true, 2097152,
-  ARRAY['image/jpeg','image/png','image/webp','image/gif']
-)
-ON CONFLICT (id) DO UPDATE SET
-  public = EXCLUDED.public,
-  file_size_limit = EXCLUDED.file_size_limit,
-  allowed_mime_types = EXCLUDED.allowed_mime_types;
+-- 5) agency-logos: bucket + policies viven en 20260325103000_org_logo_url_and_agency_logos_bucket.sql
+--    (evita duplicar políticas con nombres distintos en dos migraciones).
 
 -- 6) STORAGE: harden avatars bucket (5 MB, images only)
 UPDATE storage.buckets
@@ -106,40 +77,7 @@ CREATE POLICY "avatar_public_read"
   ON storage.objects FOR SELECT TO public
   USING (bucket_id = 'avatars');
 
--- 8) STORAGE POLICIES: agency-logos (org-member path check)
-DROP POLICY IF EXISTS "agency_logo_insert" ON storage.objects;
-DROP POLICY IF EXISTS "agency_logo_update" ON storage.objects;
-DROP POLICY IF EXISTS "agency_logo_delete" ON storage.objects;
-DROP POLICY IF EXISTS "agency_logo_public_read" ON storage.objects;
-
-CREATE POLICY "agency_logo_insert"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (
-    bucket_id = 'agency-logos'
-    AND is_org_member(auth.uid(), ((storage.foldername(name))[1])::uuid)
-  );
-
-CREATE POLICY "agency_logo_update"
-  ON storage.objects FOR UPDATE TO authenticated
-  USING (
-    bucket_id = 'agency-logos'
-    AND is_org_member(auth.uid(), ((storage.foldername(name))[1])::uuid)
-  )
-  WITH CHECK (
-    bucket_id = 'agency-logos'
-    AND is_org_member(auth.uid(), ((storage.foldername(name))[1])::uuid)
-  );
-
-CREATE POLICY "agency_logo_delete"
-  ON storage.objects FOR DELETE TO authenticated
-  USING (
-    bucket_id = 'agency-logos'
-    AND is_org_member(auth.uid(), ((storage.foldername(name))[1])::uuid)
-  );
-
-CREATE POLICY "agency_logo_public_read"
-  ON storage.objects FOR SELECT TO public
-  USING (bucket_id = 'agency-logos');
+-- 8) STORAGE POLICIES: agency-logos → migración 20260325103000
 
 -- 9) STORAGE POLICIES: harden property-images INSERT (uid folder)
 DROP POLICY IF EXISTS "Authenticated users can upload property images" ON storage.objects;

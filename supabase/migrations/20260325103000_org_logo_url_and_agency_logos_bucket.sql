@@ -1,4 +1,5 @@
--- Logo de agencia: URL pública en organizations + bucket storage
+-- Logo de agencia: URL pública en organizations + bucket storage (única fuente de verdad
+-- para agency-logos; la migración 20260325034204 ya no duplica bucket ni policies).
 
 ALTER TABLE public.organizations
 ADD COLUMN IF NOT EXISTS logo_url text NOT NULL DEFAULT '';
@@ -41,6 +42,16 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = 2097152,
   allowed_mime_types = ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
+-- Idempotente: quitar políticas viejas (nombres en inglés de 034204) y estas mismas si se re-ejecuta
+DROP POLICY IF EXISTS "agency_logo_insert" ON storage.objects;
+DROP POLICY IF EXISTS "agency_logo_update" ON storage.objects;
+DROP POLICY IF EXISTS "agency_logo_delete" ON storage.objects;
+DROP POLICY IF EXISTS "agency_logo_public_read" ON storage.objects;
+DROP POLICY IF EXISTS "Miembros org pueden subir logo agencia" ON storage.objects;
+DROP POLICY IF EXISTS "Miembros org pueden actualizar logo agencia" ON storage.objects;
+DROP POLICY IF EXISTS "Miembros org pueden borrar logo agencia" ON storage.objects;
+DROP POLICY IF EXISTS "Lectura pública logos agencia" ON storage.objects;
+
 CREATE POLICY "Miembros org pueden subir logo agencia"
 ON storage.objects
 FOR INSERT
@@ -55,6 +66,10 @@ ON storage.objects
 FOR UPDATE
 TO authenticated
 USING (
+  bucket_id = 'agency-logos'
+  AND public.is_org_member(auth.uid(), (storage.foldername(name))[1]::uuid)
+)
+WITH CHECK (
   bucket_id = 'agency-logos'
   AND public.is_org_member(auth.uid(), (storage.foldername(name))[1]::uuid)
 );

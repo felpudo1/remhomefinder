@@ -1,0 +1,46 @@
+================================================================================
+LOVABLE + SUPABASE (proyecto NUEVO ya linkeado) — qué hacer con las migraciones
+================================================================================
+
+CONTEXTO (ya aplicado en el repo remhomefinder)
+--------------------------------------------------------------------------------
+1) 20260325034204: se quitó el trigger duplicado set_approved_at / trg_set_approved_at
+   y se movió bucket + policies de agency-logos a una sola migración posterior.
+
+2) 20260325103000: antes de CREATE POLICY hace DROP POLICY IF EXISTS de los nombres
+   en inglés (agency_logo_*) y en español, para que sea idempotente y no queden
+   políticas duplicadas.
+
+3) 20260325120000: al inicio hace DROP del trigger viejo set_approved_at y de la
+   función trg_set_approved_at si existían (entornos que corrieron el 034204 viejo).
+
+PASOS PARA LOVABLE (recomendado)
+--------------------------------------------------------------------------------
+1. Asegurate de que este repo (con los 3 archivos de migración ya corregidos) esté
+   sincronizado con el proyecto de Lovable (Git push / sync).
+
+2. En las variables de entorno del proyecto Lovable, usá la URL y la anon key del
+   proyecto Supabase NUEVO (Settings → API).
+
+3. Aplicá las migraciones contra ese proyecto nuevo. Opciones:
+
+   A) Desde tu PC con Supabase CLI (lo más fiable):
+      supabase login
+      supabase link --project-ref <TU_PROJECT_REF_NUEVO>
+      supabase db push
+
+   B) Si Lovable tiene “Run migrations” / “Sync Supabase”: usalo después del paso 1;
+      debe ejecutar los .sql de supabase/migrations/ en orden por nombre.
+
+NO hace falta pegar SQL manual en el Editor si db push (o el flujo de Lovable)
+aplica toda la carpeta migrations en orden.
+
+SI YA CORRISTE MIGRACIONES VIEJAS EN ESA BD (antes del fix del repo)
+--------------------------------------------------------------------------------
+Ejecutá UNA VEZ en SQL Editor el archivo:
+  supabase/scripts/repair_legacy_duplicates_after_old_migrations.sql
+
+Luego volvé a correr db push o las migraciones que falten (o revisá el historial
+en Database → Migrations del dashboard).
+
+================================================================================
