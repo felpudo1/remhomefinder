@@ -8,6 +8,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { uploadAgencyLogoAndSave } from "@/lib/agencyLogoUpload";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ProfileReferralStatsBlock } from "@/components/ProfileReferralStatsBlock";
 
 export interface Agency {
     id: string;
@@ -208,6 +209,13 @@ export const AgentProfile = ({ agency, profileStatus, onAgencyLogoUpdated }: Age
                     Tu cuenta está suspendida temporalmente. Contactá al soporte para más información.
                 </div>
             )}
+
+            <ProfileReferralStatsBlock
+                countForUserId={agency.created_by}
+                referredById={profile?.referredById}
+                variant="card"
+                countLabel="Referidos (link de la agencia)"
+            />
         </div>
     );
 };

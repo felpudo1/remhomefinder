@@ -9,6 +9,7 @@ import { User, Camera, Loader2, Upload, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { ProfileReferralStatsBlock } from "@/components/ProfileReferralStatsBlock";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -456,6 +457,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             placeholder="99 123 456"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+          />
+
+          <ProfileReferralStatsBlock
+            countForUserId={profile?.userId}
+            referredById={profile?.referredById}
+            variant="card"
+            countLabel="Cantidad de referidos"
           />
         </div>
 

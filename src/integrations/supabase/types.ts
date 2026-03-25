@@ -1355,6 +1355,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      count_profiles_referred_by: {
+        Args: { _referrer_user_id: string }
+        Returns: number
+      }
       count_property_listing_users: {
         Args: { _property_id: string }
         Returns: number
@@ -1382,6 +1386,10 @@ export type Database = {
           agent_phone: string
           publication_id: string
         }[]
+      }
+      get_my_referrer_display_name: {
+        Args: Record<string, never>
+        Returns: string | null
       }
       get_publications_save_counts: {
         Args: { _publication_ids: string[] }

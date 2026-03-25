@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Users, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { useProfile } from "@/hooks/useProfile";
+import { ProfileReferralStatsBlock } from "@/components/ProfileReferralStatsBlock";
 
 interface UserReferralSectionProps {
   /** En el filtro lateral va separado con línea; en la pestaña dedicada no hace falta */
@@ -14,34 +13,10 @@ interface UserReferralSectionProps {
 export function UserReferralSection({ showTopDivider = true }: UserReferralSectionProps) {
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
+    const { data: profile } = useProfile();
 
-    const { data: profile } = useQuery({
-        queryKey: ["profile"],
-        queryFn: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return null;
-            const { data } = await (supabase.from("profiles") as any).select("*").eq("user_id", user.id).single();
-            return data;
-        }
-    });
-
-    const { data: referralCount = 0 } = useQuery({
-        queryKey: ["referral-count", profile?.user_id],
-        queryFn: async () => {
-            if (!profile?.user_id) return 0;
-            const { count, error } = await supabase
-                .from("profiles")
-                .select("*", { count: "exact", head: true })
-                .eq("referred_by_id", profile.user_id);
-
-            if (error) throw error;
-            return count || 0;
-        },
-        enabled: !!profile?.user_id,
-    });
-
-    const referralLink = profile?.user_id
-        ? `${window.location.origin}/auth?ref=${profile.user_id}`
+    const referralLink = profile?.userId
+        ? `${window.location.origin}/auth?ref=${profile.userId}`
         : "";
 
     const copyToClipboard = async () => {
@@ -95,15 +70,17 @@ export function UserReferralSection({ showTopDivider = true }: UserReferralSecti
                     : "space-y-3"
             }
         >
-            <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Users className="w-3 h-3 text-primary" />
-                    Tus Referidos
-                </p>
-                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-none animate-in fade-in zoom-in">
-                    {referralCount}
-                </Badge>
-            </div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3 h-3 text-primary" />
+                Tus referidos
+            </p>
+
+            <ProfileReferralStatsBlock
+                countForUserId={profile?.userId}
+                referredById={profile?.referredById}
+                variant="compact"
+                countLabel="Cantidad de referidos"
+            />
 
             <div className="space-y-2">
                 <p className="text-[10px] text-muted-foreground leading-relaxed">

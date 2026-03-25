@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Gift, Copy, Check, Users } from "lucide-react";
+import { Gift, Copy, Check, Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Agency } from "./AgentProfile";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
+import { useReferralCountForUser, useReferrerDisplayName } from "@/hooks/useReferralQueries";
+import { useProfile } from "@/hooks/useProfile";
 
 interface AgentReferralSectionProps {
   agency: Agency;
@@ -20,19 +20,20 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
+  const { data: profile } = useProfile();
+  const { data: referralCount = 0 } = useReferralCountForUser(agency.created_by);
+  const { data: referrerName, isLoading: referrerLoading } = useReferrerDisplayName(
+    profile?.referredById,
+    profile?.userId
+  );
 
-  const { data: referralCount = 0 } = useQuery({
-    queryKey: ["agency-referral-count", agency.created_by],
-    enabled: !!agency.created_by,
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("referred_by_id", agency.created_by);
-      if (error) throw error;
-      return count || 0;
-    },
-  });
+  const referredByLine = !profile?.referredById
+    ? "No tenés un referidor registrado."
+    : referrerLoading
+      ? "Cargando quién te refirió…"
+      : referrerName
+        ? `Referido por: ${referrerName}`
+        : "Referidor no disponible.";
 
   const referralLink = agency.created_by
     ? `${window.location.origin}/?ref=${agency.created_by}`
@@ -116,6 +117,10 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
         <p className="text-xs text-muted-foreground">
           Los clientes que se registren con tu link quedarán vinculados a tu agencia.
         </p>
+        <div className="flex items-start gap-2 rounded-xl border border-border/60 bg-background/60 px-3 py-2.5 text-xs text-foreground/90">
+          <UserPlus className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+          <span>{referredByLine}</span>
+        </div>
       </div>
     </div>
   );

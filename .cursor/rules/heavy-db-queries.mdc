@@ -1,0 +1,71 @@
+---
+description: Notificar a JP antes de implementar o ejecutar consultas/escrituras pesadas en BD (Supabase/Postgres)
+alwaysApply: true
+---
+
+# 🐢 Consultas pesadas a base de datos (lectura o escritura)
+
+## Objetivo
+
+Cuando la solución vaya a generar **mucho tráfico** (base de datos y/o red: Supabase, navegador, APIs), JP debe recibir un **aviso explícito** en el mismo mensaje, antes de implementar o de ejecutar en producción.
+
+## Criterio principal (definición de “pesado”)
+
+**Pesado = patrón que puede implicar mucho trabajo en el servidor, muchas idas y vueltas, o muchos datos moviéndose.**
+
+### 1. Hay que “recorrer” o buscar en casi toda una tabla
+
+- Consultas donde **no hay índice útil** y Postgres **tiene que mirar muchas o todas las filas** (full / sequential scan) para resolver el filtro o el `JOIN`.
+- Agregaciones globales (`COUNT` sin acotar bien, `SUM` sobre millones de filas) sin particionar ni acotar por rango/PK/cursor.
+- Backfills o jobs que leen **toda** la tabla.
+
+→ **Si hay que barrer la tabla o una parte enorme sin acotar, avisar.**
+
+### 2. Se pide o envía data **muy seguido** (alto tráfico)
+
+- **Polling** corto (ej. cada pocos segundos) sin necesidad, o **refetch** agresivo en React Query (`staleTime` 0 + muchos re-mounts).
+- **N+1:** una query por ítem en lista (muchas requests seguidas).
+- **Realtime** mal acoplado: invalidar y volver a pedir **todo** el listado en cada evento.
+- **Payloads grandes** repetidos: `select('*')` de muchas filas gruesas (json, arrays de imágenes) una y otra vez.
+
+→ **Si el diseño implica muchas peticiones por minuto o por interacción, o muchos MB repetidos, avisar.**
+
+### 3. Escritura masiva o costosa
+
+- `UPDATE` / `DELETE` que tocan **muchos** registros a la vez; inserts en bucle sin batch.
+- Migraciones que bloquean tablas grandes o reescriben mucho dato.
+
+### 4. Operaciones sobre entornos sensibles
+
+- `db push` / SQL destructivo en **producción** o entorno compartido si JP no lo pidió.
+
+### Qué **no** suele ser “pesado” (no hace falta avisar)
+
+- Lecturas/escrituras **acotadas por PK o índice** (un registro, pocos registros por `id` / `eq` bien indexado).
+- Una query puntual en respuesta a una acción clara del usuario (guardar formulario, abrir detalle).
+
+**Regla práctica para el asistente:** si dudás entre liviano y pesado, **avisá igual** y marcá el nivel (bajo/medio/alto) en el bloque 🐢.
+
+## Formato de notificación a JP
+
+Incluir un bloque visible, por ejemplo:
+
+```
+🐢 AVISO — Mucho tráfico / consulta o escritura pesada
+
+- Tipo: [lectura | escritura | migración | frecuencia / red | otro]
+- Qué: [tablas / hooks / Realtime / RPC / etc.]
+- Tráfico / carga: [¿full scan? | ¿muchas req/seg o por acción? | ¿payload grande repetido?]
+- Riesgo: [DB | red / egress | tiempo de respuesta | costo Supabase]
+- Mitigación propuesta: [índice | menos refetch | batch | paginación / cursor | debounce | RPC acotada]
+```
+
+Si el impacto es **alto** o toca **producción**, indicar que JP confirme si procede (sin asumir).
+
+## Comportamiento del asistente
+
+1. **Detectar** en el diseño de la solución si hay patrón pesado.
+2. **Notificar** con el bloque anterior (o equivalente claro) en la misma respuesta donde se propone el cambio.
+3. **Preferir** mitigaciones (índices, límites, paginación, RPC server-side acotada) y mencionarlas en el aviso.
+
+Esta regla complementa la sección de performance y seguridad del proyecto; no reemplaza RLS ni revisión de políticas.
