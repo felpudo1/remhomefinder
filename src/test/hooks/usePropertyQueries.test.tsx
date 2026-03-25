@@ -87,28 +87,25 @@ describe("usePropertyQueries", () => {
 
     // Configurar mocks secuenciales para las múltiples llamadas de usePropertyQueries
     mockedSupabase.from.mockImplementation((table: string) => {
-      switch (table) {
-        case "user_listings":
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockResolvedValue({ data: [mockListing], error: null })
-          };
-        case "profiles":
-          return {
-            select: vi.fn().mockReturnThis(),
-            in: vi.fn().mockResolvedValue({ data: [], error: null })
-          };
-        default:
-          return {
-            select: vi.fn().mockReturnThis(),
-            in: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockReturnThis(),
-            mockResolvedValue: vi.fn().mockResolvedValue({ data: [], error: null })
-          } as any;
+      const chainable = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        then: undefined as any,
+      };
+      if (table === "user_listings") {
+        chainable.limit = vi.fn().mockResolvedValue({ data: [mockListing], error: null });
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [mockListing], error: null }) }) }) }) };
       }
+      // All other tables return empty
+      chainable.order = vi.fn().mockResolvedValue({ data: [], error: null });
+      chainable.in = vi.fn().mockResolvedValue({ data: [], error: null });
+      return chainable;
     });
+    mockedSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const { result } = renderWithClient(() => usePropertyQueries());
 
