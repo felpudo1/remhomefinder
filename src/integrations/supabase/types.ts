@@ -1408,6 +1408,14 @@ export type Database = {
           type: Database["public"]["Enums"]["org_type"]
         }[]
       }
+      get_global_property_ratings: {
+        Args: { _property_ids: string[] }
+        Returns: {
+          avg_rating: number
+          property_id: string
+          total_votes: number
+        }[]
+      }
       get_marketplace_org_names: {
         Args: { _org_ids: string[] }
         Returns: {
