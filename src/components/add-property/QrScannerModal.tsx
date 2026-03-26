@@ -53,8 +53,33 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
       setError(null);
       setScanning(true);
 
+      // Check if camera API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError("Tu navegador no soporta acceso a la cámara. Usá la opción \"Subir imagen\".");
+        setScanning(false);
+        return;
+      }
+
+      // Request camera permission explicitly first
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        // Stop the test stream immediately
+        stream.getTracks().forEach((t) => t.stop());
+      } catch (permErr: any) {
+        if (!cancelled && mountedRef.current) {
+          const isDenied = permErr?.name === "NotAllowedError" || permErr?.name === "PermissionDeniedError";
+          setError(
+            isDenied
+              ? "Permiso de cámara denegado. Habilitá el acceso a la cámara en la configuración del navegador y recargá la página, o usá \"Subir imagen\"."
+              : "No se pudo acceder a la cámara. Probá con la opción \"Subir imagen\"."
+          );
+          setScanning(false);
+        }
+        return;
+      }
+
       // Wait for DOM to render the container
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 400));
       if (cancelled || !mountedRef.current) return;
 
       const container = document.getElementById("qr-reader");
@@ -65,7 +90,6 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
       }
 
       try {
-        // Dynamic import to avoid issues if the library fails to load
         const { Html5Qrcode } = await import("html5-qrcode");
         if (cancelled) return;
 
@@ -78,12 +102,12 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
           (decodedText) => {
             if (!cancelled) handleResult(decodedText);
           },
-          () => {} // ignore scan errors
+          () => {}
         );
       } catch (err: any) {
         if (!cancelled && mountedRef.current) {
           console.warn("QR camera error:", err);
-          setError("No se pudo acceder a la cámara. Probá con la opción \"Subir imagen\" para escanear un QR desde una foto.");
+          setError("No se pudo iniciar el escáner. Probá con \"Subir imagen\".");
           setScanning(false);
         }
       }
