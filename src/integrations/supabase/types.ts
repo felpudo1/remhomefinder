@@ -1050,6 +1050,42 @@ export type Database = {
           },
         ]
       }
+      user_listing_comment_reads: {
+        Row: {
+          id: string
+          last_read_at: string
+          user_id: string
+          user_listing_id: string
+        }
+        Insert: {
+          id?: string
+          last_read_at?: string
+          user_id: string
+          user_listing_id: string
+        }
+        Update: {
+          id?: string
+          last_read_at?: string
+          user_id?: string
+          user_listing_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_listing_comment_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_listing_comment_reads_user_listing_id_fkey"
+            columns: ["user_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_listings: {
         Row: {
           added_by: string
