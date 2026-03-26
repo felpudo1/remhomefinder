@@ -62,6 +62,7 @@ export function PropertyCardBase({
     className = "",
     onImageClick,
     ratingOverlay,
+    bottomLeftOverlay,
     collapsibleImages = false,
     autoRotateImages = false,
     imageTransitionMode = "fade",
