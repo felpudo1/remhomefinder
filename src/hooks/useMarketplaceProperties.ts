@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MarketplaceProperty } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
@@ -138,4 +139,15 @@ export function useMarketplaceProperties() {
       });
     },
   });
+
+  const data = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
+
+  return {
+    data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: !!query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  };
 }
