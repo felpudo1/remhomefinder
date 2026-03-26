@@ -63,6 +63,7 @@ export function ScraperInput({
 }: ScraperInputProps) {
     const isFamilyLocked = Boolean(urlInFamily);
     const isInAppLocked = Boolean(urlInApp);
+    const [qrOpen, setQrOpen] = useState(false);
     const isUrlActionsLocked = isFamilyLocked || isInAppLocked;
     const formattedFirstAddedAt = urlInApp?.firstAddedAt
         ? new Date(urlInApp.firstAddedAt).toLocaleDateString("es-UY", {
