@@ -13,7 +13,6 @@ import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
 import { Home, Plus, Loader2, Users, SlidersHorizontal, Store, X, RefreshCw, Mail, CheckCircle2, ChevronRight, Search, UserPlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
@@ -774,8 +773,7 @@ const Index = () => {
         userId={profile?.userId}
       />
 
-      <DbStatusBadge />
-      <Footer />
+      <Footer showDbStatus />
     </div>
   );
 };
