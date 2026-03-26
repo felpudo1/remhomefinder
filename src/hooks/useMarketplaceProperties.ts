@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MarketplaceProperty } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
@@ -10,7 +11,7 @@ const PAGE_SIZE = 50;
  * Refactorizado para REGLA 6: Select proyectado y paginación cursor-based para evitar saturación de I/O.
  */
 export function useMarketplaceProperties() {
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ["marketplace-properties"],
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: MarketplaceProperty[]) => {
@@ -138,4 +139,15 @@ export function useMarketplaceProperties() {
       });
     },
   });
+
+  const data = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
+
+  return {
+    data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: !!query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  };
 }

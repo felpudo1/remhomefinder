@@ -57,7 +57,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   } = useMarketplaceProperties();
 
   const marketplaceProperties = useMemo(() => {
-    return data?.pages.flat() || [];
+    return Array.isArray(data) ? data : [];
   }, [data]);
 
   const { properties: userProperties } = useProperties();
@@ -116,7 +116,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         const filtered = Array.from(propertyNeighborhoods)
           .filter((n) => normalizedNames.has(n))
           .sort();
-        setNeighborhoods(filtered);
+        setNeighborhoods(filtered as string[]);
       }
     };
     fetchNeighborhoods();
