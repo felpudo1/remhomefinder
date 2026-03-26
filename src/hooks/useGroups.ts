@@ -33,10 +33,9 @@ export function useGroups() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["groups"],
-    // Los grupos cambian rara vez (crear/unirse) — cachear 5 min
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { groups: [] as Group[], agencyOrg: null as Group | null };
@@ -270,6 +269,7 @@ export function useGroups() {
     groups,
     agencyOrg,
     loading: isLoading,
+    refetchGroups: refetch,
     createGroup: createGroupMutation.mutateAsync,
     joinGroup: joinGroupMutation.mutateAsync,
     leaveGroup: leaveGroupMutation.mutateAsync,

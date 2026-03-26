@@ -34,7 +34,7 @@ export function GroupsModal({
   canManageTeams = true 
 }: GroupsModalProps) {
   const { 
-    groups, agencyOrg, loading, createGroup, joinGroup, 
+    groups, agencyOrg, loading, refetchGroups, createGroup, joinGroup, 
     leaveGroup, deleteGroup, fetchMembers, removeMember 
   } = useGroups();
   
@@ -62,6 +62,8 @@ export function GroupsModal({
       supabase.auth.getUser().then(({ data }) => {
         setCurrentUserId(data.user?.id || null);
       });
+      // Forzar refetch de grupos al abrir el modal
+      refetchGroups();
     } else {
       setDetailGroup(null);
       setTab("groups");
