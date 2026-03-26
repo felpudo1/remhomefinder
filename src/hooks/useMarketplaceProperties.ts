@@ -112,7 +112,7 @@ export function useMarketplaceProperties() {
       const propertyIds = Array.from(new Set(data.map((pub: any) => pub.property_id).filter(Boolean)));
       let ratingByPropertyId: Record<string, { avg_rating: number; total_votes: number }> = {};
       if (propertyIds.length > 0) {
-        const { data: ratings } = await supabase.rpc("get_global_property_ratings", {
+        const { data: ratings } = await supabase.rpc("get_global_property_ratings" as any, {
           _property_ids: propertyIds,
         });
         if (ratings) {
