@@ -113,7 +113,16 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("agent_publications")
-                .select("*, properties(*), organizations(name)")
+                // Proyectar columnas específicas — excluye raw_ai_data y status_history (~50 KB/fila)
+                .select(`
+                    id, property_id, org_id, published_by, status, listing_type, description, created_at, updated_at,
+                    properties (
+                        id, title, source_url, price_amount, price_expenses, total_cost, currency,
+                        neighborhood, neighborhood_id, city, city_id, department, department_id, address,
+                        m2_total, rooms, images, ref, details
+                    ),
+                    organizations (name)
+                `)
                 .eq("org_id", agency.id)
                 .order("created_at", { ascending: false });
             if (error) throw error;

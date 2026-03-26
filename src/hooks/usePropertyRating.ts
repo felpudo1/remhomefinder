@@ -1,29 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 /**
  * Hook para gestionar el sistema de estrellas (property_reviews).
  * Usa organizations + organization_members en lugar de groups.
- * Realtime: invalida la query cuando otro miembro vota.
+ * 
+ * NOTA: Se eliminó el canal Realtime dinámico que creaba 1 WebSocket
+ * por cada propiedad abierta (escalabilidad). La mutation ya refetchea
+ * vía invalidateQueries al votar. Si otro usuario vota, se actualiza
+ * al reabrir el modal.
  */
 export function usePropertyRating(propertyId: string, groupId: string | null) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
-
-    useEffect(() => {
-        if (!propertyId || !groupId) return;
-        const channel = supabase
-            .channel(`property-rating-${propertyId}-${groupId}`)
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "property_reviews", filter: `property_id=eq.${propertyId}` },
-                () => queryClient.invalidateQueries({ queryKey: ["property-rating", propertyId, groupId] })
-            )
-            .subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [propertyId, groupId, queryClient]);
 
     const { data: ratingsData, isLoading } = useQuery({
         queryKey: ["property-rating", propertyId, groupId],
@@ -32,12 +22,10 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            // We need the actual property_id (not listing ID). 
-            // If propertyId is a listing ID, we need to resolve it.
-            // For now, query property_reviews by property_id and org_id
+            // Proyectar solo las columnas necesarias (evitar traer campos pesados)
             const { data: ratings, error: ratingsError } = await supabase
                 .from("property_reviews")
-                .select("*")
+                .select("user_id, rating")
                 .eq("property_id", propertyId)
                 .eq("org_id", groupId);
 

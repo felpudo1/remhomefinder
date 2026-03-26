@@ -67,7 +67,8 @@ const AgentDashboard = () => {
       // Buscar agencia: primero la que creó el usuario, luego cualquier agency_team donde sea miembro (ej. owner agregado por admin)
       const { data: orgsCreated } = await supabase
         .from("organizations")
-        .select("*")
+        // Proyectar solo columnas necesarias (evitar traer campos pesados)
+        .select("id, name, description, created_by, created_at, type, invite_code, logo_url")
         .eq("created_by", user.id)
         .eq("type", "agency_team")
         .limit(1);
@@ -82,7 +83,8 @@ const AgentDashboard = () => {
         if (orgIds.length > 0) {
           const { data: orgsMember } = await supabase
             .from("organizations")
-            .select("*")
+            // Proyectar solo columnas necesarias (evitar traer campos pesados)
+            .select("id, name, description, created_by, created_at, type, invite_code, logo_url")
             .eq("type", "agency_team")
             .in("id", orgIds)
             .limit(1);
