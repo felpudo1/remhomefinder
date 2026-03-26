@@ -35,6 +35,9 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [minBudget, setMinBudget] = useState("");
   const [maxBudget, setMaxBudget] = useState("");
   const [bedrooms, setBedrooms] = useState("1");
+  const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [openNeighborhoods, setOpenNeighborhoods] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);

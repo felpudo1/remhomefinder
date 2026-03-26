@@ -1468,6 +1468,8 @@ export type Database = {
         Returns: boolean
       }
       is_system_delegate: { Args: { _user_id: string }; Returns: boolean }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       update_organization_logo_url: {
         Args: { _logo_url: string; _org_id: string }
         Returns: undefined

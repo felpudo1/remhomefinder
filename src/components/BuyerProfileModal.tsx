@@ -28,6 +28,9 @@ export function BuyerProfileModal({ isOpen, onClose, userId }: BuyerProfileModal
   const [minBudget, setMinBudget] = useState("");
   const [budget, setBudget] = useState("");
   const [bedrooms, setBedrooms] = useState("1");
+  const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [openNeighborhoods, setOpenNeighborhoods] = useState(false);
 
   const { departments, cities: allCities, neighborhoods: allNeighborhoods } = useGeography();
