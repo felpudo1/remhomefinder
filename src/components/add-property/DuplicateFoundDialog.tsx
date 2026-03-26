@@ -42,7 +42,7 @@ export function DuplicateFoundDialog({ isOpen, onClose, type, data }: DuplicateF
       onClose();
     } else if (!isFamily && data.url) {
       // Redirigir al Marketplace con el filtro de búsqueda
-      const searchUrl = `${ROUTES.MARKETPLACE}?search=${encodeURIComponent(data.url)}`;
+      const searchUrl = `${ROUTES.DASHBOARD}?search=${encodeURIComponent(data.url)}`;
       navigate(searchUrl);
       onClose();
     }
