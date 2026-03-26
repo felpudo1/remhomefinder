@@ -205,7 +205,7 @@ export function PropertyCardBase({
                         </div>
                     )}
                     {ratingOverlay && (
-                        <div className="absolute top-3 right-3">
+                        <div className="absolute bottom-3 left-3">
                             {ratingOverlay}
                         </div>
                     )}
