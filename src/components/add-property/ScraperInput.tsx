@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link, Sparkles, Loader2, ImageIcon, X, ExternalLink } from "lucide-react";
+import { Link, Sparkles, Loader2, ImageIcon, X, ExternalLink, QrCode } from "lucide-react";
+import { QrScannerModal } from "./QrScannerModal";
 
 export interface ScraperInputProps {
     step: "url" | "image-upload" | "manual";
@@ -61,6 +63,7 @@ export function ScraperInput({
 }: ScraperInputProps) {
     const isFamilyLocked = Boolean(urlInFamily);
     const isInAppLocked = Boolean(urlInApp);
+    const [qrOpen, setQrOpen] = useState(false);
     const isUrlActionsLocked = isFamilyLocked || isInAppLocked;
     const formattedFirstAddedAt = urlInApp?.firstAddedAt
         ? new Date(urlInApp.firstAddedAt).toLocaleDateString("es-UY", {
@@ -75,22 +78,41 @@ export function ScraperInput({
             <div className="space-y-5 py-2">
                 <div className="space-y-2">
                     <Label className="text-sm font-medium">Pegá la URL del aviso</Label>
-                    <div className="relative">
-                        <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                            type="url"
-                            placeholder="http://intocasas.com.uy"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            className="pl-9 rounded-xl"
+                    <div className="relative flex gap-2">
+                        <div className="relative flex-1">
+                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                type="url"
+                                placeholder="http://intocasas.com.uy"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                className="pl-9 rounded-xl"
+                                disabled={isUrlActionsLocked}
+                                onKeyDown={(e) => !isUrlActionsLocked && e.key === "Enter" && handleScrape()}
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="rounded-xl shrink-0"
+                            onClick={() => setQrOpen(true)}
                             disabled={isUrlActionsLocked}
-                            onKeyDown={(e) => !isUrlActionsLocked && e.key === "Enter" && handleScrape()}
-                        />
+                            title="Escanear código QR"
+                        >
+                            <QrCode className="w-4 h-4" />
+                        </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
                         Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
                     </p>
                 </div>
+
+                <QrScannerModal
+                    open={qrOpen}
+                    onClose={() => setQrOpen(false)}
+                    onScan={(scannedUrl) => setUrl(scannedUrl)}
+                />
 
                 {urlInFamily ? (
                     <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3 text-center">
