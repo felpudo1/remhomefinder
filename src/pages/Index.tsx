@@ -773,6 +773,7 @@ const Index = () => {
         userId={profile?.userId}
       />
 
+      <DbStatusBadge />
       <Footer />
     </div>
   );
