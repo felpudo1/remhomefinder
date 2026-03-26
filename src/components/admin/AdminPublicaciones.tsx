@@ -199,10 +199,9 @@ export function AdminPublicaciones({ toast }: Props) {
       .from("publication_deletion_audit_log")
       .insert({
         pub_id: id,
-        pub_type: "user_listing",
-        title: title,
+        // pub_type no existe en DB, lo concatenamos al título para no perder info
+        property_title: `[LISTADO] ${title}`,
         org_name: null,
-        status_before: deleteUserTarget.status,
         reason: _reason || "Sin motivo especificado",
         deleted_by: adminUser?.id,
       });
@@ -283,10 +282,9 @@ export function AdminPublicaciones({ toast }: Props) {
       .from("publication_deletion_audit_log")
       .insert({
         pub_id: id,
-        pub_type: "marketplace",
-        title: title,
+        // pub_type no existe en DB, lo concatenamos al título para no perder info
+        property_title: `[MARKET] ${title}`,
         org_name: orgName || null,
-        status_before: statusBefore,
         reason: _reason || "Sin motivo especificado",
         deleted_by: adminUser?.id,
       });

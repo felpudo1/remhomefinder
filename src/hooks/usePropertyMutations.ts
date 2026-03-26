@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { normalizeUrl } from "@/lib/duplicateCheck";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
@@ -47,6 +48,7 @@ async function insertNewProperty(
  */
 export function usePropertyMutations() {
     const queryClient = useQueryClient();
+    const { user: authUser } = useCurrentUser();
 
     // 1. Agregar Propiedad (properties + user_listings)
     const addPropertyMutation = useMutation({
@@ -75,8 +77,8 @@ export function usePropertyMutations() {
             contactPhone?: string;
             contactSource?: string;
         }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("No autenticado");
+            if (!authUser) throw new Error("No autenticado");
+            const user = authUser;
 
             // Get user's org
             let orgId = form.groupId;
@@ -198,8 +200,8 @@ export function usePropertyMutations() {
                 closeMovingScore: number;
             };
         }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("No autenticado");
+            if (!authUser) throw new Error("No autenticado");
+            const user = authUser;
 
             // Map old status names to new enum values
             const statusMap: Record<string, string> = {
@@ -312,17 +314,18 @@ export function usePropertyMutations() {
             return { id, status };
         },
         onMutate: async ({ id, status }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            const queryKey = ["properties", user?.id];
+            const queryKey = ["properties", authUser?.id];
             
             await queryClient.cancelQueries({ queryKey });
-            const previousProperties = queryClient.getQueryData<Property[]>(queryKey);
+            const previousProperties = queryClient.getQueryData<InfiniteData<Property[]>>(queryKey);
             
             if (previousProperties) {
-                queryClient.setQueryData<Property[]>(
-                    queryKey,
-                    previousProperties.map((p) => (p.id === id ? { ...p, status } : p))
-                );
+                queryClient.setQueryData<InfiniteData<Property[]>>(queryKey, {
+                    ...previousProperties,
+                    pages: previousProperties.pages.map(page => 
+                        page.map(p => p.id === id ? { ...p, status } : p)
+                    )
+                });
             }
             return { previousProperties, queryKey };
         },
@@ -346,8 +349,8 @@ export function usePropertyMutations() {
             propertyId: string;
             comment: Omit<PropertyComment, "id" | "createdAt">;
         }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("No autenticado");
+            if (!authUser) throw new Error("No autenticado");
+            const user = authUser;
 
             const { data, error } = await (supabase.from("family_comments") as any).insert({
                 user_listing_id: propertyId,

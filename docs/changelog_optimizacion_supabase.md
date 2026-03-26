@@ -106,6 +106,14 @@ Con 10 usuarios de prueba y 3 agentes en 4 horas:
 
 **Impacto:** -50 KB/fila en queries de propiedades. Con 1,000 propiedades = 50 MB menos de tráfico BD.
 
+### 7. Bug Fix — Optimistic Update en usePropertyMutations
+
+**Archivo:** `src/hooks/usePropertyMutations.ts`
+
+- **Bug corregido:** `TypeError: previousProperties.map is not a function`. El cache de propiedades usa `InfiniteQuery` (con `pages`), pero el código esperaba un array plano.
+- **Migración Auth Nivel 3:** Se aprovechó el fix para migrar todo el archivo a `useCurrentUser()`.
+- **Impacto:** Eliminadas **5 llamadas a `getUser()`**. El cambio de estado ahora es instantáneo y no rompe la UI.
+
 ---
 
 ## Reducción total estimada

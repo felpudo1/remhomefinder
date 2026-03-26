@@ -87,6 +87,9 @@ export function AdminAuditLog() {
 
             setUserLog(records.map((r: any) => ({
                 ...r,
+                deleted_at: r.created_at, // En DB se llama created_at
+                display_name: r.deleted_user_name, // En DB se llama deleted_user_name
+                email: r.deleted_user_email, // En DB se llama deleted_user_email
                 deleted_by_name: adminNameMap[r.deleted_by] || r.deleted_by,
             })));
         } catch (err: unknown) {
@@ -125,10 +128,19 @@ export function AdminAuditLog() {
                 }
             }
 
-            setPubLog(records.map((r: any) => ({
-                ...r,
-                deleted_by_name: adminNameMap[r.deleted_by] || r.deleted_by,
-            })));
+            setPubLog(records.map((r: any) => {
+                // Inferir pub_type del título si no existe la columna
+                const isMarket = r.property_title?.startsWith("[MARKET]");
+                const cleanTitle = r.property_title?.replace(/^\[MARKET\] |^\[LISTADO\] /, "") || r.property_title;
+                
+                return {
+                    ...r,
+                    title: cleanTitle,
+                    pub_type: isMarket ? "marketplace" : "user_listing",
+                    deleted_at: r.created_at, // En DB se llama created_at
+                    deleted_by_name: adminNameMap[r.deleted_by] || r.deleted_by,
+                };
+            }));
         } catch (err: unknown) {
             console.error("Error fetching publication deletion log:", err);
         } finally {
