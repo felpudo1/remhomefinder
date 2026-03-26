@@ -33,9 +33,8 @@ export function useGroups() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["groups"],
-    // Cache corto: se invalida al crear/unirse/salir
     staleTime: 30 * 1000,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
