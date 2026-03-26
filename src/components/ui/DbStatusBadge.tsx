@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Database, WifiOff, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Database, WifiOff, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export type DbStatus = "checking" | "connected" | "error";
 
@@ -12,7 +13,7 @@ interface DbCheckResult {
     errorMessage: string | null;
 }
 
-export function DbStatusBadge() {
+export function useDbStatus() {
     const [result, setResult] = useState<DbCheckResult>({
         status: "checking",
         latencyMs: null,
@@ -52,50 +53,74 @@ export function DbStatusBadge() {
         return () => clearInterval(interval);
     }, []);
 
-    // Solo mostrar si hay error
-    if (result.status !== "error") {
-        return null;
-    }
+    return { ...result, runCheck };
+}
+
+/** Badge inline para usar dentro del Footer. Siempre visible. */
+export function DbStatusInline() {
+    const { status, latencyMs, checkedAt, errorMessage, runCheck } = useDbStatus();
+
+    const statusIcon = status === "connected"
+        ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+        : status === "error"
+            ? <WifiOff className="w-3 h-3 text-destructive" />
+            : <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />;
+
+    const statusLabel = status === "connected" ? "Online" : status === "error" ? "Offline" : "…";
 
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    className="fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium backdrop-blur-sm shadow-sm cursor-pointer transition-all hover:scale-105 bg-destructive/10 text-destructive border-destructive/30"
-                    role="alert"
+                    className={cn(
+                        "inline-flex items-center gap-1.5 text-[10px] font-medium cursor-pointer px-2 py-1 rounded-md transition-colors",
+                        status === "connected" && "text-emerald-600 hover:bg-emerald-500/10",
+                        status === "error" && "text-destructive hover:bg-destructive/10",
+                        status === "checking" && "text-muted-foreground hover:bg-muted/50",
+                    )}
+                    title="Estado de la base de datos"
                 >
                     <Database className="w-3 h-3 opacity-70" />
-                    <WifiOff className="w-3 h-3" />
-                    <span>Sin conexión a BD</span>
+                    {statusIcon}
+                    <span>BD {statusLabel}</span>
                 </button>
             </PopoverTrigger>
             <PopoverContent side="top" align="start" className="w-72 p-0">
                 <div className="p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                        {status === "error"
+                            ? <AlertTriangle className="w-4 h-4 text-destructive" />
+                            : <Database className="w-4 h-4 text-primary" />}
                         <h4 className="text-sm font-semibold text-foreground">Estado de la Base de Datos</h4>
                     </div>
 
                     <div className="space-y-2 text-xs">
                         <div className="flex items-center justify-between py-1.5 border-b border-border/50">
                             <span className="text-muted-foreground">Estado</span>
-                            <span className="flex items-center gap-1 font-medium text-destructive">
-                                <WifiOff className="w-3 h-3" />
-                                Sin conexión
+                            <span className={cn(
+                                "flex items-center gap-1 font-medium",
+                                status === "connected" && "text-emerald-600",
+                                status === "error" && "text-destructive",
+                                status === "checking" && "text-muted-foreground",
+                            )}>
+                                {statusIcon}
+                                {statusLabel}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between py-1.5 border-b border-border/50">
                             <span className="text-muted-foreground">Latencia</span>
-                            <span className="font-medium text-muted-foreground">—</span>
+                            <span className="font-medium text-foreground">
+                                {latencyMs != null ? `${latencyMs} ms` : "—"}
+                            </span>
                         </div>
 
-                        {result.errorMessage && (
+                        {errorMessage && (
                             <div className="flex items-start justify-between py-1.5 border-b border-border/50">
                                 <span className="text-muted-foreground">Error</span>
-                                <span className="font-medium text-destructive text-right max-w-[140px] truncate" title={result.errorMessage}>
-                                    {result.errorMessage}
+                                <span className="font-medium text-destructive text-right max-w-[140px] truncate" title={errorMessage}>
+                                    {errorMessage}
                                 </span>
                             </div>
                         )}
@@ -103,8 +128,8 @@ export function DbStatusBadge() {
                         <div className="flex items-center justify-between py-1.5">
                             <span className="text-muted-foreground">Última comprobación</span>
                             <span className="font-medium text-foreground">
-                                {result.checkedAt
-                                    ? result.checkedAt.toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                                {checkedAt
+                                    ? checkedAt.toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
                                     : "—"}
                             </span>
                         </div>
@@ -120,5 +145,25 @@ export function DbStatusBadge() {
                 </div>
             </PopoverContent>
         </Popover>
+    );
+}
+
+/** Badge flotante fijo — solo visible si la BD falla */
+export function DbStatusBadge() {
+    const { status, runCheck } = useDbStatus();
+
+    if (status !== "error") return null;
+
+    return (
+        <button
+            type="button"
+            onClick={runCheck}
+            className="fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium backdrop-blur-sm shadow-sm cursor-pointer transition-all hover:scale-105 bg-destructive/10 text-destructive border-destructive/30"
+            role="alert"
+        >
+            <Database className="w-3 h-3 opacity-70" />
+            <WifiOff className="w-3 h-3" />
+            <span>Sin conexión a BD</span>
+        </button>
     );
 }

@@ -16,8 +16,13 @@ import { SupportWhatsAppLink } from "@/components/support/SupportWhatsAppLink";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DbStatusInline } from "@/components/ui/DbStatusBadge";
 
-export const Footer = () => {
+interface FooterProps {
+  showDbStatus?: boolean;
+}
+
+export const Footer = ({ showDbStatus = false }: FooterProps) => {
   const { value: supportEmail } = useSystemConfig(SUPPORT_EMAIL_CONFIG_KEY, SUPPORT_EMAIL_DEFAULT);
   const { value: supportPhone } = useSystemConfig(SUPPORT_PHONE_CONFIG_KEY, SUPPORT_PHONE_DEFAULT);
   const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
@@ -98,6 +103,14 @@ export const Footer = () => {
                             ·
                         </span>
           }
+
+                    {/* Estado BD — solo si se pasa showDbStatus */}
+                    {showDbStatus && (
+                        <>
+                            <DbStatusInline />
+                            <span className="text-muted-foreground/40 text-xs hidden sm:inline" aria-hidden>·</span>
+                        </>
+                    )}
                     
                     {/* Versión de la aplicación */}
                     <button
