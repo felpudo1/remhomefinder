@@ -60,12 +60,19 @@ async function logScrapeUsage(params: {
   }
 }
 
-// ── Scraping helpers ──
+// ── Scraping helpers ── (v2 - redeploy trigger)
 
 async function scrapeWithFirecrawl(formattedUrl: string) {
-  // Try both secret names (connector may inject either)
-  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY") || Deno.env.get("FIRECRAWL_API_KEY_1");
-  if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
+  // Try all possible secret names from connectors
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY") 
+    || Deno.env.get("FIRECRAWL_API_KEY_1")
+    || Deno.env.get("FIRECRAWL_API_KEY_2");
+  if (!FIRECRAWL_API_KEY) {
+    // Log available env keys for debugging (no values)
+    console.error("FIRECRAWL_API_KEY not found. Available env keys containing 'FIRE':", 
+      [...Deno.env.toObject()].filter(([k]) => k.includes("FIRE")).map(([k]) => k));
+    throw new Error("FIRECRAWL_API_KEY not configured");
+  }
 
   const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
     method: "POST",
