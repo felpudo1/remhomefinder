@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link, Sparkles, Loader2, ImageIcon, X, ExternalLink } from "lucide-react";
+import { Link, Sparkles, Loader2, ImageIcon, X, ExternalLink, QrCode } from "lucide-react";
+import { QrScannerModal } from "./QrScannerModal";
 
 export interface ScraperInputProps {
     step: "url" | "image-upload" | "manual";
