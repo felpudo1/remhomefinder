@@ -269,6 +269,7 @@ export function useGroups() {
     groups,
     agencyOrg,
     loading: isLoading,
+    refetchGroups: refetch,
     createGroup: createGroupMutation.mutateAsync,
     joinGroup: joinGroupMutation.mutateAsync,
     leaveGroup: leaveGroupMutation.mutateAsync,
