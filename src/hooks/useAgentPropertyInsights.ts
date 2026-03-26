@@ -290,6 +290,9 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
         };
       });
     },
-    staleTime: 60_000,
+    // 5 minutos — reduce los ~1.200 requests/hora que generaba el staleTime de 1 minuto
+    // con múltiples clientes en el AgentDashboard. Los insights de publicaciones
+    // no necesitan actualización tan frecuente; el usuario puede refrescar manualmente si lo requiere.
+    staleTime: 5 * 60 * 1000,
   });
 }

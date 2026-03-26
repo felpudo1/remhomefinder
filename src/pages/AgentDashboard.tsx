@@ -20,6 +20,7 @@ import { UserStatus } from "@/types/property";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 
 type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias";
 
@@ -44,20 +45,28 @@ const AgentDashboard = () => {
   const [showFormarEquipo, setShowFormarEquipo] = useState(false);
   const navigate = useNavigate();
 
+  // Usuario del AuthProvider centralizado: 0 auth requests HTTP adicionales
+  const { user: authUser } = useCurrentUser();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
   const profileStatus: UserStatus = profile?.status ?? "pending";
 
+  /**
+   * Carga inicial de roles y agencia del usuario.
+   * Dependencia: authUser?.id (string primitivo) — solo re-corre en login/logout,
+   * NO en cada refetch de profile (que antes generaba 5-6 requests cada 5 minutos).
+   */
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return; // ProtectedRoute already handles unauthenticated users
+      // Usamos authUser del AuthProvider en lugar de supabase.auth.getUser()
+      // para evitar un auth request HTTP extra por cada ejecución de init()
+      if (!authUser) return;
 
-      setUserId(user.id);
+      setUserId(authUser.id);
       const { data: roleRows } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id);
+        .eq("user_id", authUser.id);
       const roleSet = new Set((roleRows || []).map((r) => r.role));
       const hasAgencyRole = roleSet.has(ROLES.AGENCY);
       const hasAgencyMemberRole = roleSet.has(ROLES.AGENCY_MEMBER);
@@ -69,7 +78,7 @@ const AgentDashboard = () => {
         .from("organizations")
         // Proyectar solo columnas necesarias (evitar traer campos pesados)
         .select("id, name, description, created_by, created_at, type, invite_code, logo_url")
-        .eq("created_by", user.id)
+        .eq("created_by", authUser.id)
         .eq("type", "agency_team")
         .limit(1);
 
@@ -78,7 +87,7 @@ const AgentDashboard = () => {
         const { data: memberships } = await supabase
           .from("organization_members")
           .select("org_id")
-          .eq("user_id", user.id);
+          .eq("user_id", authUser.id);
         const orgIds = memberships?.map((m) => m.org_id) || [];
         if (orgIds.length > 0) {
           const { data: orgsMember } = await supabase
@@ -95,7 +104,7 @@ const AgentDashboard = () => {
       if (org) {
         // Owner = solo si tiene role 'owner' en organization_members (RPC de BD, source of truth)
         const { data: isOwnerResult, error: ownerErr } = await supabase.rpc("is_org_owner" as any, {
-          _user_id: user.id,
+          _user_id: authUser.id,
           _org_id: org.id,
         });
         if (ownerErr) console.warn("is_org_owner RPC:", ownerErr);
@@ -105,9 +114,9 @@ const AgentDashboard = () => {
         setAgency({
           id: org.id,
           name: org.name,
-          contact_name: profile?.displayName || "",
-          contact_email: user.email || "",
-          contact_phone: profile?.phone || "",
+          contact_name: "",
+          contact_email: authUser.email || "",
+          contact_phone: "",
           contact_person_phone: "",
           description: org.description || "",
           created_by: org.created_by,
@@ -119,7 +128,25 @@ const AgentDashboard = () => {
       setLoading(false);
     };
     init();
-  }, [navigate, profile]);
+  }, [authUser?.id]);
+
+  /**
+   * Sincroniza displayName y phone del perfil en la agency cuando el perfil carga o cambia.
+   * Es un useEffect liviano (sin requests a BD) separado del init() principal.
+   * Así, los refetch de profile cada 5 min NO re-corren todas las queries de init().
+   */
+  useEffect(() => {
+    if (!profile) return;
+    setAgency((prev) =>
+      prev
+        ? {
+            ...prev,
+            contact_name: profile.displayName || prev.contact_name,
+            contact_phone: profile.phone || prev.contact_phone,
+          }
+        : prev
+    );
+  }, [profile?.displayName, profile?.phone]);
 
   useEffect(() => {
     if (!canManageTeams && activeTab === "equipo") {

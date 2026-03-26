@@ -3,7 +3,7 @@
  * Adaptado al nuevo esquema (agent_publications + user_listings).
  * Incluye tabla de auditoría similar al admin, filtrada por propiedades del agente.
  */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,69 +114,83 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: keyof StatProperty; direction: 'asc' | 'desc' }>({
         key: 'created_at', direction: 'desc'
     });
-    const [statProps, setStatProps] = useState<StatProperty[]>([]);
-    const [loadingStats, setLoadingStats] = useState(true);
     const [statsPage, setStatsPage] = useState(0);
-    const [totalStatsCount, setTotalStatsCount] = useState(0);
 
-    const fetchAgentMarketStats = async () => {
-        setLoadingStats(true);
-        try {
+    /**
+     * Tabla de auditoría de propiedades del agente.
+     * Migrado de useEffect+setState a useQuery para tener caché de 5 min (global default).
+     * Antes: se re-ejecutaban 4 requests cada vez que se cambiaba de pestaña o se remontaba el componente.
+     * Ahora: los datos se reutilizan del caché hasta que expiren o el agente presione "Refrescar".
+     *
+     * También se corrigió el full scan:
+     * - Antes: public_global_rating y property_insights_summary se pedían SIN filtro (toda la tabla).
+     * - Ahora: se filtran por los propertyIds del agente desde la BD (round-trip 2, en paralelo con saves).
+     */
+    const { data: marketStatsData, isLoading: loadingStats, refetch: refetchMarketStats } = useQuery({
+        queryKey: ["agency-market-stats", agency.id, statsPage],
+        enabled: !!agency?.id,
+        queryFn: async (): Promise<{ statProps: StatProperty[]; totalCount: number }> => {
             const from = statsPage * PAGE_SIZE;
             const to = from + PAGE_SIZE - 1;
-            const [pubRes, ratingsRes, insightsRes] = await Promise.all([
-                (supabase.from("agent_publications") as any)
-                    .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms), organizations(name)", { count: "exact" })
-                    .eq("org_id", agency.id)
-                    .order('created_at', { ascending: false })
-                    .range(from, to),
-                // Usamos el agregado global para que el rating no dependa de permisos
-                // de lectura fila a fila en property_reviews.
-                (supabase.from("public_global_rating") as any).select("property_id, avg_rating, total_votes"),
-                (supabase.from("property_insights_summary") as any).select("property_id, attribute_name, total_scores"),
-            ]);
-            const propertyIds = (pubRes.data || []).map((p: any) => p.property_id).filter(Boolean);
+
+            // Round 1: publicaciones de esta agencia (paginadas, con count)
+            const pubRes = await (supabase.from("agent_publications") as any)
+                .select("*, properties(title, source_url, neighborhood, city, total_cost, m2_total, rooms), organizations(name)", { count: "exact" })
+                .eq("org_id", agency.id)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+
             if (pubRes.error) throw pubRes.error;
-            const pubData = pubRes.data || [];
-            const ratingsData: { property_id: string; avg_rating: number | null; total_votes: number | null }[] =
-                (ratingsRes.data || []).filter((r: any) => propertyIds.includes(r.property_id));
-            const insightsData: { property_id: string; attribute_name: string; total_scores: number }[] = (insightsRes.data || []).filter((r: any) => propertyIds.includes(r.property_id));
+            const pubData: any[] = pubRes.data || [];
+            if (pubData.length === 0) return { statProps: [], totalCount: pubRes.count || 0 };
 
-            /** Guardados por publicación (vía RPC para evadir RLS) */
-            const pubIdsForPage = pubData.map((p: any) => p.id).filter(Boolean);
-            let savesByPublication: Record<string, number> = {};
-            if (pubIdsForPage.length > 0) {
-                const { data: savesRows, error: savesErr } = await supabase
-                    .rpc("get_publications_save_counts", { _publication_ids: pubIdsForPage });
-                
-                if (!savesErr && savesRows) {
-                    savesRows.forEach((s: any) => {
-                        savesByPublication[s.publication_id] = s.save_count || 0;
-                    });
-                }
-            }
+            const propertyIds: string[] = pubData.map((p: any) => p.property_id).filter(Boolean);
+            const pubIds: string[] = pubData.map((p: any) => p.id).filter(Boolean);
 
-            const discardReasonsMap: Record<string, { name: string; count: number }[]> = {};
-            insightsData.forEach((row) => {
-                if (!row.property_id || !row.attribute_name || !propertyIds.includes(row.property_id)) return;
-                if (!discardReasonsMap[row.property_id]) discardReasonsMap[row.property_id] = [];
-                discardReasonsMap[row.property_id].push({ name: row.attribute_name, count: row.total_scores || 0 });
-            });
-            Object.keys(discardReasonsMap).forEach((pid) => discardReasonsMap[pid].sort((a, b) => b.count - a.count));
+            // Round 2: ratings, insights y guardados — todos acotados por los IDs del agente (sin full scan)
+            const [ratingsRes, insightsRes, savesRes] = await Promise.all([
+                // Usamos el agregado global para que el rating no dependa de permisos fila a fila
+                propertyIds.length > 0
+                    ? (supabase.from("public_global_rating") as any)
+                        .select("property_id, avg_rating, total_votes")
+                        .in("property_id", propertyIds)
+                    : Promise.resolve({ data: [] }),
+                propertyIds.length > 0
+                    ? (supabase.from("property_insights_summary") as any)
+                        .select("property_id, attribute_name, total_scores")
+                        .in("property_id", propertyIds)
+                    : Promise.resolve({ data: [] }),
+                pubIds.length > 0
+                    ? supabase.rpc("get_publications_save_counts", { _publication_ids: pubIds })
+                    : Promise.resolve({ data: [] }),
+            ]);
 
+            // Construir mapas para lookup O(1)
             const ratingsMap: Record<string, { average: number; count: number }> = {};
-            ratingsData.forEach((r) => {
-                if (!r.property_id || !propertyIds.includes(r.property_id)) return;
+            (ratingsRes.data || []).forEach((r: any) => {
+                if (!r.property_id) return;
                 ratingsMap[r.property_id] = {
                     average: Number(r.avg_rating || 0),
                     count: Number(r.total_votes || 0),
                 };
             });
 
-            const market: StatProperty[] = pubData.map((pub) => {
-                const p = (pub as any).properties || {};
-                const stats = ratingsMap[(pub as any).property_id];
-                const propId = (pub as any).property_id;
+            const discardReasonsMap: Record<string, { name: string; count: number }[]> = {};
+            (insightsRes.data || []).forEach((row: any) => {
+                if (!row.property_id || !row.attribute_name) return;
+                if (!discardReasonsMap[row.property_id]) discardReasonsMap[row.property_id] = [];
+                discardReasonsMap[row.property_id].push({ name: row.attribute_name, count: row.total_scores || 0 });
+            });
+            Object.keys(discardReasonsMap).forEach((pid) => discardReasonsMap[pid].sort((a, b) => b.count - a.count));
+
+            const savesByPublication: Record<string, number> = {};
+            (savesRes.data || []).forEach((s: any) => {
+                savesByPublication[s.publication_id] = s.save_count || 0;
+            });
+
+            const statProps: StatProperty[] = pubData.map((pub: any) => {
+                const p = pub.properties || {};
+                const stats = ratingsMap[pub.property_id];
                 return {
                     id: pub.id,
                     title: p.title || "",
@@ -195,22 +209,16 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                     views_count: pub.views_count || 0,
                     created_at: pub.created_at,
                     url: p.source_url || "",
-                    discardReasons: discardReasonsMap[propId] || [],
+                    discardReasons: discardReasonsMap[pub.property_id] || [],
                 };
             });
-            setStatProps(market);
-            setTotalStatsCount(pubRes.count || 0);
-        } catch {
-            setStatProps([]);
-            setTotalStatsCount(0);
-        } finally {
-            setLoadingStats(false);
-        }
-    };
 
-    useEffect(() => {
-        if (agency?.id) fetchAgentMarketStats();
-    }, [agency?.id, statsPage]);
+            return { statProps, totalCount: pubRes.count || 0 };
+        },
+    });
+
+    const statProps = marketStatsData?.statProps ?? [];
+    const totalStatsCount = marketStatsData?.totalCount ?? 0;
 
     const handleSort = (key: keyof StatProperty) => {
         setSortConfig(prev => ({
@@ -233,7 +241,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
             refetchPropertiesStats(),
             refetchDashboardStats(),
             refetchHistoricalStats(),
-            fetchAgentMarketStats(),
+            refetchMarketStats(),
         ]);
         setIsRefreshingTab(false);
     };
