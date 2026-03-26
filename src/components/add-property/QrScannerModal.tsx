@@ -53,33 +53,14 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
       setError(null);
       setScanning(true);
 
-      // Check if camera API is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError("Tu navegador no soporta acceso a la cámara. Usá la opción \"Subir imagen\".");
+      if (!window.isSecureContext) {
+        setError("Para usar la cámara necesitás abrir la app en HTTPS. Mientras tanto podés usar \"Subir imagen\".");
         setScanning(false);
         return;
       }
 
-      // Request camera permission explicitly first
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        // Stop the test stream immediately
-        stream.getTracks().forEach((t) => t.stop());
-      } catch (permErr: any) {
-        if (!cancelled && mountedRef.current) {
-          const isDenied = permErr?.name === "NotAllowedError" || permErr?.name === "PermissionDeniedError";
-          setError(
-            isDenied
-              ? "Permiso de cámara denegado. Habilitá el acceso a la cámara en la configuración del navegador y recargá la página, o usá \"Subir imagen\"."
-              : "No se pudo acceder a la cámara. Probá con la opción \"Subir imagen\"."
-          );
-          setScanning(false);
-        }
-        return;
-      }
-
       // Wait for DOM to render the container
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 350));
       if (cancelled || !mountedRef.current) return;
 
       const container = document.getElementById("qr-reader");
@@ -96,18 +77,41 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
         const scanner = new Html5Qrcode("qr-reader");
         scannerRef.current = scanner;
 
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            if (!cancelled) handleResult(decodedText);
-          },
-          () => {}
-        );
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        const onSuccess = (decodedText: string) => {
+          if (!cancelled) handleResult(decodedText);
+        };
+
+        try {
+          // Attempt 1: prefer rear camera on mobile
+          await scanner.start(
+            { facingMode: "environment" },
+            config,
+            onSuccess,
+            () => {}
+          );
+        } catch (primaryErr) {
+          // Attempt 2: fallback to first available camera device
+          const cameras = await Html5Qrcode.getCameras().catch(() => []);
+          if (!cameras || cameras.length === 0) throw primaryErr;
+
+          await scanner.start(
+            cameras[0].id,
+            config,
+            onSuccess,
+            () => {}
+          );
+        }
       } catch (err: any) {
         if (!cancelled && mountedRef.current) {
           console.warn("QR camera error:", err);
-          setError("No se pudo iniciar el escáner. Probá con \"Subir imagen\".");
+          const name = err?.name;
+          const denied = name === "NotAllowedError" || name === "PermissionDeniedError";
+          setError(
+            denied
+              ? "No se pudo usar la cámara en este dominio publicado. Abrí la app publicada en una pestaña nueva, permití cámara para ese dominio y reintentá; o usá \"Subir imagen\"."
+              : "No se pudo iniciar el escáner en este dispositivo. Probá con \"Subir imagen\"."
+          );
           setScanning(false);
         }
       }
