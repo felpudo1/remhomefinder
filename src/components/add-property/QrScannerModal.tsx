@@ -162,25 +162,45 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
 
-      // Ensure the hidden container exists
+      // Create a visible but off-screen container (display:none breaks scanning)
       let container = document.getElementById("qr-reader-file");
-      if (!container) {
-        container = document.createElement("div");
-        container.id = "qr-reader-file";
-        container.style.display = "none";
-        document.body.appendChild(container);
-      }
+      if (container) container.remove();
+      container = document.createElement("div");
+      container.id = "qr-reader-file";
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.style.top = "-9999px";
+      container.style.width = "300px";
+      container.style.height = "300px";
+      document.body.appendChild(container);
 
       const scanner = new Html5Qrcode("qr-reader-file");
-      const result = await scanner.scanFile(file, true);
+
+      // Try scanning with different verbosity settings
+      let result: string | null = null;
+      try {
+        result = await scanner.scanFile(file, /* showImage */ true);
+      } catch {
+        // Retry without showing image
+        try {
+          result = await scanner.scanFile(file, false);
+        } catch { /* will handle below */ }
+      }
+
       try { scanner.clear(); } catch { /* ignore */ }
-      handleResult(result);
+      try { container.remove(); } catch { /* ignore */ }
+
+      if (result) {
+        handleResult(result);
+      } else {
+        setError("No se detectó un código QR en la imagen. Asegurate de que el QR se vea nítido y completo, e intentá con otra foto.");
+        setScanning(false);
+      }
     } catch {
-      setError("No se detectó un código QR en la imagen. Intentá con otra foto.");
+      setError("No se detectó un código QR en la imagen. Asegurate de que el QR se vea nítido y completo, e intentá con otra foto.");
       setScanning(false);
     }
 
-    // Reset file input so re-selecting the same file triggers onChange
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
