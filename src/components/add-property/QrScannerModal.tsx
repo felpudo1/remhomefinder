@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, ImageIcon, X, Loader2 } from "lucide-react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Camera, ImageIcon, Loader2 } from "lucide-react";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -14,27 +13,30 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
   const [mode, setMode] = useState<"camera" | "image">("camera");
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mountedRef = useRef(true);
+  const hasScannedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const stopScanner = useCallback(async () => {
-    if (scannerRef.current) {
-      try {
-        const state = scannerRef.current.getState();
-        // state 2 = scanning
-        if (state === 2) {
-          await scannerRef.current.stop();
-        }
-      } catch {
-        // ignore
-      }
-      scannerRef.current.clear();
-      scannerRef.current = null;
-    }
+    const scanner = scannerRef.current;
+    if (!scanner) return;
+    try {
+      const state = scanner.getState();
+      if (state === 2) await scanner.stop();
+    } catch { /* ignore */ }
+    try { scanner.clear(); } catch { /* ignore */ }
+    scannerRef.current = null;
   }, []);
 
   const handleResult = useCallback((decodedText: string) => {
+    if (hasScannedRef.current) return;
+    hasScannedRef.current = true;
     stopScanner();
     onScan(decodedText);
     onClose();
@@ -45,16 +47,28 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
     if (!open || mode !== "camera") return;
 
     let cancelled = false;
+    hasScannedRef.current = false;
 
     const startCamera = async () => {
       setError(null);
       setScanning(true);
 
-      // Small delay to let DOM render
-      await new Promise((r) => setTimeout(r, 300));
-      if (cancelled) return;
+      // Wait for DOM to render the container
+      await new Promise((r) => setTimeout(r, 500));
+      if (cancelled || !mountedRef.current) return;
+
+      const container = document.getElementById("qr-reader");
+      if (!container) {
+        setError("No se pudo inicializar el escáner. Probá subiendo una imagen.");
+        setScanning(false);
+        return;
+      }
 
       try {
+        // Dynamic import to avoid issues if the library fails to load
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (cancelled) return;
+
         const scanner = new Html5Qrcode("qr-reader");
         scannerRef.current = scanner;
 
@@ -64,11 +78,12 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
           (decodedText) => {
             if (!cancelled) handleResult(decodedText);
           },
-          () => {} // ignore errors during scanning
+          () => {} // ignore scan errors
         );
       } catch (err: any) {
-        if (!cancelled) {
-          setError("No se pudo acceder a la cámara. Probá subiendo una imagen con QR.");
+        if (!cancelled && mountedRef.current) {
+          console.warn("QR camera error:", err);
+          setError("No se pudo acceder a la cámara. Probá con la opción \"Subir imagen\" para escanear un QR desde una foto.");
           setScanning(false);
         }
       }
@@ -90,6 +105,7 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
       setError(null);
       setScanning(false);
       setMode("camera");
+      hasScannedRef.current = false;
     }
   }, [open, stopScanner]);
 
@@ -101,14 +117,36 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
     setScanning(true);
 
     try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+
+      // Ensure the hidden container exists
+      let container = document.getElementById("qr-reader-file");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "qr-reader-file";
+        container.style.display = "none";
+        document.body.appendChild(container);
+      }
+
       const scanner = new Html5Qrcode("qr-reader-file");
       const result = await scanner.scanFile(file, true);
-      scanner.clear();
+      try { scanner.clear(); } catch { /* ignore */ }
       handleResult(result);
     } catch {
       setError("No se detectó un código QR en la imagen. Intentá con otra foto.");
       setScanning(false);
     }
+
+    // Reset file input so re-selecting the same file triggers onChange
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const switchMode = (newMode: "camera" | "image") => {
+    stopScanner();
+    setMode(newMode);
+    setError(null);
+    setScanning(false);
+    hasScannedRef.current = false;
   };
 
   return (
@@ -125,7 +163,7 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
               variant={mode === "camera" ? "default" : "outline"}
               size="sm"
               className="flex-1 gap-2 rounded-xl"
-              onClick={() => { stopScanner(); setMode("camera"); setError(null); }}
+              onClick={() => switchMode("camera")}
             >
               <Camera className="w-4 h-4" />
               Cámara
@@ -134,7 +172,7 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
               variant={mode === "image" ? "default" : "outline"}
               size="sm"
               className="flex-1 gap-2 rounded-xl"
-              onClick={() => { stopScanner(); setMode("image"); setError(null); }}
+              onClick={() => switchMode("image")}
             >
               <ImageIcon className="w-4 h-4" />
               Subir imagen
@@ -145,7 +183,6 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
             <div className="space-y-2">
               <div
                 id="qr-reader"
-                ref={containerRef}
                 className="w-full min-h-[280px] rounded-xl overflow-hidden bg-muted"
               />
               <p className="text-xs text-muted-foreground text-center">
@@ -156,9 +193,6 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
 
           {mode === "image" && (
             <div className="space-y-3">
-              {/* Hidden div needed by html5-qrcode */}
-              <div id="qr-reader-file" className="hidden" />
-
               <input
                 ref={fileInputRef}
                 type="file"
@@ -183,7 +217,7 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
           {scanning && mode === "image" && (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Analizando imagen...
+              Analizando imagen…
             </div>
           )}
 
