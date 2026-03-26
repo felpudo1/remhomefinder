@@ -108,9 +108,24 @@ export function useMarketplaceProperties() {
         );
       }
 
+      // Resolución de ratings globales en batch (REGLA 6: Evitar N+1 queries)
+      const propertyIds = Array.from(new Set(data.map((pub: any) => pub.property_id).filter(Boolean)));
+      let ratingByPropertyId: Record<string, { avg_rating: number; total_votes: number }> = {};
+      if (propertyIds.length > 0) {
+        const { data: ratings } = await supabase.rpc("get_global_property_ratings", {
+          _property_ids: propertyIds,
+        });
+        if (ratings) {
+          ratingByPropertyId = Object.fromEntries(
+            (ratings as any[]).map((r) => [r.property_id, { avg_rating: r.avg_rating, total_votes: Number(r.total_votes) }]),
+          );
+        }
+      }
+
       return data.map((pub: any): MarketplaceProperty => {
         const p = pub.properties || {};
         const publisher = pub.published_by ? publisherById[pub.published_by] : undefined;
+        const rating = p.id ? ratingByPropertyId[p.id] : undefined;
         return {
           id: pub.id,
           propertyId: pub.property_id,
@@ -135,6 +150,8 @@ export function useMarketplaceProperties() {
           updatedAt: new Date(pub.updated_at),
           publishedByName: publisher?.name,
           publishedByPhone: publisher?.phone,
+          averageRating: rating?.avg_rating || 0,
+          totalVotes: rating?.total_votes || 0,
         };
       });
     },

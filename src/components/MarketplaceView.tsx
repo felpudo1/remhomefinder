@@ -9,6 +9,7 @@ import { MarketplaceCard } from "@/components/MarketplaceCard";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceFiltersDropdown } from "@/components/MarketplaceFiltersDropdown";
 import { MarketplaceProperty } from "@/types/property";
+import { useGroups } from "@/hooks/useGroups";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
@@ -64,6 +65,8 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
+  const { groups } = useGroups();
+  const userOrgId = groups?.[0]?.id || null;
   const referredAgentId = profile?.referredById;
 
   const saveToList = useSaveToList();
@@ -467,6 +470,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                       forceExpandImages={expandPhotos}
                       isMatchAIMagicActive={isMatchAIMagicActive && !isInactive}
                       matchAIRank={i}
+                      userOrgId={userOrgId}
                     />
                   </div>
                 );

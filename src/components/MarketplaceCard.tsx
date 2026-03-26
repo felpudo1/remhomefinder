@@ -7,6 +7,8 @@ import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
 import { useState } from "react";
 import { MatchiAIBadge } from "@/components/ui/MatchiAIBadge";
+import { StarRating } from "@/components/ui/StarRating";
+import { cn } from "@/lib/utils";
 
 interface MarketplaceCardProps {
   property: MarketplaceProperty;
@@ -17,6 +19,7 @@ interface MarketplaceCardProps {
   forceExpandImages?: boolean;
   isMatchAIMagicActive?: boolean;
   matchAIRank?: number;
+  userOrgId?: string | null;
 }
 
 /**
@@ -42,12 +45,17 @@ export function MarketplaceCard({
   forceExpandImages,
   isMatchAIMagicActive = false,
   matchAIRank = 0,
+  userOrgId,
 }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const overlay = STATUS_OVERLAY_CONFIG[property.status];
   const isSaveCtaHighlighted = Boolean(isMatchAIMagicActive && !alreadySaved && !isSaving);
+
+  // En el marketplace solo mostramos el promedio global (no se califica desde aquí)
+  const averageRating = property.averageRating || 0;
+  const totalVotes = property.totalVotes || 0;
 
   return (
     <>
@@ -101,6 +109,19 @@ export function MarketplaceCard({
               </span>
             )}
           </div>
+        }
+        ratingOverlay={
+          totalVotes > 0 && (
+            <div className="flex flex-col gap-2">
+              <StarRating
+                rating={0}
+                averageRating={averageRating}
+                totalVotes={totalVotes}
+                totalGroupMembers={totalVotes} // Truco para que StarRating muestre la sección de promedio
+                readonly={true}
+              />
+            </div>
+          )
         }
         subImageContent={
           <div className="px-4 pt-2 flex items-center justify-end">

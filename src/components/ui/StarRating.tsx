@@ -10,6 +10,7 @@ interface StarRatingProps {
     onRate?: (rating: number) => void;
     readonly?: boolean;
     className?: string;
+    showUserRating?: boolean; // Nueva prop opcional para forzar u ocultar
 }
 
 /**
@@ -24,6 +25,7 @@ export function StarRating({
     onRate,
     readonly = false,
     className = "",
+    showUserRating,
 }: StarRatingProps) {
     const [hoverRating, setHoverRating] = useState(0);
     const showFamilyAverage = totalGroupMembers > 1;
@@ -62,42 +64,44 @@ export function StarRating({
             )}
             onClick={(e) => e.stopPropagation()}
         >
-            {/* Sección Tu Voto — en readonly se muestra sin interacción */}
-            <div className="space-y-1">
-                <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Tu calificación</div>
-                <div className="flex items-center gap-1">
-                    {readonly ? (
-                        [1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                                key={star}
-                                className={cn(
-                                    "w-4 h-4",
-                                    star <= rating ? "fill-yellow-400 text-yellow-400" : "text-white/20 fill-transparent"
-                                )}
-                            />
-                        ))
-                    ) : (
-                        [1, 2, 3, 4, 5].map((star) => (
-                            <button
-                                key={star}
-                                onMouseEnter={() => setHoverRating(star)}
-                                onMouseLeave={() => setHoverRating(0)}
-                                onClick={() => onRate?.(star)}
-                                className="transition-all duration-200 transform hover:scale-125 active:scale-90"
-                            >
+            {/* Sección Tu Voto — solo se muestra si tiene puntaje o no es readonly */}
+            {(showUserRating ?? (!readonly || rating > 0)) && (
+                <div className="space-y-1">
+                    <div className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-1">Tu calificación</div>
+                    <div className="flex items-center gap-1">
+                        {readonly ? (
+                            [1, 2, 3, 4, 5].map((star) => (
                                 <Star
+                                    key={star}
                                     className={cn(
-                                        "w-4 h-4 transition-colors",
-                                        star <= (hoverRating || rating)
-                                            ? "fill-yellow-400 text-yellow-400"
-                                            : "text-white/20 fill-transparent"
+                                        "w-4 h-4",
+                                        star <= rating ? "fill-yellow-400 text-yellow-400" : "text-white/20 fill-transparent"
                                     )}
                                 />
-                            </button>
-                        ))
-                    )}
+                            ))
+                        ) : (
+                            [1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onMouseEnter={() => setHoverRating(star)}
+                                    onMouseLeave={() => setHoverRating(0)}
+                                    onClick={() => onRate?.(star)}
+                                    className="transition-all duration-200 transform hover:scale-125 active:scale-90"
+                                >
+                                    <Star
+                                        className={cn(
+                                            "w-4 h-4 transition-colors",
+                                            star <= (hoverRating || rating)
+                                                ? "fill-yellow-400 text-yellow-400"
+                                                : "text-white/20 fill-transparent"
+                                        )}
+                                    />
+                                </button>
+                            ))
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Si no hay grupo familiar (1 integrante), mostramos solo "Tu calificación". */}
             {showFamilyAverage && (

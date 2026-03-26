@@ -107,6 +107,10 @@ export interface MarketplaceProperty {
   publishedByName?: string;
   /** Teléfono de contacto del agente que publicó */
   publishedByPhone?: string;
+  /** Calificación promedio (opcional, cargada en batch) */
+  averageRating?: number;
+  /** Total de votos (opcional, cargada en batch) */
+  totalVotes?: number;
 }
 
 export const STATUS_CONFIG: Record<PropertyStatus, { label: string; color: string; bg: string; dot: string }> = {
