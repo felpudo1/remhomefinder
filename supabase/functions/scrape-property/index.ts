@@ -69,8 +69,9 @@ async function scrapeWithFirecrawl(formattedUrl: string) {
     || Deno.env.get("FIRECRAWL_API_KEY_2");
   if (!FIRECRAWL_API_KEY) {
     // Log available env keys for debugging (no values)
+    const envObj = Deno.env.toObject();
     console.error("FIRECRAWL_API_KEY not found. Available env keys containing 'FIRE':", 
-      [...Deno.env.toObject()].filter(([k]) => k.includes("FIRE")).map(([k]) => k));
+      Object.keys(envObj).filter(k => k.includes("FIRE")));
     throw new Error("FIRECRAWL_API_KEY not configured");
   }
 

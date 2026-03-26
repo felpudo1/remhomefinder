@@ -10,7 +10,7 @@ const PAGE_SIZE = 50;
  * Refactorizado para REGLA 6: Select proyectado y paginación cursor-based para evitar saturación de I/O.
  */
 export function useMarketplaceProperties() {
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ["marketplace-properties"],
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: MarketplaceProperty[]) => {
