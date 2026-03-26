@@ -133,42 +133,35 @@ export function GroupsModal({
     const text = String(code ?? "").trim();
     if (!text) return;
 
+    // Intento 1: Clipboard API (contextos seguros)
     try {
-      // Camino moderno: funciona en contextos seguros (HTTPS/localhost).
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
         toast({ title: "Código copiado" });
         return;
       }
+    } catch { /* fallthrough */ }
 
-      // Fallback para webviews/emuladores/contextos no seguros.
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-9999px";
-      textArea.style.top = "0";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
+    // Intento 2: execCommand (HTTP / webviews)
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      Object.assign(ta.style, { position: "fixed", left: "-9999px", top: "0", opacity: "0" });
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length); // iOS Safari
       const ok = document.execCommand("copy");
-      document.body.removeChild(textArea);
-
-      if (!ok) throw new Error("No se pudo copiar");
-      toast({ title: "Código copiado" });
-    } catch {
-      // Último fallback para ciertos webviews móviles donde copiar está bloqueado.
-      // Mostramos el texto en prompt para que el usuario lo copie manualmente.
-      const manual = window.prompt("Copiá este código de invitación:", text);
-      if (manual !== null) {
-        toast({ title: "Copialo manualmente", description: "Seleccioná y copiá el código del cuadro." });
+      document.body.removeChild(ta);
+      if (ok) {
+        toast({ title: "Código copiado" });
         return;
       }
-      toast({
-        title: "No se pudo copiar el código",
-        description: "Copialo manualmente desde el campo de texto.",
-        variant: "destructive",
-      });
-    }
+    } catch { /* fallthrough */ }
+
+    // Intento 3: prompt manual
+    window.prompt("Copiá este código de invitación:", text);
+    toast({ title: "Copialo manualmente", description: "Seleccioná y copiá el código del cuadro." });
   };
 
   const handleRemoveMember = async (userId: string) => {
