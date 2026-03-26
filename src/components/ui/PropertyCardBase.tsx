@@ -16,33 +16,21 @@ interface PropertyCardBaseProps {
     images: string[];
     listingType?: ListingType;
     onClick?: () => void;
-    /** Elementos que aparecen sobre la imagen (badges, overlays) */
     topOverlay?: React.ReactNode;
-    /** Badge de estado sobre la imagen, esquina superior derecha (reservada, vendida, alquilada) */
     statusOverlay?: React.ReactNode;
-    /** Badge de estado inline junto al barrio */
     statusBadge?: React.ReactNode;
-    /** Referencia de la publicación (ej: REF-12345), se muestra a la derecha del barrio */
     refText?: string;
-    /** Elementos adicionales debajo de la imagen (quien lo cargó, etc) */
     subImageContent?: React.ReactNode;
-    /** Contenido extra dentro del cuerpo (motivos de eliminación, descripción corta) */
     extraBodyContent?: React.ReactNode;
-    /** Botones o selectores de acción en la base de la tarjeta */
     actions?: React.ReactNode;
-    /** Contenido adicional al final de la tarjeta (debajo de precio/acciones) */
     bottomContent?: React.ReactNode;
-    /** Clase adicional para el contenedor principal */
     className?: string;
-    /** Overlay de estrellas sobre la imagen */
     ratingOverlay?: React.ReactNode;
-    /** Manejador de click específico para la imagen (para abrir galería sin abrir detalle) */
+    /** Overlay en la esquina inferior izquierda de la imagen (ej: MatchiAI badge) */
+    bottomLeftOverlay?: React.ReactNode;
     onImageClick?: (index: number) => void;
-    /** Si true, la sección de fotos es colapsable y empieza colapsada (para listados densos) */
     collapsibleImages?: boolean;
-    /** Si true, rota automáticamente las fotos de la tarjeta */
     autoRotateImages?: boolean;
-    /** Define el estilo de transición de imagen al cambiar */
     imageTransitionMode?: "fade" | "flip" | "kenburns" | "push";
 }
 

@@ -100,9 +100,6 @@ export function MarketplaceCard({
         }
         statusOverlay={
           <div className="flex flex-col items-end gap-2">
-            {isMatchAIMagicActive && (
-              <MatchiAIBadge />
-            )}
             {overlay && (
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
                 {overlay.label}
@@ -111,17 +108,17 @@ export function MarketplaceCard({
           </div>
         }
         ratingOverlay={
-          totalVotes > 0 && (
-            <div className="flex flex-col gap-2">
-              <StarRating
-                rating={0}
-                averageRating={averageRating}
-                totalVotes={totalVotes}
-                totalGroupMembers={totalVotes} // Truco para que StarRating muestre la sección de promedio
-                readonly={true}
-              />
-            </div>
-          )
+          <StarRating
+            rating={0}
+            averageRating={averageRating}
+            totalVotes={totalVotes}
+            totalGroupMembers={Math.max(totalVotes, 1)}
+            readonly={true}
+            showUserRating={false}
+          />
+        }
+        bottomLeftOverlay={
+          isMatchAIMagicActive ? <MatchiAIBadge /> : undefined
         }
         subImageContent={
           <div className="px-4 pt-2 flex items-center justify-end">
