@@ -103,6 +103,14 @@ export const Footer = ({ showDbStatus = false }: FooterProps) => {
                             ·
                         </span>
           }
+
+                    {/* Estado BD — solo si se pasa showDbStatus */}
+                    {showDbStatus && (
+                        <>
+                            <DbStatusInline />
+                            <span className="text-muted-foreground/40 text-xs hidden sm:inline" aria-hidden>·</span>
+                        </>
+                    )}
                     
                     {/* Versión de la aplicación */}
                     <button
