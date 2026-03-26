@@ -129,7 +129,7 @@ const Landing = () => {
             {/* Testimonios rotativos */}
             <TestimonialCarousel />
 
-            <Footer />
+            <Footer showDbStatus />
         </div>);
 
 };

@@ -145,7 +145,7 @@ const Admin = () => {
           {renderSection()}
         </div>
       </main>
-      <Footer />
+      <Footer showDbStatus />
     </div>
   );
 };

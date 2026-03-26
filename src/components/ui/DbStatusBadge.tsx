@@ -68,42 +68,44 @@ export function DbStatusInline() {
 
     const statusLabel = status === "connected" ? "Online" : status === "error" ? "Offline" : "…";
 
+    const BadgeContent = (
+        <div
+            className={cn(
+                "inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-md transition-colors",
+                status === "connected" && "text-emerald-600 bg-emerald-500/5",
+                status === "error" && "text-destructive bg-destructive/10 cursor-pointer hover:bg-destructive/20",
+                status === "checking" && "text-muted-foreground bg-muted/50",
+            )}
+            title={status === "error" ? "Clic para ver detalles y reintentar" : "Estado de la base de datos"}
+        >
+            <Database className="w-3 h-3 opacity-70" />
+            {statusIcon}
+            <span>BD {statusLabel}</span>
+        </div>
+    );
+
+    if (status !== "error") {
+        return BadgeContent;
+    }
+
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    className={cn(
-                        "inline-flex items-center gap-1.5 text-[10px] font-medium cursor-pointer px-2 py-1 rounded-md transition-colors",
-                        status === "connected" && "text-emerald-600 hover:bg-emerald-500/10",
-                        status === "error" && "text-destructive hover:bg-destructive/10",
-                        status === "checking" && "text-muted-foreground hover:bg-muted/50",
-                    )}
-                    title="Estado de la base de datos"
-                >
-                    <Database className="w-3 h-3 opacity-70" />
-                    {statusIcon}
-                    <span>BD {statusLabel}</span>
+                <button type="button" className="focus:outline-none">
+                    {BadgeContent}
                 </button>
             </PopoverTrigger>
             <PopoverContent side="top" align="start" className="w-72 p-0">
                 <div className="p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                        {status === "error"
-                            ? <AlertTriangle className="w-4 h-4 text-destructive" />
-                            : <Database className="w-4 h-4 text-primary" />}
+                        <AlertTriangle className="w-4 h-4 text-destructive" />
                         <h4 className="text-sm font-semibold text-foreground">Estado de la Base de Datos</h4>
                     </div>
 
                     <div className="space-y-2 text-xs">
                         <div className="flex items-center justify-between py-1.5 border-b border-border/50">
                             <span className="text-muted-foreground">Estado</span>
-                            <span className={cn(
-                                "flex items-center gap-1 font-medium",
-                                status === "connected" && "text-emerald-600",
-                                status === "error" && "text-destructive",
-                                status === "checking" && "text-muted-foreground",
-                            )}>
+                            <span className="flex items-center gap-1 font-medium text-destructive">
                                 {statusIcon}
                                 {statusLabel}
                             </span>

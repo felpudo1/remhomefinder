@@ -212,7 +212,7 @@ const AgentDashboard = () => {
           canManageTeams={canManageTeams}
         />
       )}
-      <Footer />
+      <Footer showDbStatus />
     </div>
   );
 };
