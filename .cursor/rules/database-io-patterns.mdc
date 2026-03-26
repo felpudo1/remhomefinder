@@ -1,0 +1,30 @@
+---
+description: Minimizar I/O a Supabase/Postgres — un round-trip, métricas desde payload, sin queries duplicadas
+alwaysApply: true
+---
+
+# Acceso a base de datos (I/O) — enfoque pro
+
+## Principio
+
+**Cada interacción con la BD tiene costo** (latencia, RLS, límites de Supabase, concurrencia). Preferir **menos viajes** y **reutilizar** lo que ya trajo una respuesta.
+
+## Lecturas
+
+1. **Un `select` con lo necesario** en lugar de varios `select` redundantes cuando se pueda agrupar con joins/RPC.
+2. **Totales y contadores en el mismo request**: usar `count: "exact"` (u opciones equivalentes) **junto** al `select` de filas, no un `head: true` aparte si ya estás paginando esa tabla.
+3. **UI admin**: si la lista ya está en memoria (`records`, `users`), el número “total usuarios” sale de **`length` o del `count` ya devuelto** — **no** agregar un `COUNT(*)` solo para el label.
+4. **Paginación**: el total global viene del metadata del primer fetch paginado; las métricas por fila se arman con los datos ya pedidos (evitar N+1 donde sea posible; si hace falta `in()`, que sea batch único).
+5. **TanStack Query**: `queryKey` estable, `staleTime` razonable para datos que no cambian cada segundo; invalidar solo lo que cambió tras mutaciones.
+
+## Escrituras
+
+1. **Batch** cuando haya muchas filas (`upsert` múltiple, una RPC transaccional) en lugar de bucles de `update` uno a uno.
+2. **Mutaciones**: después, `invalidateQueries` **acotado** al dominio afectado, no barrer toda la caché sin criterio.
+
+## Cuándo sí sumar capa en BD
+
+- Agregados pesados o que no deben exponer filas por RLS → **RPC `SECURITY DEFINER` acotada** o vista/materialized según caso.
+- Si el listado admin deja de cargar todo en memoria → **paginar** y el total sigue siendo el `count` del mismo request paginado.
+
+Al proponer código nuevo que toque Supabase, **justificar** brevemente cuántos round-trips hay y si se puede reducir.

@@ -695,5 +695,6 @@ Antes de cada respuesta técnica, verificar:
 - [ ] ¿Respondí en español?
 - [ ] ¿Pedí confirmación antes de hacer build?
 - [ ] ¿Avisé a JP si la tarea implica una consulta o escritura BD **pesada**? (regla `.cursor/rules/heavy-db-queries.mdc`)
+- [ ] ¿Evité I/O redundante a la BD? (regla `.cursor/rules/database-io-patterns.mdc`)
 
 _Estas reglas son mandato y deben seguirse estrictamente en toda interacción con JP._

@@ -54,6 +54,7 @@ export function AdminAgencias({ toast }: Props) {
         try {
             setLoading(true);
 
+            // Lista completa ya en memoria: el total de usuarios para el encabezado es records.length (sin COUNT aparte).
             const { data: profiles, error: profileError } = await supabase
                 .from("profiles")
                 .select("user_id, display_name, email, phone, status, plan_type, created_at, referred_by_id")
@@ -194,7 +195,7 @@ export function AdminAgencias({ toast }: Props) {
                             <TableRow className="hover:bg-transparent">
                                 <TableHead className="w-[180px]">
                                     <button onClick={() => handleSort('display_name')} className="flex items-center gap-1 hover:text-foreground text-[10px] font-bold uppercase tracking-wider">
-                                        Usuario <SortIcon field="display_name" />
+                                        Usuario ({records.length}) <SortIcon field="display_name" />
                                     </button>
                                 </TableHead>
                                 <TableHead className="w-[180px]">
