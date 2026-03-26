@@ -59,8 +59,13 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
         return;
       }
 
-      // Wait for DOM to render the container
-      await new Promise((r) => setTimeout(r, 350));
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError("Tu navegador no soporta acceso a cámara. Usá \"Subir imagen\".");
+        setScanning(false);
+        return;
+      }
+
+      await new Promise((r) => setTimeout(r, 450));
       if (cancelled || !mountedRef.current) return;
 
       const container = document.getElementById("qr-reader");
@@ -82,35 +87,45 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
           if (!cancelled) handleResult(decodedText);
         };
 
-        try {
-          // Attempt 1: prefer rear camera on mobile
-          await scanner.start(
-            { facingMode: "environment" },
-            config,
-            onSuccess,
-            () => {}
-          );
-        } catch (primaryErr) {
-          // Attempt 2: fallback to first available camera device
-          const cameras = await Html5Qrcode.getCameras().catch(() => []);
-          if (!cameras || cameras.length === 0) throw primaryErr;
+        const candidates: Array<string | { facingMode: "environment" | "user" }> = [];
 
-          await scanner.start(
-            cameras[0].id,
-            config,
-            onSuccess,
-            () => {}
-          );
+        // Try by constraints first (more reliable prompt on mobile browsers)
+        candidates.push({ facingMode: "environment" });
+
+        const cameras = await Html5Qrcode.getCameras().catch(() => []);
+        if (cameras.length > 0) {
+          const rear = cameras.find((c) => /back|rear|environment|trasera|traseira/i.test(c.label));
+          if (rear?.id) candidates.push(rear.id);
+          if (cameras[0]?.id && cameras[0].id !== rear?.id) candidates.push(cameras[0].id);
         }
+
+        // Last fallback
+        candidates.push({ facingMode: "user" });
+
+        let lastError: unknown = null;
+        for (const candidate of candidates) {
+          try {
+            await scanner.start(candidate as any, config, onSuccess, () => {});
+            return;
+          } catch (e) {
+            lastError = e;
+          }
+        }
+
+        throw lastError;
       } catch (err: any) {
         if (!cancelled && mountedRef.current) {
           console.warn("QR camera error:", err);
           const name = err?.name;
           const denied = name === "NotAllowedError" || name === "PermissionDeniedError";
+          const inUse = name === "NotReadableError" || name === "TrackStartError";
+
           setError(
             denied
-              ? "No se pudo usar la cámara en este dominio publicado. Abrí la app publicada en una pestaña nueva, permití cámara para ese dominio y reintentá; o usá \"Subir imagen\"."
-              : "No se pudo iniciar el escáner en este dispositivo. Probá con \"Subir imagen\"."
+              ? "La cámara fue bloqueada para este dominio publicado. Abrí la app publicada en una pestaña nueva, permití cámara para ese dominio y reintentá; o usá \"Subir imagen\"."
+              : inUse
+                ? "No se pudo abrir la cámara (puede estar en uso por otra app/pestaña). Cerrá otras apps de cámara y reintentá."
+                : "No se pudo inicializar el escáner en este dispositivo. Usá \"Subir imagen\" como alternativa."
           );
           setScanning(false);
         }
