@@ -28,7 +28,7 @@ export function StarRating({
     showUserRating,
 }: StarRatingProps) {
     const [hoverRating, setHoverRating] = useState(0);
-    const showFamilyAverage = totalGroupMembers > 1;
+    const showFamilyAverage = totalGroupMembers > 1 || (readonly && showUserRating === false);
 
     // Helper para renderizar estrellas fraccionarias (promedio)
     const renderFractionalStars = (val: number) => {
