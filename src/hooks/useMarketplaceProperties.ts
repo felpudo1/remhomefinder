@@ -1,24 +1,73 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MarketplaceProperty } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
 
+const PAGE_SIZE = 50;
+
 /**
  * Hook para leer publicaciones del marketplace (agent_publications + properties + organizations).
+ * Refactorizado para REGLA 6: Select proyectado y paginación cursor-based para evitar saturación de I/O.
  */
 export function useMarketplaceProperties() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["marketplace-properties"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: MarketplaceProperty[]) => {
+      if (lastPage.length < PAGE_SIZE) return undefined;
+      const lastItem = lastPage[lastPage.length - 1];
+      return lastItem.createdAt.toISOString();
+    },
+    queryFn: async ({ pageParam }) => {
+      // ✅ SELECT PROYECTADO (Punto 1 y 6 de la REGLA 6)
+      // Evitamos el '*' y solo pedimos columnas necesarias. 
+      // Excluimos explícitamente raw_ai_data y status_history de la tabla properties.
+      const query = supabase
         .from("agent_publications")
-        .select("*, properties(*), organizations(name, created_by)")
+        .select(`
+          id,
+          property_id,
+          org_id,
+          published_by,
+          status,
+          listing_type,
+          description,
+          created_at,
+          updated_at,
+          properties (
+            id,
+            title,
+            source_url,
+            price_amount,
+            price_expenses,
+            total_cost,
+            currency,
+            neighborhood,
+            city,
+            m2_total,
+            rooms,
+            images,
+            ref
+          ),
+          organizations (
+            name,
+            created_by
+          )
+        `)
         .neq("status", "eliminado")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (pageParam) {
+        query.lt("created_at", pageParam);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       if (!data) return [];
 
+      // Resolución de nombres de organizaciones faltantes (manteniendo lógica original)
       const missingOrgIds = Array.from(
         new Set(
           data
@@ -40,6 +89,7 @@ export function useMarketplaceProperties() {
         }
       }
 
+      // Resolución de perfiles de agentes publicadores
       const publisherIds = Array.from(
         new Set((data || []).map((pub: any) => pub.published_by).filter(Boolean)),
       );
@@ -78,8 +128,8 @@ export function useMarketplaceProperties() {
           sqMeters: Number(p.m2_total || 0),
           rooms: p.rooms || 0,
           images: resolveImages(p.images || []),
-          status: pub.status,
-          listingType: pub.listing_type || "rent",
+          status: pub.status as any,
+          listingType: (pub.listing_type || "rent") as any,
           createdAt: new Date(pub.created_at),
           updatedAt: new Date(pub.updated_at),
           publishedByName: publisher?.name,

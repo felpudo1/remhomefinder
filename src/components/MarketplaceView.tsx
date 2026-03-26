@@ -9,6 +9,8 @@ import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar"
 import { MarketplaceFiltersDropdown } from "@/components/MarketplaceFiltersDropdown";
 import { MarketplaceProperty } from "@/types/property";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/useSubscription";
+import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { Search, Loader2, Store, ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -46,9 +48,21 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     MARKETPLACE_CONTACT_TIP_INTERVAL_KEY,
     MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT
   );
-  const { data: marketplaceProperties = [], isLoading } = useMarketplaceProperties();
+  const { 
+    data, 
+    isLoading, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useMarketplaceProperties();
+
+  const marketplaceProperties = useMemo(() => {
+    return data?.pages.flat() || [];
+  }, [data]);
+
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
+  const { isPremium } = useSubscription();
   const referredAgentId = profile?.referredById;
 
   const saveToList = useSaveToList();
@@ -66,6 +80,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [matchAI, setMatchAI] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const contactTipInterval = Number.isInteger(Number(contactTipIntervalRaw)) && Number(contactTipIntervalRaw) >= 1
     ? Number(contactTipIntervalRaw)
@@ -120,6 +135,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   };
 
   const handleMatchAIToggle = async (checked: boolean) => {
+    if (checked && !isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+    
     setMatchAI(checked);
     if (!checked) {
       clearFilters();
@@ -465,6 +485,26 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                 );
               })}
             </div>
+
+            {hasNextPage && (
+              <div className="flex justify-center pt-8 pb-4">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="gap-2 rounded-xl border-purple-500/20 hover:bg-purple-500/5 hover:text-purple-600 transition-all font-medium"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cargando más...
+                    </>
+                  ) : (
+                    "Cargar más propiedades"
+                  )}
+                </Button>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -504,6 +544,10 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UpgradePlanModal
+        open={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+      />
     </>
   );
 }

@@ -6,6 +6,7 @@ import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
 import { useState } from "react";
+import { MatchiAIBadge } from "@/components/ui/MatchiAIBadge";
 
 interface MarketplaceCardProps {
   property: MarketplaceProperty;
@@ -90,11 +91,16 @@ export function MarketplaceCard({
           </div>
         }
         statusOverlay={
-          overlay ? (
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
-              {overlay.label}
-            </span>
-          ) : undefined
+          <div className="flex flex-col items-end gap-2">
+            {isMatchAIMagicActive && (
+              <MatchiAIBadge />
+            )}
+            {overlay && (
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
+                {overlay.label}
+              </span>
+            )}
+          </div>
         }
         subImageContent={
           <div className="px-4 pt-2 flex items-center justify-end">
