@@ -29,7 +29,16 @@ const LegalPrivacy = routeLazy(() => import("./pages/LegalPrivacy"));
 const AuthRecoverPassword = routeLazy(() => import("./pages/AuthRecoverPassword"));
 const AuthResetPassword = routeLazy(() => import("./pages/AuthResetPassword"));
 
-const queryClient = new QueryClient();
+// Caché global: 2 min de staleTime evita refetch en cada mount/window focus.
+// Los hooks que necesiten un valor diferente pueden sobreescribir con su propio staleTime.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,      // 2 min — datos se consideran frescos por 2 min
+      refetchOnWindowFocus: false,    // No refetch automático al volver a la pestaña
+    },
+  },
+});
 
 /**
  * Componente de carga simple que se muestra mientras se descarga el chunk de la página.

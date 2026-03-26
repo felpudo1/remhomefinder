@@ -22,6 +22,8 @@ export function useSubscription() {
     const { data: profile, isLoading: isLoadingProfile } = useQuery({
         queryKey: ["user-profile-subscription", authUser?.id],
         enabled: !!authUser,
+        // Plan del usuario cambia rara vez (admin) — cachear 10 min
+        staleTime: 10 * 60 * 1000,
         queryFn: async () => {
             // El user ya viene del AuthProvider — no necesitamos llamar a getUser()
             if (!authUser) return null;

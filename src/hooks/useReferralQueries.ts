@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 export function useReferralCountForUser(referrerUserId: string | null | undefined) {
   return useQuery({
     queryKey: ["referral-count", referrerUserId],
+    // Referidos cambian rara vez — cachear 10 min
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       if (!referrerUserId) return 0;
       // RPC SECURITY DEFINER: el SELECT directo a profiles devolvía 0 por RLS (referidos fuera de la org del agente).
@@ -32,6 +34,8 @@ export function useReferrerDisplayName(
 ) {
   return useQuery({
     queryKey: ["my-referrer-display-name", currentUserId, referredById],
+    // El nombre de quien te refirió nunca cambia — cachear para siempre en la sesión
+    staleTime: Infinity,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_my_referrer_display_name");
       if (error) throw error;

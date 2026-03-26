@@ -15,6 +15,8 @@ export interface FeedbackAttribute {
 export function useFeedbackAttributes() {
   return useQuery({
     queryKey: ["feedback-attributes"],
+    // Datos de config admin — cambian muy rara vez, cachear 30 min
+    staleTime: 30 * 60 * 1000,
     queryFn: async (): Promise<FeedbackAttribute[]> => {
       const { data, error } = await supabase
         .from("feedback_attributes")

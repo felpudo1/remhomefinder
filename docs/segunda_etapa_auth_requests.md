@@ -461,3 +461,78 @@ Se usa en `markCommentsAsRead` (L158-180):
    - Crear/unirse a grupo
    - Dashboard de agente funciona
    - Panel admin funciona
+
+---
+
+## 🤖 Prompt para Lovable
+
+```
+## Contexto
+La app ya tiene un AuthProvider centralizado en `src/contexts/AuthProvider.tsx` que exporta 
+un hook `useCurrentUser()` con `{ user, session, isLoading, refreshUser }`. Este provider 
+ya está integrado en `App.tsx` wrapping toda la app, y ya se migró exitosamente en 5 archivos 
+(useProfile.ts, ProtectedRoute.tsx, usePropertyQueries.ts, useSubscription.ts, Index.tsx).
+
+Ahora necesito migrar los 15 archivos restantes que todavía llaman a 
+`supabase.auth.getUser()` directamente, para que usen `useCurrentUser()` del AuthProvider.
+
+La app usa: React, TypeScript, TanStack Query, Supabase.
+
+## Patrón de migración
+
+Hay 2 patrones según el tipo de archivo:
+
+### Patrón 1: Hooks con mutations (usePropertyMutations, useGroups, useSaveToList, usePropertyRating)
+- Agregar `const { user: authUser } = useCurrentUser();` al nivel del hook
+- Agregar `import { useCurrentUser } from "@/contexts/AuthProvider";`
+- En cada `queryFn` y `mutationFn`: reemplazar `const { data: { user } } = await supabase.auth.getUser();` por usar `authUser` del closure
+- En queryKeys que usen userId: agregar `authUser?.id` y `enabled: !!authUser`
+- MANTENER el `if (!user/!authUser) throw new Error("No autenticado");` check
+
+### Patrón 2: Componentes React (PublishPropertyModal, GroupsModal, PropertyDetailModal, ReferralTracker, AgentDashboard, AdminPublicaciones, AdminUsuarios, AdminDatosAdmin)
+- Agregar `const { user: authUser } = useCurrentUser();` dentro del componente
+- Agregar `import { useCurrentUser } from "@/contexts/AuthProvider";`
+- Reemplazar todas las llamadas a `supabase.auth.getUser()` por usar `authUser`
+- Reemplazar `user.id` por `authUser.id`, `user.email` por `authUser.email`, etc.
+
+### Caso especial: `src/lib/duplicateCheck.ts`
+- Este es un archivo de UTILIDAD PURO (no es un hook ni componente React)
+- NO puede usar `useCurrentUser()` porque no es un componente React
+- Solución: agregar `userId?: string | null` como tercer parámetro opcional a `checkUrlStatus()`
+- Dentro de la función: reemplazar `getUser()` por usar el `userId` recibido
+- Actualizar los callers:
+  - `src/hooks/usePropertyExtractor.ts` línea 64: pasar `authUser?.id` como tercer argumento
+  - `src/components/PublishPropertyModal.tsx` donde llama a `checkUrlStatus`: pasar `authUser?.id`
+
+## Archivos a modificar (en este orden)
+
+1. `src/hooks/usePropertyMutations.ts` — 5 llamadas a getUser() (L78, L201, L315, L349)
+   ⚠️ CUIDADO con onMutate en L315: usa getUser() para construir queryKey del optimistic update
+2. `src/components/PublishPropertyModal.tsx` — 6 llamadas a getUser()
+3. `src/hooks/useGroups.ts` — 4 llamadas a getUser() (en queryFn y 3 mutations)
+   Agregar queryKey: ["groups", authUser?.id] y enabled: !!authUser
+4. `src/hooks/usePropertyRating.ts` — 2 llamadas (queryFn + mutation)
+5. `src/hooks/useImageUploader.ts` — 2 llamadas (uploadFiles L45 + uploadScreenshot L87)
+   user.id se usa para path de Storage: `${user.id}/prefix-uuid.ext`
+6. `src/hooks/usePropertyExtractor.ts` — 1 llamada (handleImagesExtractor L142)
+   user.id se usa para path de Storage
+7. `src/lib/duplicateCheck.ts` — 1 llamada (L45) — CASO ESPECIAL: agregar parámetro userId
+8. `src/components/GroupsModal.tsx` — 1 llamada (L62, en useEffect al abrir modal)
+9. `src/components/PropertyDetailModal.tsx` — 1 llamada (L160, markCommentsAsRead)
+10. `src/hooks/useSaveToList.ts` — 1 llamada (mutationFn L14)
+11. `src/components/ReferralTracker.tsx` — 1 llamada (L31, condicional con referral ID)
+12. `src/pages/AgentDashboard.tsx` — 1 llamada (L53)
+13. `src/components/admin/AdminPublicaciones.tsx` — 2 llamadas (L195, L279)
+14. `src/components/admin/AdminUsuarios.tsx` — 1 llamada (L368)
+15. `src/components/admin/AdminDatosAdmin.tsx` — 1 llamada (L74)
+
+## Reglas importantes
+1. NO modificar `AuthProvider.tsx`, `App.tsx`, `useProfile.ts`, `ProtectedRoute.tsx`, 
+   `usePropertyQueries.ts`, `useSubscription.ts`, ni `Index.tsx` — ya están migrados
+2. NO cambiar la lógica de negocio, solo reemplazar de dónde viene el `user`
+3. Mantener todos los tipos TypeScript existentes
+4. Si encontrás algún error en otro lugar, NO lo corrijas — avisame primero
+5. Agregar comentarios cortos explicando que el user viene del AuthProvider
+6. Después de todos los cambios, correr `npx tsc --noEmit` para verificar que no hay errores de tipos
+```
+
