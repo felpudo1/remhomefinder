@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { useQuery } from "@tanstack/react-query";
 import { useSystemConfig } from "./useSystemConfig";
 
@@ -14,17 +15,21 @@ import {
  * @returns { isPremium, maxSaves, canSaveMore, maxAgentPublishes, canAgentPublishMore, isLoading }
  */
 export function useSubscription() {
+    // Leer userId del AuthProvider centralizado (0 auth requests HTTP)
+    const { user: authUser } = useCurrentUser();
+
     // 1. Obtener el perfil del usuario para saber su plan
     const { data: profile, isLoading: isLoadingProfile } = useQuery({
-        queryKey: ["user-profile-subscription"],
+        queryKey: ["user-profile-subscription", authUser?.id],
+        enabled: !!authUser,
         queryFn: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return null;
+            // El user ya viene del AuthProvider — no necesitamos llamar a getUser()
+            if (!authUser) return null;
 
             const { data, error } = await supabase
                 .from("profiles")
                 .select("plan_type")
-                .eq("user_id", user.id)
+                .eq("user_id", authUser.id)
                 .maybeSingle();
 
             if (error) throw error;

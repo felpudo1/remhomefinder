@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyComment } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
 import type { UserListingStatus } from "@/types/supabase";
@@ -192,17 +193,9 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
  */
 export function usePropertyQueries() {
   const queryClient = useQueryClient();
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUserId(user?.id || null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUserId(session?.user.id || null);
-    });
-    return () => { subscription.unsubscribe(); };
-  }, []);
+  // Leer userId del AuthProvider centralizado (0 auth requests HTTP)
+  const { user: authUser } = useCurrentUser();
+  const currentUserId = authUser?.id ?? null;
 
   // Debounce para Realtime — evitar tormenta de refetch
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

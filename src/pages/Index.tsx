@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
@@ -60,13 +61,9 @@ const Index = () => {
   const { properties, loading, addProperty, updateStatus, addComment, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProperties();
   const { data: marketplaceProperties = [] } = useMarketplaceProperties();
 
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserEmail(user.email ?? null);
-    });
-  }, []);
+  // Leer email del AuthProvider centralizado (0 auth requests HTTP)
+  const { user: authUser } = useCurrentUser();
+  const userEmail = authUser?.email ?? null;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

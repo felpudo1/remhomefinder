@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { ROUTES, ROLES } from "@/lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 
 import { AppRole } from "@/types/supabase";
 
@@ -23,28 +24,22 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const location = useLocation();
   const queryClient = useQueryClient();
 
+  // Leer sesión del AuthProvider centralizado (0 auth requests HTTP)
+  const { session, isLoading: authLoading } = useCurrentUser();
+
   useEffect(() => {
     let isMounted = true;
-    let previousUserId: string | null = null;
 
     const checkAccess = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Si aún cargando la auth, no hacer nada
+        if (authLoading) return;
 
         // Si no hay sesión, el usuario no está autenticado
         if (!session) {
           if (isMounted) setIsAuthorized(false);
           return;
         }
-
-        // Detectar cambio de usuario y limpiar caché para evitar mostrar datos del usuario anterior
-        const currentUserId = session.user.id;
-        if (previousUserId !== null && previousUserId !== currentUserId) {
-          console.log("[ProtectedRoute] Usuario cambió, limpiando caché de React Query");
-          // Invalidar todas las queries para forzar refetch con el nuevo usuario
-          queryClient.clear();
-        }
-        previousUserId = currentUserId;
 
         // Obtener roles del usuario (siempre lo necesitamos para redirect por rol)
         const { data: roles } = await (supabase
@@ -89,32 +84,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       }
     };
 
+    // Verificar acceso cuando cambia la sesión, la ruta o los roles
     checkAccess();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[ProtectedRoute] Auth event:", event);
-      
-      // Limpiar caché en eventos de logout o cambio de usuario
-      if (event === "SIGNED_OUT") {
-        console.log("[ProtectedRoute] SIGNED_OUT - limpiando caché");
-        queryClient.clear();
-        if (isMounted) setIsAuthorized(false);
-        return;
-      }
-      
-      // En SIGNED_IN o TOKEN_REFRESHED, verificar acceso
-      if (session) {
-        checkAccess();
-      } else if (isMounted) {
-        setIsAuthorized(false);
-      }
-    });
+    // Si no hay sesión (logout), limpiar caché
+    if (!session && !authLoading) {
+      queryClient.clear();
+    }
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
-  }, [allowedRoles, location.pathname, queryClient]);
+  }, [session, authLoading, allowedRoles, location.pathname, queryClient]);
 
   if (isAuthorized === null && !redirectTo) {
     return (

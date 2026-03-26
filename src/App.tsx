@@ -10,6 +10,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { ReferralTracker } from "@/components/ReferralTracker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/contexts/AuthProvider";
 
 const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
 
@@ -41,53 +42,55 @@ const LoadingPage = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ReferralTracker />
-        <Suspense fallback={<LoadingPage />}>
-          <ErrorBoundary>
-            <Routes>
-              <Route path={ROUTES.HOME} element={<Landing />} />
-              <Route path={ROUTES.AUTH} element={<Auth />} />
-              <Route path={ROUTES.AUTH_RECOVER} element={<AuthRecoverPassword />} />
-              <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<AuthResetPassword />} />
-              <Route path={ROUTES.TERMS} element={<LegalTerms />} />
-              <Route path={ROUTES.PRIVACY} element={<LegalPrivacy />} />
-              <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
-              <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
-              
-              {/* Rutas Protegidas Simples (Solo requieren estar logeado) */}
-              <Route
-                path={ROUTES.DASHBOARD_AI_PROFILE}
-                element={
-                  <ProtectedRoute>
-                    <PerfilIAPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              
-              {/* Rutas Protegidas con Roles Específicos */}
-              <Route path={ROUTES.ADMIN} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
-              <Route path={ROUTES.ADMIN_SECTION_PATH} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
-              <Route
-                path={ROUTES.AGENCY}
-                element={
-                  <ProtectedRoute allowedRoles={[ROLES.AGENCY, ROLES.AGENCY_MEMBER]}>
-                    <AgentDashboard />
-                  </ProtectedRoute>
-                }
-              />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ReferralTracker />
+          <Suspense fallback={<LoadingPage />}>
+            <ErrorBoundary>
+              <Routes>
+                <Route path={ROUTES.HOME} element={<Landing />} />
+                <Route path={ROUTES.AUTH} element={<Auth />} />
+                <Route path={ROUTES.AUTH_RECOVER} element={<AuthRecoverPassword />} />
+                <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<AuthResetPassword />} />
+                <Route path={ROUTES.TERMS} element={<LegalTerms />} />
+                <Route path={ROUTES.PRIVACY} element={<LegalPrivacy />} />
+                <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
+                <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
+                
+                {/* Rutas Protegidas Simples (Solo requieren estar logeado) */}
+                <Route
+                  path={ROUTES.DASHBOARD_AI_PROFILE}
+                  element={
+                    <ProtectedRoute>
+                      <PerfilIAPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                
+                {/* Rutas Protegidas con Roles Específicos */}
+                <Route path={ROUTES.ADMIN} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
+                <Route path={ROUTES.ADMIN_SECTION_PATH} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
+                <Route
+                  path={ROUTES.AGENCY}
+                  element={
+                    <ProtectedRoute allowedRoles={[ROLES.AGENCY, ROLES.AGENCY_MEMBER]}>
+                      <AgentDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
