@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Camera, Sparkles, ImageIcon, X, Plus, Upload, Link, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useGeography } from "@/hooks/useGeography";
 import { formatDaysAgo } from "@/lib/duplicateCheck";
 
 export interface PropertyFormManualProps {
@@ -90,33 +91,19 @@ export function PropertyFormManual({
 }: PropertyFormManualProps) {
     const safeCurrency = form.currency === "USD" || form.currency === "UYU" ? form.currency : "UYU";
     
-    // Geographical State
-    const [deptsList, setDeptsList] = useState<any[]>([]);
-    const [citiesList, setCitiesList] = useState<any[]>([]);
-    const [neighborhoodsList, setNeighborhoodsList] = useState<any[]>([]);
+    const { departments: deptsList, cities: allCities, neighborhoods: allNeighborhoods } = useGeography();
+    
+    // Filtrar ciudades por depto
+    const citiesList = useMemo(() => {
+        if (!form.department_id) return [];
+        return allCities.filter(c => c.department_id === form.department_id);
+    }, [allCities, form.department_id]);
 
-    // Fetch departments initially
-    useEffect(() => {
-        (supabase.from("departments") as any).select("id, name, country").order("country").order("name").then(({ data }) => setDeptsList((data as any[]) || []));
-    }, []);
-
-    // Fetch cities when department changes
-    useEffect(() => {
-        if (form.department_id) {
-            (supabase.from("cities") as any).select("id, name").eq("department_id", form.department_id).order("name").then(({ data }) => setCitiesList((data as any[]) || []));
-        } else {
-            setCitiesList([]);
-        }
-    }, [form.department_id]);
-
-    // Fetch neighborhoods when city changes
-    useEffect(() => {
-        if (form.city_id) {
-            (supabase.from("neighborhoods") as any).select("id, name").eq("city_id", form.city_id).order("name").then(({ data }) => setNeighborhoodsList((data as any[]) || []));
-        } else {
-            setNeighborhoodsList([]);
-        }
-    }, [form.city_id]);
+    // Filtrar barrios por ciudad
+    const neighborhoodsList = useMemo(() => {
+        if (!form.city_id) return [];
+        return allNeighborhoods.filter(n => n.city_id === form.city_id);
+    }, [allNeighborhoods, form.city_id]);
 
     return (
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">

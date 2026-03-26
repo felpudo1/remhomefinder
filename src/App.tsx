@@ -29,12 +29,13 @@ const LegalPrivacy = routeLazy(() => import("./pages/LegalPrivacy"));
 const AuthRecoverPassword = routeLazy(() => import("./pages/AuthRecoverPassword"));
 const AuthResetPassword = routeLazy(() => import("./pages/AuthResetPassword"));
 
-// Caché global: 2 min de staleTime evita refetch en cada mount/window focus.
-// Los hooks que necesiten un valor diferente pueden sobreescribir con su propio staleTime.
+// Caché global: 5 min de staleTime evita refetch en cada mount/window focus.
+// gcTime de 10 min mantiene los datos en memoria limpia por más tiempo.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2 * 60 * 1000,      // 2 min — datos se consideran frescos por 2 min
+      staleTime: 5 * 60 * 1000,      // 5 min — datos se consideran frescos por 5 min
+      gcTime: 10 * 60 * 1000,        // 10 min — se mantienen en caché inactiva por 10 min
       refetchOnWindowFocus: false,    // No refetch automático al volver a la pestaña
     },
   },

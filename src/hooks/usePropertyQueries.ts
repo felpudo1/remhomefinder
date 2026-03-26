@@ -204,7 +204,7 @@ export function usePropertyQueries() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       queryClient.invalidateQueries({ queryKey: ["properties", currentUserId] });
-    }, 800);
+    }, 2000); // 2 segundos de calma antes del refetch
   }, [queryClient, currentUserId]);
 
   useEffect(() => {

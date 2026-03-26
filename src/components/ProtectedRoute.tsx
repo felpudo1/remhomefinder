@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { ROUTES, ROLES } from "@/lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/contexts/AuthProvider";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 import { AppRole } from "@/types/supabase";
 
@@ -24,78 +25,51 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const location = useLocation();
   const queryClient = useQueryClient();
 
-  // Leer sesión del AuthProvider centralizado (0 auth requests HTTP)
   const { session, isLoading: authLoading } = useCurrentUser();
+  const { data: userRoles = [], isLoading: rolesLoading } = useUserRoles(session?.user?.id);
 
   useEffect(() => {
-    let isMounted = true;
+    // Si aún cargando la auth o los roles, no emitir veredicto
+    if (authLoading || rolesLoading) {
+      if (isAuthorized !== null) setIsAuthorized(null);
+      return;
+    }
 
-    const checkAccess = async () => {
-      try {
-        // Si aún cargando la auth, no hacer nada
-        if (authLoading) return;
+    // Si no hay sesión, el usuario no está autenticado
+    if (!session) {
+      setIsAuthorized(false);
+      return;
+    }
 
-        // Si no hay sesión, el usuario no está autenticado
-        if (!session) {
-          if (isMounted) setIsAuthorized(false);
-          return;
-        }
-
-        // Obtener roles del usuario (siempre lo necesitamos para redirect por rol)
-        const { data: roles } = await (supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id as any) as any);
-
-        const userRoles = roles?.map((r: any) => r.role as AppRole) || [];
-
-        // Si estamos en /dashboard y el usuario es admin o rol agente, redirigir a su panel
-        const isDashboard = location.pathname === ROUTES.DASHBOARD;
-        if (isDashboard && !allowedRoles?.length) {
-          if (userRoles.includes(ROLES.ADMIN)) {
-            if (isMounted) setRedirectTo(ROUTES.ADMIN);
-            return;
-          }
-          if (userRoles.includes(ROLES.AGENCY) || userRoles.includes(ROLES.AGENCY_MEMBER)) {
-            if (isMounted) setRedirectTo(ROUTES.AGENCY);
-            return;
-          }
-        }
-
-        // Si no se especifican roles permitidos, con estar logeado alcanza
-        if (!allowedRoles || allowedRoles.length === 0) {
-          if (isMounted) {
-            setRedirectTo(null);
-            setIsAuthorized(true);
-          }
-          return;
-        }
-
-        // Chequear roles para rutas protegidas por rol
-        const hasAccess = allowedRoles.some(role => userRoles.includes(role));
-
-        if (isMounted) {
-          setRedirectTo(null);
-          setIsAuthorized(hasAccess);
-        }
-      } catch (error: unknown) {
-        console.error("Error checkAccess:", error);
-        if (isMounted) setIsAuthorized(false);
+    // Si estamos en /dashboard y el usuario es admin o rol agente, redirigir a su panel
+    const isDashboard = location.pathname === ROUTES.DASHBOARD;
+    if (isDashboard && !allowedRoles?.length) {
+      if (userRoles.includes(ROLES.ADMIN)) {
+        setRedirectTo(ROUTES.ADMIN);
+        return;
       }
-    };
+      if (userRoles.includes(ROLES.AGENCY) || userRoles.includes(ROLES.AGENCY_MEMBER)) {
+        setRedirectTo(ROUTES.AGENCY);
+        return;
+      }
+    }
 
-    // Verificar acceso cuando cambia la sesión, la ruta o los roles
-    checkAccess();
+    // Chequear roles para rutas protegidas por rol
+    if (allowedRoles && allowedRoles.length > 0) {
+      const hasAccess = allowedRoles.some(role => userRoles.includes(role));
+      setIsAuthorized(hasAccess);
+    } else {
+      // Si no se especifican roles permitidos, con estar logeado alcanza
+      setIsAuthorized(true);
+    }
+
+    setRedirectTo(null);
 
     // Si no hay sesión (logout), limpiar caché
     if (!session && !authLoading) {
       queryClient.clear();
     }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [session, authLoading, allowedRoles, location.pathname, queryClient]);
+  }, [session, authLoading, rolesLoading, userRoles, allowedRoles, location.pathname, queryClient, isAuthorized]);
 
   if (isAuthorized === null && !redirectTo) {
     return (

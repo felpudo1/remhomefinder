@@ -4,6 +4,7 @@ import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList } from "@/hooks/useSaveToList";
 import { useProperties } from "@/hooks/useProperties";
 import { useProfile } from "@/hooks/useProfile";
+import { useGeography } from "@/hooks/useGeography";
 import { MarketplaceCard } from "@/components/MarketplaceCard";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceFiltersDropdown } from "@/components/MarketplaceFiltersDropdown";
@@ -94,33 +95,19 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     );
   }, [userProperties]);
 
-  // Traer barrios normalizados de la BD en vez del texto libre de las propiedades
-  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
-  useEffect(() => {
-    const fetchNeighborhoods = async () => {
-      // Obtener los neighborhood_ids únicos de las propiedades del marketplace
-      const propertyNeighborhoods = new Set(
-        marketplaceProperties.map((p) => p.neighborhood).filter(Boolean)
-      );
-      if (propertyNeighborhoods.size === 0) {
-        setNeighborhoods([]);
-        return;
-      }
-      const { data } = await (supabase
-        .from("neighborhoods")
-        .select("name")
-        .order("name") as any);
-      if (data) {
-        // Solo mostrar barrios que existan en la tabla normalizada Y que alguna propiedad los tenga
-        const normalizedNames = new Set(data.map((n) => n.name));
-        const filtered = Array.from(propertyNeighborhoods)
-          .filter((n) => normalizedNames.has(n))
-          .sort();
-        setNeighborhoods(filtered as string[]);
-      }
-    };
-    fetchNeighborhoods();
-  }, [marketplaceProperties]);
+  const { neighborhoods: allNeighborhoodsData } = useGeography();
+  const neighborhoods = useMemo(() => {
+    // Obtener los nombres de barrios únicos disponibles en las propiedades del marketplace
+    const propertyNeighborhoods = new Set(
+      marketplaceProperties.map((p) => p.neighborhood).filter(Boolean)
+    );
+    
+    // Filtrar por los barrios normalizados que tenemos en la base de datos (cacheados)
+    const normalizedNames = new Set(allNeighborhoodsData.map((n) => n.name));
+    return Array.from(propertyNeighborhoods)
+      .filter((n) => normalizedNames.has(n))
+      .sort() as string[];
+  }, [marketplaceProperties, allNeighborhoodsData]);
 
   const hasFilters = !!(selectedNeighborhoods.length > 0 || minPrice || maxPrice || selectedRooms || selectedListingType || selectedCurrency);
 

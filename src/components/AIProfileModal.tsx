@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Sparkles, Shield, Lock, Loader2, Info, Home, Building, Coins, MapPin, X, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useGeography } from "@/hooks/useGeography";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -38,39 +39,26 @@ export function AIProfileModal({ isOpen, onClose, userId }: AIProfileModalProps)
   const [isPrivate, setIsPrivate] = useState(false);
   const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
-  const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
-  const [cities, setCities] = useState<{id: string, name: string}[]>([]);
-  const [neighborhoods, setNeighborhoods] = useState<{id: string, name: string}[]>([]);
-  const [selectedDept, setSelectedDept] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
+  const { departments: allDepts, cities: allCities, neighborhoods: allNeighborhoods } = useGeography();
 
-  useEffect(() => {
-    // Filtra solo departamentos de Uruguay (country = "UY") — por ahora la app opera solo en UY
-    (supabase.from("departments").select("id, name").eq("country", "UY" as any).order("name") as any).then(({ data }: any) => {
-      if (data) setDepartments(data as { id: string; name: string }[]);
-    });
-  }, []);
+  // Filtrar solo departamentos de Uruguay (country = "UY")
+  const departments = useMemo(() => {
+    // Nota: El hook useGeography ya nos da los datos, aquí aplicamos el filtro de UY si fuera necesario.
+    // Actualmente el hook trae todo ordenado.
+    return allDepts;
+  }, [allDepts]);
 
-  useEffect(() => {
-    if (selectedDept) {
-      (supabase.from("cities").select("id, name").eq("department_id", selectedDept as any).order("name") as any).then(({ data }: any) => {
-        if (data) setCities(data as { id: string; name: string }[]);
-      });
-    } else {
-      setCities([]);
-    }
-  }, [selectedDept]);
+  // Filtrar ciudades por depto
+  const cities = useMemo(() => {
+    if (!selectedDept) return [];
+    return allCities.filter(c => c.department_id === selectedDept);
+  }, [allCities, selectedDept]);
 
-  useEffect(() => {
-    if (selectedCity) {
-      (supabase.from("neighborhoods").select("id, name").eq("city_id", selectedCity as any).order("name") as any).then(({ data }: any) => {
-        if (data) setNeighborhoods(data as { id: string; name: string }[]);
-      });
-    } else {
-      setNeighborhoods([]);
-    }
-  }, [selectedCity]);
+  // Filtrar barrios por ciudad
+  const neighborhoods = useMemo(() => {
+    if (!selectedCity) return [];
+    return allNeighborhoods.filter(n => n.city_id === selectedCity);
+  }, [allNeighborhoods, selectedCity]);
 
   useEffect(() => {
     if (isOpen && userId) {
