@@ -35,7 +35,7 @@ export function useGroups() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["groups"],
-    staleTime: 30 * 1000,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { groups: [] as Group[], agencyOrg: null as Group | null };

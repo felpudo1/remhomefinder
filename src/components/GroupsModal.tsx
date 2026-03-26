@@ -62,8 +62,6 @@ export function GroupsModal({
       supabase.auth.getUser().then(({ data }) => {
         setCurrentUserId(data.user?.id || null);
       });
-      // Forzar refetch de grupos al abrir el modal
-      refetchGroups();
     } else {
       setDetailGroup(null);
       setTab("groups");
