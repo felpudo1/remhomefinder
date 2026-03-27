@@ -1,94 +1,101 @@
 
 
-# Plan de Recuperacion y Prevencion de Crash por Disk I/O
+# Plan: Dashboard de Monitoreo de Infraestructura (sysadmin)
 
-## Diagnostico
+## Resumen
 
-Las estadisticas de Supabase muestran en 24h:
-- **26,909 REST requests** (excesivo para ~10 usuarios)
-- **1,626 Auth requests** (aun alto, deberia ser ~50)
-- **764 Realtime requests**
+Crear una ruta segregada `/admin/infra` accesible solo para usuarios con rol `sysadmin`, con un dashboard dark-mode que muestra metricas de infraestructura Supabase (Disk IO, requests, CPU, RAM, conexiones DB) obtenidas via Edge Function proxy.
 
-Ademas, en los network logs del preview se ven **refresh_token requests cada ~30 segundos que fallan** ("signal is aborted without reason"), lo cual genera un bucle de reintentos de auth que martilla la BD.
+## Arquitectura
 
-### Fuentes del problema identificadas:
+```text
+Browser (sysadmin)
+  │
+  ├─ /admin/infra  ──► ProtectedRoute(allowedRoles=['sysadmin'])
+  │                        │
+  │                        ▼
+  │                  InfraMonitorPage
+  │                        │
+  │                  useQuery (poll 60s)
+  │                        │
+  │                        ▼
+  │              supabase.functions.invoke('get-system-metrics')
+  │                        │
+  │                        ▼
+  │              Edge Function (Deno)
+  │                ├─ Auth: getClaims() → verifica sysadmin
+  │                ├─ Fetch: metrics endpoint con service_role key
+  │                ├─ Parse: Prometheus text → JSON
+  │                └─ Return: metricas filtradas
+```
 
-1. **Auth: 15+ llamadas `getUser()` dispersas** — Pese al AuthProvider, quedan ~15 archivos llamando `supabase.auth.getUser()` directamente (PublishPropertyModal tiene 6 sola, usePropertyRating tiene 2, GroupsModal, useImageUploader, AdminPublicaciones, AdminDatosAdmin, PropertyDetailModal, usePropertyExtractor, AdminUsuarios). Cada una es un HTTP request al servidor de Auth.
+## Paso 1 — Migración: agregar `sysadmin` al enum `app_role`
 
-2. **DbStatusBadge: polling cada 60 segundos** — Hace un `SELECT` a `properties` cada minuto. Con multiples tabs = multiples queries/minuto constantes.
+```sql
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'sysadmin';
+```
 
-3. **Realtime: 2 canales globales sin filtro** — Escuchan `event: "*"` en tablas completas (`user_listings`, `properties`, `user_listing_attachments`, `family_comments`). Cualquier cambio de CUALQUIER usuario dispara invalidacion para TODOS los clientes conectados.
+Tambien agregar una RLS policy o usar `has_role()` existente (ya soporta cualquier valor del enum).
 
-4. **`select("*")` en 6+ archivos** — Admin y AgentProperties traen datos completos incluyendo campos pesados como `raw_ai_data`.
+Despues de la migracion, asignar manualmente el rol sysadmin al usuario deseado via SQL o admin panel.
 
-5. **useProfile con staleTime: 0** — Se refetchea en CADA mount/navegacion.
+## Paso 2 — Edge Function `get-system-metrics`
 
----
+Archivo: `supabase/functions/get-system-metrics/index.ts`
 
-## Plan de Implementacion
+- Valida JWT con `getClaims()`, luego verifica rol `sysadmin` consultando `user_roles`
+- Usa `SUPABASE_SERVICE_ROLE_KEY` para hacer fetch a `https://{ref}.supabase.co/customer/v1/privileged/metrics`
+- Parsea formato Prometheus (lineas `metric_name{labels} value timestamp`) a JSON estructurado
+- Retorna objeto con: `diskIo`, `restRequests`, `authRequests`, `realtimeRequests`, `storageRequests`, `cpuUsage`, `ramUsage`, `dbConnections`
+- CORS headers incluidos
 
-### Paso 1 — Eliminar `getUser()` restantes (Auth: -1,500 req/dia)
+## Paso 3 — Ruta y guard en App.tsx
 
-Reemplazar las ~15 llamadas directas a `supabase.auth.getUser()` con `useCurrentUser()` del AuthProvider en:
+- Agregar `SYSADMIN` a `ROLES` en constants.ts
+- Agregar ruta `/admin/infra` en App.tsx con `ProtectedRoute allowedRoles={[ROLES.SYSADMIN]}`
+- Ruta completamente separada de `/admin/:section` (no es una seccion del admin existente)
 
-- `usePropertyRating.ts` (2 llamadas) — pasar `userId` como parametro o leer del hook
-- `PublishPropertyModal.tsx` (6 llamadas) — leer `authUser` del hook al inicio del componente
-- `GroupsModal.tsx` (1 llamada) — usar `useCurrentUser()`
-- `useImageUploader.ts` (2 llamadas)
-- `PropertyDetailModal.tsx` (1 llamada)
-- `usePropertyExtractor.ts` (1 llamada)
-- `AdminDatosAdmin.tsx` (1 llamada)
-- `AdminPublicaciones.tsx` (2 llamadas)
-- `AdminUsuarios.tsx` (1 llamada)
+## Paso 4 — Pagina `InfraMonitorPage`
 
-### Paso 2 — DbStatusBadge: subir intervalo a 5 min
+Archivo: `src/pages/InfraMonitorPage.tsx`
 
-Cambiar `setInterval(runCheck, 60_000)` a `setInterval(runCheck, 300_000)` (5 min). El badge ya tiene un boton manual de reintento. Tambien eliminar `useAdminDbStatus.ts` si duplica la misma logica.
+Componentes internos (todos en el mismo archivo o carpeta `src/components/infra/`):
 
-### Paso 3 — Realtime: filtrar por usuario
+1. **DiskIoGauge** — Barra de progreso circular/semicircular con el burst balance. Colores: verde >50%, amarillo 20-50%, rojo <20% con badge "PELIGRO"
+2. **RequestsChart** — 4 bar charts (Recharts) para REST, Auth, Realtime, Storage requests
+3. **ResourceCards** — Cards con CPU %, RAM MB, DB Connections activas
+4. **MetricsSkeleton** — Skeleton loaders para carga inicial
 
-Agregar `filter: "added_by=eq.{userId}"` en el canal de `user_listings` para que solo reciba eventos del usuario actual, no de todos los usuarios de la plataforma. Esto reduce drasticamente los eventos Realtime y las invalidaciones de cache.
+UX:
+- Dark mode forzado con `className="dark"` en el wrapper
+- Polling cada 60s via `refetchInterval: 60_000` en useQuery
+- Boton "Refrescar ahora" que invalida la query
+- Glassmorphism cards: `bg-slate-900/80 backdrop-blur border-slate-700/50`
 
-### Paso 4 — useProfile: agregar staleTime
+## Paso 5 — Hook `useSystemMetrics`
 
-Agregar `staleTime: 2 * 60 * 1000` (2 min) a useProfile para evitar refetch en cada navegacion.
+Archivo: `src/hooks/useSystemMetrics.ts`
 
-### Paso 5 — Proyectar columnas en `select("*")` restantes
+- Llama a `supabase.functions.invoke('get-system-metrics')`
+- `refetchInterval: 60_000`
+- `staleTime: 30_000`
+- Tipado TypeScript para la respuesta
 
-Reemplazar `select("*")` por columnas especificas en:
-- `AgentProperties.tsx` (user_search_profiles)
-- `AdminGrupos.tsx` (organizations)
-- `AdminEstadisticas.tsx` (user_search_profiles x2)
-- `AdminAuditLog.tsx` (deletion_audit_log, publication_deletion_audit_log)
-- `AdminDatosAdmin.tsx` (admin_keys)
+## Archivos a crear/modificar
 
-### Impacto estimado
-
-| Metrica | Antes (24h) | Despues estimado |
-|---------|-------------|-----------------|
-| Auth Requests | 1,626 | ~50 |
-| REST Requests | 26,909 | ~5,000 |
-| Realtime | 764 | ~200 |
-
-### Archivos a modificar
-
-| Archivo | Cambio |
+| Archivo | Accion |
 |---------|--------|
-| `src/hooks/usePropertyRating.ts` | Reemplazar 2x `getUser()` con useCurrentUser |
-| `src/components/PublishPropertyModal.tsx` | Reemplazar 6x `getUser()` con useCurrentUser |
-| `src/components/GroupsModal.tsx` | Reemplazar `getUser()` con useCurrentUser |
-| `src/hooks/useImageUploader.ts` | Reemplazar 2x `getUser()` con useCurrentUser |
-| `src/components/PropertyDetailModal.tsx` | Reemplazar `getUser()` con useCurrentUser |
-| `src/hooks/usePropertyExtractor.ts` | Reemplazar `getUser()` con useCurrentUser |
-| `src/components/admin/AdminDatosAdmin.tsx` | Reemplazar `getUser()` + proyectar columnas |
-| `src/components/admin/AdminPublicaciones.tsx` | Reemplazar 2x `getUser()` |
-| `src/components/admin/AdminUsuarios.tsx` | Reemplazar `getUser()` |
-| `src/components/ui/DbStatusBadge.tsx` | Intervalo 60s → 300s |
-| `src/hooks/useAdminDbStatus.ts` | Evaluar eliminacion (duplicado) |
-| `src/hooks/usePropertyQueries.ts` | Filtro Realtime por usuario |
-| `src/hooks/useProfile.ts` | Agregar staleTime 2 min |
-| `src/components/agent/AgentProperties.tsx` | Proyectar columnas |
-| `src/components/admin/AdminGrupos.tsx` | Proyectar columnas |
-| `src/components/admin/AdminEstadisticas.tsx` | Proyectar columnas |
-| `src/components/admin/system/AdminAuditLog.tsx` | Proyectar columnas |
+| Migracion SQL | Agregar `sysadmin` al enum `app_role` |
+| `supabase/functions/get-system-metrics/index.ts` | Crear edge function proxy |
+| `src/lib/constants.ts` | Agregar `SYSADMIN: "sysadmin"` a ROLES, ruta INFRA |
+| `src/App.tsx` | Agregar ruta `/admin/infra` protegida |
+| `src/pages/InfraMonitorPage.tsx` | Crear pagina principal del dashboard |
+| `src/components/infra/DiskIoGauge.tsx` | Gauge de disk IO budget |
+| `src/components/infra/RequestsCharts.tsx` | Graficos de requests por tipo |
+| `src/components/infra/ResourceCards.tsx` | Cards de CPU, RAM, DB connections |
+| `src/hooks/useSystemMetrics.ts` | Hook React Query para metricas |
+
+## Nota de seguridad
+
+La `SUPABASE_SERVICE_ROLE_KEY` ya existe como secret en el proyecto. La edge function la usa server-side; nunca se expone al cliente. El acceso al dashboard requiere doble validacion: JWT valido + rol `sysadmin` en `user_roles`.
 
