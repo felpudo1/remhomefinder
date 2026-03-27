@@ -213,19 +213,17 @@ export function usePropertyQueries() {
   useEffect(() => {
     if (!currentUserId) return;
 
+    // Canal único: escucha user_listings (incluye cambios por trigger de comentarios)
+    // y attachments. El canal de family_comments ya NO es necesario porque el trigger
+    // trg_comment_updates_listing actualiza updated_at del listing automáticamente.
     const channelListings = supabase
       .channel("properties_realtime_listings")
       .on("postgres_changes", { event: "*", schema: "public", table: "user_listings", filter: `added_by=eq.${currentUserId}` }, handleRealtimeEvent)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, handleRealtimeEvent)
       .subscribe();
-    const channelComments = supabase
-      .channel("properties_realtime_comments")
-      .on("postgres_changes", { event: "*", schema: "public", table: "family_comments" }, handleRealtimeEvent)
-      .subscribe();
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       supabase.removeChannel(channelListings);
-      supabase.removeChannel(channelComments);
     };
   }, [queryClient, currentUserId, handleRealtimeEvent]);
 
