@@ -161,13 +161,7 @@ export function PropertyCard({
         }}
         collapsibleImages={!forceExpandImages}
         className={isEliminated || isDiscarded || isAgentDeleted ? "opacity-60" : ""}
-        statusOverlay={
-          mktOverlay ? (
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${mktOverlay.className}`}>
-              {mktOverlay.label}
-            </span>
-          ) : undefined
-        }
+        statusOverlay={undefined}
         topOverlay={
           <PropertyCardHeader
             property={property}
