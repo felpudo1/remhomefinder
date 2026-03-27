@@ -80,7 +80,7 @@ export function AdminDatosAdmin() {
         estado,
         fecha: fecha ? format(fecha, "yyyy-MM-dd") : null,
         created_by: profile.userId,
-        created_by_name: profile?.displayName || user.email || "",
+        created_by_name: profile?.displayName || "",
       } as any);
 
       if (error) throw error;
