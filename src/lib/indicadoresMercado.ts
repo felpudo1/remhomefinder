@@ -99,7 +99,7 @@ function filterByTypeAndRange(
 
 /** Publicaciones consideradas “en cartera” (visibles y no cerradas). */
 function isActiveInventory(p: MarketplaceProperty): boolean {
-  return p.status === "active";
+  return p.status === "disponible";
 }
 
 /**

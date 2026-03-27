@@ -201,7 +201,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     let result = marketplaceProperties;
 
     // Las propiedades eliminadas no aparecen en el marketplace
-    result = result.filter((p) => p.status !== "deleted");
+    result = result.filter((p) => p.status !== "eliminado");
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
