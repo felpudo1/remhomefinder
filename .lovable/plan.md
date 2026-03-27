@@ -1,93 +1,94 @@
 
 
-# Plan: Agregar campos contact_name y contact_phone a user listings
+# Plan de Recuperacion y Prevencion de Crash por Disk I/O
 
-## Resumen
-Agregar campos de contacto (nombre y teléfono) en `user_listings` para que las familias tengan una agenda integrada. Los datos se intentan autocompletar desde scraping/fotos y se pueden editar manualmente.
+## Diagnostico
 
-## 1. Migración SQL
+Las estadisticas de Supabase muestran en 24h:
+- **26,909 REST requests** (excesivo para ~10 usuarios)
+- **1,626 Auth requests** (aun alto, deberia ser ~50)
+- **764 Realtime requests**
 
-Agregar 3 columnas nullable a `user_listings`:
-```sql
-ALTER TABLE public.user_listings
-  ADD COLUMN IF NOT EXISTS contact_name text,
-  ADD COLUMN IF NOT EXISTS contact_phone text,
-  ADD COLUMN IF NOT EXISTS contact_source text;
+Ademas, en los network logs del preview se ven **refresh_token requests cada ~30 segundos que fallan** ("signal is aborted without reason"), lo cual genera un bucle de reintentos de auth que martilla la BD.
 
-COMMENT ON COLUMN public.user_listings.contact_name IS 'Nombre del contacto del aviso (manual, scrape o imagen)';
-COMMENT ON COLUMN public.user_listings.contact_phone IS 'Teléfono del contacto del aviso';
-COMMENT ON COLUMN public.user_listings.contact_source IS 'Origen del dato: manual | scrape | image_ocr | mixed';
-```
+### Fuentes del problema identificadas:
 
-## 2. Edge Functions - Agregar extracción de contacto
+1. **Auth: 15+ llamadas `getUser()` dispersas** — Pese al AuthProvider, quedan ~15 archivos llamando `supabase.auth.getUser()` directamente (PublishPropertyModal tiene 6 sola, usePropertyRating tiene 2, GroupsModal, useImageUploader, AdminPublicaciones, AdminDatosAdmin, PropertyDetailModal, usePropertyExtractor, AdminUsuarios). Cada una es un HTTP request al servidor de Auth.
 
-**`scrape-property/index.ts`** y **`extract-from-image/index.ts`**: Agregar `contactName` y `contactPhone` al tool schema de Gemini en las 3 funciones de extracción (`extractWithAI`, `extractWithVision`, y el schema de `extract-from-image`).
+2. **DbStatusBadge: polling cada 60 segundos** — Hace un `SELECT` a `properties` cada minuto. Con multiples tabs = multiples queries/minuto constantes.
 
-```
-contactName: { type: "string", description: "Nombre de la persona o inmobiliaria de contacto. Vacío si no se detecta." }
-contactPhone: { type: "string", description: "Teléfono de contacto. Vacío si no se detecta." }
-```
+3. **Realtime: 2 canales globales sin filtro** — Escuchan `event: "*"` en tablas completas (`user_listings`, `properties`, `user_listing_attachments`, `family_comments`). Cualquier cambio de CUALQUIER usuario dispara invalidacion para TODOS los clientes conectados.
 
-## 3. Frontend - Tipos y modelos
+4. **`select("*")` en 6+ archivos** — Admin y AgentProperties traen datos completos incluyendo campos pesados como `raw_ai_data`.
 
-**`src/types/property.ts`**: Agregar al interface `Property`:
-```ts
-contactName?: string;
-contactPhone?: string;
-contactSource?: "manual" | "scrape" | "image_ocr" | "mixed";
-```
+5. **useProfile con staleTime: 0** — Se refetchea en CADA mount/navegacion.
 
-**`src/hooks/usePropertyExtractor.ts`**: Agregar `contactName` y `contactPhone` a `PropertyData` type y mapearlos desde la respuesta de scrape/image.
+---
 
-## 4. Hook de formulario
+## Plan de Implementacion
 
-**`src/hooks/useAddPropertyForm.ts`**: Agregar `contactName` y `contactPhone` a `FormState`, incluir en `resetForm` y `updateForm`.
+### Paso 1 — Eliminar `getUser()` restantes (Auth: -1,500 req/dia)
 
-## 5. Mutaciones (escritura)
+Reemplazar las ~15 llamadas directas a `supabase.auth.getUser()` con `useCurrentUser()` del AuthProvider en:
 
-**`src/hooks/usePropertyMutations.ts`**: En `addPropertyMutation`, aceptar `contactName`, `contactPhone`, `contactSource` y pasarlos al insert de `user_listings`.
+- `usePropertyRating.ts` (2 llamadas) — pasar `userId` como parametro o leer del hook
+- `PublishPropertyModal.tsx` (6 llamadas) — leer `authUser` del hook al inicio del componente
+- `GroupsModal.tsx` (1 llamada) — usar `useCurrentUser()`
+- `useImageUploader.ts` (2 llamadas)
+- `PropertyDetailModal.tsx` (1 llamada)
+- `usePropertyExtractor.ts` (1 llamada)
+- `AdminDatosAdmin.tsx` (1 llamada)
+- `AdminPublicaciones.tsx` (2 llamadas)
+- `AdminUsuarios.tsx` (1 llamada)
 
-## 6. Queries (lectura)
+### Paso 2 — DbStatusBadge: subir intervalo a 5 min
 
-**`src/hooks/usePropertyQueries.ts`**: En ambos bloques de mapeo (con y sin property join), leer `listing.contact_name`, `listing.contact_phone`, `listing.contact_source` y mapearlos a las propiedades del modelo UI.
+Cambiar `setInterval(runCheck, 60_000)` a `setInterval(runCheck, 300_000)` (5 min). El badge ya tiene un boton manual de reintento. Tambien eliminar `useAdminDbStatus.ts` si duplica la misma logica.
 
-**`src/lib/mappers/propertyMappers.ts`**: Agregar campos de contacto a `mapListingToProperty`.
+### Paso 3 — Realtime: filtrar por usuario
 
-## 7. Formulario UI (Add Property)
+Agregar `filter: "added_by=eq.{userId}"` en el canal de `user_listings` para que solo reciba eventos del usuario actual, no de todos los usuarios de la plataforma. Esto reduce drasticamente los eventos Realtime y las invalidaciones de cache.
 
-**`src/components/add-property/PropertyFormManual.tsx`**: Agregar 2 inputs (Nombre de contacto, Teléfono de contacto) entre "Referencia" y "Detalles". Se prellenan automáticamente si la extracción IA los detecta.
+### Paso 4 — useProfile: agregar staleTime
 
-**`src/components/AddPropertyModal.tsx`**: Pasar `contactName`, `contactPhone` y calcular `contactSource` en `handleSubmit`.
+Agregar `staleTime: 2 * 60 * 1000` (2 min) a useProfile para evitar refetch en cada navegacion.
 
-## 8. Detalle UI (Property Detail)
+### Paso 5 — Proyectar columnas en `select("*")` restantes
 
-**`src/components/PropertyDetailModal.tsx`**: Agregar sección de contacto debajo de la ubicación:
-- Icono de usuario + nombre (o "Sin contacto cargado")
-- Icono teléfono + número (o "Sin teléfono")
-- Botón WhatsApp (usa `buildWhatsAppUrl` existente)
-- Botón copiar número
-- Badge pequeño de origen (Manual/Scraping/Fotos/Mixto) -- opcional
+Reemplazar `select("*")` por columnas especificas en:
+- `AgentProperties.tsx` (user_search_profiles)
+- `AdminGrupos.tsx` (organizations)
+- `AdminEstadisticas.tsx` (user_search_profiles x2)
+- `AdminAuditLog.tsx` (deletion_audit_log, publication_deletion_audit_log)
+- `AdminDatosAdmin.tsx` (admin_keys)
 
-## Archivos tocados (resumen)
+### Impacto estimado
+
+| Metrica | Antes (24h) | Despues estimado |
+|---------|-------------|-----------------|
+| Auth Requests | 1,626 | ~50 |
+| REST Requests | 26,909 | ~5,000 |
+| Realtime | 764 | ~200 |
+
+### Archivos a modificar
 
 | Archivo | Cambio |
-|---|---|
-| `supabase/migrations/XXXX_add_contact_fields.sql` | 3 columnas nuevas |
-| `supabase/functions/scrape-property/index.ts` | contactName/Phone en schema IA |
-| `supabase/functions/extract-from-image/index.ts` | contactName/Phone en schema IA |
-| `src/types/property.ts` | 3 campos nuevos en Property |
-| `src/hooks/usePropertyExtractor.ts` | Mapear contacto desde respuesta |
-| `src/hooks/useAddPropertyForm.ts` | FormState + reset |
-| `src/hooks/usePropertyMutations.ts` | Persistir contacto en insert |
-| `src/hooks/usePropertyQueries.ts` | Leer contacto del listing |
-| `src/lib/mappers/propertyMappers.ts` | Mapear contacto |
-| `src/components/add-property/PropertyFormManual.tsx` | 2 inputs nuevos |
-| `src/components/AddPropertyModal.tsx` | Pasar contacto al submit |
-| `src/components/PropertyDetailModal.tsx` | Mostrar contacto + WhatsApp |
-
-## No se toca
-- Flujos de agencias/marketplace
-- Tabla `properties`
-- Lógica de estados
-- Paquetes nuevos
+|---------|--------|
+| `src/hooks/usePropertyRating.ts` | Reemplazar 2x `getUser()` con useCurrentUser |
+| `src/components/PublishPropertyModal.tsx` | Reemplazar 6x `getUser()` con useCurrentUser |
+| `src/components/GroupsModal.tsx` | Reemplazar `getUser()` con useCurrentUser |
+| `src/hooks/useImageUploader.ts` | Reemplazar 2x `getUser()` con useCurrentUser |
+| `src/components/PropertyDetailModal.tsx` | Reemplazar `getUser()` con useCurrentUser |
+| `src/hooks/usePropertyExtractor.ts` | Reemplazar `getUser()` con useCurrentUser |
+| `src/components/admin/AdminDatosAdmin.tsx` | Reemplazar `getUser()` + proyectar columnas |
+| `src/components/admin/AdminPublicaciones.tsx` | Reemplazar 2x `getUser()` |
+| `src/components/admin/AdminUsuarios.tsx` | Reemplazar `getUser()` |
+| `src/components/ui/DbStatusBadge.tsx` | Intervalo 60s → 300s |
+| `src/hooks/useAdminDbStatus.ts` | Evaluar eliminacion (duplicado) |
+| `src/hooks/usePropertyQueries.ts` | Filtro Realtime por usuario |
+| `src/hooks/useProfile.ts` | Agregar staleTime 2 min |
+| `src/components/agent/AgentProperties.tsx` | Proyectar columnas |
+| `src/components/admin/AdminGrupos.tsx` | Proyectar columnas |
+| `src/components/admin/AdminEstadisticas.tsx` | Proyectar columnas |
+| `src/components/admin/system/AdminAuditLog.tsx` | Proyectar columnas |
 
