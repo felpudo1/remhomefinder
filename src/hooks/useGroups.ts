@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import type { OrgType, OrgRole } from "@/types/supabase";
 
 export interface Group {
@@ -28,22 +29,25 @@ export interface GroupMember {
  * Hook para gestionar organizaciones (antes "groups").
  * Usa organizations + organization_members.
  * Retorna `groups` (sub-equipos / familias) y `agencyOrg` (org principal de agencia, si existe).
+ *
+ * OPTIMIZACIÓN: Usa AuthProvider centralizado en lugar de supabase.auth.getUser()
+ * para eliminar auth requests redundantes (~4 getUser() eliminados).
  */
 export function useGroups() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user: authUser } = useCurrentUser();
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["groups"],
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["groups", authUser?.id],
+    enabled: !!authUser,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { groups: [] as Group[], agencyOrg: null as Group | null };
+      if (!authUser) return { groups: [] as Group[], agencyOrg: null as Group | null };
 
       const { data: memberships, error: memError } = await supabase
         .from("organization_members")
         .select("org_id")
-        .eq("user_id", user.id);
+        .eq("user_id", authUser.id);
 
       if (memError) throw memError;
 
@@ -52,7 +56,7 @@ export function useGroups() {
 
       const { data: orgs, error: orgError } = await supabase
         .from("organizations")
-        .select("*")
+        .select("id, name, description, created_by, invite_code, created_at, type")
         .in("id", orgIds)
         .eq("is_personal", false);
 
@@ -70,12 +74,11 @@ export function useGroups() {
 
       const agencyOrg = allOrgs.find((o) => o.type === "agency_team") || null;
 
-      // Also fetch sub_teams parented to agencyOrg
       let subTeams: Group[] = [];
       if (agencyOrg) {
         const { data: subOrgs } = await supabase
           .from("organizations")
-          .select("*")
+          .select("id, name, description, created_by, invite_code, created_at, type")
           .eq("parent_id", agencyOrg.id)
           .eq("type", "sub_team" satisfies OrgType);
 
@@ -102,8 +105,7 @@ export function useGroups() {
 
   const createGroupMutation = useMutation({
     mutationFn: async ({ name, description, parentOrgId }: { name: string; description: string; parentOrgId?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!authUser) throw new Error("No autenticado");
 
       const orgType = parentOrgId ? "sub_team" : "family";
 
@@ -113,7 +115,7 @@ export function useGroups() {
           name,
           description,
           type: orgType as OrgType,
-          created_by: user.id,
+          created_by: authUser.id,
           ...(parentOrgId ? { parent_id: parentOrgId } : {}),
         })
         .select()
@@ -123,7 +125,7 @@ export function useGroups() {
 
       const { error: memberError } = await (supabase.from("organization_members") as any).insert({
         org_id: data.id,
-        user_id: user.id,
+        user_id: authUser.id,
         role: "owner" satisfies OrgRole,
       });
 
@@ -142,8 +144,7 @@ export function useGroups() {
 
   const joinGroupMutation = useMutation({
     mutationFn: async (inviteCode: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!authUser) throw new Error("No autenticado");
 
       const { data: foundOrgs, error: findError } = await supabase
         .rpc("find_org_by_invite_code", { _code: inviteCode });
@@ -157,7 +158,7 @@ export function useGroups() {
 
       const { error: joinError } = await supabase
         .from("organization_members")
-        .insert({ org_id: org.id, user_id: user.id, role: "member" satisfies OrgRole });
+        .insert({ org_id: org.id, user_id: authUser.id, role: "member" satisfies OrgRole });
 
       if (joinError) {
         if (joinError.code === "23505") throw new Error("Ya sos miembro de este grupo");
@@ -174,14 +175,13 @@ export function useGroups() {
 
   const leaveGroupMutation = useMutation({
     mutationFn: async (groupId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!authUser) throw new Error("No autenticado");
 
       const { error } = await supabase
         .from("organization_members")
         .delete()
         .eq("org_id", groupId)
-        .eq("user_id", user.id);
+        .eq("user_id", authUser.id);
 
       if (error) throw error;
     },
@@ -223,7 +223,7 @@ export function useGroups() {
   const fetchMembers = async (groupId: string): Promise<GroupMember[]> => {
     const { data, error } = await supabase
       .from("organization_members")
-      .select("*")
+      .select("id, org_id, user_id, role, created_at, is_active")
       .eq("org_id", groupId);
 
     if (error) throw error;

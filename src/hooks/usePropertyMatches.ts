@@ -127,7 +127,7 @@ export function usePropertyMatches(property: PropertyWithLocation | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_search_profiles")
-        .select("*")
+        .select("id, user_id, operation, currency, min_budget, max_budget, min_bedrooms, city_id, neighborhood_ids, is_private, created_at, updated_at, department_id")
         .eq("is_private", false);
       
       if (error) {
@@ -175,7 +175,7 @@ export function useAdminPropertyMatches(property: PropertyWithLocation | null) {
       // Admin puede ver todo
       const { data, error } = await supabase
         .from("user_search_profiles")
-        .select("*");
+        .select("id, user_id, operation, currency, min_budget, max_budget, min_bedrooms, city_id, neighborhood_ids, is_private, created_at, updated_at, department_id");
       
       if (error) {
         console.error("Error fetching all search profiles:", error);
