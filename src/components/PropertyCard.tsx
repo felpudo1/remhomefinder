@@ -389,7 +389,6 @@ export function PropertyCard({
               open={dialogs.showCalendarOfferConfirm}
               onOpenChange={dialogs.setShowCalendarOfferConfirm}
               calendarOfferDate={dialogs.calendarOfferDate}
-              calendarMotivationText={dialogs.calendarMotivationText}
               onConfirm={() => {
                 if (dialogs.calendarOfferDate) openVisitCalendarEntry(dialogs.calendarOfferDate);
                 dialogs.setShowCalendarOfferConfirm(false);

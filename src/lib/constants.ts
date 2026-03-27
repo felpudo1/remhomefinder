@@ -22,7 +22,7 @@ export type UserRole = (typeof ROLES)[keyof typeof ROLES];
 export const ROUTES = {
     HOME: "/",
     DASHBOARD: "/dashboard",
-    /** Completar perfil de búsqueda IA (user_search_profiles) antes del dashboard */
+    /** Perfil de búsqueda IA (user_search_profiles); acceso manual o por enlace directo */
     DASHBOARD_AI_PROFILE: "/dashboard/perfil-ia",
     AUTH: "/auth",
     /** Pedir enlace de recuperación de contraseña (email) */

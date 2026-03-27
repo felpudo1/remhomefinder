@@ -179,38 +179,8 @@ const Index = () => {
     }
   }, [isPremium, profile?.userId, showRegWelcome]);
 
-  // Chequear si el usuario común tiene perfil de búsqueda (AI Matchmaking)
-  useEffect(() => {
-    if (showRegWelcome) return; // No abrir mientras el overlay de registro está activo
-    if (profile?.userId) {
-      const checkSearchProfile = async () => {
-        const { data } = await supabase
-          .from("user_search_profiles" as any)
-          .select("id")
-          .eq("user_id", profile.userId)
-          .maybeSingle();
-        
-        if (!data) {
-          const sessionDismissed = localStorage.getItem("hf_buyer_profile_completed") === "true";
-          const toastShown = sessionStorage.getItem("hf_buyer_profile_toast_shown") === "true";
+  // Perfil IA (matchmaking): solo se abre manualmente desde el menú (onAIProfileClick), no al cargar el dashboard.
 
-          if (!sessionDismissed) {
-             setShowAIProfileModal(true);
-          } else if (!toastShown) {
-             // Si lo cerró, le tiramos el toast sarcástico
-             toast({
-               title: "¡Vivimos en el S. XXI! 🤖",
-               description: "¿Aún no usás la Inteligencia Artificial? Tocá en 'Mi Perfil' y pasale tus filtros de búsqueda a nuestra IA. ¡No dejes que se te escape la casa de tus sueños!",
-               duration: 8000,
-             });
-             sessionStorage.setItem("hf_buyer_profile_toast_shown", "true");
-          }
-        }
-      };
-      checkSearchProfile();
-    }
-  }, [profile?.userId, showRegWelcome]);
-  
   // Implementación de Debouncing para la búsqueda (REGLA 2: Performance)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -454,18 +424,7 @@ const Index = () => {
             <div className="space-y-4 pt-2">
               <Button
                 className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
-                onClick={async () => {
-                  setShowRegWelcome(false);
-                  if (!profile?.userId) return;
-                  const { data } = await supabase
-                    .from("user_search_profiles")
-                    .select("id")
-                    .eq("user_id", profile.userId)
-                    .maybeSingle();
-                  if (!data) {
-                    navigate(ROUTES.DASHBOARD_AI_PROFILE, { replace: true });
-                  }
-                }}
+                onClick={() => setShowRegWelcome(false)}
               >
                 ¡Entendido, vamos! <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
