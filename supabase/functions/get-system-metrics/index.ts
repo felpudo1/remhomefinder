@@ -24,57 +24,142 @@ interface ParsedMetrics {
   timestamp: string;
 }
 
-function parsePrometheusValue(text: string, metricName: string): number | null {
-  // Match lines like: metric_name{labels} value timestamp
-  // or: metric_name value timestamp
-  const regex = new RegExp(`^${metricName}(?:\\{[^}]*\\})?\\s+([\\d.eE+-]+)`, "m");
-  const match = text.match(regex);
-  if (match) return parseFloat(match[1]);
-  return null;
+type LabelFilters = Record<string, string>;
+
+function parseLabels(rawLabels?: string): Record<string, string> {
+  if (!rawLabels) return {};
+
+  const labels: Record<string, string> = {};
+  const body = rawLabels.slice(1, -1); // remove { }
+  if (!body.trim()) return labels;
+
+  for (const entry of body.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)) {
+    const [key, rawValue] = entry.split("=");
+    if (!key || rawValue === undefined) continue;
+    labels[key.trim()] = rawValue.trim().replace(/^"|"$/g, "");
+  }
+
+  return labels;
 }
 
-function sumPrometheusMetric(text: string, metricName: string): number | null {
-  const regex = new RegExp(`^${metricName}(?:\\{[^}]*\\})?\\s+([\\d.eE+-]+)`, "gm");
-  let sum = 0;
-  let found = false;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    sum += parseFloat(match[1]);
-    found = true;
+function collectMetricValues(text: string, metricName: string, labelFilters: LabelFilters = {}): number[] {
+  const values: number[] = [];
+
+  for (const line of text.split("\n")) {
+    if (!line || line.startsWith("#")) continue;
+
+    const match = line.match(
+      /^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})?\s+([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(?:\s+\d+)?\s*$/
+    );
+
+    if (!match) continue;
+
+    const [, name, labelsRaw, valueRaw] = match;
+    if (name !== metricName) continue;
+
+    const labels = parseLabels(labelsRaw);
+    const isMatch = Object.entries(labelFilters).every(([k, v]) => labels[k] === v);
+    if (!isMatch) continue;
+
+    const parsed = Number.parseFloat(valueRaw);
+    if (Number.isFinite(parsed)) values.push(parsed);
   }
-  return found ? sum : null;
+
+  return values;
+}
+
+function sumMetric(text: string, metricName: string, labelFilters: LabelFilters = {}): number | null {
+  const values = collectMetricValues(text, metricName, labelFilters);
+  if (values.length === 0) return null;
+  return values.reduce((acc, value) => acc + value, 0);
+}
+
+function firstMetric(text: string, metricName: string, labelFilters: LabelFilters = {}): number | null {
+  const values = collectMetricValues(text, metricName, labelFilters);
+  return values.length > 0 ? values[0] : null;
+}
+
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, value));
 }
 
 function parseMetrics(raw: string): ParsedMetrics {
-  return {
-    diskIoBudget: parsePrometheusValue(raw, "node_disk_io_time_weighted_seconds_total") !== null
-      ? Math.max(0, 100 - (parsePrometheusValue(raw, "node_disk_io_time_weighted_seconds_total") ?? 0))
-      : parsePrometheusValue(raw, "disk_io_consumption"),
-    restRequests: sumPrometheusMetric(raw, "postgrest_requests_total"),
-    authRequests: sumPrometheusMetric(raw, "gotrue_requests_total"),
-    realtimeRequests: sumPrometheusMetric(raw, "realtime_requests_total"),
-    storageRequests: sumPrometheusMetric(raw, "storage_requests_total"),
-    cpuUsage: parsePrometheusValue(raw, "cpu_usage") ??
-      (() => {
-        const idle = parsePrometheusValue(raw, 'node_cpu_seconds_total{mode="idle"}');
-        const total = sumPrometheusMetric(raw, "node_cpu_seconds_total");
-        if (idle !== null && total !== null && total > 0) return Math.round((1 - idle / total) * 100);
-        return null;
-      })(),
-    ramUsedMb: (() => {
-      const total = parsePrometheusValue(raw, "node_memory_MemTotal_bytes");
-      const avail = parsePrometheusValue(raw, "node_memory_MemAvailable_bytes");
-      if (total !== null && avail !== null) return Math.round((total - avail) / 1024 / 1024);
-      const used = parsePrometheusValue(raw, "ram_usage");
-      return used;
-    })(),
-    ramTotalMb: (() => {
-      const total = parsePrometheusValue(raw, "node_memory_MemTotal_bytes");
-      if (total !== null) return Math.round(total / 1024 / 1024);
+  const diskIoConsumption = firstMetric(raw, "disk_io_consumption");
+  const diskIoFallback = firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
+
+  const restRequests =
+    sumMetric(raw, "postgrest_requests_total") ??
+    sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "postgrest" }) ??
+    sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "postgrest" }) ??
+    sumMetric(raw, "pgrst_jwt_cache_requests_total") ??
+    0;
+
+  const authRequests =
+    sumMetric(raw, "gotrue_requests_total") ??
+    sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "gotrue" }) ??
+    sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "gotrue" }) ??
+    sumMetric(raw, "gotrue_compare_hash_and_password_submitted_total") ??
+    0;
+
+  const realtimeRequests =
+    sumMetric(raw, "realtime_requests_total") ??
+    sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "realtime" }) ??
+    sumMetric(raw, "realtime_postgres_changes_total_subscriptions") ??
+    0;
+
+  const storageRequests =
+    sumMetric(raw, "storage_requests_total") ??
+    sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "storage" }) ??
+    sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "storage" }) ??
+    0;
+
+  const cpuUsage =
+    firstMetric(raw, "cpu_usage") ??
+    (() => {
+      const idle = sumMetric(raw, "node_cpu_seconds_total", { mode: "idle" });
+      const total = sumMetric(raw, "node_cpu_seconds_total");
+      if (idle !== null && total !== null && total > 0) {
+        return clampPercent(Math.round((1 - idle / total) * 100));
+      }
       return null;
-    })(),
-    dbConnections: parsePrometheusValue(raw, "pg_stat_activity_count") ??
-      sumPrometheusMetric(raw, "pg_stat_activity_count"),
+    })();
+
+  const ramTotalBytes = firstMetric(raw, "node_memory_MemTotal_bytes");
+  const ramAvailableBytes = firstMetric(raw, "node_memory_MemAvailable_bytes");
+  const processResidentBytes = firstMetric(raw, "process_resident_memory_bytes");
+
+  const ramUsedMb =
+    (ramTotalBytes !== null && ramAvailableBytes !== null)
+      ? Math.round((ramTotalBytes - ramAvailableBytes) / 1024 / 1024)
+      : processResidentBytes !== null
+        ? Math.round(processResidentBytes / 1024 / 1024)
+        : firstMetric(raw, "ram_usage");
+
+  const ramTotalMb =
+    ramTotalBytes !== null
+      ? Math.round(ramTotalBytes / 1024 / 1024)
+      : null;
+
+  const dbConnections =
+    sumMetric(raw, "pg_stat_activity_count") ??
+    sumMetric(raw, "pg_stat_database_num_backends") ??
+    sumMetric(raw, "db_sql_connection_open") ??
+    sumMetric(raw, "connection_stats_connection_count");
+
+  return {
+    diskIoBudget: diskIoConsumption !== null
+      ? clampPercent(100 - diskIoConsumption)
+      : diskIoFallback !== null
+        ? clampPercent(100 - diskIoFallback)
+        : null,
+    restRequests,
+    authRequests,
+    realtimeRequests,
+    storageRequests,
+    cpuUsage,
+    ramUsedMb,
+    ramTotalMb,
+    dbConnections,
     timestamp: new Date().toISOString(),
   };
 }
