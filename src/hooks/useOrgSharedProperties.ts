@@ -28,7 +28,11 @@ export function useOrgSharedProperties(orgId: string | null) {
 
       const { data, error } = await supabase
         .from("agent_publications")
-        .select("*, properties(*), organizations(name)")
+        .select(`
+          id, property_id, org_id, published_by, status, listing_type, description, created_at, updated_at,
+          properties (id, title, source_url, price_amount, price_expenses, total_cost, currency, neighborhood, city, m2_total, rooms, images, ref),
+          organizations (name)
+        `)
         .eq("org_id", orgId)
         .neq("status", "eliminado")
         .order("created_at", { ascending: false });

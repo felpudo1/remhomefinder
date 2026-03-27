@@ -1,18 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { MarketplaceProperty } from "@/types/property";
 
 /**
  * Hook para guardar una propiedad del marketplace al listado personal del usuario.
  * Crea un user_listing apuntando al mismo property_id con source_publication_id.
+ *
+ * OPTIMIZACIÓN: Usa AuthProvider en lugar de supabase.auth.getUser() (1 auth request eliminado).
  */
 export function useSaveToList() {
   const queryClient = useQueryClient();
+  const { user: authUser } = useCurrentUser();
 
   return useMutation({
     mutationFn: async ({ property, groupId }: { property: MarketplaceProperty; groupId?: string | null }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!authUser) throw new Error("No autenticado");
 
       // Get user's org
       let finalOrgId = groupId;
@@ -20,7 +23,7 @@ export function useSaveToList() {
         const { data: membership } = await supabase
           .from("organization_members")
           .select("org_id")
-          .eq("user_id", user.id)
+          .eq("user_id", authUser.id)
           .limit(1)
           .maybeSingle();
 
@@ -29,8 +32,6 @@ export function useSaveToList() {
 
       if (!finalOrgId) throw new Error("No pertenecés a ninguna organización");
 
-      // We need the property_id from the agent_publication
-      // The property.id is the agent_publication ID
       const { data: pub, error: pubError } = await supabase
         .from("agent_publications")
         .select("property_id")
@@ -39,7 +40,6 @@ export function useSaveToList() {
 
       if (pubError) throw pubError;
 
-      // Insert user_listing pointing to the same property
       const { data, error } = await supabase
         .from("user_listings")
         .insert({
@@ -47,9 +47,9 @@ export function useSaveToList() {
           org_id: finalOrgId,
           listing_type: property.listingType || "rent",
           source_publication_id: property.id,
-          added_by: user.id,
+          added_by: authUser.id,
         })
-        .select()
+        .select("id")
         .single();
 
       if (error) throw error;
