@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/constants";
+import { resolveWelcomeDisplayName, resolveWelcomePhone } from "@/lib/welcomeUserDisplay";
 import {
   ADD_BUTTON_CONFIG_KEY,
   ADD_BUTTON_DEFAULT,
@@ -72,6 +73,15 @@ const Index = () => {
 
   // Estado del perfil del usuario
   const { data: profile, isLoading: profileLoading } = useProfile();
+  /** Saludo: perfil en BD; si tarda, cae a user_metadata del JWT (registro) sin queries extra. */
+  const welcomeDisplayName = useMemo(
+    () => resolveWelcomeDisplayName(profile ?? undefined, authUser ?? null),
+    [profile, authUser]
+  );
+  const welcomePhone = useMemo(
+    () => resolveWelcomePhone(profile ?? undefined, authUser ?? null),
+    [profile, authUser]
+  );
   const profileStatus = profile?.status ?? "active";
   const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -515,7 +525,11 @@ const Index = () => {
               {/* Orden: primero la pestaña por defecto (mi-listado) para que el DOM no deje “abajo” el HFMarket al hidratar. */}
               <TabsContent value="mi-listado">
                 {showWelcome ? (
-                  <UserWelcome onDismiss={handleDismissWelcome} userName={userEmail?.split('@')[0] || ""} />
+                  <UserWelcome
+                    onDismiss={handleDismissWelcome}
+                    userName={welcomeDisplayName}
+                    userPhone={welcomePhone}
+                  />
                 ) : (
                   <div>
                     <FilterSidebar

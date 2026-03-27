@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputPhone } from "@/components/ui/InputPhone";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Camera, Loader2, Upload, Image as ImageIcon } from "lucide-react";
+import { User, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -24,9 +24,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const { toast } = useToast();
   const { data: profile, refetch } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   // Estados del formulario
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
@@ -36,112 +33,20 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  
-  // Estados de la cámara
-  const [showCamera, setShowCamera] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Resetear estados cuando se abre el modal
-  useState(() => {
-    if (isOpen) {
-      setDisplayName(profile?.displayName || "");
-      setPhone(profile?.phone || "");
-      setAvatarUrl(profile?.avatarUrl || "");
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      setShowCamera(false);
-      setCameraError(null);
-      stopCamera();
-    }
-  });
-
-  // Cleanup al cerrar modal
+  // Al abrir el modal, sincronizar con el perfil cargado
   useEffect(() => {
-    if (!isOpen) {
-      stopCamera();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    setDisplayName(profile?.displayName || "");
+    setPhone(profile?.phone || "");
+    setAvatarUrl(profile?.avatarUrl || "");
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [isOpen, profile?.displayName, profile?.phone, profile?.avatarUrl]);
 
-  // Manejar cierre del modal
   const handleClose = () => {
-    stopCamera();
     onClose();
-  };
-
-  // Detener la cámara
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setShowCamera(false);
-  };
-
-  // Abrir la cámara
-  const openCamera = async () => {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setShowCamera(true);
-      }
-    } catch (error) {
-      console.error("Error al acceder a la cámara:", error);
-      setCameraError("No se pudo acceder a la cámara. Verificá los permisos.");
-      toast({
-        title: "Error de cámara",
-        description: "No se pudo acceder a la cámara. Verificá los permisos del navegador.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Tomar foto de la cámara
-  const takePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    if (!context) return;
-
-    // Configurar canvas con el tamaño del video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Dibujar el frame actual del video
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convertir a blob y crear file
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-
-      const file = new File([blob], `selfie-${Date.now()}.png`, {
-        type: 'image/png',
-      });
-
-      setAvatarFile(file);
-      setAvatarPreview(canvas.toDataURL('image/png'));
-      stopCamera();
-
-      toast({
-        title: "¡Foto tomada!",
-        description: "Tu selfie se cargó correctamente",
-      });
-    }, 'image/png');
   };
 
   // Manejar selección de archivo de avatar
@@ -288,16 +193,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     }
   };
 
-  // Eliminar avatar actual
-  const handleRemoveAvatar = () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    setAvatarUrl("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const displayAvatar = avatarPreview || avatarUrl;
 
   return (
@@ -325,15 +220,15 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   {displayName ? displayName.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
                 </AvatarFallback>
               </Avatar>
-              
-              {/* Overlay para subir avatar */}
+
+              {/* Overlay: solo subir foto desde archivos */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Cambiar foto"
+                title="Subir foto"
               >
-                <Camera className="w-8 h-8 text-white" />
+                <Upload className="w-8 h-8 text-white" />
               </button>
             </div>
 
@@ -351,34 +246,12 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar || showCamera}
+                disabled={uploadingAvatar}
                 className="gap-2"
               >
                 <Upload className="w-4 h-4" />
                 {uploadingAvatar ? "Subiendo..." : "Subir foto"}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={openCamera}
-                disabled={uploadingAvatar || showCamera}
-                className="gap-2"
-              >
-                <ImageIcon className="w-4 h-4" />
-                Tomar selfie
-              </Button>
-              {displayAvatar && !showCamera && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveAvatar}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Eliminar
-                </Button>
-              )}
             </div>
 
             {avatarFile && (
@@ -390,47 +263,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             <p className="text-xs text-muted-foreground text-center max-w-xs">
               JPG, PNG o GIF. Máximo 5MB.
             </p>
-
-            {/* Vista previa de la cámara */}
-            {showCamera && (
-              <div className="relative bg-black rounded-xl overflow-hidden mt-4">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full max-h-64 object-cover"
-                />
-                <canvas ref={canvasRef} className="hidden" />
-                
-                {/* Controles de la cámara */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      type="button"
-                      size="lg"
-                      onClick={takePhoto}
-                      className="bg-white text-black hover:bg-gray-200 gap-2"
-                    >
-                      <Camera className="w-5 h-5" />
-                      Tomar foto
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="lg"
-                      onClick={stopCamera}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {cameraError && (
-              <p className="text-xs text-red-600 text-center">{cameraError}</p>
-            )}
           </div>
 
           {/* Nombre */}

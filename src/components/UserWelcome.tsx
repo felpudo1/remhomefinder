@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Home, CheckCircle2, ChevronRight, Layers } from "lucide-react";
+import { Sparkles, Home, CheckCircle2, ChevronRight, Layers, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
@@ -7,10 +7,13 @@ import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 interface UserWelcomeProps {
     onDismiss: (dontShowAgain: boolean) => void;
+    /** Nombre (perfil o metadata de registro). */
     userName?: string;
+    /** Teléfono (perfil o metadata); opcional. */
+    userPhone?: string;
 }
 
-export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
+export const UserWelcome = ({ onDismiss, userName, userPhone }: UserWelcomeProps) => {
     const [dontShowAgain, setDontShowAgain] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
@@ -26,6 +29,12 @@ export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
                 ¡Bienvenido a <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{appBrandName}</span>{userName ? `, ${userName.split(' ')[0]}` : ''}!
             </h2>
+            {userPhone ? (
+                <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6 -mt-1">
+                    <Phone className="w-4 h-4 shrink-0 opacity-80" aria-hidden />
+                    <span>{userPhone}</span>
+                </p>
+            ) : null}
             <p className="text-muted-foreground max-w-lg mb-10 text-sm md:text-base leading-relaxed">
                 El lugar ideal para organizar tu búsqueda de propiedades, comparar opciones en familia y guardar tus favoritos de cualquier portal en un solo lugar.
             </p>
@@ -40,7 +49,7 @@ export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
                             Todo en un solo tablero
                         </h4>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            Pegá el link de cualquier propiedad de ZonaProp, ArgenProp o MercadoLibre. Nuestra IA extrae las fotos, el precio y los datos automáticamente.
+                            Pegá el link de cualquier portal inmobiliario, nuestra IA extrae todos los datos y te muestra el aviso con todos los detalles.
                         </p>
                     </div>
                 </div>
@@ -54,7 +63,7 @@ export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
                             Seguimiento por Estados
                         </h4>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            Llevá un control exacto de si ya consultaste por la propiedad, si programaste una visita o si la vas a descartar. ¡No se te escapa nada!
+                            Llevá el control exacto de cuándo tenés que ir, si ya fuiste, si la descartaste. Y todos los miembros de la familia lo ven!! No se te escapa nada.
                         </p>
                     </div>
                 </div>
