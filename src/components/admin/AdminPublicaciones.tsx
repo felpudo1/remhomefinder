@@ -134,7 +134,7 @@ export function AdminPublicaciones({ toast }: Props) {
             id: p.id,
             title: p.properties?.title || "Sin título",
             url: p.properties?.source_url || "",
-            status: dbToUiStatus[p.status] ?? (p.status as MarketplaceStatus),
+            status: (p.status || "disponible") as MarketplaceStatus,
             listing_type: p.listing_type,
             created_at: p.created_at,
             orgName: p.organizations?.name || "Organización",
