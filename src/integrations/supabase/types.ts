@@ -1491,7 +1491,7 @@ export type Database = {
         | "alquilado"
         | "eliminado"
         | "pausado"
-      app_role: "admin" | "agency" | "user" | "agencymember"
+      app_role: "admin" | "agency" | "user" | "agencymember" | "sysadmin"
       currency_code: "USD" | "ARS" | "UYU" | "CLP"
       listing_type: "rent" | "sale"
       org_role: "owner" | "agent" | "member" | "system_admin_delegate"
@@ -1642,7 +1642,7 @@ export const Constants = {
         "eliminado",
         "pausado",
       ],
-      app_role: ["admin", "agency", "user", "agencymember"],
+      app_role: ["admin", "agency", "user", "agencymember", "sysadmin"],
       currency_code: ["USD", "ARS", "UYU", "CLP"],
       listing_type: ["rent", "sale"],
       org_role: ["owner", "agent", "member", "system_admin_delegate"],
