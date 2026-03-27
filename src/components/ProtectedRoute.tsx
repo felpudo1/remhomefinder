@@ -44,6 +44,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     // Si estamos en /dashboard y el usuario es admin o rol agente, redirigir a su panel
     const isDashboard = location.pathname === ROUTES.DASHBOARD;
     if (isDashboard && !allowedRoles?.length) {
+      if (userRoles.includes(ROLES.SYSADMIN)) {
+        setRedirectTo(ROUTES.ADMIN_INFRA);
+        return;
+      }
       if (userRoles.includes(ROLES.ADMIN)) {
         setRedirectTo(ROUTES.ADMIN);
         return;
