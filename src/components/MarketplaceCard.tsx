@@ -95,12 +95,8 @@ export function MarketplaceCard({
               {property.orgName}
               {isReferred && <Star className="w-3 h-3 fill-current drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]" />}
             </span>
-          </div>
-        }
-        statusOverlay={
-          <div className="flex flex-col items-end gap-2">
             {overlay && (
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
                 {overlay.label}
               </span>
             )}

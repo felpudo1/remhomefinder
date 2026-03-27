@@ -1,6 +1,15 @@
 import { Property, STATUS_CONFIG } from "@/types/property";
+import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { formatDateTime } from "@/lib/date-utils";
-import { Users, CalendarIcon } from "lucide-react";
+import { Users, CalendarIcon, Building2 } from "lucide-react";
+
+const MARKETPLACE_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  disponible: { label: "Disponible", className: "bg-emerald-600/90 text-white" },
+  pausado: { label: "Pausada", className: "bg-amber-500/90 text-white" },
+  reservado: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  vendido: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  alquilado: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+};
 
 interface PropertyCardHeaderProps {
   property: Property;
