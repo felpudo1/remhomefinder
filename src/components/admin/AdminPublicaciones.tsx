@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Loader2, Building2, Users, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function AdminPublicaciones({ toast }: Props) {
+  const { user: authUser } = useCurrentUser();
   const [userProps, setUserProps] = useState<UserProperty[]>([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [deleteUserTarget, setDeleteUserTarget] = useState<UserProperty | null>(null);
@@ -183,19 +185,15 @@ export function AdminPublicaciones({ toast }: Props) {
     const snapshot = [...userProps];
     setDeleteUserTarget(null);
 
-    // Obtener el admin que ejecuta la acción para el log de auditoría
-    const { data: { user: adminUser } } = await supabase.auth.getUser();
-
     // Registrar en auditoría ANTES de borrar
     const { error: auditError } = await supabase
       .from("publication_deletion_audit_log")
       .insert({
         pub_id: id,
-        // pub_type no existe en DB, lo concatenamos al título para no perder info
         property_title: `[LISTADO] ${title}`,
         org_name: null,
         reason: _reason || "Sin motivo especificado",
-        deleted_by: adminUser?.id,
+        deleted_by: authUser?.id,
       });
 
     if (auditError) {
@@ -257,19 +255,15 @@ export function AdminPublicaciones({ toast }: Props) {
     setMktProps(p => p.filter(prop => prop.id !== id));
     setDeleteMktTarget(null);
 
-    // Obtener el admin que ejecuta la acción para el log de auditoría
-    const { data: { user: adminUser } } = await supabase.auth.getUser();
-
     // Registrar en auditoría ANTES de borrar — si falla el log el borrado no ocurre
     const { error: auditError } = await supabase
       .from("publication_deletion_audit_log")
       .insert({
         pub_id: id,
-        // pub_type no existe en DB, lo concatenamos al título para no perder info
         property_title: `[MARKET] ${title}`,
         org_name: orgName || null,
         reason: _reason || "Sin motivo especificado",
-        deleted_by: adminUser?.id,
+        deleted_by: authUser?.id,
       });
 
     if (auditError) {

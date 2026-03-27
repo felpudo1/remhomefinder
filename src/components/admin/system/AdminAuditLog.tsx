@@ -64,8 +64,8 @@ export function AdminAuditLog() {
         try {
             const { data, error } = await supabase
                 .from("deletion_audit_log")
-                .select("*")
-                .order("deleted_at", { ascending: false })
+                .select("id, deleted_user_id, deleted_user_name, deleted_user_email, reason, deleted_by, created_at, plan_type, status_before, phone")
+                .order("created_at", { ascending: false })
                 .limit(200);
 
             if (error) throw error;
@@ -108,8 +108,8 @@ export function AdminAuditLog() {
         try {
             const { data, error } = await supabase
                 .from("publication_deletion_audit_log")
-                .select("*")
-                .order("deleted_at", { ascending: false })
+                .select("id, pub_id, property_title, org_name, reason, deleted_by, created_at, status_before")
+                .order("created_at", { ascending: false })
                 .limit(200);
 
             if (error) throw error;
