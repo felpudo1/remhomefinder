@@ -11,7 +11,7 @@ import { AppRole } from "@/types/supabase";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: AppRole[];
+  allowedRoles?: (AppRole | string)[];
 }
 
 /**
