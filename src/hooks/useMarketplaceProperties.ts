@@ -144,7 +144,7 @@ export function useMarketplaceProperties() {
           sqMeters: Number(p.m2_total || 0),
           rooms: p.rooms || 0,
           images: resolveImages(p.images || []),
-          status: pub.status as any,
+          status: (pub.status || "disponible") as any,
           listingType: (pub.listing_type || "rent") as any,
           createdAt: new Date(pub.created_at),
           updatedAt: new Date(pub.updated_at),

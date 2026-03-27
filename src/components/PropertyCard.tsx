@@ -74,12 +74,12 @@ interface PropertyCardProps {
 }
 
 const MARKETPLACE_STATUS_OVERLAY: Record<string, { label: string; className: string } | null> = {
-  active: null,
-  paused: null,
-  reserved: { label: "Reservada", className: "bg-blue-600/90 text-white" },
-  sold: { label: "Vendida", className: "bg-slate-900/90 text-white" },
-  rented: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
-  deleted: null,
+  disponible: null,
+  pausado: { label: "Pausada", className: "bg-amber-500/90 text-white" },
+  reservado: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  vendido: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  alquilado: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+  eliminado: null,
 };
 
 /**
