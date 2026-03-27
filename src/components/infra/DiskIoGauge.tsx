@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HardDrive } from "lucide-react";
+import { HardDrive, Info } from "lucide-react";
 
 interface DiskIoGaugeProps {
   value: number | null;
@@ -9,7 +9,6 @@ interface DiskIoGaugeProps {
 export function DiskIoGauge({ value }: DiskIoGaugeProps) {
   const pct = value ?? 0;
   const color = pct > 50 ? "text-emerald-400" : pct > 20 ? "text-yellow-400" : "text-red-500";
-  const bgColor = pct > 50 ? "bg-emerald-400" : pct > 20 ? "bg-yellow-400" : "bg-red-500";
   const isDanger = pct <= 20;
 
   // SVG semicircle gauge
@@ -62,6 +61,15 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" /> &gt;50% OK</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400" /> 20-50% Precaución</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> &lt;20% Peligro</span>
+        </div>
+        {/* Nota técnica */}
+        <div className="mt-3 w-full max-w-lg rounded-md border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-xs text-slate-400 flex items-start gap-2">
+          <Info className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" />
+          <span>
+            El <strong className="text-slate-300">100%</strong> representa el Burst Balance de AWS disponible.
+            Cada operación de lectura/escritura consume créditos. Si llega a <strong className="text-red-400">0%</strong>,
+            la base de datos entrará en modo throttling severo (I/O limitado), provocando timeouts y potencial colapso del servicio.
+          </span>
         </div>
       </CardContent>
     </Card>

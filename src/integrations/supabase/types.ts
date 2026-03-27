@@ -1431,6 +1431,10 @@ export type Database = {
           publication_id: string
         }[]
       }
+      get_marketplace_publications_page: {
+        Args: { _cursor?: string; _filters?: Json; _page_size?: number }
+        Returns: Json
+      }
       get_my_referrer_display_name: { Args: never; Returns: string }
       get_publications_save_counts: {
         Args: { _publication_ids: string[] }
