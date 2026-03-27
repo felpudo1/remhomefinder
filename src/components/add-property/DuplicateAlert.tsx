@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLink, Copy, AlertCircle, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
+import { AgentOwnPublicationNotice } from "./AgentOwnPublicationNotice";
 
 interface DuplicateAlertProps {
   urlInFamily?: {
@@ -20,27 +20,12 @@ interface DuplicateAlertProps {
 export function DuplicateAlert({ urlInFamily, urlInApp, onOpenExisting, formatDaysAgo }: DuplicateAlertProps) {
   if (urlInFamily) {
     return (
-      <Alert variant="destructive" className="bg-red-50 border-red-200">
-        <AlertCircle className="h-4 w-4 text-red-600" />
-        <AlertTitle className="text-red-800 font-bold">¡Ya está en tu familia!</AlertTitle>
-        <AlertDescription className="text-red-700">
-          <p className="mb-2">
-            Este aviso fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo(urlInFamily.addedAt)}.
-            Su estado actual es <strong>{urlInFamily.status}</strong>.
-          </p>
-          {onOpenExisting && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full mt-1 bg-white hover:bg-red-100 border-red-300 text-red-700"
-              onClick={() => onOpenExisting(urlInFamily.userListingId)}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Ver publicación existente
-            </Button>
-          )}
-        </AlertDescription>
-      </Alert>
+      <AgentOwnPublicationNotice
+        addedByName={urlInFamily.addedByName}
+        addedAtIso={urlInFamily.addedAt}
+        onViewClick={() => onOpenExisting?.(urlInFamily.userListingId)}
+        actionLabel="Para verlo hacé click acá"
+      />
     );
   }
 

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeWhatsAppPhone } from "@/lib/whatsapp";
 
 /**
  * Normaliza una URL para comparación (evitar duplicados por trailing slash, etc.)
@@ -17,19 +18,76 @@ export type InFamilyResult = {
   userListingId: string;
 };
 
+/** Publicación marketplace principal (para usuario: contactar agencia/agente) */
+export type AgentMarketplaceListingForUser = {
+  agencyName: string;
+  agentName: string;
+  /** Dígitos para wa.me; null si no hay teléfono válido en perfil */
+  whatsappDigits: string | null;
+};
+
 /** Resultado cuando la URL existe en la app pero no en la familia (Caso 2) */
 export type InAppResult = {
   case: "in_app";
   firstAddedAt: string;
   usersCount: number;
-  /** Publicación de agente (marketplace): nombres de agencia para modal usuario */
-  agentAgencyNames?: string[];
+  /** Si hay publicación de agente, datos para cartel + WhatsApp */
+  agentMarketplace?: AgentMarketplaceListingForUser;
 };
 
 export type UrlCheckResult =
   | { case: "none" }
   | InFamilyResult
   | InAppResult;
+
+/**
+ * Primera publicación activa del marketplace para la property (más antigua).
+ * Consultas acotadas: agent_publications → RPC nombres org → RPC contactos (SECURITY DEFINER: nombre y teléfono del agente sin depender del RLS de profiles).
+ */
+export async function getPrimaryMarketplaceListingForUser(
+  propertyId: string
+): Promise<AgentMarketplaceListingForUser | null> {
+  const { data: pub, error } = await supabase
+    .from("agent_publications")
+    .select("id, org_id, published_by")
+    .eq("property_id", propertyId)
+    .neq("status", "eliminado")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error || !pub?.id || !pub?.org_id || !pub?.published_by) {
+    if (error) console.warn("getPrimaryMarketplaceListingForUser pub", error);
+    return null;
+  }
+
+  const { data: orgRows, error: orgErr } = await supabase.rpc("get_marketplace_org_names", {
+    _org_ids: [pub.org_id],
+  });
+  if (orgErr) console.warn("getPrimaryMarketplaceListingForUser org", orgErr);
+  const agencyName =
+    (orgRows as { name: string }[] | null)?.[0]?.name?.trim() || "una agencia";
+
+  const { data: contactRows, error: contactErr } = await supabase.rpc(
+    "get_marketplace_publication_contacts",
+    { _publication_ids: [pub.id] },
+  );
+  if (contactErr) console.warn("getPrimaryMarketplaceListingForUser contacts", contactErr);
+  const contact = (
+    contactRows as
+      | { agent_name: string | null; agent_phone: string | null; publication_id: string }[]
+      | null
+  )?.[0];
+
+  const agentName =
+    (contact?.agent_name && String(contact.agent_name).trim()) || "el agente";
+
+  const rawPhone = (contact?.agent_phone && String(contact.agent_phone).trim()) || "";
+  const digits = rawPhone ? normalizeWhatsAppPhone(rawPhone) : "";
+  /** wa.me: mínimo 7 dígitos útiles tras normalizar (evita clicks vacíos) */
+  const whatsappDigits = digits.length >= 7 ? digits : null;
+
+  return { agencyName, agentName, whatsappDigits };
+}
 
 /**
  * Verifica si una URL ya existe y en qué contexto.
@@ -55,25 +113,6 @@ export async function checkUrlStatus(
     resolvedOrgId = membership?.org_id ?? null;
   }
   if (!resolvedOrgId) return { case: "none" };
-
-  /**
-   * Nombres de organización para publicaciones de agente activas (RPC: visibilidad marketplace).
-   */
-  async function agentAgencyNamesForProperty(propertyId: string): Promise<string[]> {
-    const { data: pubs, error } = await supabase
-      .from("agent_publications")
-      .select("org_id")
-      .eq("property_id", propertyId)
-      .neq("status", "eliminado");
-    if (error || !pubs?.length) return [];
-    const orgIds = [...new Set(pubs.map((p) => p.org_id).filter(Boolean))] as string[];
-    if (orgIds.length === 0) return [];
-    const { data: rows } = await supabase.rpc("get_marketplace_org_names", {
-      _org_ids: orgIds,
-    });
-    if (!rows?.length) return [];
-    return (rows as { name: string }[]).map((r) => r.name).filter(Boolean);
-  }
 
   const { data: prop, error: propErr } = await supabase
     .from("properties")
@@ -126,13 +165,13 @@ export async function checkUrlStatus(
     _property_id: prop.id,
   });
 
-  const agentAgencyNames = await agentAgencyNamesForProperty(prop.id);
+  const agentMarketplace = await getPrimaryMarketplaceListingForUser(prop.id);
 
   return {
     case: "in_app",
     firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
     usersCount: Math.max(typeof rpcUsersCount === "number" ? rpcUsersCount : 0, 1),
-    ...(agentAgencyNames.length > 0 ? { agentAgencyNames } : {}),
+    ...(agentMarketplace ? { agentMarketplace } : {}),
   };
 }
 
@@ -215,17 +254,46 @@ export async function hasActiveAgentPublicationForOrg(
   return !!data;
 }
 
+/** Datos de la publicación de agencia ya existente (misma org + property), para cartel sin duplicar filas */
+export type ActiveAgentPublicationSummary = {
+  id: string;
+  publishedByName: string;
+  createdAt: string;
+};
+
 /**
- * True si algún usuario/familia guardó esta property en user_listings (RPC SECURITY DEFINER).
- * Caso 4: agente intenta publicar después de usuarios.
+ * Obtiene la publicación activa de la agencia para esa property (la más antigua si hubiera varias).
+ * Dos round-trips: agent_publications + profiles (nombre quien publicó).
  */
-export async function hasUserListingsForProperty(propertyId: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc("count_property_listing_users" as any, {
-    _property_id: propertyId,
-  });
-  if (error) {
-    console.warn("hasUserListingsForProperty", error);
-    return false;
+export async function getActiveAgentPublicationForOrg(
+  propertyId: string,
+  orgId: string
+): Promise<ActiveAgentPublicationSummary | null> {
+  const { data: pub, error } = await supabase
+    .from("agent_publications")
+    .select("id, published_by, created_at")
+    .eq("property_id", propertyId)
+    .eq("org_id", orgId)
+    .neq("status", "eliminado")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error || !pub) {
+    if (error) console.warn("getActiveAgentPublicationForOrg", error);
+    return null;
   }
-  return typeof data === "number" && data > 0;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, email")
+    .eq("user_id", pub.published_by)
+    .maybeSingle();
+  const publishedByName =
+    (profile?.display_name?.trim() && profile.display_name) ||
+    profile?.email ||
+    "Un agente";
+  return {
+    id: pub.id,
+    publishedByName,
+    createdAt: pub.created_at,
+  };
 }

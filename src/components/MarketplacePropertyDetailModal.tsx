@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Share2,
     Building2,
+    Pencil,
 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
@@ -36,12 +37,15 @@ interface MarketplacePropertyDetailModalProps {
     property: MarketplaceProperty | null;
     open: boolean;
     onClose: () => void;
+    /** Si viene definido (ej. panel agente), muestra CTA para abrir el formulario de edición */
+    onEditPublication?: (property: MarketplaceProperty) => void;
 }
 
 export function MarketplacePropertyDetailModal({
     property,
     open,
     onClose,
+    onEditPublication,
 }: MarketplacePropertyDetailModalProps) {
     const [activeImg, setActiveImg] = useState(0);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -152,32 +156,46 @@ export function MarketplacePropertyDetailModal({
                     )}
                 </div>
 
-                {/* Acciones Rápidas */}
-                <div className="px-6 pt-4 grid grid-cols-2 gap-3">
-                    <Button
-                        variant="outline"
-                        className="h-11 rounded-xl gap-2 font-medium border-border hover:bg-muted w-full"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const publicUrl = `${window.location.origin}/p/${property.id}`;
-                            navigator.clipboard.writeText(publicUrl);
-                            toast({ title: "¡Copiado!", description: "Link listo para compartir." });
-                        }}
-                    >
-                        <Share2 className="w-4 h-4" />
-                        Compartir
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        className="h-11 rounded-xl gap-2 font-medium bg-secondary/50 hover:bg-secondary w-full"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(property.url, "_blank");
-                        }}
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                        Ver original
-                    </Button>
+                {/* Acciones rápidas + edición (solo agente cuando el padre pasa onEditPublication) */}
+                <div className="px-6 pt-4 flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Button
+                            variant="outline"
+                            className="h-11 rounded-xl gap-2 font-medium border-border hover:bg-muted w-full"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const publicUrl = `${window.location.origin}/p/${property.id}`;
+                                navigator.clipboard.writeText(publicUrl);
+                                toast({ title: "¡Copiado!", description: "Link listo para compartir." });
+                            }}
+                        >
+                            <Share2 className="w-4 h-4" />
+                            Compartir
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            className="h-11 rounded-xl gap-2 font-medium bg-secondary/50 hover:bg-secondary w-full"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(property.url, "_blank");
+                            }}
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            Ver original
+                        </Button>
+                    </div>
+                    {onEditPublication && (
+                        <Button
+                            className="h-11 rounded-xl gap-2 font-semibold w-full"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditPublication(property);
+                            }}
+                        >
+                            <Pencil className="w-4 h-4" />
+                            Editar publicación
+                        </Button>
+                    )}
                 </div>
 
                 <div className="px-6 pb-6 pt-2 space-y-5">

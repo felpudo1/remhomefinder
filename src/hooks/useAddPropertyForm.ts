@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGroups } from "@/hooks/useGroups";
+import type { AgentMarketplaceListingForUser } from "@/lib/duplicateCheck";
 
 export type FormState = {
   title: string;
@@ -45,6 +46,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
   const [urlAddedByName, setUrlAddedByName] = useState<string | null>(null);
   const [urlInFamily, setUrlInFamily] = useState<{ addedByName: string; addedAt: string; status: string; userListingId: string } | null>(null);
   const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
+  /** Caso 2: URL ya publicada por agente — cartel azul + WhatsApp */
+  const [userAgentMarketplace, setUserAgentMarketplace] = useState<AgentMarketplaceListingForUser | null>(null);
   const [urlInAppMsg, setUrlInAppMsg] = useState<string | null>(null);
   const [manualLinkRequiredError, setManualLinkRequiredError] = useState(false);
 
@@ -105,6 +108,7 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     setUrlAddedByName(null);
     setUrlInFamily(null);
     setUrlInApp(null);
+    setUserAgentMarketplace(null);
     setUrlInAppMsg(null);
     setManualLinkRequiredError(false);
     setListingType("rent");
@@ -161,6 +165,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     setUrlInFamily,
     urlInApp,
     setUrlInApp,
+    userAgentMarketplace,
+    setUserAgentMarketplace,
     urlInAppMsg,
     setUrlInAppMsg,
     manualLinkRequiredError,

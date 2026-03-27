@@ -5,7 +5,8 @@ import {
   getExistingPropertyByUrl,
   checkUrlStatus,
   hasActiveAgentPublicationForOrg,
-  hasUserListingsForProperty,
+  getActiveAgentPublicationForOrg,
+  type ActiveAgentPublicationSummary,
 } from "@/lib/duplicateCheck";
 import { useToast } from "@/hooks/use-toast";
 import { resolveGeoIds } from "@/lib/resolveGeoIds";
@@ -15,15 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { PropertyFormManual } from "./add-property/PropertyFormManual";
@@ -48,9 +40,11 @@ interface PublishPropertyModalProps {
   orgId: string;
   onPublished: () => void;
   propertyToEdit?: any;
+  /** Al hacer click en "ver el aviso" cuando la URL ya está en agent_publications de esta org */
+  onOpenExistingAgentPublication?: (agentPublicationId: string) => void;
 }
 
-export function PublishPropertyModal({ open, onClose, orgId, onPublished, propertyToEdit }: PublishPropertyModalProps) {
+export function PublishPropertyModal({ open, onClose, orgId, onPublished, propertyToEdit, onOpenExistingAgentPublication }: PublishPropertyModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,16 +55,10 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const [isUploading, setIsUploading] = useState(false);
   const [urlDuplicated, setUrlDuplicated] = useState(false);
   const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
+  /** Duplicado en la misma agencia: mostrar cartel azul y abrir edición sin insertar otra fila */
+  const [agentOwnDuplicate, setAgentOwnDuplicate] = useState<ActiveAgentPublicationSummary | null>(null);
   const [isAddingExistingFromApp, setIsAddingExistingFromApp] = useState(false);
   const [cameFromImage, setCameFromImage] = useState(false);
-  /** Mismo cartel; etiqueta inferior caso1 (duplicado agente) o caso4 (usuarios ya ingresaron). */
-  const [duplicateAgentModalOpen, setDuplicateAgentModalOpen] = useState(false);
-  const [duplicateAgentModalTag, setDuplicateAgentModalTag] = useState<"caso1" | "caso4">("caso1");
-
-  const openDuplicateAgentModal = (tag: "caso1" | "caso4") => {
-    setDuplicateAgentModalTag(tag);
-    setDuplicateAgentModalOpen(true);
-  };
 
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
@@ -135,12 +123,19 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         setForm({ title: "", priceRent: "", priceExpenses: "", currency: "UYU", neighborhood: "", neighborhood_id: "", city: "", city_id: "", department: "", department_id: "", address: "", sqMeters: "", rooms: "", aiSummary: "", ref: "", details: "" });
         setCameFromImage(false);
         setUrlInApp(null);
+        setAgentOwnDuplicate(null);
         setScreenshotFile(null);
         setScreenshotPreview(null);
-        setDuplicateAgentModalOpen(false);
       }
     }
   }, [open, propertyToEdit]);
+
+  useEffect(() => {
+    if (propertyToEdit) {
+      setAgentOwnDuplicate(null);
+      setUrlInApp(null);
+    }
+  }, [propertyToEdit]);
 
   useEffect(() => {
     if (!propertyToEdit) {
@@ -152,19 +147,17 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!url.trim()) return;
     setIsLoading(true);
     setUrlInApp(null);
+    setAgentOwnDuplicate(null);
     try {
-      // Antes del scraping: estado de URL en app y duplicado en agent_publications (caso 1).
+      // Antes del scraping: URL en app y duplicado en agent_publications de esta org
       const urlStatus = await checkUrlStatus(url.trim(), orgId);
       if (urlStatus.case === "in_app") {
         const existingForInApp = await getExistingPropertyByUrl(url.trim());
         if (existingForInApp) {
           if (await hasActiveAgentPublicationForOrg(existingForInApp.id, orgId)) {
-            openDuplicateAgentModal("caso1");
-            setIsLoading(false);
-            return;
-          }
-          if (await hasUserListingsForProperty(existingForInApp.id)) {
-            openDuplicateAgentModal("caso4");
+            const summary = await getActiveAgentPublicationForOrg(existingForInApp.id, orgId);
+            if (summary) setAgentOwnDuplicate(summary);
+            else sonnerToast.info("Esta publicación ya está en tu listado de agencia.");
             setIsLoading(false);
             return;
           }
@@ -181,12 +174,9 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       const existing = await getExistingPropertyByUrl(url);
       if (existing) {
         if (await hasActiveAgentPublicationForOrg(existing.id, orgId)) {
-          openDuplicateAgentModal("caso1");
-          setIsLoading(false);
-          return;
-        }
-        if (await hasUserListingsForProperty(existing.id)) {
-          openDuplicateAgentModal("caso4");
+          const summary = await getActiveAgentPublicationForOrg(existing.id, orgId);
+          if (summary) setAgentOwnDuplicate(summary);
+          else sonnerToast.info("Esta publicación ya está en tu listado de agencia.");
           setIsLoading(false);
           return;
         }
@@ -447,11 +437,10 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       }
 
       if (await hasActiveAgentPublicationForOrg(existing.id, orgId)) {
-        openDuplicateAgentModal("caso1");
-        return;
-      }
-      if (await hasUserListingsForProperty(existing.id)) {
-        openDuplicateAgentModal("caso4");
+        const summary = await getActiveAgentPublicationForOrg(existing.id, orgId);
+        setUrlInApp(null);
+        if (summary) setAgentOwnDuplicate(summary);
+        else sonnerToast.info("Esta publicación ya está en tu listado de agencia.");
         return;
       }
 
@@ -546,12 +535,9 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           const existing = await getExistingPropertyByUrl(url);
           if (existing) {
             if (await hasActiveAgentPublicationForOrg(existing.id, orgId)) {
-              openDuplicateAgentModal("caso1");
-              setSaving(false);
-              return;
-            }
-            if (await hasUserListingsForProperty(existing.id)) {
-              openDuplicateAgentModal("caso4");
+              sonnerToast.info("Esta publicación ya está en tu listado de agencia.", {
+                description: "Buscala en Mis propiedades para editarla.",
+              });
               setSaving(false);
               return;
             }
@@ -643,21 +629,6 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
 
   return (
     <>
-    <AlertDialog open={duplicateAgentModalOpen} onOpenChange={setDuplicateAgentModalOpen}>
-      <AlertDialogContent className="rounded-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Aviso ya ingresado</AlertDialogTitle>
-          <AlertDialogDescription>
-            Este aviso ya fue ingresado.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          <AlertDialogAction className="rounded-xl w-full sm:w-auto">Entendido</AlertDialogAction>
-          <p className="text-center text-[10px] text-muted-foreground">{duplicateAgentModalTag}</p>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
@@ -667,13 +638,33 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         </DialogHeader>
 
         <ScraperInput
-          step={step} url={url} setUrl={(v) => { setUrl(v); setUrlInApp(null); }} isLoading={isLoading} isAnalyzingUnified={isAnalyzingUnified}
+          step={step}
+          url={url}
+          setUrl={(v) => {
+            setUrl(v);
+            setUrlInApp(null);
+            setAgentOwnDuplicate(null);
+          }}
+          isLoading={isLoading}
+          isAnalyzingUnified={isAnalyzingUnified}
           handleScrape={handleScrape} unifiedImageRef={unifiedImageRef} handleUnifiedImageAnalysis={handleUnifiedImageAnalysis}
           setStep={setStep} screenshotInputRef={screenshotInputRef} screenshotFile={screenshotFile} screenshotPreview={screenshotPreview}
           handleScreenshotSelect={handleScreenshotSelect} setScreenshotFile={setScreenshotFile} setScreenshotPreview={setScreenshotPreview}
           handleAnalyzeImage={handleAnalyzeImage} setCameFromImage={setCameFromImage}
           urlInApp={urlInApp}
           isAgent={true}
+          agentOwnDuplicate={
+            agentOwnDuplicate
+              ? { publishedByName: agentOwnDuplicate.publishedByName, createdAt: agentOwnDuplicate.createdAt }
+              : null
+          }
+          onOpenExistingAgentPublication={
+            onOpenExistingAgentPublication && agentOwnDuplicate
+              ? () => {
+                  onOpenExistingAgentPublication!(agentOwnDuplicate.id);
+                }
+              : undefined
+          }
           onAddExistingFromApp={handleAddExistingFromApp}
           isAddingExistingFromApp={isAddingExistingFromApp}
         />

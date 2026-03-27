@@ -7,8 +7,6 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGeography } from "@/hooks/useGeography";
-import { formatDaysAgo } from "@/lib/duplicateCheck";
-
 export interface PropertyFormManualProps {
     form: any;
     setForm: (f: any) => void;
@@ -34,7 +32,6 @@ export interface PropertyFormManualProps {
     urlAddedByName?: string | null;
     urlInFamily?: { addedByName: string; addedAt: string; status: string; userListingId: string } | null;
     urlInAppMsg?: string | null;
-    formatDaysAgo?: (isoDate: string) => string;
     setUrlDuplicated: (d: boolean) => void;
     groups: any[];
     selectedGroupId: string | null;
@@ -141,11 +138,6 @@ export function PropertyFormManual({
                 )}
                 {linkRequiredError && !url.trim() && (
                     <p className="text-xs text-destructive font-medium">Dato obligatorio</p>
-                )}
-                {urlInFamily && (
-                    <p className="text-xs text-destructive font-medium">
-                        Este aviso fue ingresado por {urlInFamily.addedByName} {formatDaysAgo && urlInFamily.addedAt ? formatDaysAgo(urlInFamily.addedAt) : ""}. Su estado es {urlInFamily.status}.
-                    </p>
                 )}
                 {urlDuplicated && !urlInFamily && (
                     <p className="text-xs text-destructive font-medium">

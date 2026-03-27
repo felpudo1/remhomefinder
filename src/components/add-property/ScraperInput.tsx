@@ -4,6 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, Sparkles, Loader2, ImageIcon, X, ExternalLink, QrCode } from "lucide-react";
 import { QrScannerModal } from "./QrScannerModal";
+import { AgentOwnPublicationNotice } from "./AgentOwnPublicationNotice";
+import { UserAgentMarketplaceNotice } from "./UserAgentMarketplaceNotice";
+import { AgentUserListingsNotice } from "./AgentUserListingsNotice";
+import type { AgentMarketplaceListingForUser } from "@/lib/duplicateCheck";
 
 export interface ScraperInputProps {
     step: "url" | "image-upload" | "manual";
@@ -29,10 +33,14 @@ export interface ScraperInputProps {
     urlInApp?: { firstAddedAt: string; usersCount: number } | null;
     /** Si true, muestra texto específico para agentes en el bloque urlInApp */
     isAgent?: boolean;
+    /** Agente: la URL ya está publicada por esta agencia (no duplicar agent_publications) */
+    agentOwnDuplicate?: { publishedByName: string; createdAt: string } | null;
+    onOpenExistingAgentPublication?: () => void;
+    /** Usuario: URL ya en marketplace (caso 2 — contactar agencia por WhatsApp) */
+    userAgentMarketplace?: AgentMarketplaceListingForUser | null;
     onOpenExisting?: (userListingId: string) => void;
     onAddExistingFromApp?: () => void;
     isAddingExistingFromApp?: boolean;
-    formatDaysAgo?: (isoDate: string) => string;
 }
 
 export function ScraperInput({
@@ -56,15 +64,20 @@ export function ScraperInput({
     urlInFamily,
     urlInApp,
     isAgent = false,
+    agentOwnDuplicate = null,
+    onOpenExistingAgentPublication,
+    userAgentMarketplace = null,
     onOpenExisting,
     onAddExistingFromApp,
     isAddingExistingFromApp = false,
-    formatDaysAgo,
 }: ScraperInputProps) {
     const isFamilyLocked = Boolean(urlInFamily);
     const isInAppLocked = Boolean(urlInApp);
+    const isAgentOwnDupLocked = Boolean(agentOwnDuplicate);
+    const isUserAgentMarketplaceLocked = Boolean(userAgentMarketplace);
     const [qrOpen, setQrOpen] = useState(false);
-    const isUrlActionsLocked = isFamilyLocked || isInAppLocked;
+    const isUrlActionsLocked =
+        isFamilyLocked || isInAppLocked || isAgentOwnDupLocked || isUserAgentMarketplaceLocked;
     const formattedFirstAddedAt = urlInApp?.firstAddedAt
         ? new Date(urlInApp.firstAddedAt).toLocaleDateString("es-UY", {
             day: "2-digit",
@@ -115,67 +128,52 @@ export function ScraperInput({
                 />
 
                 {urlInFamily ? (
-                    <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3 text-center">
-                        <div className="space-y-2 text-amber-900 text-center">
-                            <p className="text-sm font-semibold">
-                                <strong className="text-2xl md:text-3xl leading-tight block">
-                                    ESTE AVISO YA EXISTE EN TU LISTADO FAMILIAR
-                                </strong>
-                            </p>
-                            <p className="text-base font-medium">
-                                Fue ingresado por <strong>{urlInFamily.addedByName}</strong> {formatDaysAgo ? formatDaysAgo(urlInFamily.addedAt) : ""}.
-                            </p>
-                        </div>
-                        {onOpenExisting && (
-                            <div className="flex justify-center">
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="rounded-xl gap-2 border-amber-400 text-amber-800 hover:bg-amber-100" 
-                                    onClick={() => { onOpenExisting(urlInFamily.userListingId); }}
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    Para verlo hacé click acá
-                                </Button>
-                            </div>
-                        )}
-                    </div>
+                    <AgentOwnPublicationNotice
+                        addedByName={urlInFamily.addedByName}
+                        addedAtIso={urlInFamily.addedAt}
+                        onViewClick={() => onOpenExisting?.(urlInFamily.userListingId)}
+                        actionLabel="Para verlo hacé click acá"
+                    />
+                ) : agentOwnDuplicate ? (
+                    <AgentOwnPublicationNotice
+                        addedByName={agentOwnDuplicate.publishedByName}
+                        addedAtIso={agentOwnDuplicate.createdAt}
+                        onViewClick={() => onOpenExistingAgentPublication?.()}
+                    />
+                ) : userAgentMarketplace ? (
+                    <UserAgentMarketplaceNotice
+                        agencyName={userAgentMarketplace.agencyName}
+                        agentName={userAgentMarketplace.agentName}
+                        whatsappDigits={userAgentMarketplace.whatsappDigits}
+                        listingUrl={url.trim() || ""}
+                    />
+                ) : urlInApp && isAgent && onAddExistingFromApp ? (
+                    <AgentUserListingsNotice
+                        usersCount={urlInApp.usersCount}
+                        onPublish={onAddExistingFromApp}
+                        isPublishing={isAddingExistingFromApp}
+                    />
                 ) : urlInApp ? (
                     <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 space-y-3 text-center">
                         <div className="space-y-2 text-blue-900 text-center">
-                            {isAgent ? (
-                                <>
-                                    <p className="text-sm font-semibold">
-                                        <strong className="text-2xl md:text-3xl leading-tight block">
-                                            ESTA PUBLICACIÓN YA FUE INGRESADA ANTERIORMENTE POR {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""}
-                                        </strong>
-                                    </p>
-                                    <p className="text-base font-medium">
-                                        En el panel de control tiene toda la información. Igual debe ingresarlo en el market para publicarlo.
-                                    </p>
-                                </>
-                            ) : (
-                                <>
-                                    <p className="text-sm font-semibold">
-                                        <strong className="text-2xl md:text-3xl leading-tight block">
-                                            💪🔥 ESTA PUBLICACIÓN
-                                            <br />
-                                            YA ESTÁ EN PUJA 🔥💪
-                                        </strong>
-                                    </p>
-                                    <p className="text-base font-bold">
-                                        INGRESADA EL DÍA: <span className="text-lg">{formattedFirstAddedAt}</span>
-                                    </p>
-                                    <p className="text-base font-bold">
-                                        <span className="text-lg">
-                                            {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""} YA LO GUARDARON EN SU{urlInApp.usersCount !== 1 ? "S" : ""} LISTADO{urlInApp.usersCount !== 1 ? "S" : ""}
-                                        </span>
-                                    </p>
-                                    <p className="text-sm font-semibold">
-                                        🔥🔥🔥CONTACTATE YA🔥🔥🔥
-                                    </p>
-                                </>
-                            )}
+                            <p className="text-sm font-semibold">
+                                <strong className="text-2xl md:text-3xl leading-tight block">
+                                    💪🔥 ESTA PUBLICACIÓN
+                                    <br />
+                                    YA ESTÁ EN PUJA 🔥💪
+                                </strong>
+                            </p>
+                            <p className="text-base font-bold">
+                                INGRESADA EL DÍA: <span className="text-lg">{formattedFirstAddedAt}</span>
+                            </p>
+                            <p className="text-base font-bold">
+                                <span className="text-lg">
+                                    {urlInApp.usersCount} USUARIO{urlInApp.usersCount !== 1 ? "S" : ""} YA LO
+                                    GUARDARON EN SU{urlInApp.usersCount !== 1 ? "S" : ""} LISTADO
+                                    {urlInApp.usersCount !== 1 ? "S" : ""}
+                                </span>
+                            </p>
+                            <p className="text-sm font-semibold">🔥🔥🔥CONTACTATE YA🔥🔥🔥</p>
                         </div>
                         {onAddExistingFromApp && (
                             <div className="flex justify-center">
@@ -188,8 +186,6 @@ export function ScraperInput({
                                 >
                                     {isAddingExistingFromApp ? (
                                         <><Loader2 className="w-4 h-4 animate-spin" />Agregando...</>
-                                    ) : isAgent ? (
-                                        <><ExternalLink className="w-4 h-4" />Publicar en mi marketplace</>
                                     ) : (
                                         <><ExternalLink className="w-4 h-4" />Hace clik aca para ingresarlo en tu listado</>
                                     )}

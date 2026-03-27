@@ -5,15 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDaysAgo, type InAppResult } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
@@ -84,6 +75,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setUrlInFamily,
     urlInApp,
     setUrlInApp,
+    userAgentMarketplace,
+    setUserAgentMarketplace,
     manualLinkRequiredError,
     setManualLinkRequiredError,
     isFormValid,
@@ -94,11 +87,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   const [isAddingFromApp, setIsAddingFromApp] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  /** Caso 2: aviso ya en marketplace por agencia; mostrar modal con nombre(s) */
-  const [agentListingModalOpen, setAgentListingModalOpen] = useState(false);
-  const [agentListingAgencyNames, setAgentListingAgencyNames] = useState("");
-  /** Caso 3: mismo usuario/familia ya ingresó el aviso (properties + user_listings) */
-  const [familyDuplicateModalOpen, setFamilyDuplicateModalOpen] = useState(false);
   /** Tras fallar el scrape: mostrar bloque de capturas + analizar con IA */
   const [showImageFallback, setShowImageFallback] = useState(false);
   /** Archivos locales elegidos o pegados antes de subir (máx. 3) */
@@ -126,9 +114,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setIsSubmitting(false);
     setShowImageFallback(false);
     setPendingScreenFiles([]);
-    setAgentListingModalOpen(false);
-    setAgentListingAgencyNames("");
-    setFamilyDuplicateModalOpen(false);
     onClose();
   };
 
@@ -140,8 +125,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     setPendingScreenFiles([]);
     setUrlInFamily(null);
     setUrlInApp(null);
+    setUserAgentMarketplace(null);
     setUrlDuplicated(false);
-    setFamilyDuplicateModalOpen(false);
     setForm(EMPTY_FORM);
     setScrapedImages([]);
     setListingType("rent");
@@ -154,13 +139,18 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
     if (!result) return;
     if (result.duplicateResult) {
       if (result.duplicateResult.case === "in_family") {
-        setFamilyDuplicateModalOpen(true);
+        const fam = result.duplicateResult;
+        setUrlInFamily({
+          addedByName: fam.addedByName,
+          addedAt: fam.addedAt,
+          status: fam.status,
+          userListingId: fam.userListingId,
+        });
         return;
       } else if (result.duplicateResult.case === "in_app") {
         const dr = result.duplicateResult as InAppResult;
-        if (dr.agentAgencyNames?.length) {
-          setAgentListingAgencyNames(dr.agentAgencyNames.join(", "));
-          setAgentListingModalOpen(true);
+        if (dr.agentMarketplace) {
+          setUserAgentMarketplace(dr.agentMarketplace);
           return;
         }
         setUrlInApp(result.duplicateResult as any);
@@ -279,36 +269,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   return (
     <>
-    <AlertDialog open={agentListingModalOpen} onOpenChange={setAgentListingModalOpen}>
-      <AlertDialogContent className="rounded-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Aviso ya ingresado</AlertDialogTitle>
-          <AlertDialogDescription>
-            Agencia {agentListingAgencyNames}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          <AlertDialogAction className="rounded-xl w-full sm:w-auto">Entendido</AlertDialogAction>
-          <p className="text-center text-[10px] text-muted-foreground">caso2</p>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    <AlertDialog open={familyDuplicateModalOpen} onOpenChange={setFamilyDuplicateModalOpen}>
-      <AlertDialogContent className="rounded-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Aviso ya ingresado</AlertDialogTitle>
-          <AlertDialogDescription>
-            Este aviso ya fue ingresado.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          <AlertDialogAction className="rounded-xl w-full sm:w-auto">Entendido</AlertDialogAction>
-          <p className="text-center text-[10px] text-muted-foreground">caso3</p>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md rounded-2xl overflow-y-auto max-h-[90vh]">
         <DialogHeader>
@@ -325,12 +285,13 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               setUrl(v);
               setUrlInFamily(null);
               setUrlInApp(null);
+              setUserAgentMarketplace(null);
             }}
             isLoading={isLoading}
             urlInFamily={urlInFamily}
             urlInApp={urlInApp}
+            userAgentMarketplace={userAgentMarketplace}
             onOpenExisting={onOpenExisting}
-            formatDaysAgo={formatDaysAgo}
             handleScrape={onHandleScrape}
             setStep={setStep}
             screenshotInputRef={screenshotInputRef}
@@ -468,7 +429,6 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               urlAddedByName={null}
               urlInFamily={urlInFamily}
               urlInAppMsg={null}
-              formatDaysAgo={formatDaysAgo}
               setUrlDuplicated={setUrlDuplicated}
               groups={groups}
               selectedGroupId={selectedGroupId}

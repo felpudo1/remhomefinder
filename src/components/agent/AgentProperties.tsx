@@ -407,12 +407,35 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 orgId={agency.id}
                 onPublished={() => queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] })}
                 propertyToEdit={propertyToEdit}
+                onOpenExistingAgentPublication={async (publicationId) => {
+                    let row = agencyProperties.find((p: any) => p.id === publicationId);
+                    if (!row) {
+                        const { data } = await refetchProperties();
+                        row = (data as any[])?.find((p: any) => p.id === publicationId);
+                    }
+                    if (row) {
+                        setPublishOpen(false);
+                        setSelectedProperty(row);
+                        setIsDetailOpen(true);
+                    } else {
+                        toast({
+                            title: "No encontramos la publicación",
+                            description: "Refrescá el listado e intentá de nuevo.",
+                            variant: "destructive",
+                        });
+                    }
+                }}
             />
 
             <MarketplacePropertyDetailModal
                 property={selectedProperty}
                 open={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
+                onEditPublication={(p) => {
+                    setIsDetailOpen(false);
+                    setPropertyToEdit(p);
+                    setPublishOpen(true);
+                }}
             />
 
             <FullScreenGallery
