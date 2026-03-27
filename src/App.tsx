@@ -14,6 +14,8 @@ import { AuthProvider } from "@/contexts/AuthProvider";
 
 const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
 
+const InfraMonitorPage = routeLazy(() => import("./pages/InfraMonitorPage"));
+
 // Importaciones dinámicas para optimización de carga (Lazy Loading)
 const Index = routeLazy(() => import("./pages/Index"));
 const PerfilIAPage = routeLazy(() => import("./pages/PerfilIAPage"));
@@ -82,6 +84,7 @@ const App = () => (
                 <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 
                 {/* Rutas Protegidas con Roles Específicos */}
+                <Route path={ROUTES.ADMIN_INFRA} element={<ProtectedRoute allowedRoles={[ROLES.SYSADMIN]}><InfraMonitorPage /></ProtectedRoute>} />
                 <Route path={ROUTES.ADMIN} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
                 <Route path={ROUTES.ADMIN_SECTION_PATH} element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]}><Admin /></ProtectedRoute>} />
                 <Route

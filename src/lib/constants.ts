@@ -8,6 +8,7 @@ export const ROLES = {
     AGENCY: "agency",
     AGENCY_MEMBER: "agencymember",
     USER: "user",
+    SYSADMIN: "sysadmin",
 } as const;
 
 /**
@@ -36,6 +37,7 @@ export const ROUTES = {
     /** Política de privacidad (página pública) */
     PRIVACY: "/privacidad",
     ADMIN: "/admin",
+    ADMIN_INFRA: "/admin/infra",
     ADMIN_SECTION: (section: string) => `/admin/${section}`,
     ADMIN_SECTION_PATH: "/admin/:section",
     AGENCY: "/agente",

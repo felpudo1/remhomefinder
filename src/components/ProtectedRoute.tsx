@@ -11,7 +11,7 @@ import { AppRole } from "@/types/supabase";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: AppRole[];
+  allowedRoles?: (AppRole | string)[];
 }
 
 /**
@@ -56,7 +56,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
     // Chequear roles para rutas protegidas por rol
     if (allowedRoles && allowedRoles.length > 0) {
-      const hasAccess = allowedRoles.some(role => userRoles.includes(role));
+      const hasAccess = allowedRoles.some(role => userRoles.includes(role as AppRole));
       setIsAuthorized(hasAccess);
     } else {
       // Si no se especifican roles permitidos, con estar logeado alcanza
