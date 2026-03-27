@@ -11,6 +11,7 @@ import { ReferralTracker } from "@/components/ReferralTracker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/contexts/AuthProvider";
+import { MaintenanceShield } from "@/components/MaintenanceShield";
 
 const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
 
@@ -58,6 +59,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <MaintenanceShield />
         <BrowserRouter>
           <ReferralTracker />
           <Suspense fallback={<LoadingPage />}>

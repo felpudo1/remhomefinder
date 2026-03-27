@@ -1,4 +1,5 @@
 import { Monitor } from "lucide-react";
+import { AdminMaintenance } from "./system/AdminMaintenance";
 import { AdminPlans } from "./system/AdminPlans";
 import { AdminSupport } from "./system/AdminSupport";
 import { AdminVideoConfig } from "./system/AdminVideoConfig";
@@ -19,6 +20,9 @@ export function AdminSystem() {
                 <Monitor className="w-4 h-4" />
                 <p>Estos ajustes controlan qué elementos de UI se muestran a los usuarios regulares de la plataforma.</p>
             </div>
+
+            {/* Escudo de Mantenimiento / Kill Switch */}
+            <AdminMaintenance />
 
             {/* Configuración de Planes y Límites */}
             <AdminPlans />

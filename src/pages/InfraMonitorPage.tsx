@@ -2,9 +2,13 @@ import { useSystemMetrics } from "@/hooks/useSystemMetrics";
 import { DiskIoGauge } from "@/components/infra/DiskIoGauge";
 import { RequestsCharts } from "@/components/infra/RequestsCharts";
 import { ResourceCards } from "@/components/infra/ResourceCards";
+import { AdminMaintenance } from "@/components/admin/system/AdminMaintenance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Activity } from "lucide-react";
+import { RefreshCw, Activity, LogOut, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { ROUTES } from "@/lib/constants";
 
 function MetricsSkeleton() {
   return (
@@ -21,7 +25,13 @@ function MetricsSkeleton() {
 }
 
 export default function InfraMonitorPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError, error, refresh, isFetching, dataUpdatedAt } = useSystemMetrics();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate(ROUTES.AUTH);
+  };
 
   return (
     <div className="dark min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
@@ -50,6 +60,26 @@ export default function InfraMonitorPage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} />
             Refrescar
           </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(ROUTES.DASHBOARD)}
+            className="text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Volver
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="text-red-400 hover:text-red-300 hover:bg-red-950/30"
+          >
+            <LogOut className="w-4 h-4 mr-1" />
+            Cerrar Sesión
+          </Button>
         </div>
       </div>
 
@@ -63,6 +93,9 @@ export default function InfraMonitorPage() {
         <MetricsSkeleton />
       ) : data ? (
         <div className="space-y-6">
+          <div className="mb-4">
+            <AdminMaintenance />
+          </div>
           <DiskIoGauge value={data.diskIoBudget} />
           <RequestsCharts
             restRequests={data.restRequests}
