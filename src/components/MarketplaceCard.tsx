@@ -23,17 +23,16 @@ interface MarketplaceCardProps {
 }
 
 /**
- * Configuración visual de los overlays de estado sobre la foto.
- * Solo se muestra cuando la propiedad NO está activa.
- * Active y paused no necesitan badge — se entiende que están disponibles.
+ * Configuración visual de los overlays/badges de estado sobre la foto.
+ * Las claves coinciden con agent_pub_status en la BD (español).
  */
 const STATUS_OVERLAY_CONFIG: Record<string, { label: string; className: string } | null> = {
-  active: null,
-  paused: null,
-  reserved: { label: "Reservada", className: "bg-blue-600/90 text-white" },
-  sold: { label: "Vendida", className: "bg-slate-900/90 text-white" },
-  rented: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
-  deleted: null,
+  disponible: { label: "Disponible", className: "bg-emerald-600/90 text-white" },
+  pausado: { label: "Pausada", className: "bg-amber-500/90 text-white" },
+  reservado: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  vendido: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  alquilado: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+  eliminado: null,
 };
 
 export function MarketplaceCard({

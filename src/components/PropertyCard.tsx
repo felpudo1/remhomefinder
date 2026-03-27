@@ -2,7 +2,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
-import { Property, PropertyStatus } from "@/types/property";
+import { Property, PropertyStatus, AgentPubStatus } from "@/types/property";
+import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { ExternalLink, Building2, MessageCircle, Trash2, User, CalendarIcon } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { StarRating } from "@/components/ui/StarRating";
@@ -74,12 +75,12 @@ interface PropertyCardProps {
 }
 
 const MARKETPLACE_STATUS_OVERLAY: Record<string, { label: string; className: string } | null> = {
-  active: null,
-  paused: null,
-  reserved: { label: "Reservada", className: "bg-blue-600/90 text-white" },
-  sold: { label: "Vendida", className: "bg-slate-900/90 text-white" },
-  rented: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
-  deleted: null,
+  disponible: null,
+  pausado: { label: "Pausada", className: "bg-amber-500/90 text-white" },
+  reservado: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  vendido: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  alquilado: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+  eliminado: null,
 };
 
 /**
@@ -192,10 +193,24 @@ export function PropertyCard({
             <div className="flex items-center justify-between gap-2">
               {property.sourceMarketplaceId ? (
                 <div className="flex flex-col gap-0.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
-                    <Building2 className="w-3 h-3" />
-                    {property.marketplaceOrgName || "Agencia"}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
+                      <Building2 className="w-3 h-3" />
+                      {property.marketplaceOrgName || "Agencia"}
+                    </span>
+                    {property.marketplaceStatus && (
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${
+                        property.marketplaceStatus === "disponible" ? "bg-emerald-100 text-emerald-700" :
+                        property.marketplaceStatus === "pausado" ? "bg-amber-100 text-amber-700" :
+                        property.marketplaceStatus === "reservado" ? "bg-blue-100 text-blue-700" :
+                        property.marketplaceStatus === "vendido" ? "bg-slate-200 text-slate-700" :
+                        property.marketplaceStatus === "alquilado" ? "bg-purple-100 text-purple-700" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {PROPERTY_STATUS_LABELS[property.marketplaceStatus] || property.marketplaceStatus}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[11px] text-muted-foreground">
                     Agente: {property.marketplaceAgentName || "Agente no disponible"}
                   </span>

@@ -52,7 +52,7 @@ export interface Property {
   contactedBy?: string;
   groupId?: string | null;
   sourceMarketplaceId?: string | null;
-  marketplaceStatus?: MarketplacePropertyStatus | null;
+  marketplaceStatus?: AgentPubStatus | null;
   /** Nombre de la agencia dueña de la publicación en marketplace (si aplica) */
   marketplaceOrgName?: string;
   /** Nombre del agente que publicó en marketplace (si aplica) */
@@ -76,7 +76,11 @@ export interface Property {
   unreadCommentsCount?: number;
 }
 
-export type MarketplacePropertyStatus = "active" | "paused" | "sold" | "reserved" | "rented" | "deleted";
+/** Estado de la publicación de agente (agent_pub_status en BD) — valores en español */
+export type AgentPubStatus = "disponible" | "pausado" | "reservado" | "vendido" | "alquilado" | "eliminado";
+
+/** @deprecated Usar AgentPubStatus. Mantenido por compat. */
+export type MarketplacePropertyStatus = AgentPubStatus;
 
 export interface MarketplaceProperty {
   id: string;
@@ -97,7 +101,7 @@ export interface MarketplaceProperty {
   sqMeters: number;
   rooms: number;
   images: string[];
-  status: MarketplacePropertyStatus;
+  status: AgentPubStatus;
   listingType: ListingType;
   createdAt: Date;
   updatedAt: Date;

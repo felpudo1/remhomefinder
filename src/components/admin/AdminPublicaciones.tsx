@@ -117,15 +117,7 @@ export function AdminPublicaciones({ toast }: Props) {
       if (error) {
         toast({ title: "Error al cargar publicaciones del marketplace", description: error.message, variant: "destructive" });
       } else {
-        /** Mapea agent_pub_status (DB) a MarketplaceStatus (UI) para que el Select muestre el valor correcto */
-        const dbToUiStatus: Record<string, MarketplaceStatus> = {
-          disponible: "active",
-          pausado: "paused",
-          reservado: "reserved",
-          vendido: "sold",
-          alquilado: "rented",
-          eliminado: "deleted",
-        };
+        /** Ahora MarketplaceStatus === AgentPubStatus (español), no necesita mapeo */
         const publisherIds = [...new Set((data || []).map((d: { published_by?: string }) => d.published_by).filter(Boolean))];
         let publishedByMap: Record<string, string> = {};
         if (publisherIds.length > 0) {
@@ -142,7 +134,7 @@ export function AdminPublicaciones({ toast }: Props) {
             id: p.id,
             title: p.properties?.title || "Sin título",
             url: p.properties?.source_url || "",
-            status: dbToUiStatus[p.status] ?? (p.status as MarketplaceStatus),
+            status: (p.status || "disponible") as MarketplaceStatus,
             listing_type: p.listing_type,
             created_at: p.created_at,
             orgName: p.organizations?.name || "Organización",
@@ -242,19 +234,10 @@ export function AdminPublicaciones({ toast }: Props) {
     const prev = mktProps;
     setMktProps(p => p.map(pr => pr.id === prop.id ? { ...pr, status: newStatus } : pr));
 
-    // Map MarketplaceStatus to agent_pub_status enum
-    const statusMap: Record<MarketplaceStatus, string> = {
-      active: "disponible",
-      paused: "pausado",
-      sold: "vendido",
-      reserved: "reservado",
-      rented: "alquilado",
-      deleted: "eliminado",
-    };
-
+    // MarketplaceStatus ahora es AgentPubStatus (español) — sin mapeo
     const { error } = await supabase
       .from("agent_publications")
-      .update({ status: statusMap[newStatus] as AgentPubStatus })
+      .update({ status: newStatus as any })
       .eq("id", prop.id);
 
     if (error) {

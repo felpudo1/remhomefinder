@@ -117,9 +117,9 @@ export const AgentTeamProperties = ({ activeGroupId, onOpenGroups, isOwner = fal
               <Badge
                 variant="outline"
                 className={`text-xs font-bold border-none ${
-                  p.status === "active"
+                  p.status === "disponible"
                     ? "bg-green-500/90 text-white"
-                    : p.status === "paused"
+                    : p.status === "pausado"
                     ? "bg-yellow-500/90 text-white"
                     : "bg-blue-600/90 text-white"
                 }`}
