@@ -1,6 +1,15 @@
 import { Property, STATUS_CONFIG } from "@/types/property";
+import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { formatDateTime } from "@/lib/date-utils";
-import { Users, CalendarIcon } from "lucide-react";
+import { Users, CalendarIcon, Building2 } from "lucide-react";
+
+const MARKETPLACE_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  disponible: { label: "Disponible", className: "bg-emerald-600/90 text-white" },
+  pausado: { label: "Pausada", className: "bg-amber-500/90 text-white" },
+  reservado: { label: "Reservada", className: "bg-blue-600/90 text-white" },
+  vendido: { label: "Vendida", className: "bg-slate-900/90 text-white" },
+  alquilado: { label: "Alquilada", className: "bg-purple-600/90 text-white" },
+};
 
 interface PropertyCardHeaderProps {
   property: Property;
@@ -13,6 +22,7 @@ interface PropertyCardHeaderProps {
  */
 export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderProps) {
   const config = STATUS_CONFIG[property.status];
+  const mktBadge = property.marketplaceStatus ? MARKETPLACE_STATUS_BADGE[property.marketplaceStatus] : null;
 
   return (
     <>
@@ -20,6 +30,19 @@ export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderP
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-md">
           <Users className="w-3 h-3" />
           Compartido por {ownerEmail || property.createdByEmail}
+        </span>
+      )}
+
+      {/* Badge de agencia + estado marketplace */}
+      {property.sourceMarketplaceId && property.marketplaceOrgName && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-md">
+          <Building2 className="w-3 h-3" />
+          {property.marketplaceOrgName}
+        </span>
+      )}
+      {mktBadge && (
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm shadow-md ${mktBadge.className}`}>
+          {mktBadge.label}
         </span>
       )}
       
