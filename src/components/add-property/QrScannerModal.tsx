@@ -53,8 +53,19 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
       setError(null);
       setScanning(true);
 
-      // Wait for DOM to render the container
-      await new Promise((r) => setTimeout(r, 500));
+      if (!window.isSecureContext) {
+        setError("Para usar la cámara necesitás abrir la app en HTTPS. Mientras tanto podés usar \"Subir imagen\".");
+        setScanning(false);
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError("Tu navegador no soporta acceso a cámara. Usá \"Subir imagen\".");
+        setScanning(false);
+        return;
+      }
+
+      await new Promise((r) => setTimeout(r, 450));
       if (cancelled || !mountedRef.current) return;
 
       const container = document.getElementById("qr-reader");
@@ -65,25 +76,57 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
       }
 
       try {
-        // Dynamic import to avoid issues if the library fails to load
         const { Html5Qrcode } = await import("html5-qrcode");
         if (cancelled) return;
 
         const scanner = new Html5Qrcode("qr-reader");
         scannerRef.current = scanner;
 
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            if (!cancelled) handleResult(decodedText);
-          },
-          () => {} // ignore scan errors
-        );
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        const onSuccess = (decodedText: string) => {
+          if (!cancelled) handleResult(decodedText);
+        };
+
+        const candidates: Array<string | { facingMode: "environment" | "user" }> = [];
+
+        // Try by constraints first (more reliable prompt on mobile browsers)
+        candidates.push({ facingMode: "environment" });
+
+        const cameras = await Html5Qrcode.getCameras().catch(() => []);
+        if (cameras.length > 0) {
+          const rear = cameras.find((c) => /back|rear|environment|trasera|traseira/i.test(c.label));
+          if (rear?.id) candidates.push(rear.id);
+          if (cameras[0]?.id && cameras[0].id !== rear?.id) candidates.push(cameras[0].id);
+        }
+
+        // Last fallback
+        candidates.push({ facingMode: "user" });
+
+        let lastError: unknown = null;
+        for (const candidate of candidates) {
+          try {
+            await scanner.start(candidate as any, config, onSuccess, () => {});
+            return;
+          } catch (e) {
+            lastError = e;
+          }
+        }
+
+        throw lastError;
       } catch (err: any) {
         if (!cancelled && mountedRef.current) {
           console.warn("QR camera error:", err);
-          setError("No se pudo acceder a la cámara. Probá con la opción \"Subir imagen\" para escanear un QR desde una foto.");
+          const name = err?.name;
+          const denied = name === "NotAllowedError" || name === "PermissionDeniedError";
+          const inUse = name === "NotReadableError" || name === "TrackStartError";
+
+          setError(
+            denied
+              ? "La cámara fue bloqueada para este dominio publicado. Abrí la app publicada en una pestaña nueva, permití cámara para ese dominio y reintentá; o usá \"Subir imagen\"."
+              : inUse
+                ? "No se pudo abrir la cámara (puede estar en uso por otra app/pestaña). Cerrá otras apps de cámara y reintentá."
+                : "No se pudo inicializar el escáner en este dispositivo. Usá \"Subir imagen\" como alternativa."
+          );
           setScanning(false);
         }
       }
@@ -119,25 +162,45 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
 
-      // Ensure the hidden container exists
+      // Create a visible but off-screen container (display:none breaks scanning)
       let container = document.getElementById("qr-reader-file");
-      if (!container) {
-        container = document.createElement("div");
-        container.id = "qr-reader-file";
-        container.style.display = "none";
-        document.body.appendChild(container);
-      }
+      if (container) container.remove();
+      container = document.createElement("div");
+      container.id = "qr-reader-file";
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.style.top = "-9999px";
+      container.style.width = "300px";
+      container.style.height = "300px";
+      document.body.appendChild(container);
 
       const scanner = new Html5Qrcode("qr-reader-file");
-      const result = await scanner.scanFile(file, true);
+
+      // Try scanning with different verbosity settings
+      let result: string | null = null;
+      try {
+        result = await scanner.scanFile(file, /* showImage */ true);
+      } catch {
+        // Retry without showing image
+        try {
+          result = await scanner.scanFile(file, false);
+        } catch { /* will handle below */ }
+      }
+
       try { scanner.clear(); } catch { /* ignore */ }
-      handleResult(result);
+      try { container.remove(); } catch { /* ignore */ }
+
+      if (result) {
+        handleResult(result);
+      } else {
+        setError("No se detectó un código QR en la imagen. Asegurate de que el QR se vea nítido y completo, e intentá con otra foto.");
+        setScanning(false);
+      }
     } catch {
-      setError("No se detectó un código QR en la imagen. Intentá con otra foto.");
+      setError("No se detectó un código QR en la imagen. Asegurate de que el QR se vea nítido y completo, e intentá con otra foto.");
       setScanning(false);
     }
 
-    // Reset file input so re-selecting the same file triggers onChange
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
