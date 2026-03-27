@@ -2,8 +2,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
-import { Property, PropertyStatus, STATUS_CONFIG } from "@/types/property";
-import { ExternalLink, Building2, MessageCircle, Trash2, User } from "lucide-react";
+import { Property, PropertyStatus } from "@/types/property";
+import { ExternalLink, Building2, MessageCircle, Trash2, User, CalendarIcon } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { StarRating } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
@@ -167,7 +167,12 @@ export function PropertyCard({
             </span>
           ) : undefined
         }
-        topOverlay={<PropertyCardHeader property={property} ownerEmail={ownerEmail} />}
+        topOverlay={
+          <PropertyCardHeader
+            property={property}
+            ownerEmail={ownerEmail}
+          />
+        }
         ratingOverlay={
           property.groupId && (
             <div className={cn("flex flex-col gap-2", mktOverlay && "mt-10")}>
@@ -251,6 +256,26 @@ export function PropertyCard({
               </span>
             </div>
           </div>
+        }
+        bottomContent={
+          property.status === "visita_coordinada" && property.coordinatedDate ? (
+            <div className="flex justify-end pt-0" onClick={(e) => e.stopPropagation()}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-7 px-2 text-[10px] font-medium rounded-lg shadow-md bg-black/60 text-white border-0 hover:bg-black/75 backdrop-blur-md"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openVisitCalendarEntry(property.coordinatedDate!);
+                }}
+                title="Agendar en Google Calendar"
+              >
+                <CalendarIcon className="w-3 h-3 mr-1 shrink-0" />
+                Agendar visita
+              </Button>
+            </div>
+          ) : undefined
         }
         extraBodyContent={
           <>

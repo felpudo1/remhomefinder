@@ -42,7 +42,7 @@ export const usePropertyCardDialogs = (property: Property) => {
     const calendarMotivationOptions = [
         "🏡✨ Falta menos para ver tu próximo hogar. ¡No te olvides de agendar la cita!",
         "🧠💘 Modo cabecita de novio: que no se te escape la cita, agendala ahora.",
-        "📅🔥 Para vos que no te olvidás ni de la cabeza porque la tenés pegada: ¡agendate la visita!",
+        "📅🔥 Pero que cabecita de novio/a, mira que no te olvidás de la cabeza porque la tenés pegada: ¡ayudate a vos y agenda la visita en el calendario!",
         "🚀🏠 Un clic más y estás más cerca de comprar. Sumala al calendario ahora.",
         "⏰💡 Tu yo del futuro te lo agradece: dejá la visita agendada y listo.",
     ];

@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeUrl, getExistingPropertyByUrl, checkUrlStatus } from "@/lib/duplicateCheck";
+import {
+  normalizeUrl,
+  getExistingPropertyByUrl,
+  checkUrlStatus,
+  hasActiveAgentPublicationForOrg,
+  hasUserListingsForProperty,
+} from "@/lib/duplicateCheck";
 import { useToast } from "@/hooks/use-toast";
 import { resolveGeoIds } from "@/lib/resolveGeoIds";
 import {
@@ -9,6 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { PropertyFormManual } from "./add-property/PropertyFormManual";
@@ -48,6 +63,14 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
   const [isAddingExistingFromApp, setIsAddingExistingFromApp] = useState(false);
   const [cameFromImage, setCameFromImage] = useState(false);
+  /** Mismo cartel; etiqueta inferior caso1 (duplicado agente) o caso4 (usuarios ya ingresaron). */
+  const [duplicateAgentModalOpen, setDuplicateAgentModalOpen] = useState(false);
+  const [duplicateAgentModalTag, setDuplicateAgentModalTag] = useState<"caso1" | "caso4">("caso1");
+
+  const openDuplicateAgentModal = (tag: "caso1" | "caso4") => {
+    setDuplicateAgentModalTag(tag);
+    setDuplicateAgentModalOpen(true);
+  };
 
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
@@ -114,6 +137,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         setUrlInApp(null);
         setScreenshotFile(null);
         setScreenshotPreview(null);
+        setDuplicateAgentModalOpen(false);
       }
     }
   }, [open, propertyToEdit]);
@@ -129,9 +153,22 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     setIsLoading(true);
     setUrlInApp(null);
     try {
-      // Si la URL ya existe (ingresada por usuarios), mostrar banner y permitir publicar en marketplace
+      // Antes del scraping: estado de URL en app y duplicado en agent_publications (caso 1).
       const urlStatus = await checkUrlStatus(url.trim(), orgId);
       if (urlStatus.case === "in_app") {
+        const existingForInApp = await getExistingPropertyByUrl(url.trim());
+        if (existingForInApp) {
+          if (await hasActiveAgentPublicationForOrg(existingForInApp.id, orgId)) {
+            openDuplicateAgentModal("caso1");
+            setIsLoading(false);
+            return;
+          }
+          if (await hasUserListingsForProperty(existingForInApp.id)) {
+            openDuplicateAgentModal("caso4");
+            setIsLoading(false);
+            return;
+          }
+        }
         setUrlInApp({
           firstAddedAt: urlStatus.firstAddedAt,
           usersCount: urlStatus.usersCount,
@@ -143,6 +180,16 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
       // Si existe en properties pero no en user_listings (ej. solo agent_publications), reutilizar
       const existing = await getExistingPropertyByUrl(url);
       if (existing) {
+        if (await hasActiveAgentPublicationForOrg(existing.id, orgId)) {
+          openDuplicateAgentModal("caso1");
+          setIsLoading(false);
+          return;
+        }
+        if (await hasUserListingsForProperty(existing.id)) {
+          openDuplicateAgentModal("caso4");
+          setIsLoading(false);
+          return;
+        }
         setScrapedImages((existing.images as string[]) || []);
         setForm({
           title: existing.title || "",
@@ -169,6 +216,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         return;
       }
 
+      // Solo si no hubo duplicado ni property reutilizable sin scrape: scrape remoto.
       const { data, error } = await supabase.functions.invoke("scrape-property", {
         body: { url: url.trim(), role: "agent" },
       });
@@ -398,6 +446,15 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         return;
       }
 
+      if (await hasActiveAgentPublicationForOrg(existing.id, orgId)) {
+        openDuplicateAgentModal("caso1");
+        return;
+      }
+      if (await hasUserListingsForProperty(existing.id)) {
+        openDuplicateAgentModal("caso4");
+        return;
+      }
+
       const { error: pubError } = await (supabase
         .from("agent_publications") as any)
         .insert({
@@ -488,6 +545,16 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         if (normalizedUrl) {
           const existing = await getExistingPropertyByUrl(url);
           if (existing) {
+            if (await hasActiveAgentPublicationForOrg(existing.id, orgId)) {
+              openDuplicateAgentModal("caso1");
+              setSaving(false);
+              return;
+            }
+            if (await hasUserListingsForProperty(existing.id)) {
+              openDuplicateAgentModal("caso4");
+              setSaving(false);
+              return;
+            }
             propertyId = existing.id;
           } else {
             const { data: prop, error: propError } = await (supabase
@@ -575,6 +642,22 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const isFormValid = form.title && form.neighborhood && form.priceRent;
 
   return (
+    <>
+    <AlertDialog open={duplicateAgentModalOpen} onOpenChange={setDuplicateAgentModalOpen}>
+      <AlertDialogContent className="rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Aviso ya ingresado</AlertDialogTitle>
+          <AlertDialogDescription>
+            Este aviso ya fue ingresado.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+          <AlertDialogAction className="rounded-xl w-full sm:w-auto">Entendido</AlertDialogAction>
+          <p className="text-center text-[10px] text-muted-foreground">{duplicateAgentModalTag}</p>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
@@ -610,5 +693,6 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }

@@ -22,6 +22,8 @@ export type InAppResult = {
   case: "in_app";
   firstAddedAt: string;
   usersCount: number;
+  /** Publicación de agente (marketplace): nombres de agencia para modal usuario */
+  agentAgencyNames?: string[];
 };
 
 export type UrlCheckResult =
@@ -53,6 +55,25 @@ export async function checkUrlStatus(
     resolvedOrgId = membership?.org_id ?? null;
   }
   if (!resolvedOrgId) return { case: "none" };
+
+  /**
+   * Nombres de organización para publicaciones de agente activas (RPC: visibilidad marketplace).
+   */
+  async function agentAgencyNamesForProperty(propertyId: string): Promise<string[]> {
+    const { data: pubs, error } = await supabase
+      .from("agent_publications")
+      .select("org_id")
+      .eq("property_id", propertyId)
+      .neq("status", "eliminado");
+    if (error || !pubs?.length) return [];
+    const orgIds = [...new Set(pubs.map((p) => p.org_id).filter(Boolean))] as string[];
+    if (orgIds.length === 0) return [];
+    const { data: rows } = await supabase.rpc("get_marketplace_org_names", {
+      _org_ids: orgIds,
+    });
+    if (!rows?.length) return [];
+    return (rows as { name: string }[]).map((r) => r.name).filter(Boolean);
+  }
 
   const { data: prop, error: propErr } = await supabase
     .from("properties")
@@ -105,10 +126,13 @@ export async function checkUrlStatus(
     _property_id: prop.id,
   });
 
+  const agentAgencyNames = await agentAgencyNamesForProperty(prop.id);
+
   return {
     case: "in_app",
     firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
     usersCount: Math.max(typeof rpcUsersCount === "number" ? rpcUsersCount : 0, 1),
+    ...(agentAgencyNames.length > 0 ? { agentAgencyNames } : {}),
   };
 }
 
@@ -166,4 +190,42 @@ export async function getExistingPropertyByUrl(url: string) {
     .eq("source_url", normalized)
     .maybeSingle() as any);
   return data;
+}
+
+/**
+ * True si la org ya tiene una publicación de agente activa (no eliminada) para esa property.
+ * Evita duplicar el mismo aviso en el marketplace de la agencia.
+ */
+export async function hasActiveAgentPublicationForOrg(
+  propertyId: string,
+  orgId: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("agent_publications")
+    .select("id")
+    .eq("property_id", propertyId)
+    .eq("org_id", orgId)
+    .neq("status", "eliminado")
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn("hasActiveAgentPublicationForOrg", error);
+    return false;
+  }
+  return !!data;
+}
+
+/**
+ * True si algún usuario/familia guardó esta property en user_listings (RPC SECURITY DEFINER).
+ * Caso 4: agente intenta publicar después de usuarios.
+ */
+export async function hasUserListingsForProperty(propertyId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("count_property_listing_users" as any, {
+    _property_id: propertyId,
+  });
+  if (error) {
+    console.warn("hasUserListingsForProperty", error);
+    return false;
+  }
+  return typeof data === "number" && data > 0;
 }
