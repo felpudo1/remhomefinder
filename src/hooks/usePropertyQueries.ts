@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQueryClient, InfiniteData } from "@tanstack/react-
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Property, PropertyComment } from "@/types/property";
+import { Property, PropertyComment, AgentPubStatus } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
 import type { UserListingStatus } from "@/types/supabase";
 
@@ -58,6 +58,7 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
   const marketplaceAgentName = pubContact?.name || undefined;
   const marketplaceAgentPhone = pubContact?.phone || undefined;
   const marketplaceOrgName = ap?.org_name || (ap?.org_id ? orgNames[ap.org_id] : undefined) || undefined;
+  const agentPubStatus: AgentPubStatus | null = ap?.status || null;
   const marketplaceContactSource = !listing.source_publication_id
     ? undefined
     : (marketplaceAgentName || marketplaceAgentPhone)
@@ -129,6 +130,7 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
       marketplaceAgentPhone,
       marketplaceContactSource,
       isSharedListing,
+      marketplaceStatus: agentPubStatus,
       hasUnreadComments: unreadCommentsCount > 0,
       unreadCommentsCount,
       contactName: listing.contact_name || undefined,
@@ -177,6 +179,7 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
     ref: p.ref || "",
     details: p.details || "",
     isSharedListing,
+    marketplaceStatus: agentPubStatus,
     hasUnreadComments: unreadCommentsCount > 0,
     unreadCommentsCount,
     contactName: listing.contact_name || undefined,
