@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 
 /** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
 function safeUUID(): string {
@@ -16,6 +17,7 @@ function safeUUID(): string {
 }
 
 export function useImageUploader() {
+  const { user: authUser } = useCurrentUser();
   const [isUploading, setIsUploading] = useState(false);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
@@ -42,8 +44,7 @@ export function useImageUploader() {
     
     setIsUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!authUser) {
         toast.error("Debés estar logueado");
         return [];
       }
@@ -54,7 +55,7 @@ export function useImageUploader() {
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${prefix}${safeUUID()}.${ext}`;
+        const path = `${authUser.id}/${prefix}${safeUUID()}.${ext}`;
         
         const { error } = await supabase.storage.from("property-images").upload(path, file);
         if (error) {
@@ -84,11 +85,10 @@ export function useImageUploader() {
    */
   const uploadScreenshot = async (file: File) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No auth");
+      if (!authUser) throw new Error("No auth");
 
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
+      const path = `${authUser.id}/screenshot-${safeUUID()}.${ext}`;
       
       const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
       if (uploadErr) throw uploadErr;

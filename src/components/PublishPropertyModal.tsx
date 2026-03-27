@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import {
   normalizeUrl,
   getExistingPropertyByUrl,
@@ -46,6 +47,7 @@ interface PublishPropertyModalProps {
 
 export function PublishPropertyModal({ open, onClose, orgId, onPublished, propertyToEdit, onOpenExistingAgentPublication }: PublishPropertyModalProps) {
   const { toast } = useToast();
+  const { user: authUser } = useCurrentUser();
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"url" | "image-upload" | "manual">("url");
@@ -261,8 +263,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!files || files.length === 0) return;
     setIsAnalyzingUnified(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+      if (!authUser) { sonnerToast.error("Debés estar logueado"); return; }
 
       const uploadedUrls: string[] = [];
       for (const file of Array.from(files).slice(0, 3)) {
@@ -321,8 +322,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!screenshotFile) return;
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+      if (!authUser) { sonnerToast.error("Debés estar logueado"); return; }
 
       const ext = screenshotFile.name.split(".").pop() || "jpg";
       const path = `organizations/${orgId}/captures/${safeUUID()}.${ext}`;
@@ -369,14 +369,13 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!files || files.length === 0) return;
     setIsUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+      if (!authUser) { sonnerToast.error("Debés estar logueado"); return; }
 
       const uploaded: string[] = [];
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `organizations/${orgId}/${crypto.randomUUID()}.${ext}`;
+        const path = `organizations/${orgId}/${safeUUID()}.${ext}`;
         const { error } = await supabase.storage.from("property-images").upload(path, file);
         if (error) { console.error("Upload error:", error); continue; }
         const { data: urlData } = supabase.storage.from("property-images").getPublicUrl(path);
@@ -399,8 +398,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!files || files.length === 0) return;
     setIsUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { sonnerToast.error("Debés estar logueado"); return; }
+      if (!authUser) { sonnerToast.error("Debés estar logueado"); return; }
       const uploaded: string[] = [];
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
@@ -427,8 +425,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!url.trim()) return;
     setIsAddingExistingFromApp(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!authUser) throw new Error("No autenticado");
 
       const existing = await getExistingPropertyByUrl(url);
       if (!existing) {
@@ -451,7 +448,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           org_id: orgId,
           listing_type: "rent" as DbListingType,
           description: existing.details || "",
-          published_by: user.id,
+          published_by: authUser.id,
         });
 
       if (pubError) throw pubError;
@@ -479,8 +476,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     if (!form.title.trim()) return;
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!authUser) throw new Error("No autenticado");
 
       const priceRent = Number(form.priceRent) || 0;
       const priceExpenses = listingType === "rent" ? (Number(form.priceExpenses) || 0) : 0;
@@ -562,7 +558,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
                 m2_total: Number(form.sqMeters) || 0,
                 rooms: Number(form.rooms) || 1,
                 images: scrapedImages,
-                created_by: user.id,
+                created_by: authUser.id,
                 ref: form.ref || "",
                 details: form.aiSummary || form.details || "",
               } as any)
@@ -590,7 +586,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
               m2_total: Number(form.sqMeters) || 0,
               rooms: Number(form.rooms) || 1,
               images: scrapedImages,
-              created_by: user.id,
+              created_by: authUser.id,
               ref: form.ref || "",
               details: form.aiSummary || form.details || "",
             } as any)
@@ -607,7 +603,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
             org_id: orgId,
             listing_type: listingType as DbListingType,
             description: form.aiSummary || form.details || "",
-            published_by: user.id,
+            published_by: authUser.id,
           });
 
         if (pubError) throw pubError;

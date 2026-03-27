@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGroups, Group, GroupMember } from "@/hooks/useGroups";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Users } from "lucide-react";
 
 // Componentes modulares
@@ -39,6 +39,7 @@ export function GroupsModal({
   } = useGroups();
   
   const { toast } = useToast();
+  const { user: authUser } = useCurrentUser();
 
   const [tab, setTab] = useState<string>("groups");
   const [newName, setNewName] = useState("");
@@ -59,9 +60,7 @@ export function GroupsModal({
 
   useEffect(() => {
     if (open) {
-      supabase.auth.getUser().then(({ data }) => {
-        setCurrentUserId(data.user?.id || null);
-      });
+      setCurrentUserId(authUser?.id || null);
     } else {
       setDetailGroup(null);
       setTab("groups");

@@ -49,7 +49,7 @@ export function useDbStatus() {
 
     useEffect(() => {
         runCheck();
-        const interval = setInterval(runCheck, 60_000);
+        const interval = setInterval(runCheck, 300_000);
         return () => clearInterval(interval);
     }, []);
 

@@ -55,7 +55,7 @@ export function AdminGrupos({ toast }: Props) {
       // Fetch organizations
       const { data: orgsData, error: orgsError } = await supabase
         .from("organizations")
-        .select("*")
+        .select("id, name, description, type, created_at, is_personal, invite_code, created_by, parent_id")
         .eq("is_personal", false)
         .order("created_at", { ascending: false });
 

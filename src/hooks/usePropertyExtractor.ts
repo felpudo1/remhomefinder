@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { checkUrlStatus } from "@/lib/duplicateCheck";
 import { resolveGeoIds } from "@/lib/resolveGeoIds";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 
 /** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
 function safeUUID(): string {
@@ -44,6 +45,7 @@ export type PropertyData = {
 };
 
 export function usePropertyExtractor() {
+  const { user: authUser } = useCurrentUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzingUnified, setIsAnalyzingUnified] = useState(false);
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
@@ -139,8 +141,7 @@ export function usePropertyExtractor() {
     else setIsAnalyzingImages(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!authUser) {
         toast.error("Debés estar logueado");
         return null;
       }
@@ -152,7 +153,7 @@ export function usePropertyExtractor() {
       for (const file of filesArray) {
         if (!file.type.startsWith("image/")) continue;
         const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/screenshot-${safeUUID()}.${ext}`;
+        const path = `${authUser.id}/screenshot-${safeUUID()}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from("property-images").upload(path, file);
         if (uploadErr) {
           console.error("Upload error:", uploadErr);

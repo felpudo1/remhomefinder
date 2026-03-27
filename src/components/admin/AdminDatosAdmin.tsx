@@ -49,7 +49,7 @@ export function AdminDatosAdmin() {
     setLoading(true);
     const { data, error } = await supabase
       .from("admin_keys" as any)
-      .select("*")
+      .select("id, cuenta, descripcion, texto, estado, fecha, created_by, created_by_name, created_at, updated_at, estado_updated_at")
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching admin_keys:", error);
@@ -71,8 +71,7 @@ export function AdminDatosAdmin() {
     }
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!profile) throw new Error("No autenticado");
 
       const { error } = await supabase.from("admin_keys" as any).insert({
         cuenta: cuenta.trim(),
@@ -80,8 +79,8 @@ export function AdminDatosAdmin() {
         texto: texto.trim(),
         estado,
         fecha: fecha ? format(fecha, "yyyy-MM-dd") : null,
-        created_by: user.id,
-        created_by_name: profile?.displayName || user.email || "",
+        created_by: profile.userId,
+        created_by_name: profile?.displayName || "",
       } as any);
 
       if (error) throw error;

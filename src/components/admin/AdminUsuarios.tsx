@@ -365,11 +365,10 @@ export function AdminUsuarios({ toast }: Props) {
         setDeleteReason("");
         try {
             setIsActionInProgress(true);
-            const { data: { user: adminUser } } = await supabase.auth.getUser();
             const { error } = await supabase.rpc("admin_physical_delete_user" as any, {
                 _user_id: userId,
                 _reason: reason,
-                _deleted_by: adminUser?.id,
+                _deleted_by: null, // RPC uses auth.uid() internally
             });
             if (error) {
                 toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });

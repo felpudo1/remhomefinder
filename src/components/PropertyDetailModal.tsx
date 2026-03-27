@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { Property, PropertyStatus, STATUS_CONFIG, PropertyComment } from "@/types/property";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 import {
   Dialog,
   DialogContent,
@@ -100,6 +101,7 @@ export function PropertyDetailModal({
   currentUserDisplayName,
 }: PropertyDetailModalProps) {
   const { groups } = useGroups();
+  const { user: authUser } = useCurrentUser();
   const [activeImg, setActiveImg] = useState(0);
   const allImages = property ? [...(property.images || []), ...(property.privateImages || [])] : [];
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -157,15 +159,14 @@ export function PropertyDetailModal({
 
     const markCommentsAsRead = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!authUser) return;
 
         await (supabase as any)
           .from("user_listing_comment_reads")
           .upsert(
             {
               user_listing_id: property.id,
-              user_id: user.id,
+              user_id: authUser.id,
               last_read_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUser } from "@/contexts/AuthProvider";
 
 /**
  * Hook para gestionar el sistema de estrellas (property_reviews).
@@ -14,13 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 export function usePropertyRating(propertyId: string, groupId: string | null) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { user: authUser } = useCurrentUser();
 
     const { data: ratingsData, isLoading } = useQuery({
         queryKey: ["property-rating", propertyId, groupId],
-        enabled: !!propertyId && !!groupId,
+        enabled: !!propertyId && !!groupId && !!authUser,
         queryFn: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return null;
+            if (!authUser) return null;
 
             // Proyectar solo las columnas necesarias (evitar traer campos pesados)
             const { data: ratings, error: ratingsError } = await supabase
@@ -38,7 +39,7 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
 
             if (groupError) throw groupError;
 
-            const userVote = ratings?.find((r) => r.user_id === user.id)?.rating || 0;
+            const userVote = ratings?.find((r) => r.user_id === authUser.id)?.rating || 0;
             const totalVotes = ratings?.length || 0;
             const averageRating = totalVotes > 0
                 ? ratings!.reduce((acc, curr) => acc + curr.rating, 0) / totalVotes
@@ -49,21 +50,20 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
                 averageRating,
                 totalVotes,
                 totalGroupMembers: groupMembersCount || 0,
-                userId: user.id
+                userId: authUser.id
             };
         },
     });
 
     const rateMutation = useMutation({
         mutationFn: async (newRating: number) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user || !groupId) throw new Error("Acceso denegado");
+            if (!authUser || !groupId) throw new Error("Acceso denegado");
 
             const { error } = await supabase
                 .from("property_reviews")
                 .upsert({
                     property_id: propertyId,
-                    user_id: user.id,
+                    user_id: authUser.id,
                     org_id: groupId,
                     rating: newRating,
                 }, { onConflict: "property_id,user_id" });

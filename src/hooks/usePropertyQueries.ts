@@ -211,10 +211,11 @@ export function usePropertyQueries() {
   }, [queryClient, currentUserId]);
 
   useEffect(() => {
+    if (!currentUserId) return;
+
     const channelListings = supabase
       .channel("properties_realtime_listings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_listings" }, handleRealtimeEvent)
-      .on("postgres_changes", { event: "*", schema: "public", table: "properties" }, handleRealtimeEvent)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_listings", filter: `added_by=eq.${currentUserId}` }, handleRealtimeEvent)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_listing_attachments" }, handleRealtimeEvent)
       .subscribe();
     const channelComments = supabase

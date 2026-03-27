@@ -63,8 +63,6 @@ export function useProfile() {
                 approvedAt: data.approved_at ?? null,
             };
         },
-        // Cachear perfil 5 minutos — evita auth requests excesivas en cada mount.
-        // Los cambios desde el admin (ej. aprobación) se reflejan con delay máximo de 5 min.
         staleTime: 5 * 60 * 1000,
     });
 }
