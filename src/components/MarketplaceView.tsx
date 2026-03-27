@@ -34,7 +34,7 @@ import {
 } from "@/lib/config-keys";
 
 /** Estados que van al final del listado con opacidad (siguen visibles pero cerradas) */
-const INACTIVE_STATUSES = new Set(["reserved", "sold", "rented", "paused"]);
+const INACTIVE_STATUSES = new Set(["reservado", "vendido", "alquilado", "pausado"]);
 
 interface MarketplaceViewProps {
   mobileFiltersOpen?: boolean;
