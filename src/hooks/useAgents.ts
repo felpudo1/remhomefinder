@@ -29,27 +29,31 @@ export function useAgents() {
 
       const userIds = roles.map(r => r.user_id);
 
-      // 2. Obtener los perfiles y su organización primaria
-      // Nota: Asumimos que un agente pertenece a una organización en organization_members
+      // 2. Obtener los perfiles (profiles usa user_id como FK, no id)
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          id,
-          display_name,
-          email,
-          avatar_url,
-          organization_members(org_id)
-        `)
-        .in("id", userIds);
+        .select("user_id, display_name, email, avatar_url")
+        .in("user_id", userIds);
 
       if (profilesError) throw profilesError;
 
+      // 3. Obtener org_id de organization_members por separado
+      const { data: orgMembers } = await supabase
+        .from("organization_members")
+        .select("user_id, org_id")
+        .in("user_id", userIds);
+
+      const orgMap: Record<string, string> = {};
+      for (const om of orgMembers || []) {
+        orgMap[om.user_id] = om.org_id;
+      }
+
       return (profiles || []).map(p => ({
-        id: p.id,
+        id: p.user_id,
         display_name: p.display_name,
         email: p.email,
         avatar_url: p.avatar_url,
-        org_id: (p.organization_members as any)?.[0]?.org_id || null
+        org_id: orgMap[p.user_id] || null
       }));
     },
     staleTime: 1000 * 60 * 5, // 5 minutos

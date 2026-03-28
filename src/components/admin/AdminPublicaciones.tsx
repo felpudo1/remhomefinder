@@ -34,7 +34,7 @@ export function AdminPublicaciones({ toast }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const { mutateAsync: addPropertyMutation } = usePropertyMutations();
+  const { addProperty: addPropertyMutation } = usePropertyMutations();
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
