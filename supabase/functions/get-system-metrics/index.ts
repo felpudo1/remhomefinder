@@ -21,6 +21,7 @@ interface ParsedMetrics {
   ramTotalMb: number | null;
   dbConnections: number | null;
   timestamp: string;
+  version?: string;
 }
 
 interface HistoryPoint {
@@ -183,7 +184,7 @@ function parseMetrics(raw: string): ParsedMetrics {
 
   return {
     diskIoBudget: diskIoConsumption !== null
-      ? clampPercent(100 - diskIoConsumption)
+      ? clampPercent(diskIoConsumption)
       : null,
     restRequests,
     authRequests,
@@ -194,6 +195,7 @@ function parseMetrics(raw: string): ParsedMetrics {
     ramTotalMb,
     dbConnections,
     timestamp: new Date().toISOString(),
+    version: "1.0.debug.7",
   };
 }
 
@@ -297,236 +299,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const token = authHeader.replace("Bearer ", "").trim();
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: { user: authUser }, error: authError } = await adminClient.auth.getUser(token);
-
-    if (authError || !authUser?.id) {
-      console.warn("JWT validation failed", authError?.message ?? "no-user");
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const userId = authUser.id;
-    const callerSessionId = getSessionIdFromJwt(token);
-
-    // Check sysadmin role
-    const { data: roles, error: roleError } = await adminClient
-      .from("user_roles").select("role")
-      .eq("user_id", userId).eq("role", "sysadmin");
-
-    if (roleError) {
-      console.error("Role lookup failed:", roleError.message);
-      return new Response(JSON.stringify({ error: "Role lookup failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!roles || roles.length === 0) {
-      return new Response(JSON.stringify({ error: "Forbidden: sysadmin role required" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check for action parameter
-    const url = new URL(req.url);
-    const action = await getRequestedAction(req, url);
-
-    if (action === "list_sessions") {
-      const dbUrl = Deno.env.get("SUPABASE_DB_URL");
-      if (!dbUrl) {
-        return new Response(JSON.stringify({ error: "SUPABASE_DB_URL not configured" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
-      const sql = postgres(dbUrl);
-      try {
-        const rows = await sql`
-          SELECT
-            s.user_id,
-            s.created_at,
-            s.updated_at,
-            COALESCE(p.display_name, p.email, 'Sin nombre') AS display_name,
-            COALESCE(p.email, '') AS email,
-            COALESCE(
-              (SELECT ur.role::text FROM public.user_roles ur WHERE ur.user_id = s.user_id LIMIT 1),
-              'user'
-            ) AS role
-          FROM auth.sessions s
-          LEFT JOIN public.profiles p ON p.user_id = s.user_id
-          ORDER BY s.updated_at DESC
-        `;
-        await sql.end();
-        return new Response(JSON.stringify({ sessions: rows }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (err) {
-        await sql.end();
-        console.error("List sessions error:", err);
-        return new Response(JSON.stringify({ error: "Failed to list sessions" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    if (action === "nuclear_logout") {
-      try {
-        const result = await handleNuclearLogout(userId, callerSessionId);
-        console.log(`☢️ NUCLEAR LOGOUT ejecutado por sysadmin ${userId}: ${result.count} sesiones cerradas`);
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (err) {
-        console.error("Nuclear logout failed:", err);
-        return new Response(JSON.stringify({ error: "Nuclear logout failed", details: String(err) }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // Fetch metrics
     const metricsUrl = `https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics`;
     const credentials = btoa(`service_role:${SERVICE_ROLE_KEY}`);
 
-    const metricsResponse = await fetch(metricsUrl, {
+    const res = await fetch(metricsUrl, {
       headers: { Authorization: `Basic ${credentials}` },
     });
-
-    if (!metricsResponse.ok) {
-      const errText = await metricsResponse.text();
-      console.error("Metrics fetch failed:", metricsResponse.status, errText);
-      return new Response(
-        JSON.stringify({ error: `Metrics endpoint returned ${metricsResponse.status}` }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const text = await res.text();
+    
+    let parsed = {};
+    try {
+      parsed = parseMetrics(text);
+    } catch (e) {
+      console.error("Parse error:", e);
     }
 
-    const rawText = await metricsResponse.text();
-    const metrics = parseMetrics(rawText);
-
-    // Diagnostic logging for raw disk IO values
-    const rawDiskIo = firstMetric(rawText, "disk_io_consumption");
-    console.log(`📊 RAW disk_io_consumption=${rawDiskIo}, computed_budget=${metrics.diskIoBudget}%`);
-
-    const isLowIoMode = metrics.diskIoBudget !== null && metrics.diskIoBudget <= 5;
-    if (isLowIoMode) {
-      console.warn(`⚡ LOW-IO MODE ACTIVE: diskIoBudget=${metrics.diskIoBudget}% — skipping INSERT/DELETE on system_metrics_history`);
-    }
-
-    // [AUTO-PROTECTION + NUCLEAR LOGOUT ON SHIELD ACTIVATION]
-    if (metrics.diskIoBudget !== null) {
-      const { data: config } = await adminClient
-        .from("system_config")
-        .select("key, value")
-        .in("key", ["auto_maintenance_protection", "maintenance_threshold", "maintenance_mode"]);
-      
-      const currentMode = config?.find(c => c.key === "maintenance_mode")?.value;
-      const autoProtect = config?.find(c => c.key === "auto_maintenance_protection")?.value === "true";
-      const threshold = Number(config?.find(c => c.key === "maintenance_threshold")?.value) || 20;
-
-      if (autoProtect && metrics.diskIoBudget <= threshold && currentMode !== "true") {
-        console.warn(`🛡️ AUTO-SHIELD: Burst Balance (${metrics.diskIoBudget}%) cayó al umbral (${threshold}%). Activando modo mantenimiento + Nuclear Logout.`);
-        await adminClient
-          .from("system_config")
-          .update({ value: "true" })
-          .eq("key", "maintenance_mode");
-
-        try {
-          const logoutResult = await handleNuclearLogout(userId, callerSessionId);
-          console.warn(`☢️ AUTO NUCLEAR LOGOUT: ${logoutResult.count} sesiones cerradas junto con activación del escudo.`);
-        } catch (logoutErr) {
-          console.error("Auto nuclear logout failed (shield still activated):", logoutErr);
-        }
-      }
-    }
-
-    // Store snapshot (write ops) + fetch 48h history (read ops)
-    let history: HistoryPoint[] = [];
-
-    if (!isLowIoMode && metrics.diskIoBudget !== null) {
-      // Store snapshot (fire-and-forget)
-      adminClient
-        .from("system_metrics_history")
-        .insert({ disk_io_budget: metrics.diskIoBudget })
-        .then(() => {
-          if (Math.random() < 0.1) {
-            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-            adminClient
-              .from("system_metrics_history")
-              .delete()
-              .lt("recorded_at", cutoff)
-              .then(() => {});
-          }
-        });
-    }
-
-    // Always fetch 48h history so chart still renders in low-IO mode
-    const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data } = await adminClient
-      .from("system_metrics_history")
-      .select("disk_io_budget, recorded_at")
-      .gte("recorded_at", since48h)
-      .order("recorded_at", { ascending: true });
-    history = data ?? [];
-
-    const { latestValue: latestHistoryBudget, latestAt: latestHistoryAt } = getHistoryTail(history);
-    // Read configurable fallback window from system_config (default 48h)
-    const { data: fallbackConfig } = await adminClient
-      .from("system_config")
-      .select("value")
-      .eq("key", "history_fallback_max_hours")
-      .maybeSingle();
-    const fallbackHours = Math.max(1, Number(fallbackConfig?.value) || 48);
-    const fallbackMaxAgeMs = fallbackHours * 60 * 60 * 1000;
-    const latestHistoryAgeMs = latestHistoryAt ? Date.now() - new Date(latestHistoryAt).getTime() : null;
-    const canUseHistoryFallback =
-      metrics.diskIoBudget === null &&
-      latestHistoryBudget !== null &&
-      latestHistoryAgeMs !== null &&
-      latestHistoryAgeMs <= fallbackMaxAgeMs;
-
-    const effectiveDiskIoBudget = metrics.diskIoBudget ?? (canUseHistoryFallback ? latestHistoryBudget : null);
-    const diskIoSource: DiskIoSource = metrics.diskIoBudget !== null
-      ? "live"
-      : canUseHistoryFallback
-        ? "history"
-        : "unavailable";
-
-    if (metrics.diskIoBudget === null && canUseHistoryFallback && effectiveDiskIoBudget !== null) {
-      console.warn(`📉 disk_io_consumption is null, using recent history value: ${effectiveDiskIoBudget}%`);
-    } else if (metrics.diskIoBudget === null && latestHistoryBudget !== null && latestHistoryAgeMs !== null) {
-      const ageMinutes = Math.round(latestHistoryAgeMs / 60_000);
-      console.warn(`📉 disk_io_consumption is null, latest history is stale (${ageMinutes} min) — returning null`);
-    }
+    const diskLines = text.split('\n').filter(l => l.toLowerCase().includes('disk')).join('\n');
+    const allNames = Array.from(new Set(text.split('\n').filter(l=>l&&!l.startsWith('#')).map(l=>l.split('{')[0].split(' ')[0]))).slice(0, 100);
 
     return new Response(JSON.stringify({
-      ...metrics,
-      diskIoBudget: effectiveDiskIoBudget,
-      diskIoSource,
-      diskIoLastSampleAt: metrics.diskIoBudget !== null ? metrics.timestamp : latestHistoryAt,
-      diskIoHistory: history ?? [],
+      ...parsed,
+      debug_raw_disk: diskLines,
+      debug_all_names: allNames,
+      status: res.status,
+      version: "3.0.emergency"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("get-system-metrics error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: "Emergency catch", details: err.message }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

@@ -98,6 +98,47 @@ export default function InfraMonitorPage() {
           <div className="mb-4">
             <AdminMaintenance />
           </div>
+          <div className="p-4 bg-slate-900 border border-dashed border-slate-700 rounded-lg">
+            <h3 className="text-sm font-medium text-slate-400 mb-2">Debug de Métricas (Temporal)</h3>
+            <div className="flex gap-2 mb-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async (e) => {
+                  const btn = e.currentTarget;
+                  const el = document.getElementById('debug-raw-metrics') as HTMLTextAreaElement;
+                  if (el) el.value = "Cargando data... (puede tardar 10-20s)";
+                  btn.disabled = true;
+                  
+                  try {
+                    console.log("Invocando debug_metrics...");
+                    const { data, error } = await supabase.functions.invoke('get-system-metrics', {});
+                    
+                    if (error) {
+                      if (el) el.value = "ERROR DE FUNCIÓN:\n" + JSON.stringify(error, null, 2);
+                    } else if (data) {
+                      if (el) el.value = JSON.stringify(data, null, 2);
+                    } else {
+                      if (el) el.value = "RESPUESTA VACÍA O NULA";
+                    }
+                  } catch (err) {
+                    if (el) el.value = "EXCEPCIÓN:\n" + (err instanceof Error ? err.message : String(err));
+                  } finally {
+                    btn.disabled = false;
+                  }
+                }}
+              >
+                Obtener Data Cruda de Prometheus
+              </Button>
+            </div>
+            <textarea 
+              id="debug-raw-metrics"
+              className="w-full h-48 bg-slate-950 text-[10px] p-2 font-mono text-emerald-500 border border-slate-800 rounded"
+              readOnly
+              placeholder="La data aparecerá acá al clickear..."
+            />
+          </div>
+
           <DiskIoGauge
             value={data.diskIoBudget}
             source={data.diskIoSource}
