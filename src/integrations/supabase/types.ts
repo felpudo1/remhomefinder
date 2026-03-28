@@ -1489,6 +1489,10 @@ export type Database = {
             Args: { p_property_id: string; p_publication_id?: string }
             Returns: undefined
           }
+      is_admin_or_sysadmin: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
