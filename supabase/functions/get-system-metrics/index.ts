@@ -295,20 +295,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const { data: { user: authUser }, error: authError } = await adminClient.auth.getUser(token);
 
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.warn("JWT validation failed", claimsError?.message ?? "no-claims");
+    if (authError || !authUser?.id) {
+      console.warn("JWT validation failed", authError?.message ?? "no-user");
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub as string;
-    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const userId = authUser.id;
     const callerSessionId = getSessionIdFromJwt(token);
 
     // Check sysadmin role
