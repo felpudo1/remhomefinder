@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Store snapshot & fetch history — SKIP when in low-IO mode to let balance recover
+    // Store snapshot (write ops) + fetch 48h history (read ops)
     let history: HistoryPoint[] = [];
 
     if (!isLowIoMode && metrics.diskIoBudget !== null) {
@@ -456,19 +456,32 @@ Deno.serve(async (req) => {
               .then(() => {});
           }
         });
+    }
 
-      // Fetch 48h history
-      const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-      const { data } = await adminClient
-        .from("system_metrics_history")
-        .select("disk_io_budget, recorded_at")
-        .gte("recorded_at", since48h)
-        .order("recorded_at", { ascending: true });
-      history = data ?? [];
+    // Always fetch 48h history so chart still renders in low-IO mode
+    const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data } = await adminClient
+      .from("system_metrics_history")
+      .select("disk_io_budget, recorded_at")
+      .gte("recorded_at", since48h)
+      .order("recorded_at", { ascending: true });
+    history = data ?? [];
+
+    const latestHistoryBudget = (() => {
+      if (history.length === 0) return null;
+      const latest = history[history.length - 1]?.disk_io_budget;
+      return typeof latest === "number" && Number.isFinite(latest) ? clampPercent(latest) : null;
+    })();
+
+    const effectiveDiskIoBudget = metrics.diskIoBudget ?? latestHistoryBudget;
+
+    if (metrics.diskIoBudget === null && effectiveDiskIoBudget !== null) {
+      console.warn(`📉 disk_io_consumption is null, using latest history value: ${effectiveDiskIoBudget}%`);
     }
 
     return new Response(JSON.stringify({
       ...metrics,
+      diskIoBudget: effectiveDiskIoBudget,
       diskIoHistory: history ?? [],
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
