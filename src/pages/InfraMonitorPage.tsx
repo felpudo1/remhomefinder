@@ -98,7 +98,11 @@ export default function InfraMonitorPage() {
           <div className="mb-4">
             <AdminMaintenance />
           </div>
-          <DiskIoGauge value={data.diskIoBudget} />
+          <DiskIoGauge
+            value={data.diskIoBudget}
+            source={data.diskIoSource}
+            lastSampleAt={data.diskIoLastSampleAt}
+          />
           <DiskIoTrendChart history={data.diskIoHistory ?? []} />
           <RequestsCharts
             restRequests={data.restRequests}

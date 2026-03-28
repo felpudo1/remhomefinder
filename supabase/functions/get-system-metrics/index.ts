@@ -28,6 +28,8 @@ interface HistoryPoint {
   recorded_at: string;
 }
 
+type DiskIoSource = "live" | "history" | "unavailable";
+
 type LabelFilters = Record<string, string>;
 
 function parseLabels(rawLabels?: string): Record<string, string> {
@@ -75,6 +77,21 @@ function firstMetric(text: string, metricName: string, labelFilters: LabelFilter
 
 function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, value));
+}
+
+function getHistoryTail(history: HistoryPoint[]): { latestValue: number | null; latestAt: string | null } {
+  if (history.length === 0) {
+    return { latestValue: null, latestAt: null };
+  }
+
+  const latest = history[history.length - 1];
+  const latestValue = latest?.disk_io_budget;
+  return {
+    latestValue: typeof latestValue === "number" && Number.isFinite(latestValue)
+      ? clampPercent(latestValue)
+      : null,
+    latestAt: latest?.recorded_at ?? null,
+  };
 }
 
 function getSessionIdFromJwt(token: string): string | null {
@@ -467,21 +484,34 @@ Deno.serve(async (req) => {
       .order("recorded_at", { ascending: true });
     history = data ?? [];
 
-    const latestHistoryBudget = (() => {
-      if (history.length === 0) return null;
-      const latest = history[history.length - 1]?.disk_io_budget;
-      return typeof latest === "number" && Number.isFinite(latest) ? clampPercent(latest) : null;
-    })();
+    const { latestValue: latestHistoryBudget, latestAt: latestHistoryAt } = getHistoryTail(history);
+    const fallbackMaxAgeMs = 2 * 60 * 60 * 1000; // 2h
+    const latestHistoryAgeMs = latestHistoryAt ? Date.now() - new Date(latestHistoryAt).getTime() : null;
+    const canUseHistoryFallback =
+      metrics.diskIoBudget === null &&
+      latestHistoryBudget !== null &&
+      latestHistoryAgeMs !== null &&
+      latestHistoryAgeMs <= fallbackMaxAgeMs;
 
-    const effectiveDiskIoBudget = metrics.diskIoBudget ?? latestHistoryBudget;
+    const effectiveDiskIoBudget = metrics.diskIoBudget ?? (canUseHistoryFallback ? latestHistoryBudget : null);
+    const diskIoSource: DiskIoSource = metrics.diskIoBudget !== null
+      ? "live"
+      : canUseHistoryFallback
+        ? "history"
+        : "unavailable";
 
-    if (metrics.diskIoBudget === null && effectiveDiskIoBudget !== null) {
-      console.warn(`📉 disk_io_consumption is null, using latest history value: ${effectiveDiskIoBudget}%`);
+    if (metrics.diskIoBudget === null && canUseHistoryFallback && effectiveDiskIoBudget !== null) {
+      console.warn(`📉 disk_io_consumption is null, using recent history value: ${effectiveDiskIoBudget}%`);
+    } else if (metrics.diskIoBudget === null && latestHistoryBudget !== null && latestHistoryAgeMs !== null) {
+      const ageMinutes = Math.round(latestHistoryAgeMs / 60_000);
+      console.warn(`📉 disk_io_consumption is null, latest history is stale (${ageMinutes} min) — returning null`);
     }
 
     return new Response(JSON.stringify({
       ...metrics,
       diskIoBudget: effectiveDiskIoBudget,
+      diskIoSource,
+      diskIoLastSampleAt: metrics.diskIoBudget !== null ? metrics.timestamp : latestHistoryAt,
       diskIoHistory: history ?? [],
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
