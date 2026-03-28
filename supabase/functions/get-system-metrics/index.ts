@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const PROJECT_REF = "cuyfrpuiokvqvhvoerga";
 
@@ -24,47 +23,42 @@ interface ParsedMetrics {
   timestamp: string;
 }
 
+interface HistoryPoint {
+  disk_io_budget: number;
+  recorded_at: string;
+}
+
 type LabelFilters = Record<string, string>;
 
 function parseLabels(rawLabels?: string): Record<string, string> {
   if (!rawLabels) return {};
-
   const labels: Record<string, string> = {};
-  const body = rawLabels.slice(1, -1); // remove { }
+  const body = rawLabels.slice(1, -1);
   if (!body.trim()) return labels;
-
   for (const entry of body.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)) {
     const [key, rawValue] = entry.split("=");
     if (!key || rawValue === undefined) continue;
     labels[key.trim()] = rawValue.trim().replace(/^"|"$/g, "");
   }
-
   return labels;
 }
 
 function collectMetricValues(text: string, metricName: string, labelFilters: LabelFilters = {}): number[] {
   const values: number[] = [];
-
   for (const line of text.split("\n")) {
     if (!line || line.startsWith("#")) continue;
-
     const match = line.match(
       /^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})?\s+([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(?:\s+\d+)?\s*$/
     );
-
     if (!match) continue;
-
     const [, name, labelsRaw, valueRaw] = match;
     if (name !== metricName) continue;
-
     const labels = parseLabels(labelsRaw);
     const isMatch = Object.entries(labelFilters).every(([k, v]) => labels[k] === v);
     if (!isMatch) continue;
-
     const parsed = Number.parseFloat(valueRaw);
     if (Number.isFinite(parsed)) values.push(parsed);
   }
-
   return values;
 }
 
@@ -91,27 +85,23 @@ function parseMetrics(raw: string): ParsedMetrics {
     sumMetric(raw, "postgrest_requests_total") ??
     sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "postgrest" }) ??
     sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "postgrest" }) ??
-    sumMetric(raw, "pgrst_jwt_cache_requests_total") ??
-    0;
+    sumMetric(raw, "pgrst_jwt_cache_requests_total") ?? 0;
 
   const authRequests =
     sumMetric(raw, "gotrue_requests_total") ??
     sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "gotrue" }) ??
     sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "gotrue" }) ??
-    sumMetric(raw, "gotrue_compare_hash_and_password_submitted_total") ??
-    0;
+    sumMetric(raw, "gotrue_compare_hash_and_password_submitted_total") ?? 0;
 
   const realtimeRequests =
     sumMetric(raw, "realtime_requests_total") ??
     sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "realtime" }) ??
-    sumMetric(raw, "realtime_postgres_changes_total_subscriptions") ??
-    0;
+    sumMetric(raw, "realtime_postgres_changes_total_subscriptions") ?? 0;
 
   const storageRequests =
     sumMetric(raw, "storage_requests_total") ??
     sumMetric(raw, "http_server_request_duration_seconds_count", { service_type: "storage" }) ??
-    sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "storage" }) ??
-    0;
+    sumMetric(raw, "promhttp_metric_handler_requests_total", { service_type: "storage" }) ?? 0;
 
   const cpuUsage =
     firstMetric(raw, "cpu_usage") ??
@@ -136,9 +126,7 @@ function parseMetrics(raw: string): ParsedMetrics {
         : firstMetric(raw, "ram_usage");
 
   const ramTotalMb =
-    ramTotalBytes !== null
-      ? Math.round(ramTotalBytes / 1024 / 1024)
-      : null;
+    ramTotalBytes !== null ? Math.round(ramTotalBytes / 1024 / 1024) : null;
 
   const dbConnections =
     sumMetric(raw, "pg_stat_activity_count") ??
@@ -170,62 +158,51 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT and check sysadmin role
+    // Validate JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
     if (!token) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate JWT by calling getUser with the token
-    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const { data: { user: authUser }, error: authError } = await adminClient.auth.getUser(token);
 
     if (authError || !authUser?.id) {
       console.warn("JWT validation failed", authError?.message ?? "no-user");
       return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const userId = authUser.id;
 
-    // Check sysadmin role using service_role client
-    const roleClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: roles, error: roleError } = await roleClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "sysadmin");
+    // Check sysadmin role
+    const { data: roles, error: roleError } = await adminClient
+      .from("user_roles").select("role")
+      .eq("user_id", userId).eq("role", "sysadmin");
 
     if (roleError) {
       console.error("Role lookup failed:", roleError.message);
       return new Response(JSON.stringify({ error: "Role lookup failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (!roles || roles.length === 0) {
       return new Response(JSON.stringify({ error: "Forbidden: sysadmin role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch metrics from Supabase privileged endpoint
+    // Fetch metrics
     const metricsUrl = `https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics`;
     const credentials = btoa(`service_role:${SERVICE_ROLE_KEY}`);
 
@@ -245,14 +222,40 @@ Deno.serve(async (req) => {
     const rawText = await metricsResponse.text();
     const metrics = parseMetrics(rawText);
 
-    return new Response(JSON.stringify(metrics), {
+    // Store snapshot (fire-and-forget, don't block response)
+    if (metrics.diskIoBudget !== null) {
+      adminClient
+        .from("system_metrics_history")
+        .insert({ disk_io_budget: metrics.diskIoBudget })
+        .then(() => {
+          // Cleanup old records (older than 48h)
+          const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+          adminClient
+            .from("system_metrics_history")
+            .delete()
+            .lt("recorded_at", cutoff)
+            .then(() => {});
+        });
+    }
+
+    // Fetch 48h history
+    const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data: history } = await adminClient
+      .from("system_metrics_history")
+      .select("disk_io_budget, recorded_at")
+      .gte("recorded_at", since48h)
+      .order("recorded_at", { ascending: true });
+
+    return new Response(JSON.stringify({
+      ...metrics,
+      diskIoHistory: history ?? [],
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("get-system-metrics error:", err);
     return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

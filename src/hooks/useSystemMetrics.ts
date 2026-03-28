@@ -4,6 +4,11 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ROUTES } from "@/lib/constants";
 
+export interface DiskIoHistoryPoint {
+  disk_io_budget: number;
+  recorded_at: string;
+}
+
 export interface SystemMetrics {
   diskIoBudget: number | null;
   restRequests: number | null;
@@ -15,6 +20,7 @@ export interface SystemMetrics {
   ramTotalMb: number | null;
   dbConnections: number | null;
   timestamp: string;
+  diskIoHistory: DiskIoHistoryPoint[];
 }
 
 async function fetchSystemMetrics(): Promise<SystemMetrics> {
