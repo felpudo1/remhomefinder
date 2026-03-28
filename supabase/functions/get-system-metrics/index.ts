@@ -172,19 +172,28 @@ Deno.serve(async (req) => {
   try {
     // Validate JWT and check sysadmin role
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Client in user context: validates JWT claims (signing keys flow)
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub;
+
+    if (claimsError || !userId || typeof userId !== "string") {
+      console.warn("JWT validation failed", claimsError?.message ?? "missing-sub-claim");
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -193,11 +202,19 @@ Deno.serve(async (req) => {
 
     // Check sysadmin role using service_role client
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: roles } = await adminClient
+    const { data: roles, error: roleError } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("role", "sysadmin");
+
+    if (roleError) {
+      console.error("Role lookup failed:", roleError.message);
+      return new Response(JSON.stringify({ error: "Role lookup failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!roles || roles.length === 0) {
       return new Response(JSON.stringify({ error: "Forbidden: sysadmin role required" }), {
