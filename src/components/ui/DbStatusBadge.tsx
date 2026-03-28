@@ -49,7 +49,11 @@ export function useDbStatus() {
 
     useEffect(() => {
         runCheck();
-        const interval = setInterval(runCheck, 300_000);
+        const interval = setInterval(() => {
+            // Solo ejecutar si la pestaña está activa
+            if (document.hidden) return;
+            runCheck();
+        }, 300_000);
         return () => clearInterval(interval);
     }, []);
 

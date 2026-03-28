@@ -152,6 +152,57 @@ function parseMetrics(raw: string): ParsedMetrics {
   };
 }
 
+/**
+ * Nuclear logout: cierra todas las sesiones excepto la del sysadmin que ejecuta.
+ * Usa service_role para acceder a auth.sessions.
+ */
+async function handleNuclearLogout(adminClient: ReturnType<typeof createClient>, callerUserId: string) {
+  // Use raw SQL via rpc to delete sessions from auth schema
+  const { data, error } = await adminClient.rpc("execute_nuclear_logout" as any, {
+    _caller_user_id: callerUserId,
+  });
+
+  if (error) {
+    // Fallback: use admin API to sign out all users
+    // We can't directly access auth.sessions via the JS client,
+    // so we'll use the management API
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/logout`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        apikey: SERVICE_ROLE_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ scope: "others" }),
+    });
+
+    // Alternative: use direct DB connection
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+    if (dbUrl) {
+      try {
+        // Dynamic import for postgres
+        const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
+        const sql = postgres(dbUrl);
+        const result = await sql`
+          DELETE FROM auth.sessions 
+          WHERE user_id != ${callerUserId}
+        `;
+        const count = result.count ?? 0;
+        await sql.end();
+        console.log(`☢️ NUCLEAR LOGOUT: ${count} sesiones eliminadas (excepto sysadmin ${callerUserId})`);
+        return { success: true, count };
+      } catch (dbErr) {
+        console.error("Nuclear logout DB error:", dbErr);
+        throw dbErr;
+      }
+    }
+
+    throw new Error("No DB connection available for nuclear logout");
+  }
+
+  return { success: true, count: data ?? 0 };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -202,6 +253,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check for action parameter
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action");
+
+    if (action === "nuclear_logout") {
+      try {
+        const result = await handleNuclearLogout(adminClient, userId);
+        console.log(`☢️ NUCLEAR LOGOUT ejecutado por sysadmin ${userId}: ${result.count} sesiones cerradas`);
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        console.error("Nuclear logout failed:", err);
+        return new Response(JSON.stringify({ error: "Nuclear logout failed", details: String(err) }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Fetch metrics
     const metricsUrl = `https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics`;
     const credentials = btoa(`service_role:${SERVICE_ROLE_KEY}`);
@@ -222,39 +292,49 @@ Deno.serve(async (req) => {
     const rawText = await metricsResponse.text();
     const metrics = parseMetrics(rawText);
 
-    // [LÓGICA DE AUTO-PROTECCIÓN]
-    // Verificamos si debemos activar el escudo basado en el Burst Balance
+    // [AUTO-PROTECTION + NUCLEAR LOGOUT ON SHIELD ACTIVATION]
     if (metrics.diskIoBudget !== null) {
       const { data: config } = await adminClient
         .from("system_config")
         .select("key, value")
-        .in("key", ["auto_maintenance_protection", "maintenance_threshold"]);
+        .in("key", ["auto_maintenance_protection", "maintenance_threshold", "maintenance_mode"]);
       
+      const currentMode = config?.find(c => c.key === "maintenance_mode")?.value;
       const autoProtect = config?.find(c => c.key === "auto_maintenance_protection")?.value === "true";
       const threshold = Number(config?.find(c => c.key === "maintenance_threshold")?.value) || 20;
 
-      if (autoProtect && metrics.diskIoBudget <= threshold) {
-        console.warn(`🛡️ AUTO-SHIELD: Burst Balance (${metrics.diskIoBudget}%) ha llegado al umbral (${threshold}%). Activando modo mantenimiento.`);
+      if (autoProtect && metrics.diskIoBudget <= threshold && currentMode !== "true") {
+        console.warn(`🛡️ AUTO-SHIELD: Burst Balance (${metrics.diskIoBudget}%) cayó al umbral (${threshold}%). Activando modo mantenimiento + Nuclear Logout.`);
         await adminClient
           .from("system_config")
           .update({ value: "true" })
           .eq("key", "maintenance_mode");
+
+        // Nuclear logout automático al activar el escudo
+        try {
+          const logoutResult = await handleNuclearLogout(adminClient, userId);
+          console.warn(`☢️ AUTO NUCLEAR LOGOUT: ${logoutResult.count} sesiones cerradas junto con activación del escudo.`);
+        } catch (logoutErr) {
+          console.error("Auto nuclear logout failed (shield still activated):", logoutErr);
+        }
       }
     }
 
-    // Store snapshot (fire-and-forget, don't block response)
+    // Store snapshot (fire-and-forget)
     if (metrics.diskIoBudget !== null) {
       adminClient
         .from("system_metrics_history")
         .insert({ disk_io_budget: metrics.diskIoBudget })
         .then(() => {
-          // Cleanup old records (older than 48h)
-          const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-          adminClient
-            .from("system_metrics_history")
-            .delete()
-            .lt("recorded_at", cutoff)
-            .then(() => {});
+          // Cleanup only 10% of the time to reduce I/O
+          if (Math.random() < 0.1) {
+            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+            adminClient
+              .from("system_metrics_history")
+              .delete()
+              .lt("recorded_at", cutoff)
+              .then(() => {});
+          }
         });
     }
 
