@@ -27,17 +27,29 @@ export function AdminMaintenance() {
     const { value: message, setValue: setMessage, isSaving: isSavingMessage } = useSystemConfig("maintenance_message", "");
     const { value: autoProtect, setValue: setAutoProtect, isSaving: isSavingAuto } = useSystemConfig("auto_maintenance_protection", "false");
     const { value: threshold, setValue: setThreshold, isSaving: isSavingThreshold } = useSystemConfig("maintenance_threshold", "20");
+    const { value: lowIoInterval, setValue: setLowIoInterval, isSaving: isSavingInterval } = useSystemConfig("low_io_polling_minutes", "30");
     
     const [localThreshold, setLocalThreshold] = useState(threshold);
+    const [localInterval, setLocalInterval] = useState(lowIoInterval);
     const [isNuking, setIsNuking] = useState(false);
 
     useEffect(() => {
         setLocalThreshold(threshold);
     }, [threshold]);
 
+    useEffect(() => {
+        setLocalInterval(lowIoInterval);
+    }, [lowIoInterval]);
+
     const handleSaveThreshold = () => {
         if (localThreshold !== threshold) {
             setThreshold(localThreshold);
+        }
+    };
+
+    const handleSaveInterval = () => {
+        if (localInterval !== lowIoInterval) {
+            setLowIoInterval(localInterval);
         }
     };
 
