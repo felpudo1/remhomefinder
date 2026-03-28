@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
 
     if (action === "nuclear_logout") {
       try {
-        const result = await handleNuclearLogout(adminClient, userId);
+        const result = await handleNuclearLogout(userId);
         console.log(`☢️ NUCLEAR LOGOUT ejecutado por sysadmin ${userId}: ${result.count} sesiones cerradas`);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
 
         // Nuclear logout automático al activar el escudo
         try {
-          const logoutResult = await handleNuclearLogout(adminClient, userId);
+          const logoutResult = await handleNuclearLogout(userId);
           console.warn(`☢️ AUTO NUCLEAR LOGOUT: ${logoutResult.count} sesiones cerradas junto con activación del escudo.`);
         } catch (logoutErr) {
           console.error("Auto nuclear logout failed (shield still activated):", logoutErr);
