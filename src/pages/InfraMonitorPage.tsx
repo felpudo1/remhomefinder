@@ -1,6 +1,7 @@
 import { useSystemMetrics } from "@/hooks/useSystemMetrics";
 import { DiskIoGauge } from "@/components/infra/DiskIoGauge";
 import { DiskIoTrendChart } from "@/components/infra/DiskIoTrendChart";
+import { RequestsCharts } from "@/components/infra/RequestsCharts";
 import { ResourceCards } from "@/components/infra/ResourceCards";
 import { AdminMaintenance } from "@/components/admin/system/AdminMaintenance";
 import { Skeleton } from "@/components/ui/skeleton";
