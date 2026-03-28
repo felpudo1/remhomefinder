@@ -3,6 +3,7 @@ import { DiskIoGauge } from "@/components/infra/DiskIoGauge";
 import { DiskIoTrendChart } from "@/components/infra/DiskIoTrendChart";
 import { RequestsCharts } from "@/components/infra/RequestsCharts";
 import { ResourceCards } from "@/components/infra/ResourceCards";
+import { ActiveSessionsList } from "@/components/infra/ActiveSessionsList";
 import { AdminMaintenance } from "@/components/admin/system/AdminMaintenance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,7 @@ export default function InfraMonitorPage() {
             ramTotalMb={data.ramTotalMb}
             dbConnections={data.dbConnections}
           />
+          <ActiveSessionsList />
         </div>
       ) : null}
     </div>
