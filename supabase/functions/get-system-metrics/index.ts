@@ -203,8 +203,8 @@ Deno.serve(async (req) => {
     const userId = authUser.id;
 
     // Check sysadmin role using service_role client
-    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: roles, error: roleError } = await adminClient
+    const roleClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const { data: roles, error: roleError } = await roleClient
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
