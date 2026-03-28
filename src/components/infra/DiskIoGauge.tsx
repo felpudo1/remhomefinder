@@ -4,9 +4,11 @@ import { HardDrive, Info } from "lucide-react";
 
 interface DiskIoGaugeProps {
   value: number | null;
+  source?: "live" | "history" | "unavailable";
+  lastSampleAt?: string | null;
 }
 
-export function DiskIoGauge({ value }: DiskIoGaugeProps) {
+export function DiskIoGauge({ value, source = "live", lastSampleAt = null }: DiskIoGaugeProps) {
   const hasValidValue = typeof value === "number" && Number.isFinite(value);
   const pct = hasValidValue ? Math.max(0, Math.min(100, value)) : null;
   const color =
@@ -17,8 +19,17 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
         : pct > 20
           ? "text-yellow-400"
           : "text-red-500";
-  const isDanger = pct !== null && pct <= 20;
-  const isLowIoMode = pct !== null && pct <= 5;
+  const isDanger = pct !== null && pct <= 20 && source !== "unavailable";
+  const isLowIoMode = source === "live" && pct !== null && pct <= 5;
+  const valueLabel =
+    pct === null
+      ? "N/D"
+      : pct > 0 && pct < 1
+        ? `${pct.toFixed(1)}%`
+        : `${Math.round(pct)}%`;
+  const formattedLastSample = lastSampleAt
+    ? new Date(lastSampleAt).toLocaleString([], { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
+    : null;
 
   // SVG semicircle gauge
   const radius = 80;
@@ -34,6 +45,16 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
           {isDanger && (
             <Badge variant="destructive" className="ml-2 animate-pulse">
               ⚠️ PELIGRO: Ralentización inminente
+            </Badge>
+          )}
+          {source === "history" && (
+            <Badge variant="outline" className="ml-2 border-yellow-500/50 text-yellow-300">
+              Dato histórico
+            </Badge>
+          )}
+          {source === "unavailable" && (
+            <Badge variant="outline" className="ml-2 border-slate-500/60 text-slate-300">
+              Sin dato en vivo
             </Badge>
           )}
         </CardTitle>
@@ -60,7 +81,7 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
             className={color}
           />
           <text x="100" y="95" textAnchor="middle" className="fill-slate-100 text-3xl font-bold" fontSize="32">
-            {pct !== null ? `${Math.round(pct)}%` : "N/D"}
+            {valueLabel}
           </text>
           <text x="100" y="115" textAnchor="middle" className="fill-slate-400" fontSize="12">
             Burst Balance
@@ -75,7 +96,14 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
         {pct === null && (
           <div className="mt-2 w-full max-w-lg rounded-md border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-xs text-slate-300 flex items-start gap-2">
             <Info className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" />
-            <span>Métrica no disponible temporalmente; esperando próximo muestreo válido de Supabase.</span>
+            <span>Métrica no disponible temporalmente; no hay lectura en vivo reciente de Supabase para mostrar un valor confiable.</span>
+          </div>
+        )}
+
+        {source === "history" && formattedLastSample && (
+          <div className="mt-2 w-full max-w-lg rounded-md border border-yellow-700/60 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300 flex items-start gap-2">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-yellow-400" />
+            <span>Mostrando último dato histórico válido ({formattedLastSample}) porque la métrica en vivo llegó como nula.</span>
           </div>
         )}
 
