@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ROUTES } from "@/lib/constants";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 export interface DiskIoHistoryPoint {
   disk_io_budget: number;
@@ -41,14 +42,16 @@ async function fetchSystemMetrics(): Promise<SystemMetrics> {
 export function useSystemMetrics() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { value: lowIoMinutes } = useSystemConfig("low_io_polling_minutes", "30");
+  const lowIoMs = Math.max(5, Number(lowIoMinutes) || 30) * 60 * 1000;
 
   const query = useQuery({
     queryKey: ["system-metrics"],
     queryFn: fetchSystemMetrics,
     refetchInterval: (query) => {
       const budget = query.state.data?.diskIoBudget;
-      // Slow down polling to 5 min when disk IO is critical (≤5%)
-      if (budget !== null && budget !== undefined && budget <= 5) return 300_000;
+      // Use configurable interval when disk IO is critical (≤5%)
+      if (budget !== null && budget !== undefined && budget <= 5) return lowIoMs;
       return 60_000;
     },
     staleTime: 30_000,
