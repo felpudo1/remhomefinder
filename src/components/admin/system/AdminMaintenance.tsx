@@ -27,17 +27,29 @@ export function AdminMaintenance() {
     const { value: message, setValue: setMessage, isSaving: isSavingMessage } = useSystemConfig("maintenance_message", "");
     const { value: autoProtect, setValue: setAutoProtect, isSaving: isSavingAuto } = useSystemConfig("auto_maintenance_protection", "false");
     const { value: threshold, setValue: setThreshold, isSaving: isSavingThreshold } = useSystemConfig("maintenance_threshold", "20");
+    const { value: lowIoInterval, setValue: setLowIoInterval, isSaving: isSavingInterval } = useSystemConfig("low_io_polling_minutes", "30");
     
     const [localThreshold, setLocalThreshold] = useState(threshold);
+    const [localInterval, setLocalInterval] = useState(lowIoInterval);
     const [isNuking, setIsNuking] = useState(false);
 
     useEffect(() => {
         setLocalThreshold(threshold);
     }, [threshold]);
 
+    useEffect(() => {
+        setLocalInterval(lowIoInterval);
+    }, [lowIoInterval]);
+
     const handleSaveThreshold = () => {
         if (localThreshold !== threshold) {
             setThreshold(localThreshold);
+        }
+    };
+
+    const handleSaveInterval = () => {
+        if (localInterval !== lowIoInterval) {
+            setLowIoInterval(localInterval);
         }
     };
 
@@ -166,6 +178,32 @@ export function AdminMaintenance() {
                         disabled={isSavingThreshold}
                     />
                     <span className="text-xs font-bold text-muted-foreground">%</span>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/50 animate-in slide-in-from-right-2 duration-300">
+                <div className="space-y-0.5">
+                    <Label className="text-xs font-bold text-foreground">
+                        Polling en modo bajo I/O (min)
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                        Intervalo de consulta cuando el balance está crítico. Más alto = más recuperación.
+                    </p>
+                </div>
+                <div className="flex items-center gap-1.5 w-24">
+                    <Input 
+                        type="number"
+                        value={localInterval} 
+                        onChange={(e) => setLocalInterval(e.target.value)}
+                        onBlur={handleSaveInterval}
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveInterval()}
+                        className="text-sm h-9 text-center font-bold text-black bg-white dark:bg-slate-200 border-primary/30"
+                        min="5"
+                        max="120"
+                        step="5"
+                        disabled={isSavingInterval}
+                    />
+                    <span className="text-xs font-bold text-muted-foreground">min</span>
                 </div>
             </div>
 

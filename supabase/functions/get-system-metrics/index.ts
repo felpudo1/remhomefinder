@@ -408,7 +408,7 @@ Deno.serve(async (req) => {
 
     const isLowIoMode = metrics.diskIoBudget !== null && metrics.diskIoBudget <= 5;
     if (isLowIoMode) {
-      console.warn(`⚡ LOW-IO MODE ACTIVE: diskIoBudget=${metrics.diskIoBudget}% — skipping INSERT/SELECT/DELETE on system_metrics_history`);
+      console.warn(`⚡ LOW-IO MODE ACTIVE: diskIoBudget=${metrics.diskIoBudget}% — skipping INSERT/DELETE on system_metrics_history`);
     }
 
     // [AUTO-PROTECTION + NUCLEAR LOGOUT ON SHIELD ACTIVATION]
