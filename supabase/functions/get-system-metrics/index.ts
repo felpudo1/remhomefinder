@@ -167,9 +167,7 @@ function parseMetrics(raw: string): ParsedMetrics {
   return {
     diskIoBudget: diskIoConsumption !== null
       ? clampPercent(100 - diskIoConsumption)
-      : diskIoFallback !== null
-        ? clampPercent(100 - diskIoFallback)
-        : null,
+      : null,
     restRequests,
     authRequests,
     realtimeRequests,
