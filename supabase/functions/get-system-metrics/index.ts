@@ -188,24 +188,38 @@ async function handleNuclearLogout(callerUserId: string, callerSessionId: string
       ? await sql`SELECT id FROM auth.sessions WHERE id = ${callerSessionId} LIMIT 1`
       : [];
 
+    const keepByLatestSysadminSession = await sql`
+      SELECT id
+      FROM auth.sessions
+      WHERE user_id = ${callerUserId}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    const keepSessionId = keepBySession.length > 0
+      ? callerSessionId
+      : keepByLatestSysadminSession.length > 0
+        ? String(keepByLatestSysadminSession[0].id)
+        : null;
+
     let refreshResult;
     let sessionResult;
 
-    if (keepBySession.length > 0 && callerSessionId) {
-      // Mantener ÚNICAMENTE la sesión activa que invocó la acción (incluso si hay otras del mismo sysadmin)
+    if (keepSessionId) {
+      // Mantener una sola sesión del sysadmin y cerrar todo lo demás.
       refreshResult = await sql`
         DELETE FROM auth.refresh_tokens
         WHERE session_id IN (
-          SELECT id FROM auth.sessions WHERE id != ${callerSessionId}
+          SELECT id FROM auth.sessions WHERE id != ${keepSessionId}
         )
       `;
 
       sessionResult = await sql`
         DELETE FROM auth.sessions
-        WHERE id != ${callerSessionId}
+        WHERE id != ${keepSessionId}
       `;
     } else {
-      // Fallback legacy si no se pudo extraer/validar session_id del JWT
+      // Fallback extremo: si no hay sesión del caller detectable, no tocar sesiones del caller por user_id.
       refreshResult = await sql`
         DELETE FROM auth.refresh_tokens
         WHERE session_id IN (
