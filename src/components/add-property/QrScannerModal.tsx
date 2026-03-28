@@ -115,19 +115,36 @@ export function QrScannerModal({ open, onClose, onScan }: QrScannerModalProps) {
         throw lastError;
       } catch (err: any) {
         if (!cancelled && mountedRef.current) {
-          console.warn("QR camera error:", err);
-          const name = err?.name;
-          const denied = name === "NotAllowedError" || name === "PermissionDeniedError";
-          const inUse = name === "NotReadableError" || name === "TrackStartError";
+          const name = err?.name || "";
+          const msg = err?.message || "";
+          console.warn("QR camera error:", name, msg, err);
+          
+          const denied = name === "NotAllowedError" || name === "PermissionDeniedError"
+            || msg.includes("Permission") || msg.includes("denied") || msg.includes("dismiss");
+          const inUse = name === "NotReadableError" || name === "TrackStartError"
+            || msg.includes("Could not start video") || msg.includes("in use");
+          const notFound = name === "NotFoundError" || name === "DevicesNotFoundError"
+            || msg.includes("Requested device not found");
 
-          setError(
-            denied
-              ? "La cámara fue bloqueada para este dominio publicado. Abrí la app publicada en una pestaña nueva, permití cámara para ese dominio y reintentá; o usá \"Subir imagen\"."
-              : inUse
-                ? "No se pudo abrir la cámara (puede estar en uso por otra app/pestaña). Cerrá otras apps de cámara y reintentá."
-                : "No se pudo inicializar el escáner en este dispositivo. Usá \"Subir imagen\" como alternativa."
-          );
-          setScanning(false);
+          if (denied) {
+            setError(
+              "La cámara está bloqueada para este sitio. Tocá el ícono 🔒 en la barra de direcciones, habilitá \"Cámara\", recargá la página y reintentá. O usá \"Subir imagen\"."
+            );
+            setScanning(false);
+          } else if (inUse) {
+            setError("No se pudo abrir la cámara (puede estar en uso por otra app/pestaña). Cerrá otras apps de cámara y reintentá.");
+            setScanning(false);
+          } else if (notFound) {
+            setError("No se encontró una cámara en este dispositivo. Usá \"Subir imagen\".");
+            setScanning(false);
+          } else {
+            // Auto-switch to image mode on unknown errors
+            setError(`No se pudo iniciar la cámara (${name || "error desconocido"}). Cambiando a modo imagen.`);
+            setScanning(false);
+            setTimeout(() => {
+              if (mountedRef.current) switchMode("image");
+            }, 2000);
+          }
         }
       }
     };
