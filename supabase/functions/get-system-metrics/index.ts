@@ -6,30 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const PROJECT_REF = "cuyfrpuiokvqvhvoerga";
 
-interface ParsedMetrics {
-  diskIoBudget: number | null;
-  restRequests: number | null;
-  authRequests: number | null;
-  realtimeRequests: number | null;
-  storageRequests: number | null;
-  cpuUsage: number | null;
-  ramUsedMb: number | null;
-  ramTotalMb: number | null;
-  dbConnections: number | null;
-  timestamp: string;
-  version?: string;
-}
-
-interface HistoryPoint {
-  disk_io_budget: number;
-  recorded_at: string;
-}
-
-type DiskIoSource = "live" | "history" | "unavailable";
+// ── Helpers ──────────────────────────────────────────────
 
 type LabelFilters = Record<string, string>;
 
@@ -80,54 +59,29 @@ function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, value));
 }
 
-function getHistoryTail(history: HistoryPoint[]): { latestValue: number | null; latestAt: string | null } {
-  if (history.length === 0) {
-    return { latestValue: null, latestAt: null };
-  }
+// ── Parse Prometheus text ────────────────────────────────
 
-  const latest = history[history.length - 1];
-  const latestValue = latest?.disk_io_budget;
-  return {
-    latestValue: typeof latestValue === "number" && Number.isFinite(latestValue)
-      ? clampPercent(latestValue)
-      : null,
-    latestAt: latest?.recorded_at ?? null,
-  };
-}
-
-function getSessionIdFromJwt(token: string): string | null {
-  try {
-    const [, rawPayload] = token.split(".");
-    if (!rawPayload) return null;
-
-    const normalized = rawPayload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const payload = JSON.parse(atob(padded)) as { session_id?: unknown };
-
-    return typeof payload.session_id === "string" && payload.session_id.length > 0
-      ? payload.session_id
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-async function getRequestedAction(req: Request, url: URL): Promise<string | null> {
-  const fromQuery = url.searchParams.get("action");
-  if (fromQuery) return fromQuery;
-
-  if (req.method === "GET" || req.method === "HEAD") return null;
-
-  try {
-    const body = await req.clone().json() as { action?: unknown };
-    return typeof body.action === "string" ? body.action : null;
-  } catch {
-    return null;
-  }
+interface ParsedMetrics {
+  diskIoBudget: number | null;
+  restRequests: number | null;
+  authRequests: number | null;
+  realtimeRequests: number | null;
+  storageRequests: number | null;
+  cpuUsage: number | null;
+  ramUsedMb: number | null;
+  ramTotalMb: number | null;
+  dbConnections: number | null;
+  timestamp: string;
+  version?: string;
 }
 
 function parseMetrics(raw: string): ParsedMetrics {
-  const diskIoConsumption = firstMetric(raw, "disk_io_consumption");
+  // Try multiple metric names for disk IO
+  const diskIoConsumption =
+    firstMetric(raw, "disk_io_consumption") ??
+    firstMetric(raw, "disk_io_utilized_percentage") ??
+    firstMetric(raw, "disk_io_used_percentage") ??
+    firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
 
   const restRequests =
     sumMetric(raw, "postgrest_requests_total") ??
@@ -183,9 +137,7 @@ function parseMetrics(raw: string): ParsedMetrics {
     sumMetric(raw, "connection_stats_connection_count");
 
   return {
-    diskIoBudget: diskIoConsumption !== null
-      ? clampPercent(diskIoConsumption)
-      : null,
+    diskIoBudget: diskIoConsumption !== null ? clampPercent(diskIoConsumption) : null,
     restRequests,
     authRequests,
     realtimeRequests,
@@ -195,20 +147,42 @@ function parseMetrics(raw: string): ParsedMetrics {
     ramTotalMb,
     dbConnections,
     timestamp: new Date().toISOString(),
-    version: "1.0.debug.7",
+    version: "4.0.fallback",
   };
 }
 
-/**
- * Nuclear logout: cierra TODAS las sesiones y refresh tokens excepto las del sysadmin.
- * Usa conexión directa a Postgres (SUPABASE_DB_URL) para borrar de auth.sessions
- * Y auth.refresh_tokens simultáneamente. Sin refresh tokens, los clientes no pueden reconectarse.
- */
+// ── Nuclear logout (unchanged) ───────────────────────────
+
+function getSessionIdFromJwt(token: string): string | null {
+  try {
+    const [, rawPayload] = token.split(".");
+    if (!rawPayload) return null;
+    const normalized = rawPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded)) as { session_id?: unknown };
+    return typeof payload.session_id === "string" && payload.session_id.length > 0
+      ? payload.session_id
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getRequestedAction(req: Request, url: URL): Promise<string | null> {
+  const fromQuery = url.searchParams.get("action");
+  if (fromQuery) return fromQuery;
+  if (req.method === "GET" || req.method === "HEAD") return null;
+  try {
+    const body = await req.clone().json() as { action?: unknown };
+    return typeof body.action === "string" ? body.action : null;
+  } catch {
+    return null;
+  }
+}
+
 async function handleNuclearLogout(callerUserId: string, callerSessionId: string | null) {
   const dbUrl = Deno.env.get("SUPABASE_DB_URL");
-  if (!dbUrl) {
-    throw new Error("SUPABASE_DB_URL not configured");
-  }
+  if (!dbUrl) throw new Error("SUPABASE_DB_URL not configured");
 
   const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
   const sql = postgres(dbUrl);
@@ -222,11 +196,7 @@ async function handleNuclearLogout(callerUserId: string, callerSessionId: string
       : [];
 
     const keepByLatestSysadminSession = await sql`
-      SELECT id
-      FROM auth.sessions
-      WHERE user_id = ${callerUserId}
-      ORDER BY created_at DESC
-      LIMIT 1
+      SELECT id FROM auth.sessions WHERE user_id = ${callerUserId} ORDER BY created_at DESC LIMIT 1
     `;
 
     const keepSessionId = keepBySession.length > 0
@@ -235,100 +205,171 @@ async function handleNuclearLogout(callerUserId: string, callerSessionId: string
         ? String(keepByLatestSysadminSession[0].id)
         : null;
 
-    let refreshResult;
-    let sessionResult;
+    let refreshResult, sessionResult;
 
     if (keepSessionId) {
-      // Mantener una sola sesión del sysadmin y cerrar todo lo demás.
-      refreshResult = await sql`
-        DELETE FROM auth.refresh_tokens
-        WHERE session_id IN (
-          SELECT id FROM auth.sessions WHERE id != ${keepSessionId}
-        )
-      `;
-
-      sessionResult = await sql`
-        DELETE FROM auth.sessions
-        WHERE id != ${keepSessionId}
-      `;
+      refreshResult = await sql`DELETE FROM auth.refresh_tokens WHERE session_id IN (SELECT id FROM auth.sessions WHERE id != ${keepSessionId})`;
+      sessionResult = await sql`DELETE FROM auth.sessions WHERE id != ${keepSessionId}`;
     } else {
-      // Fallback extremo: si no hay sesión del caller detectable, no tocar sesiones del caller por user_id.
-      refreshResult = await sql`
-        DELETE FROM auth.refresh_tokens
-        WHERE session_id IN (
-          SELECT id FROM auth.sessions WHERE user_id != ${callerUserId}
-        )
-      `;
-
-      sessionResult = await sql`
-        DELETE FROM auth.sessions
-        WHERE user_id != ${callerUserId}
-      `;
+      refreshResult = await sql`DELETE FROM auth.refresh_tokens WHERE session_id IN (SELECT id FROM auth.sessions WHERE user_id != ${callerUserId})`;
+      sessionResult = await sql`DELETE FROM auth.sessions WHERE user_id != ${callerUserId}`;
     }
 
     const refreshCount = refreshResult.count ?? 0;
     const sessionCount = sessionResult.count ?? 0;
-
     const afterRows = await sql`SELECT count(*)::int AS total FROM auth.sessions`;
     const totalAfter = Number(afterRows[0]?.total ?? 0);
-
     await sql.end();
 
-    console.log(
-      `☢️ NUCLEAR LOGOUT: ${sessionCount} sesiones + ${refreshCount} refresh tokens eliminados (antes=${totalBefore}, después=${totalAfter}, except caller=${callerUserId}, keepSession=${keepSessionId ?? "none"})`
-    );
-    return {
-      success: true,
-      sessions: sessionCount,
-      refreshTokens: refreshCount,
-      count: sessionCount,
-      totalBefore,
-      totalAfter,
-      keepSessionId,
-    };
+    return { success: true, sessions: sessionCount, refreshTokens: refreshCount, count: sessionCount, totalBefore, totalAfter, keepSessionId };
   } catch (err) {
     await sql.end();
-    console.error("Nuclear logout DB error:", err);
     throw err;
   }
 }
+
+// ── Main handler ─────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // EVERYTHING inside try/catch → always returns 200 + JSON
   try {
+    // 1) Validate env vars
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("Missing env vars", { hasUrl: !!supabaseUrl, hasKey: !!serviceRoleKey });
+      return new Response(
+        JSON.stringify({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY", timestamp: new Date().toISOString() }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // 2) Check for special actions (nuclear logout, etc.)
+    const url = new URL(req.url);
+    const action = await getRequestedAction(req, url);
+
+    if (action === "nuclear_logout") {
+      const authHeader = req.headers.get("authorization") ?? "";
+      const token = authHeader.replace(/^Bearer\s+/i, "");
+      if (!token) {
+        return new Response(JSON.stringify({ error: "No token" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: { user }, error: authErr } = await adminClient.auth.getUser(token);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: roleRow } = await adminClient.from("user_roles").select("role").eq("user_id", user.id).eq("role", "sysadmin").maybeSingle();
+      if (!roleRow) {
+        return new Response(JSON.stringify({ error: "Unauthorized: sysadmin only" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const sessionId = getSessionIdFromJwt(token);
+      const result = await handleNuclearLogout(user.id, sessionId);
+      return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // 3) Fetch Prometheus metrics
     const metricsUrl = `https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics`;
-    const credentials = btoa(`service_role:${SERVICE_ROLE_KEY}`);
+    const credentials = btoa(`service_role:${serviceRoleKey}`);
 
     const res = await fetch(metricsUrl, {
       headers: { Authorization: `Basic ${credentials}` },
     });
-    const text = await res.text();
-    
-    let parsed = {};
+    const rawText = await res.text();
+
+    const parsed = parseMetrics(rawText);
+
+    // 4) If live disk IO is null, try history fallback
+    let diskIoBudget = parsed.diskIoBudget;
+    let diskIoSource: "live" | "history" | "unavailable" = diskIoBudget !== null ? "live" : "unavailable";
+    let diskIoLastSampleAt: string | null = null;
+    let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
+
+    // Read fallback window from system_config (default 48h)
+    let fallbackHours = 48;
     try {
-      parsed = parseMetrics(text);
+      const { data: cfgRow } = await adminClient
+        .from("system_config")
+        .select("value")
+        .eq("key", "history_fallback_max_hours")
+        .maybeSingle();
+      if (cfgRow?.value) {
+        fallbackHours = Math.max(1, Number(cfgRow.value) || 48);
+      }
     } catch (e) {
-      console.error("Parse error:", e);
+      console.warn("Could not read history_fallback_max_hours:", e);
     }
 
-    const diskLines = text.split('\n').filter(l => l.toLowerCase().includes('disk')).join('\n');
-    const allNames = Array.from(new Set(text.split('\n').filter(l=>l&&!l.startsWith('#')).map(l=>l.split('{')[0].split(' ')[0]))).slice(0, 100);
+    // Fetch last 48h of history
+    const histCutoff = new Date(Date.now() - fallbackHours * 60 * 60 * 1000).toISOString();
+    try {
+      const { data: histRows } = await adminClient
+        .from("system_metrics_history")
+        .select("disk_io_budget, recorded_at")
+        .gte("recorded_at", histCutoff)
+        .order("recorded_at", { ascending: true });
 
+      if (histRows && histRows.length > 0) {
+        diskIoHistory = histRows.filter((r: any) => r.disk_io_budget !== null) as any;
+      }
+    } catch (e) {
+      console.warn("History query failed:", e);
+    }
+
+    // If live is null, use the latest non-null historical value
+    if (diskIoBudget === null && diskIoHistory.length > 0) {
+      const latest = diskIoHistory[diskIoHistory.length - 1];
+      if (latest && typeof latest.disk_io_budget === "number") {
+        diskIoBudget = clampPercent(latest.disk_io_budget);
+        diskIoSource = "history";
+        diskIoLastSampleAt = latest.recorded_at;
+        const ageMin = Math.round((Date.now() - new Date(latest.recorded_at).getTime()) / 60_000);
+        console.log(`Disk IO fallback: using historical value ${diskIoBudget}% from ${ageMin} min ago`);
+      }
+    }
+
+    // 5) Save current live value to history (only if live and > 0)
+    if (parsed.diskIoBudget !== null) {
+      try {
+        await adminClient.from("system_metrics_history").insert({
+          disk_io_budget: parsed.diskIoBudget,
+          recorded_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn("Failed to save metric to history:", e);
+      }
+    }
+
+    // 6) Return full response
     return new Response(JSON.stringify({
       ...parsed,
-      debug_raw_disk: diskLines,
-      debug_all_names: allNames,
-      status: res.status,
-      version: "3.0.emergency"
+      diskIoBudget,
+      diskIoSource,
+      diskIoLastSampleAt,
+      diskIoHistory,
+      timestamp: new Date().toISOString(),
+      version: "4.0.fallback",
     }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: "Emergency catch", details: err.message }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    console.error("get-system-metrics unhandled error:", err);
+    return new Response(JSON.stringify({
+      error: err.message ?? "Unknown error",
+      stack: String(err.stack ?? "").slice(0, 500),
+      timestamp: new Date().toISOString(),
+      version: "4.0.fallback",
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
