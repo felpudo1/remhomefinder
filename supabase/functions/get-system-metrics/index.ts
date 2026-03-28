@@ -187,18 +187,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Client in user context: validates JWT claims (signing keys flow)
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
+    // Validate JWT by calling getUser with the token
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: { user: authUser }, error: authError } = await adminClient.auth.getUser(token);
 
-    if (claimsError || !userId || typeof userId !== "string") {
-      console.warn("JWT validation failed", claimsError?.message ?? "missing-sub-claim");
+    if (authError || !authUser?.id) {
+      console.warn("JWT validation failed", authError?.message ?? "no-user");
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = authUser.id;
 
     // Check sysadmin role using service_role client
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
