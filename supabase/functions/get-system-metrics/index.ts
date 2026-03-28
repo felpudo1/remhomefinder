@@ -153,56 +153,45 @@ function parseMetrics(raw: string): ParsedMetrics {
 }
 
 /**
- * Nuclear logout: cierra todas las sesiones excepto la del sysadmin que ejecuta.
- * Usa la Admin API de Supabase (signOut por usuario) para invalidar tokens de refresh.
- * Borrar solo de auth.sessions NO funciona porque los clientes se reconectan con refresh tokens.
+ * Nuclear logout: cierra TODAS las sesiones y refresh tokens excepto las del sysadmin.
+ * Usa conexión directa a Postgres (SUPABASE_DB_URL) para borrar de auth.sessions
+ * Y auth.refresh_tokens simultáneamente. Sin refresh tokens, los clientes no pueden reconectarse.
  */
-async function handleNuclearLogout(adminClient: ReturnType<typeof createClient>, callerUserId: string) {
-  // 1. Obtener todos los usuarios activos
-  let allUsers: { id: string }[] = [];
-  let page = 1;
-  const perPage = 100;
-
-  while (true) {
-    const { data, error } = await adminClient.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-    if (error) {
-      console.error("Error listing users:", error.message);
-      break;
-    }
-    if (!data?.users || data.users.length === 0) break;
-    allUsers = allUsers.concat(data.users.map(u => ({ id: u.id })));
-    if (data.users.length < perPage) break;
-    page++;
+async function handleNuclearLogout(callerUserId: string) {
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+  if (!dbUrl) {
+    throw new Error("SUPABASE_DB_URL not configured");
   }
 
-  // 2. Filtrar al sysadmin que ejecuta
-  const usersToLogout = allUsers.filter(u => u.id !== callerUserId);
-  let loggedOutCount = 0;
-  const errors: string[] = [];
+  const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
+  const sql = postgres(dbUrl);
 
-  // 3. Cerrar sesión de cada usuario via Admin API (scope: global invalida TODOS los refresh tokens)
-  for (const user of usersToLogout) {
-    try {
-      const { error } = await adminClient.auth.admin.signOut(user.id, "global" as any);
-      if (error) {
-        errors.push(`${user.id}: ${error.message}`);
-      } else {
-        loggedOutCount++;
-      }
-    } catch (err: any) {
-      errors.push(`${user.id}: ${err?.message || "unknown"}`);
-    }
+  try {
+    // 1. Borrar refresh tokens de todos excepto el sysadmin
+    const refreshResult = await sql`
+      DELETE FROM auth.refresh_tokens
+      WHERE session_id IN (
+        SELECT id FROM auth.sessions WHERE user_id != ${callerUserId}
+      )
+    `;
+    const refreshCount = refreshResult.count ?? 0;
+
+    // 2. Borrar sesiones de todos excepto el sysadmin
+    const sessionResult = await sql`
+      DELETE FROM auth.sessions
+      WHERE user_id != ${callerUserId}
+    `;
+    const sessionCount = sessionResult.count ?? 0;
+
+    await sql.end();
+
+    console.log(`☢️ NUCLEAR LOGOUT: ${sessionCount} sesiones + ${refreshCount} refresh tokens eliminados (excepto sysadmin ${callerUserId})`);
+    return { success: true, sessions: sessionCount, refreshTokens: refreshCount, count: sessionCount };
+  } catch (err) {
+    await sql.end();
+    console.error("Nuclear logout DB error:", err);
+    throw err;
   }
-
-  if (errors.length > 0) {
-    console.warn(`☢️ NUCLEAR LOGOUT: ${loggedOutCount} cerradas, ${errors.length} errores:`, errors.slice(0, 5));
-  }
-
-  console.log(`☢️ NUCLEAR LOGOUT: ${loggedOutCount}/${usersToLogout.length} sesiones cerradas (excepto sysadmin ${callerUserId})`);
-  return { success: true, count: loggedOutCount, total: usersToLogout.length, errors: errors.length };
 }
 
 Deno.serve(async (req) => {
@@ -261,7 +250,7 @@ Deno.serve(async (req) => {
 
     if (action === "nuclear_logout") {
       try {
-        const result = await handleNuclearLogout(adminClient, userId);
+        const result = await handleNuclearLogout(userId);
         console.log(`☢️ NUCLEAR LOGOUT ejecutado por sysadmin ${userId}: ${result.count} sesiones cerradas`);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -314,7 +303,7 @@ Deno.serve(async (req) => {
 
         // Nuclear logout automático al activar el escudo
         try {
-          const logoutResult = await handleNuclearLogout(adminClient, userId);
+          const logoutResult = await handleNuclearLogout(userId);
           console.warn(`☢️ AUTO NUCLEAR LOGOUT: ${logoutResult.count} sesiones cerradas junto con activación del escudo.`);
         } catch (logoutErr) {
           console.error("Auto nuclear logout failed (shield still activated):", logoutErr);
