@@ -181,6 +181,32 @@ export function AdminMaintenance() {
                 </div>
             </div>
 
+            <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/50 animate-in slide-in-from-right-2 duration-300">
+                <div className="space-y-0.5">
+                    <Label className="text-xs font-bold text-foreground">
+                        Polling en modo bajo I/O (min)
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                        Intervalo de consulta cuando el balance está crítico. Más alto = más recuperación.
+                    </p>
+                </div>
+                <div className="flex items-center gap-1.5 w-24">
+                    <Input 
+                        type="number"
+                        value={localInterval} 
+                        onChange={(e) => setLocalInterval(e.target.value)}
+                        onBlur={handleSaveInterval}
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveInterval()}
+                        className="text-sm h-9 text-center font-bold text-black bg-white dark:bg-slate-200 border-primary/30"
+                        min="5"
+                        max="120"
+                        step="5"
+                        disabled={isSavingInterval}
+                    />
+                    <span className="text-xs font-bold text-muted-foreground">min</span>
+                </div>
+            </div>
+
             {/* Nuclear Logout Button */}
             <div className="pt-3 border-t border-destructive/20">
                 <AlertDialog>
