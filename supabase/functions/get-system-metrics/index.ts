@@ -332,6 +332,44 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = await getRequestedAction(req, url);
 
+    if (action === "list_sessions") {
+      const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+      if (!dbUrl) {
+        return new Response(JSON.stringify({ error: "SUPABASE_DB_URL not configured" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
+      const sql = postgres(dbUrl);
+      try {
+        const rows = await sql`
+          SELECT
+            s.user_id,
+            s.created_at,
+            s.updated_at,
+            COALESCE(p.display_name, p.email, 'Sin nombre') AS display_name,
+            COALESCE(p.email, '') AS email,
+            COALESCE(
+              (SELECT ur.role::text FROM public.user_roles ur WHERE ur.user_id = s.user_id LIMIT 1),
+              'user'
+            ) AS role
+          FROM auth.sessions s
+          LEFT JOIN public.profiles p ON p.user_id = s.user_id
+          ORDER BY s.updated_at DESC
+        `;
+        await sql.end();
+        return new Response(JSON.stringify({ sessions: rows }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        await sql.end();
+        console.error("List sessions error:", err);
+        return new Response(JSON.stringify({ error: "Failed to list sessions" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (action === "nuclear_logout") {
       try {
         const result = await handleNuclearLogout(userId, callerSessionId);
