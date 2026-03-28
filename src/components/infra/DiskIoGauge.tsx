@@ -21,6 +21,7 @@ export function DiskIoGauge({ value, source = "live", lastSampleAt = null }: Dis
           : "text-red-500";
   const isDanger = pct !== null && pct <= 20 && source !== "unavailable";
   const isLowIoMode = source === "live" && pct !== null && pct <= 5;
+  const showValueArc = pct !== null && pct > 0;
   const valueLabel =
     pct === null
       ? "N/D"
@@ -70,16 +71,18 @@ export function DiskIoGauge({ value, source = "live", lastSampleAt = null }: Dis
             className="text-slate-700"
           />
           {/* Value arc */}
-          <path
-            d="M 10 110 A 80 80 0 0 1 190 110"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="12"
-            strokeDasharray={`${circumference}`}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            className={color}
-          />
+          {showValueArc && (
+            <path
+              d="M 10 110 A 80 80 0 0 1 190 110"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="12"
+              strokeDasharray={`${circumference}`}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              className={color}
+            />
+          )}
           <text x="100" y="95" textAnchor="middle" className="fill-slate-100 text-3xl font-bold" fontSize="32">
             {valueLabel}
           </text>
