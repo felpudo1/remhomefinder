@@ -110,7 +110,6 @@ async function getRequestedAction(req: Request, url: URL): Promise<string | null
 
 function parseMetrics(raw: string): ParsedMetrics {
   const diskIoConsumption = firstMetric(raw, "disk_io_consumption");
-  const diskIoFallback = firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
 
   const restRequests =
     sumMetric(raw, "postgrest_requests_total") ??
