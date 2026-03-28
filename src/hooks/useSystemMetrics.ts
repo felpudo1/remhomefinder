@@ -12,6 +12,8 @@ export interface DiskIoHistoryPoint {
 
 export interface SystemMetrics {
   diskIoBudget: number | null;
+  diskIoSource?: "live" | "history" | "unavailable";
+  diskIoLastSampleAt?: string | null;
   restRequests: number | null;
   authRequests: number | null;
   realtimeRequests: number | null;
@@ -50,8 +52,9 @@ export function useSystemMetrics() {
     queryFn: fetchSystemMetrics,
     refetchInterval: (query) => {
       const budget = query.state.data?.diskIoBudget;
-      // Use configurable interval when disk IO is critical (≤5%)
-      if (budget !== null && budget !== undefined && budget <= 5) return lowIoMs;
+      const source = query.state.data?.diskIoSource;
+      // Use configurable interval only when live metric is truly critical (≤5%)
+      if (source === "live" && budget !== null && budget !== undefined && budget <= 5) return lowIoMs;
       return 60_000;
     },
     staleTime: 30_000,
