@@ -3,7 +3,8 @@ import { useCurrentUser } from "@/contexts/AuthProvider";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { ROLES } from "@/lib/constants";
 import { useLocation } from "react-router-dom";
-import { AlertTriangle, Hammer, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Hammer, ShieldAlert, Home } from "lucide-react";
+import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 
 /**
  * Componente Escudo de Mantenimiento (REGLA 2: Arquitectura de Componentes)
@@ -12,9 +13,11 @@ import { AlertTriangle, Hammer, ShieldAlert } from "lucide-react";
  */
 export function MaintenanceShield() {
   const location = useLocation();
-  // Leemos el estado desde la BD (usando nuestro hook genérico de configuración)
+  // Leemos el estado desde la BD
   const { value: maintenanceMode } = useSystemConfig("maintenance_mode", "false");
-  const { value: maintenanceMessage } = useSystemConfig("maintenance_message", "Mantenimiento...");
+  const { value: maintenanceMessage } = useSystemConfig("maintenance_message", "Estamos optimizando la bd");
+  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
+  
   const { user } = useCurrentUser();
   const { data: userRoles = [] } = useUserRoles(user?.id);
 
@@ -40,21 +43,55 @@ export function MaintenanceShield() {
 
   // CASO B: Usuario Común - Bloqueo total con diseño premium
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-xl p-6 text-center">
-      <div className="max-w-md space-y-6 animate-in fade-in zoom-in duration-500">
-        <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-          <Hammer className="w-10 h-10 text-primary animate-bounce" />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/40 backdrop-blur-3xl p-6 text-center select-none overflow-hidden">
+      {/* Círculos de fondo decorativos */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full pointer-events-none animate-pulse" />
+      <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
+      
+      <div className="relative max-w-lg w-full space-y-8 animate-in fade-in zoom-in duration-700">
+        {/* Logo + Brand Section */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/40 ring-4 ring-background animate-in slide-in-from-top-10 duration-1000">
+              <Home className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <span className="text-3xl font-black tracking-tighter text-foreground drop-shadow-sm">
+              {appBrandName}
+            </span>
+          </div>
+          <div className="h-px w-24 bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-black tracking-tighter text-foreground uppercase">SISTEMA EN PAUSA</h1>
-          <p className="text-muted-foreground font-medium leading-relaxed italic">
-            "{maintenanceMessage}"
-          </p>
+
+        {/* Status Graphic */}
+        <div className="mx-auto w-24 h-24 bg-card border border-border rounded-3xl flex items-center justify-center shadow-xl shadow-black/5 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
+          <Hammer className="w-10 h-10 text-primary animate-bounce relative z-10" />
+          <div className="absolute -bottom-2 -left-2 w-8 h-8 bg-blue-500/10 blur-xl rounded-full" />
         </div>
-        <div className="pt-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 text-secondary-foreground text-[10px] font-bold border border-border">
-            <AlertTriangle className="w-3 h-3 text-yellow-500" />
-            PROTECCIÓN DE INFRAESTRUCTURA ACTIVADA
+
+        {/* Message Section */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
+              SISTEMA EN <span className="text-primary italic">PAUSA</span>
+            </h1>
+            <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase opacity-70">
+              Mantenimiento Programado
+            </p>
+          </div>
+          
+          <div className="bg-card/50 border border-border/50 p-6 rounded-2xl shadow-sm backdrop-blur-sm relative transition-all hover:bg-card/80">
+            <p className="text-lg text-foreground/90 font-medium leading-relaxed italic">
+              "{maintenanceMessage}"
+            </p>
+          </div>
+        </div>
+
+        {/* Global Protection Badge */}
+        <div className="pt-4 flex flex-col items-center gap-4">
+          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 text-[11px] font-black border border-yellow-500/20 shadow-sm animate-pulse">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            ESCUDO DE INFRAESTRUCTURA ACTIVADO
           </div>
         </div>
       </div>
