@@ -94,6 +94,20 @@ function getSessionIdFromJwt(token: string): string | null {
   }
 }
 
+async function getRequestedAction(req: Request, url: URL): Promise<string | null> {
+  const fromQuery = url.searchParams.get("action");
+  if (fromQuery) return fromQuery;
+
+  if (req.method === "GET" || req.method === "HEAD") return null;
+
+  try {
+    const body = await req.clone().json() as { action?: unknown };
+    return typeof body.action === "string" ? body.action : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseMetrics(raw: string): ParsedMetrics {
   const diskIoConsumption = firstMetric(raw, "disk_io_consumption");
   const diskIoFallback = firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
@@ -184,6 +198,9 @@ async function handleNuclearLogout(callerUserId: string, callerSessionId: string
   const sql = postgres(dbUrl);
 
   try {
+    const beforeRows = await sql`SELECT count(*)::int AS total FROM auth.sessions`;
+    const totalBefore = Number(beforeRows[0]?.total ?? 0);
+
     const keepBySession = callerSessionId
       ? await sql`SELECT id FROM auth.sessions WHERE id = ${callerSessionId} LIMIT 1`
       : [];
@@ -236,10 +253,23 @@ async function handleNuclearLogout(callerUserId: string, callerSessionId: string
     const refreshCount = refreshResult.count ?? 0;
     const sessionCount = sessionResult.count ?? 0;
 
+    const afterRows = await sql`SELECT count(*)::int AS total FROM auth.sessions`;
+    const totalAfter = Number(afterRows[0]?.total ?? 0);
+
     await sql.end();
 
-    console.log(`☢️ NUCLEAR LOGOUT: ${sessionCount} sesiones + ${refreshCount} refresh tokens eliminados (excepto sysadmin ${callerUserId})`);
-    return { success: true, sessions: sessionCount, refreshTokens: refreshCount, count: sessionCount };
+    console.log(
+      `☢️ NUCLEAR LOGOUT: ${sessionCount} sesiones + ${refreshCount} refresh tokens eliminados (antes=${totalBefore}, después=${totalAfter}, except caller=${callerUserId}, keepSession=${keepSessionId ?? "none"})`
+    );
+    return {
+      success: true,
+      sessions: sessionCount,
+      refreshTokens: refreshCount,
+      count: sessionCount,
+      totalBefore,
+      totalAfter,
+      keepSessionId,
+    };
   } catch (err) {
     await sql.end();
     console.error("Nuclear logout DB error:", err);
@@ -300,7 +330,7 @@ Deno.serve(async (req) => {
 
     // Check for action parameter
     const url = new URL(req.url);
-    const action = url.searchParams.get("action");
+    const action = await getRequestedAction(req, url);
 
     if (action === "nuclear_logout") {
       try {
