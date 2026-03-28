@@ -15,8 +15,10 @@ import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
 import { UsuariosTab } from "./publicaciones/UsuariosTab";
 import { AddPropertyModal } from "../AddPropertyModal";
 import { usePropertyMutations } from "@/hooks/usePropertyMutations";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
@@ -33,6 +35,7 @@ export function AdminPublicaciones({ toast }: Props) {
   const [deleteMktTarget, setDeleteMktTarget] = useState<MktProperty | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { addProperty: addPropertyMutation } = usePropertyMutations();
 
@@ -158,6 +161,31 @@ export function AdminPublicaciones({ toast }: Props) {
     }
     setLoadingMkt(false);
   };
+
+  /** Filtrado Multidimensional (REGLA 2: Lógica centralizada) */
+  const filteredUserProps = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return userProps;
+    return userProps.filter(p => 
+        p.title?.toLowerCase().includes(q) ||
+        p.url?.toLowerCase().includes(q) ||
+        p.ref?.toLowerCase().includes(q) ||
+        p.orgName?.toLowerCase().includes(q) ||
+        p.created_by_email?.toLowerCase().includes(q)
+    );
+  }, [userProps, searchQuery]);
+
+  const filteredMktProps = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return mktProps;
+    return mktProps.filter(p => 
+        p.title?.toLowerCase().includes(q) ||
+        p.url?.toLowerCase().includes(q) ||
+        p.ref?.toLowerCase().includes(q) ||
+        p.orgName?.toLowerCase().includes(q) ||
+        p.publishedByName?.toLowerCase().includes(q)
+    );
+  }, [mktProps, searchQuery]);
 
   const toggleHideUserProperty = async (prop: UserProperty) => {
     // Toggle admin_hidden: oculta el listing al usuario SIN borrarlo del listado del admin
@@ -321,38 +349,53 @@ export function AdminPublicaciones({ toast }: Props) {
   return (
     <>
     <Tabs defaultValue="marketplace" className="w-full">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <TabsList className="bg-muted rounded-xl p-1 h-auto flex-1 grid grid-cols-2">
-        <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
-          <Building2 className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Marketplace</span>
-          <Badge variant="secondary" className="ml-1 text-xs">{mktProps.length}</Badge>
-        </TabsTrigger>
-        <TabsTrigger value="usuarios" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center">
-          <Users className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Usuarios</span>
-          <Badge variant="secondary" className="ml-1 text-xs">{userProps.length}</Badge>
-        </TabsTrigger>
-      </TabsList>
-        <button
-          title="Refrescar datos"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-        </button>
-        <Button 
-          onClick={() => setIsAddOpen(true)}
-          className="rounded-xl gap-2 font-bold shadow-lg shadow-primary/20"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar Propiedad
-        </Button>
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap lg:flex-nowrap">
+        <TabsList className="bg-muted rounded-xl p-1 h-auto shrink-0 grid grid-cols-2 w-full lg:w-fit">
+          <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center px-4">
+            <Building2 className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Marketplace</span>
+            <Badge variant="secondary" className="ml-1 text-[10px]">{filteredMktProps.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="usuarios" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center px-4">
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Usuarios</span>
+            <Badge variant="secondary" className="ml-1 text-[10px]">{filteredUserProps.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="flex-1 relative min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar por Título, Agencia, Agente o URL..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="rounded-xl pl-9 border-muted-foreground/20 h-10 w-full"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            title="Refrescar datos"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-2 h-10 w-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
+          </button>
+          <Button 
+            onClick={() => setIsAddOpen(true)}
+            size="sm"
+            className="rounded-xl gap-2 font-bold shadow-md shadow-primary/10 h-10 px-4"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden md:inline">Agregar Propiedad</span>
+            <span className="md:hidden">Agregar</span>
+          </Button>
+        </div>
       </div>
 
       <MarketplaceTab
-        mktProps={mktProps}
+        mktProps={filteredMktProps}
         loadingMkt={loadingMkt}
         updateMktStatus={updateMktStatus}
         deleteMktTarget={deleteMktTarget}
@@ -361,7 +404,7 @@ export function AdminPublicaciones({ toast }: Props) {
       />
 
       <UsuariosTab
-        userProps={userProps}
+        userProps={filteredUserProps}
         loadingUser={loadingUser}
         toggleHideUserProperty={toggleHideUserProperty}
         deleteUserTarget={deleteUserTarget}

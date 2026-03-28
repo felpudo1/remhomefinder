@@ -222,6 +222,26 @@ Deno.serve(async (req) => {
     const rawText = await metricsResponse.text();
     const metrics = parseMetrics(rawText);
 
+    // [LÓGICA DE AUTO-PROTECCIÓN]
+    // Verificamos si debemos activar el escudo basado en el Burst Balance
+    if (metrics.diskIoBudget !== null) {
+      const { data: config } = await adminClient
+        .from("system_config")
+        .select("key, value")
+        .in("key", ["auto_maintenance_protection", "maintenance_threshold"]);
+      
+      const autoProtect = config?.find(c => c.key === "auto_maintenance_protection")?.value === "true";
+      const threshold = Number(config?.find(c => c.key === "maintenance_threshold")?.value) || 20;
+
+      if (autoProtect && metrics.diskIoBudget <= threshold) {
+        console.warn(`🛡️ AUTO-SHIELD: Burst Balance (${metrics.diskIoBudget}%) ha llegado al umbral (${threshold}%). Activando modo mantenimiento.`);
+        await adminClient
+          .from("system_config")
+          .update({ value: "true" })
+          .eq("key", "maintenance_mode");
+      }
+    }
+
     // Store snapshot (fire-and-forget, don't block response)
     if (metrics.diskIoBudget !== null) {
       adminClient

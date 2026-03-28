@@ -119,7 +119,30 @@ export function usePropertyMutations() {
                 propId = (await insertNewProperty(form, targetUserId)) as string;
             }
 
-            // Insert into user_listings (tracking)
+            // [MOD MODO DIOS]: Si es carga delegada, el flujo es DIFERENTE.
+            // Se inserta en agent_publications para que sea IDÉNTICO a una carga de agente real.
+            // NO se inserta en user_listings.
+            if (form.onBehalfOfUserId) {
+                const { data: pubData, error: pubError } = await (supabase
+                    .from("agent_publications") as any)
+                    .insert({
+                        property_id: propId,
+                        org_id: orgId,
+                        listing_type: (form.listingType as any) || "rent",
+                        description: form.aiSummary || form.details || "",
+                        published_by: targetUserId,
+                        status: "disponible"
+                    })
+                    .select()
+                    .single();
+                
+                if (pubError) throw pubError;
+                
+                // Retornamos un objeto que simule el listing para no romper el tipado de la mutación
+                return { id: pubData.id, property_id: propId, is_delegated: true } as any;
+            }
+
+            // Flujo Normal (Usuarios/Familias): Insert into user_listings (tracking)
             const listingInsert: any = {
                     property_id: propId,
                     org_id: orgId,
@@ -141,7 +164,7 @@ export function usePropertyMutations() {
                 throw new Error(msg);
             }
 
-            // Insertar fotos privadas (user_listing_attachments)
+            // Insertar fotos privadas (solo para flujo normal de familias)
             if (form.privateImages?.length && listing) {
                 const rows = form.privateImages.map((image_url) => ({
                     user_listing_id: listing.id,
@@ -150,6 +173,7 @@ export function usePropertyMutations() {
                 }));
                 await (supabase.from("user_listing_attachments") as any).insert(rows);
             }
+
             return listing;
         },
         onSuccess: () => {
