@@ -59,8 +59,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <MaintenanceShield />
         <BrowserRouter>
+          <MaintenanceShield />
           <ReferralTracker />
           <Suspense fallback={<LoadingPage />}>
             <ErrorBoundary>

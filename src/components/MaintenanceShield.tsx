@@ -2,6 +2,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { ROLES } from "@/lib/constants";
+import { useLocation } from "react-router-dom";
 import { AlertTriangle, Hammer, ShieldAlert } from "lucide-react";
 
 /**
@@ -10,6 +11,7 @@ import { AlertTriangle, Hammer, ShieldAlert } from "lucide-react";
  * Implementa un bypass para administradores para permitirles seguir operando.
  */
 export function MaintenanceShield() {
+  const location = useLocation();
   // Leemos el estado desde la BD (usando nuestro hook genérico de configuración)
   const { value: maintenanceMode } = useSystemConfig("maintenance_mode", "false");
   const { value: maintenanceMessage } = useSystemConfig("maintenance_message", "Mantenimiento...");
@@ -20,6 +22,9 @@ export function MaintenanceShield() {
   
   // BYPASS DE SEGURIDAD: Los administradores y sysadmins pueden saltarse el bloqueo
   const isSuperUser = userRoles.includes(ROLES.ADMIN) || userRoles.includes(ROLES.SYSADMIN);
+
+  // EXCEPCIÓN: La ruta de Auth (Login) nunca se bloquea para permitir el ingreso
+  if (location.pathname.startsWith("/auth")) return null;
 
   if (!isActive) return null;
 
