@@ -110,7 +110,6 @@ async function getRequestedAction(req: Request, url: URL): Promise<string | null
 
 function parseMetrics(raw: string): ParsedMetrics {
   const diskIoConsumption = firstMetric(raw, "disk_io_consumption");
-  const diskIoFallback = firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
 
   const restRequests =
     sumMetric(raw, "postgrest_requests_total") ??
@@ -168,9 +167,7 @@ function parseMetrics(raw: string): ParsedMetrics {
   return {
     diskIoBudget: diskIoConsumption !== null
       ? clampPercent(100 - diskIoConsumption)
-      : diskIoFallback !== null
-        ? clampPercent(100 - diskIoFallback)
-        : null,
+      : null,
     restRequests,
     authRequests,
     realtimeRequests,
@@ -407,8 +404,7 @@ Deno.serve(async (req) => {
 
     // Diagnostic logging for raw disk IO values
     const rawDiskIo = firstMetric(rawText, "disk_io_consumption");
-    const rawDiskIoFallback = firstMetric(rawText, "node_disk_io_time_weighted_seconds_total");
-    console.log(`📊 RAW disk_io_consumption=${rawDiskIo}, fallback=${rawDiskIoFallback}, computed_budget=${metrics.diskIoBudget}%`);
+    console.log(`📊 RAW disk_io_consumption=${rawDiskIo}, computed_budget=${metrics.diskIoBudget}%`);
 
     const isLowIoMode = metrics.diskIoBudget !== null && metrics.diskIoBudget <= 5;
     if (isLowIoMode) {
