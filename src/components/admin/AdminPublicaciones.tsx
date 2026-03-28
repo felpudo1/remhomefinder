@@ -13,6 +13,10 @@ import type { AgentPubStatus } from "@/types/supabase";
 
 import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
 import { UsuariosTab } from "./publicaciones/UsuariosTab";
+import { AddPropertyModal } from "../AddPropertyModal";
+import { usePropertyMutations } from "@/hooks/usePropertyMutations";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
@@ -28,6 +32,9 @@ export function AdminPublicaciones({ toast }: Props) {
   const [loadingMkt, setLoadingMkt] = useState(true);
   const [deleteMktTarget, setDeleteMktTarget] = useState<MktProperty | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
+  const { mutateAsync: addPropertyMutation } = usePropertyMutations();
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -298,7 +305,21 @@ export function AdminPublicaciones({ toast }: Props) {
     }
   };
 
+  const handleAddProperty = async (form: any) => {
+    try {
+      const { _successMessage, ...formWithoutMeta } = form;
+      await addPropertyMutation(formWithoutMeta);
+      setIsAddOpen(false);
+      toast({ title: "Éxito", description: _successMessage || "Propiedad agregada correctamente" });
+      handleRefresh(); // Refrescar listas para ver la nueva
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
+      throw e;
+    }
+  };
+
   return (
+    <>
     <Tabs defaultValue="marketplace" className="w-full">
       <div className="flex items-center justify-between gap-4 mb-6">
         <TabsList className="bg-muted rounded-xl p-1 h-auto flex-1 grid grid-cols-2">
@@ -321,6 +342,13 @@ export function AdminPublicaciones({ toast }: Props) {
         >
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </button>
+        <Button 
+          onClick={() => setIsAddOpen(true)}
+          className="rounded-xl gap-2 font-bold shadow-lg shadow-primary/20"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Propiedad
+        </Button>
       </div>
 
       <MarketplaceTab
@@ -341,5 +369,12 @@ export function AdminPublicaciones({ toast }: Props) {
         deleteUserProperty={deleteUserProperty}
       />
     </Tabs>
+
+    <AddPropertyModal 
+        open={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        onAdd={handleAddProperty}
+    />
+    </>
   );
 }

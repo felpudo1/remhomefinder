@@ -20,6 +20,8 @@ export type FormState = {
   details: string;
   contactName: string;
   contactPhone: string;
+  onBehalfOfUserId?: string;
+  onBehalfOfOrgId?: string;
 };
 
 export function useAddPropertyForm(activeGroupId?: string | null) {
@@ -69,6 +71,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     details: "",
     contactName: "",
     contactPhone: "",
+    onBehalfOfUserId: undefined,
+    onBehalfOfOrgId: undefined,
   });
 
   // Sync with activeGroupId or groups change
@@ -100,6 +104,8 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
       details: "",
       contactName: "",
       contactPhone: "",
+      onBehalfOfUserId: undefined,
+      onBehalfOfOrgId: undefined,
     });
     setScrapedImages([]);
     setPrivateImages([]);

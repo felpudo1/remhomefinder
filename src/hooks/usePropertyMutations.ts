@@ -8,7 +8,7 @@ import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
 /** Inserta una nueva property y devuelve su id */
 async function insertNewProperty(
     form: { url?: string; title: string; priceRent: number; priceExpenses: number; currency: string; neighborhood: string; neighborhood_id?: string; city: string; city_id?: string; department?: string; department_id?: string; sqMeters: number; rooms: number; images?: string[]; ref?: string; aiSummary?: string; details?: string },
-    userId: string
+    userId: string // Este es el ID del agente que será dueño de la propiedad
 ) {
     const { data: prop, error: propError } = await supabase
         .from("properties")
@@ -76,22 +76,28 @@ export function usePropertyMutations() {
             contactName?: string;
             contactPhone?: string;
             contactSource?: string;
+            /** Opcional: ID del agente para el que se carga la propiedad (Modo Dios) */
+            onBehalfOfUserId?: string;
+            /** Opcional: ID de la organización del agente (Modo Dios) */
+            onBehalfOfOrgId?: string;
         }) => {
             if (!authUser) throw new Error("No autenticado");
-            const user = authUser;
+            
+            // Si hay un ID delegado, el 'dueño' es ese agente. Si no, es el usuario logueado.
+            const targetUserId = form.onBehalfOfUserId || authUser.id;
 
-            // Get user's org
-            let orgId = form.groupId;
+            // Get target user's org
+            let orgId = form.onBehalfOfOrgId || form.groupId;
             if (!orgId) {
                 const { data: membership } = await supabase
                     .from("organization_members")
                     .select("org_id")
-                    .eq("user_id", user.id)
+                    .eq("user_id", targetUserId)
                     .limit(1)
                     .maybeSingle();
                 orgId = membership?.org_id || null;
             }
-            if (!orgId) throw new Error("No pertenecés a ninguna organización");
+            if (!orgId) throw new Error("El usuario seleccionado no pertenece a ninguna organización activa");
 
             const normalizedUrl = form.url ? normalizeUrl(form.url) : null;
 
@@ -107,10 +113,10 @@ export function usePropertyMutations() {
                 if (!existingErr && existing) {
                     propId = existing.id;
                 } else {
-                    propId = (await insertNewProperty(form, user.id)) as string;
+                    propId = (await insertNewProperty(form, targetUserId)) as string;
                 }
             } else {
-                propId = (await insertNewProperty(form, user.id)) as string;
+                propId = (await insertNewProperty(form, targetUserId)) as string;
             }
 
             // Insert into user_listings (tracking)
@@ -118,7 +124,7 @@ export function usePropertyMutations() {
                     property_id: propId,
                     org_id: orgId,
                     listing_type: (form.listingType as "rent" | "sale") || "rent",
-                    added_by: user.id,
+                    added_by: targetUserId,
                 };
             if (form.contactName?.trim()) listingInsert.contact_name = form.contactName.trim();
             if (form.contactPhone?.trim()) listingInsert.contact_phone = form.contactPhone.trim();
@@ -140,7 +146,7 @@ export function usePropertyMutations() {
                 const rows = form.privateImages.map((image_url) => ({
                     user_listing_id: listing.id,
                     image_url,
-                    added_by: user.id,
+                    added_by: targetUserId,
                 }));
                 await (supabase.from("user_listing_attachments") as any).insert(rows);
             }
@@ -265,7 +271,7 @@ export function usePropertyMutations() {
                     user_listing_id: id,
                     old_status: listing?.current_status || null,
                     new_status: newStatus as UserListingStatus,
-                    changed_by: user.id,
+                    changed_by: authUser.id,
                     event_metadata: eventMetadata,
                 })
                 .select("id")
@@ -354,7 +360,7 @@ export function usePropertyMutations() {
 
             const { data, error } = await (supabase.from("family_comments") as any).insert({
                 user_listing_id: propertyId,
-                user_id: user.id,
+                user_id: authUser.id,
                 author: comment.author,
                 avatar: comment.avatar,
                 text: comment.text,

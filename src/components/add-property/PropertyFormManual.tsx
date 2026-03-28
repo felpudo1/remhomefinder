@@ -7,6 +7,13 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGeography } from "@/hooks/useGeography";
+import { useAgents } from "@/hooks/useAgents";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown, UserCircle } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 export interface PropertyFormManualProps {
     form: any;
     setForm: (f: any) => void;
@@ -102,8 +109,113 @@ export function PropertyFormManual({
         return allNeighborhoods.filter(n => n.city_id === form.city_id);
     }, [allNeighborhoods, form.city_id]);
 
+    // Lógica para Carga Delegada (Modo Dios)
+    const [userId, setUserId] = useState<string | undefined>();
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id));
+    }, []);
+
+    const { data: roles = [] } = useUserRoles(userId);
+    const isAdmin = roles.includes("admin") || roles.includes("sysadmin");
+    const { data: agents = [], isLoading: loadingAgents } = useAgents();
+    const [openAgentSelect, setOpenAgentSelect] = useState(false);
+
+    const selectedAgent = agents.find(a => a.id === form.onBehalfOfUserId);
+
     return (
         <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
+            {/* Sección de Carga Delegada (Solo Admins) */}
+            {isAdmin && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold flex items-center gap-1.5 text-primary">
+                            <Sparkles className="w-3.5 h-3.5" /> CARGA DELEGADA (MODO DIOS)
+                        </Label>
+                        {form.onBehalfOfUserId && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 text-[10px] hover:text-destructive px-2"
+                                onClick={() => setForm({ ...form, onBehalfOfUserId: undefined, onBehalfOfOrgId: undefined })}
+                            >
+                                <X className="w-3 h-3 mr-1" /> Limpiar
+                            </Button>
+                        )}
+                    </div>
+                    
+                    <Popover open={openAgentSelect} onOpenChange={setOpenAgentSelect}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openAgentSelect}
+                                className="w-full justify-between rounded-xl border-primary/30 h-10 px-3 hover:bg-primary/5"
+                            >
+                                <div className="flex items-center gap-2 truncate">
+                                    {selectedAgent ? (
+                                        <>
+                                            <Avatar className="h-6 w-6 border border-primary/20">
+                                                <AvatarImage src={selectedAgent.avatar_url || ""} />
+                                                <AvatarFallback className="text-[10px]"><UserCircle /></AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-xs font-medium truncate">{selectedAgent.display_name || selectedAgent.email}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-xs text-muted-foreground italic">Seleccionar agente receptor...</span>
+                                        </>
+                                    )}
+                                </div>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0 rounded-xl border-primary/20 shadow-xl" align="start">
+                            <Command className="rounded-xl">
+                                <CommandInput placeholder="Buscar por nombre o email..." className="h-9 text-xs" />
+                                <CommandList className="max-h-[250px]">
+                                    <CommandEmpty>No se encontraron agentes.</CommandEmpty>
+                                    <CommandGroup>
+                                        {agents.map((agent) => (
+                                            <CommandItem
+                                                key={agent.id}
+                                                value={`${agent.display_name} ${agent.email}`}
+                                                onSelect={() => {
+                                                    setForm({ 
+                                                        ...form, 
+                                                        onBehalfOfUserId: agent.id, 
+                                                        onBehalfOfOrgId: agent.org_id 
+                                                    });
+                                                    setOpenAgentSelect(false);
+                                                }}
+                                                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-primary/10 transition-colors"
+                                            >
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={agent.avatar_url || ""} />
+                                                    <AvatarFallback><UserCircle className="w-6 h-6" /></AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-xs font-semibold truncate">{agent.display_name || "Sin nombre"}</span>
+                                                    <span className="text-[10px] text-muted-foreground truncate">{agent.email}</span>
+                                                </div>
+                                                <Check
+                                                    className={cn(
+                                                        "ml-auto h-4 w-4 text-primary",
+                                                        form.onBehalfOfUserId === agent.id ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                    <p className="text-[10px] text-muted-foreground leading-tight italic">
+                        * Al seleccionar un agente, la propiedad se publicará como si él mismo la hubiera subido, usando sus datos de contacto en el Marketplace.
+                    </p>
+                </div>
+            )}
             {/* URL fijada en el paso anterior o editable solo si no está bloqueada */}
             <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Link de la publicación *</Label>
