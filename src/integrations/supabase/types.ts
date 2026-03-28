@@ -1011,6 +1011,24 @@ export type Database = {
         }
         Relationships: []
       }
+      system_metrics_history: {
+        Row: {
+          disk_io_budget: number | null
+          id: string
+          recorded_at: string
+        }
+        Insert: {
+          disk_io_budget?: number | null
+          id?: string
+          recorded_at?: string
+        }
+        Update: {
+          disk_io_budget?: number | null
+          id?: string
+          recorded_at?: string
+        }
+        Relationships: []
+      }
       user_listing_attachments: {
         Row: {
           added_by: string
