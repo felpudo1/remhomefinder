@@ -32,6 +32,17 @@ export function DiskIoGauge({ value, source = "live", lastSampleAt = null }: Dis
     ? new Date(lastSampleAt).toLocaleString([], { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
     : null;
 
+  // Calculate age of historical data
+  const dataAgeLabel = (() => {
+    if (source !== "history" || !lastSampleAt) return null;
+    const ageMs = Date.now() - new Date(lastSampleAt).getTime();
+    const ageMin = Math.round(ageMs / 60_000);
+    if (ageMin < 60) return `Dato de hace ${ageMin} min`;
+    const h = Math.floor(ageMin / 60);
+    const m = ageMin % 60;
+    return m > 0 ? `Dato de hace ${h}h ${m}min` : `Dato de hace ${h}h`;
+  })();
+
   // SVG semicircle gauge
   const radius = 80;
   const circumference = Math.PI * radius;
@@ -106,7 +117,10 @@ export function DiskIoGauge({ value, source = "live", lastSampleAt = null }: Dis
         {source === "history" && formattedLastSample && (
           <div className="mt-2 w-full max-w-lg rounded-md border border-yellow-700/60 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300 flex items-start gap-2">
             <Info className="w-4 h-4 mt-0.5 shrink-0 text-yellow-400" />
-            <span>Mostrando último dato histórico válido ({formattedLastSample}) porque la métrica en vivo llegó como nula.</span>
+            <span>
+              Mostrando último dato histórico válido ({formattedLastSample}) porque la métrica en vivo llegó como nula.
+              {dataAgeLabel && <strong className="ml-1">({dataAgeLabel})</strong>}
+            </span>
           </div>
         )}
 

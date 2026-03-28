@@ -485,7 +485,14 @@ Deno.serve(async (req) => {
     history = data ?? [];
 
     const { latestValue: latestHistoryBudget, latestAt: latestHistoryAt } = getHistoryTail(history);
-    const fallbackMaxAgeMs = 2 * 60 * 60 * 1000; // 2h
+    // Read configurable fallback window from system_config (default 48h)
+    const { data: fallbackConfig } = await adminClient
+      .from("system_config")
+      .select("value")
+      .eq("key", "history_fallback_max_hours")
+      .maybeSingle();
+    const fallbackHours = Math.max(1, Number(fallbackConfig?.value) || 48);
+    const fallbackMaxAgeMs = fallbackHours * 60 * 60 * 1000;
     const latestHistoryAgeMs = latestHistoryAt ? Date.now() - new Date(latestHistoryAt).getTime() : null;
     const canUseHistoryFallback =
       metrics.diskIoBudget === null &&
