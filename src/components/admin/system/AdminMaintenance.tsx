@@ -1,9 +1,23 @@
 import { useState, useEffect } from "react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { ShieldAlert, AlertTriangle } from "lucide-react";
+import { ShieldAlert, AlertTriangle, Skull } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 /**
  * Sub-componente para gestionar el modo mantenimiento (REGLA 2).
@@ -14,10 +28,9 @@ export function AdminMaintenance() {
     const { value: autoProtect, setValue: setAutoProtect, isSaving: isSavingAuto } = useSystemConfig("auto_maintenance_protection", "false");
     const { value: threshold, setValue: setThreshold, isSaving: isSavingThreshold } = useSystemConfig("maintenance_threshold", "20");
     
-    // Estado local para evitar guardar en cada pulsación de tecla (REGLA 2: Performance)
     const [localThreshold, setLocalThreshold] = useState(threshold);
+    const [isNuking, setIsNuking] = useState(false);
 
-    // Sincronizar con el valor de la BD cuando este cambie (ej: carga inicial)
     useEffect(() => {
         setLocalThreshold(threshold);
     }, [threshold]);
@@ -25,6 +38,49 @@ export function AdminMaintenance() {
     const handleSaveThreshold = () => {
         if (localThreshold !== threshold) {
             setThreshold(localThreshold);
+        }
+    };
+
+    const handleNuclearLogout = async () => {
+        setIsNuking(true);
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            if (!token) {
+                toast.error("No hay sesión activa");
+                return;
+            }
+
+            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+            const res = await fetch(
+                `https://${projectId}.supabase.co/functions/v1/get-system-metrics?action=nuclear_logout`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            const result = await res.json();
+
+            if (res.ok && result.success) {
+                toast.success(`☢️ Nuclear Logout completado: ${result.count} sesiones cerradas`);
+            } else {
+                toast.error(`Error: ${result.error || "Error desconocido"}`);
+            }
+        } catch (err: any) {
+            toast.error(`Error de red: ${err?.message || "Error desconocido"}`);
+        } finally {
+            setIsNuking(false);
+        }
+    };
+
+    const handleActivateShield = async (checked: boolean) => {
+        setMode(checked ? "true" : "false");
+        // Si se activa el escudo manualmente, ejecutar nuclear logout también
+        if (checked) {
+            await handleNuclearLogout();
         }
     };
 
@@ -37,13 +93,13 @@ export function AdminMaintenance() {
                         Modo Mantenimiento
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        Activa el escudo global. Solo administradores podrán saltar el bloqueo.
+                        Activa el escudo global. Solo administradores podrán saltar el bloqueo. Al activar, se ejecuta Nuclear Logout automáticamente.
                     </p>
                 </div>
                 <Switch 
                     checked={mode === "true"} 
-                    onCheckedChange={(checked) => setMode(checked ? "true" : "false")}
-                    disabled={isSavingMode}
+                    onCheckedChange={handleActivateShield}
+                    disabled={isSavingMode || isNuking}
                 />
             </div>
             {mode === "true" && (
@@ -72,7 +128,7 @@ export function AdminMaintenance() {
                             Protección Automática
                         </div>
                         <p className="text-[10px] text-muted-foreground leading-tight">
-                            El escudo se activará solo si el Burst Balance (crédito de IO) cae por debajo del umbral.
+                            El escudo se activará solo si el Burst Balance (crédito de IO) cae por debajo del umbral. También ejecutará Nuclear Logout.
                         </p>
                     </div>
                     <Switch 
@@ -107,6 +163,54 @@ export function AdminMaintenance() {
                     />
                     <span className="text-xs font-bold text-muted-foreground">%</span>
                 </div>
+            </div>
+
+            {/* Nuclear Logout Button */}
+            <div className="pt-3 border-t border-destructive/20">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full gap-2"
+                            disabled={isNuking}
+                        >
+                            <Skull className="w-4 h-4" />
+                            {isNuking ? "Ejecutando..." : "☢️ Cerrar Todas las Sesiones (Nuclear Logout)"}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2">
+                                <Skull className="w-5 h-5 text-destructive" />
+                                ☢️ Nuclear Logout
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="space-y-2">
+                                <p>
+                                    Esta acción cerrará <strong>TODAS las sesiones activas</strong> de todos los usuarios, excepto la tuya.
+                                </p>
+                                <p>
+                                    Todos los usuarios serán forzados a iniciar sesión de nuevo. Usá esto solo en emergencias (ataque, saturación de IO, sesiones fantasma).
+                                </p>
+                                <p className="text-destructive font-semibold">
+                                    Esta acción NO se puede deshacer.
+                                </p>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleNuclearLogout}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                                Confirmar Nuclear Logout
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                    Se ejecuta automáticamente con la activación del escudo (manual o por umbral).
+                </p>
             </div>
         </div>
     );
