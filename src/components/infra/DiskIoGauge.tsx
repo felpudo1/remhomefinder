@@ -7,14 +7,23 @@ interface DiskIoGaugeProps {
 }
 
 export function DiskIoGauge({ value }: DiskIoGaugeProps) {
-  const pct = value ?? 0;
-  const color = pct > 50 ? "text-emerald-400" : pct > 20 ? "text-yellow-400" : "text-red-500";
-  const isDanger = pct <= 20;
+  const hasValidValue = typeof value === "number" && Number.isFinite(value);
+  const pct = hasValidValue ? Math.max(0, Math.min(100, value)) : null;
+  const color =
+    pct === null
+      ? "text-slate-600"
+      : pct > 50
+        ? "text-emerald-400"
+        : pct > 20
+          ? "text-yellow-400"
+          : "text-red-500";
+  const isDanger = pct !== null && pct <= 20;
+  const isLowIoMode = pct !== null && pct <= 5;
 
   // SVG semicircle gauge
   const radius = 80;
   const circumference = Math.PI * radius;
-  const offset = circumference - (pct / 100) * circumference;
+  const offset = circumference - ((pct ?? 0) / 100) * circumference;
 
   return (
     <Card className="bg-slate-900/80 backdrop-blur border-slate-700/50 col-span-full">
@@ -51,7 +60,7 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
             className={color}
           />
           <text x="100" y="95" textAnchor="middle" className="fill-slate-100 text-3xl font-bold" fontSize="32">
-            {value !== null ? `${Math.round(pct)}%` : "N/A"}
+            {pct !== null ? `${Math.round(pct)}%` : "N/D"}
           </text>
           <text x="100" y="115" textAnchor="middle" className="fill-slate-400" fontSize="12">
             Burst Balance
@@ -62,6 +71,14 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400" /> 20-50% Precaución</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> &lt;20% Peligro</span>
         </div>
+
+        {pct === null && (
+          <div className="mt-2 w-full max-w-lg rounded-md border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-xs text-slate-300 flex items-start gap-2">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" />
+            <span>Métrica no disponible temporalmente; esperando próximo muestreo válido de Supabase.</span>
+          </div>
+        )}
+
         {/* Nota técnica */}
         <div className="mt-3 w-full max-w-lg rounded-md border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-xs text-slate-400 flex items-start gap-2">
           <Info className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" />
@@ -71,8 +88,8 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
             la base de datos entrará en modo throttling severo (I/O limitado), provocando timeouts y potencial colapso del servicio.
           </span>
         </div>
-        {/* Recovery note when at 0% */}
-        {pct <= 5 && (
+
+        {isLowIoMode && (
           <div className="mt-2 w-full max-w-lg rounded-md border border-yellow-700/60 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300 flex items-start gap-2">
             <Info className="w-4 h-4 mt-0.5 shrink-0 text-yellow-400" />
             <span>
