@@ -405,6 +405,16 @@ Deno.serve(async (req) => {
     const rawText = await metricsResponse.text();
     const metrics = parseMetrics(rawText);
 
+    // Diagnostic logging for raw disk IO values
+    const rawDiskIo = firstMetric(rawText, "disk_io_consumption");
+    const rawDiskIoFallback = firstMetric(rawText, "node_disk_io_time_weighted_seconds_total");
+    console.log(`📊 RAW disk_io_consumption=${rawDiskIo}, fallback=${rawDiskIoFallback}, computed_budget=${metrics.diskIoBudget}%`);
+
+    const isLowIoMode = metrics.diskIoBudget !== null && metrics.diskIoBudget <= 5;
+    if (isLowIoMode) {
+      console.warn(`⚡ LOW-IO MODE ACTIVE: diskIoBudget=${metrics.diskIoBudget}% — skipping INSERT/SELECT/DELETE on system_metrics_history`);
+    }
+
     // [AUTO-PROTECTION + NUCLEAR LOGOUT ON SHIELD ACTIVATION]
     if (metrics.diskIoBudget !== null) {
       const { data: config } = await adminClient
@@ -423,7 +433,6 @@ Deno.serve(async (req) => {
           .update({ value: "true" })
           .eq("key", "maintenance_mode");
 
-        // Nuclear logout automático al activar el escudo
         try {
           const logoutResult = await handleNuclearLogout(userId, callerSessionId);
           console.warn(`☢️ AUTO NUCLEAR LOGOUT: ${logoutResult.count} sesiones cerradas junto con activación del escudo.`);
@@ -433,13 +442,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Store snapshot (fire-and-forget)
-    if (metrics.diskIoBudget !== null) {
+    // Store snapshot & fetch history — SKIP when in low-IO mode to let balance recover
+    let history: HistoryPoint[] = [];
+
+    if (!isLowIoMode && metrics.diskIoBudget !== null) {
+      // Store snapshot (fire-and-forget)
       adminClient
         .from("system_metrics_history")
         .insert({ disk_io_budget: metrics.diskIoBudget })
         .then(() => {
-          // Cleanup only 10% of the time to reduce I/O
           if (Math.random() < 0.1) {
             const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
             adminClient
@@ -449,15 +460,16 @@ Deno.serve(async (req) => {
               .then(() => {});
           }
         });
-    }
 
-    // Fetch 48h history
-    const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data: history } = await adminClient
-      .from("system_metrics_history")
-      .select("disk_io_budget, recorded_at")
-      .gte("recorded_at", since48h)
-      .order("recorded_at", { ascending: true });
+      // Fetch 48h history
+      const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data } = await adminClient
+        .from("system_metrics_history")
+        .select("disk_io_budget, recorded_at")
+        .gte("recorded_at", since48h)
+        .order("recorded_at", { ascending: true });
+      history = data ?? [];
+    }
 
     return new Response(JSON.stringify({
       ...metrics,
