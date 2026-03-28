@@ -77,6 +77,23 @@ function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, value));
 }
 
+function getSessionIdFromJwt(token: string): string | null {
+  try {
+    const [, rawPayload] = token.split(".");
+    if (!rawPayload) return null;
+
+    const normalized = rawPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded)) as { session_id?: unknown };
+
+    return typeof payload.session_id === "string" && payload.session_id.length > 0
+      ? payload.session_id
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseMetrics(raw: string): ParsedMetrics {
   const diskIoConsumption = firstMetric(raw, "disk_io_consumption");
   const diskIoFallback = firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
@@ -157,7 +174,7 @@ function parseMetrics(raw: string): ParsedMetrics {
  * Usa conexión directa a Postgres (SUPABASE_DB_URL) para borrar de auth.sessions
  * Y auth.refresh_tokens simultáneamente. Sin refresh tokens, los clientes no pueden reconectarse.
  */
-async function handleNuclearLogout(callerUserId: string) {
+async function handleNuclearLogout(callerUserId: string, callerSessionId: string | null) {
   const dbUrl = Deno.env.get("SUPABASE_DB_URL");
   if (!dbUrl) {
     throw new Error("SUPABASE_DB_URL not configured");
@@ -167,20 +184,42 @@ async function handleNuclearLogout(callerUserId: string) {
   const sql = postgres(dbUrl);
 
   try {
-    // 1. Borrar refresh tokens de todos excepto el sysadmin
-    const refreshResult = await sql`
-      DELETE FROM auth.refresh_tokens
-      WHERE session_id IN (
-        SELECT id FROM auth.sessions WHERE user_id != ${callerUserId}
-      )
-    `;
-    const refreshCount = refreshResult.count ?? 0;
+    const keepBySession = callerSessionId
+      ? await sql`SELECT id FROM auth.sessions WHERE id = ${callerSessionId} LIMIT 1`
+      : [];
 
-    // 2. Borrar sesiones de todos excepto el sysadmin
-    const sessionResult = await sql`
-      DELETE FROM auth.sessions
-      WHERE user_id != ${callerUserId}
-    `;
+    let refreshResult;
+    let sessionResult;
+
+    if (keepBySession.length > 0 && callerSessionId) {
+      // Mantener ÚNICAMENTE la sesión activa que invocó la acción (incluso si hay otras del mismo sysadmin)
+      refreshResult = await sql`
+        DELETE FROM auth.refresh_tokens
+        WHERE session_id IN (
+          SELECT id FROM auth.sessions WHERE id != ${callerSessionId}
+        )
+      `;
+
+      sessionResult = await sql`
+        DELETE FROM auth.sessions
+        WHERE id != ${callerSessionId}
+      `;
+    } else {
+      // Fallback legacy si no se pudo extraer/validar session_id del JWT
+      refreshResult = await sql`
+        DELETE FROM auth.refresh_tokens
+        WHERE session_id IN (
+          SELECT id FROM auth.sessions WHERE user_id != ${callerUserId}
+        )
+      `;
+
+      sessionResult = await sql`
+        DELETE FROM auth.sessions
+        WHERE user_id != ${callerUserId}
+      `;
+    }
+
+    const refreshCount = refreshResult.count ?? 0;
     const sessionCount = sessionResult.count ?? 0;
 
     await sql.end();
@@ -225,6 +264,7 @@ Deno.serve(async (req) => {
       });
     }
     const userId = authUser.id;
+    const callerSessionId = getSessionIdFromJwt(token);
 
     // Check sysadmin role
     const { data: roles, error: roleError } = await adminClient
@@ -250,7 +290,7 @@ Deno.serve(async (req) => {
 
     if (action === "nuclear_logout") {
       try {
-        const result = await handleNuclearLogout(userId);
+        const result = await handleNuclearLogout(userId, callerSessionId);
         console.log(`☢️ NUCLEAR LOGOUT ejecutado por sysadmin ${userId}: ${result.count} sesiones cerradas`);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -303,7 +343,7 @@ Deno.serve(async (req) => {
 
         // Nuclear logout automático al activar el escudo
         try {
-          const logoutResult = await handleNuclearLogout(userId);
+          const logoutResult = await handleNuclearLogout(userId, callerSessionId);
           console.warn(`☢️ AUTO NUCLEAR LOGOUT: ${logoutResult.count} sesiones cerradas junto con activación del escudo.`);
         } catch (logoutErr) {
           console.error("Auto nuclear logout failed (shield still activated):", logoutErr);
