@@ -65,7 +65,11 @@ export function AdminMaintenance() {
             const result = await res.json();
 
             if (res.ok && result.success) {
-                toast.success(`☢️ Nuclear Logout completado: ${result.count} sesiones cerradas`);
+                if ((result.count ?? 0) > 0) {
+                    toast.success(`☢️ Nuclear Logout completado: ${result.count} sesiones cerradas`);
+                } else {
+                    toast.warning("No había otras sesiones activas para cerrar");
+                }
             } else {
                 toast.error(`Error: ${result.error || "Error desconocido"}`);
             }
