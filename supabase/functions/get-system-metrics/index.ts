@@ -154,53 +154,55 @@ function parseMetrics(raw: string): ParsedMetrics {
 
 /**
  * Nuclear logout: cierra todas las sesiones excepto la del sysadmin que ejecuta.
- * Usa service_role para acceder a auth.sessions.
+ * Usa la Admin API de Supabase (signOut por usuario) para invalidar tokens de refresh.
+ * Borrar solo de auth.sessions NO funciona porque los clientes se reconectan con refresh tokens.
  */
 async function handleNuclearLogout(adminClient: ReturnType<typeof createClient>, callerUserId: string) {
-  // Use raw SQL via rpc to delete sessions from auth schema
-  const { data, error } = await adminClient.rpc("execute_nuclear_logout" as any, {
-    _caller_user_id: callerUserId,
-  });
+  // 1. Obtener todos los usuarios activos
+  let allUsers: { id: string }[] = [];
+  let page = 1;
+  const perPage = 100;
 
-  if (error) {
-    // Fallback: use admin API to sign out all users
-    // We can't directly access auth.sessions via the JS client,
-    // so we'll use the management API
-    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/logout`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-        apikey: SERVICE_ROLE_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ scope: "others" }),
+  while (true) {
+    const { data, error } = await adminClient.auth.admin.listUsers({
+      page,
+      perPage,
     });
-
-    // Alternative: use direct DB connection
-    const dbUrl = Deno.env.get("SUPABASE_DB_URL");
-    if (dbUrl) {
-      try {
-        // Dynamic import for postgres
-        const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
-        const sql = postgres(dbUrl);
-        const result = await sql`
-          DELETE FROM auth.sessions 
-          WHERE user_id != ${callerUserId}
-        `;
-        const count = result.count ?? 0;
-        await sql.end();
-        console.log(`☢️ NUCLEAR LOGOUT: ${count} sesiones eliminadas (excepto sysadmin ${callerUserId})`);
-        return { success: true, count };
-      } catch (dbErr) {
-        console.error("Nuclear logout DB error:", dbErr);
-        throw dbErr;
-      }
+    if (error) {
+      console.error("Error listing users:", error.message);
+      break;
     }
-
-    throw new Error("No DB connection available for nuclear logout");
+    if (!data?.users || data.users.length === 0) break;
+    allUsers = allUsers.concat(data.users.map(u => ({ id: u.id })));
+    if (data.users.length < perPage) break;
+    page++;
   }
 
-  return { success: true, count: data ?? 0 };
+  // 2. Filtrar al sysadmin que ejecuta
+  const usersToLogout = allUsers.filter(u => u.id !== callerUserId);
+  let loggedOutCount = 0;
+  const errors: string[] = [];
+
+  // 3. Cerrar sesión de cada usuario via Admin API (scope: global invalida TODOS los refresh tokens)
+  for (const user of usersToLogout) {
+    try {
+      const { error } = await adminClient.auth.admin.signOut(user.id, "global" as any);
+      if (error) {
+        errors.push(`${user.id}: ${error.message}`);
+      } else {
+        loggedOutCount++;
+      }
+    } catch (err: any) {
+      errors.push(`${user.id}: ${err?.message || "unknown"}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    console.warn(`☢️ NUCLEAR LOGOUT: ${loggedOutCount} cerradas, ${errors.length} errores:`, errors.slice(0, 5));
+  }
+
+  console.log(`☢️ NUCLEAR LOGOUT: ${loggedOutCount}/${usersToLogout.length} sesiones cerradas (excepto sysadmin ${callerUserId})`);
+  return { success: true, count: loggedOutCount, total: usersToLogout.length, errors: errors.length };
 }
 
 Deno.serve(async (req) => {
