@@ -404,8 +404,7 @@ Deno.serve(async (req) => {
 
     // Diagnostic logging for raw disk IO values
     const rawDiskIo = firstMetric(rawText, "disk_io_consumption");
-    const rawDiskIoFallback = firstMetric(rawText, "node_disk_io_time_weighted_seconds_total");
-    console.log(`📊 RAW disk_io_consumption=${rawDiskIo}, fallback=${rawDiskIoFallback}, computed_budget=${metrics.diskIoBudget}%`);
+    console.log(`📊 RAW disk_io_consumption=${rawDiskIo}, computed_budget=${metrics.diskIoBudget}%`);
 
     const isLowIoMode = metrics.diskIoBudget !== null && metrics.diskIoBudget <= 5;
     if (isLowIoMode) {
