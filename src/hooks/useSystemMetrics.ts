@@ -45,7 +45,12 @@ export function useSystemMetrics() {
   const query = useQuery({
     queryKey: ["system-metrics"],
     queryFn: fetchSystemMetrics,
-    refetchInterval: 60_000,
+    refetchInterval: (query) => {
+      const budget = query.state.data?.diskIoBudget;
+      // Slow down polling to 5 min when disk IO is critical (≤5%)
+      if (budget !== null && budget !== undefined && budget <= 5) return 300_000;
+      return 60_000;
+    },
     staleTime: 30_000,
     retry: (failureCount, error) => {
       if (error.message === "NO_SESSION" || error.message === "AUTH_EXPIRED") return false;

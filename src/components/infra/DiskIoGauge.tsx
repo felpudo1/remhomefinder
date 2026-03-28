@@ -71,6 +71,18 @@ export function DiskIoGauge({ value }: DiskIoGaugeProps) {
             la base de datos entrará en modo throttling severo (I/O limitado), provocando timeouts y potencial colapso del servicio.
           </span>
         </div>
+        {/* Recovery note when at 0% */}
+        {pct <= 5 && (
+          <div className="mt-2 w-full max-w-lg rounded-md border border-yellow-700/60 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300 flex items-start gap-2">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-yellow-400" />
+            <span>
+              <strong>Modo bajo I/O activo:</strong> El polling se redujo a cada 5 min y se pausó el guardado de historial
+              para permitir la recuperación del balance. La tasa de recuperación de AWS depende del tamaño del volumen
+              (~3 IOPS/GB baseline). En instancias pequeñas, puede tardar <strong>varias horas</strong> en volver a subir
+              si hay procesos internos de Postgres (vacuuming, WAL, heartbeats del pool).
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
