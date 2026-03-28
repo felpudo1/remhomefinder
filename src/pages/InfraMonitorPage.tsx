@@ -1,6 +1,6 @@
 import { useSystemMetrics } from "@/hooks/useSystemMetrics";
 import { DiskIoGauge } from "@/components/infra/DiskIoGauge";
-import { RequestsCharts } from "@/components/infra/RequestsCharts";
+import { DiskIoTrendChart } from "@/components/infra/DiskIoTrendChart";
 import { ResourceCards } from "@/components/infra/ResourceCards";
 import { AdminMaintenance } from "@/components/admin/system/AdminMaintenance";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -97,6 +97,7 @@ export default function InfraMonitorPage() {
             <AdminMaintenance />
           </div>
           <DiskIoGauge value={data.diskIoBudget} />
+          <DiskIoTrendChart history={data.diskIoHistory ?? []} />
           <RequestsCharts
             restRequests={data.restRequests}
             authRequests={data.authRequests}
