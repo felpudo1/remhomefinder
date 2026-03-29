@@ -281,14 +281,35 @@ Deno.serve(async (req: Request) => {
     const rawText = await res.text();
     const parsed = parseMetrics(rawText);
 
-    // ZERO DATABASE POLICY (v6.0.zero-db) - REGLA JP: Ni lectura ni escritura para métricas
+    // Guardar histórico de Disk IO Budget
     const diskIoBudget = parsed.diskIoBudget;
     const diskIoSource: "live" | "unavailable" = diskIoBudget !== null ? "live" : "unavailable";
     const diskIoLastSampleAt: string | null = diskIoBudget !== null ? new Date().toISOString() : null;
-    const diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
-
-    // No hacemos query a 'system_metrics_history' para evitar consumo de I/O por lectura
-    // La monitorización ahora es 100% en vivo vía Prometheus (Shotgun Detection)
+    
+    // Insertar snapshot en histórico (solo si hay dato válido)
+    let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
+    if (diskIoBudget !== null) {
+      // Guardar en system_metrics_history
+      const { error: historyError } = await supabase
+        .from("system_metrics_history")
+        .insert({
+          disk_io_budget: diskIoBudget,
+          recorded_at: new Date().toISOString(),
+        });
+      
+      if (historyError) {
+        console.error("Failed to save history:", historyError);
+      } else {
+        // Leer últimos 50 registros para la tendencia
+        const { data: historyData } = await supabase
+          .from("system_metrics_history")
+          .select("disk_io_budget, recorded_at")
+          .order("recorded_at", { ascending: false })
+          .limit(50);
+        
+        diskIoHistory = historyData || [];
+      }
+    }
 
     return new Response(JSON.stringify({
       ...parsed,
