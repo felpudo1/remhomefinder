@@ -951,6 +951,48 @@ export type Database = {
           },
         ]
       }
+      status_feedback_configs: {
+        Row: {
+          created_at: string | null
+          field_id: string
+          field_label: string
+          field_type: Database["public"]["Enums"]["feedback_field_type"]
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          placeholder: string | null
+          sort_order: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_id: string
+          field_label: string
+          field_type?: Database["public"]["Enums"]["feedback_field_type"]
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          placeholder?: string | null
+          sort_order?: number | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_id?: string
+          field_label?: string
+          field_type?: Database["public"]["Enums"]["feedback_field_type"]
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          placeholder?: string | null
+          sort_order?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       status_history_log: {
         Row: {
           changed_by: string
@@ -1469,6 +1511,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_status_feedback_config: {
+        Args: { p_status: string }
+        Returns: {
+          field_id: string
+          field_label: string
+          field_type: Database["public"]["Enums"]["feedback_field_type"]
+          id: string
+          is_required: boolean
+          placeholder: string
+          sort_order: number
+        }[]
+      }
       get_user_listings_page: {
         Args: { _cursor?: string; _page_size?: number }
         Returns: Json
@@ -1519,6 +1573,7 @@ export type Database = {
         | "pausado"
       app_role: "admin" | "agency" | "user" | "agencymember" | "sysadmin"
       currency_code: "USD" | "ARS" | "UYU" | "CLP"
+      feedback_field_type: "rating" | "boolean" | "text" | "date" | "info"
       listing_type: "rent" | "sale"
       org_role: "owner" | "agent" | "member" | "system_admin_delegate"
       org_type: "family" | "agency_team" | "sub_team"
@@ -1670,6 +1725,7 @@ export const Constants = {
       ],
       app_role: ["admin", "agency", "user", "agencymember", "sysadmin"],
       currency_code: ["USD", "ARS", "UYU", "CLP"],
+      feedback_field_type: ["rating", "boolean", "text", "date", "info"],
       listing_type: ["rent", "sale"],
       org_role: ["owner", "agent", "member", "system_admin_delegate"],
       org_type: ["family", "agency_team", "sub_team"],
