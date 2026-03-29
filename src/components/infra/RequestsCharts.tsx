@@ -11,6 +11,7 @@ interface RequestsChartsProps {
 
 function MetricBar({ label, value, icon: Icon, color }: { label: string; value: number | null; icon: React.ElementType; color: string }) {
   const data = [{ name: label, value: value ?? 0 }];
+  const displayValue = typeof value === "number" ? value : 0;
   return (
     <Card className="bg-slate-900/80 backdrop-blur border-slate-700/50">
       <CardHeader className="pb-1">
@@ -21,7 +22,7 @@ function MetricBar({ label, value, icon: Icon, color }: { label: string; value: 
       </CardHeader>
       <CardContent>
         <p className={`text-2xl font-bold ${color}`}>
-          {value !== null ? value.toLocaleString() : "N/A"}
+          {typeof value === "number" ? value.toLocaleString() : "N/A"}
         </p>
         <p className="text-xs text-slate-500 mt-1">Total acumulado</p>
       </CardContent>

@@ -285,7 +285,10 @@ Deno.serve(async (req: Request) => {
     const diskIoBudget = parsed.diskIoBudget;
     const diskIoSource: "live" | "unavailable" = diskIoBudget !== null ? "live" : "unavailable";
     const diskIoLastSampleAt: string | null = diskIoBudget !== null ? new Date().toISOString() : null;
-    
+
+    // Crear cliente Supabase para guardar histórico
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
     // Insertar snapshot en histórico (solo si hay dato válido)
     let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
     if (diskIoBudget !== null) {
@@ -296,7 +299,7 @@ Deno.serve(async (req: Request) => {
           disk_io_budget: diskIoBudget,
           recorded_at: new Date().toISOString(),
         });
-      
+
       if (historyError) {
         console.error("Failed to save history:", historyError);
       } else {
@@ -306,7 +309,7 @@ Deno.serve(async (req: Request) => {
           .select("disk_io_budget, recorded_at")
           .order("recorded_at", { ascending: false })
           .limit(50);
-        
+
         diskIoHistory = historyData || [];
       }
     }
