@@ -95,55 +95,42 @@ export default function InfraMonitorPage() {
         <MetricsSkeleton />
       ) : data ? (
         <div className="space-y-6">
-          <div className="mb-4">
-            <AdminMaintenance />
-          </div>
-          <div className="p-4 bg-slate-900 border border-dashed border-slate-700 rounded-lg">
-            <h3 className="text-sm font-medium text-slate-400 mb-2">Debug de Métricas (Temporal)</h3>
-            <div className="flex gap-2 mb-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={async (e) => {
-                  const btn = e.currentTarget;
-                  const el = document.getElementById('debug-raw-metrics') as HTMLTextAreaElement;
-                  if (el) el.value = "Cargando data... (puede tardar 10-20s)";
-                  btn.disabled = true;
-                  
-                  try {
-                    console.log("Invocando debug_metrics...");
-                    const { data, error } = await supabase.functions.invoke('get-system-metrics', {});
-                    
-                    if (error) {
-                      if (el) el.value = "ERROR DE FUNCIÓN:\n" + JSON.stringify(error, null, 2);
-                    } else if (data) {
-                      if (el) el.value = JSON.stringify(data, null, 2);
-                    } else {
-                      if (el) el.value = "RESPUESTA VACÍA O NULA";
-                    }
-                  } catch (err) {
-                    if (el) el.value = "EXCEPCIÓN:\n" + (err instanceof Error ? err.message : String(err));
-                  } finally {
-                    btn.disabled = false;
-                  }
-                }}
-              >
-                Obtener Data Cruda de Prometheus
-              </Button>
-            </div>
-            <textarea 
-              id="debug-raw-metrics"
-              className="w-full h-48 bg-slate-950 text-[10px] p-2 font-mono text-emerald-500 border border-slate-800 rounded"
-              readOnly
-              placeholder="La data aparecerá acá al clickear..."
-            />
-          </div>
 
           <DiskIoGauge
             value={data.diskIoBudget}
             source={data.diskIoSource}
             lastSampleAt={data.diskIoLastSampleAt}
           />
+
+          {/* Info Card: Disk IO Budget Explanation (moved below gauge) */}
+          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold tracking-tight">
+              <Activity className="w-4 h-4" />
+              <h2 className="text-sm uppercase">AWS Burst Balance (Disk IO Budget)</h2>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              El 100% representa el Burst Balance de AWS disponible. Cada operación de lectura/escritura consume créditos. Si llega a 0%, la base de datos entrará en modo throttling severo (I/O limitado), provocando timeouts y potencial colapso del servicio.
+            </p>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-center">
+                <div className="text-[10px] text-emerald-500 font-bold uppercase">Sano</div>
+                <div className="text-xs text-emerald-400 font-medium">&gt; 50% OK</div>
+              </div>
+              <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-center">
+                <div className="text-[10px] text-amber-500 font-bold uppercase">Precaución</div>
+                <div className="text-xs text-amber-400 font-medium">20-50%</div>
+              </div>
+              <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20 text-center">
+                <div className="text-[10px] text-rose-500 font-bold uppercase">Peligro</div>
+                <div className="text-xs text-rose-400 font-medium">&lt; 20%</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <AdminMaintenance />
+          </div>
+
           <DiskIoTrendChart history={data.diskIoHistory ?? []} />
           <RequestsCharts
             restRequests={data.restRequests}

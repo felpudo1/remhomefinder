@@ -230,31 +230,26 @@ async function handleNuclearLogout(callerUserId: string, callerSessionId: string
 
 // ── Main handler ─────────────────────────────────────────
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // EVERYTHING inside try/catch → always returns 200 + JSON
   try {
-    // 1) Validate env vars
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error("Missing env vars", { hasUrl: !!supabaseUrl, hasKey: !!serviceRoleKey });
-      return new Response(
-        JSON.stringify({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY", timestamp: new Date().toISOString() }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Missing env vars" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    // 2) Check for special actions (nuclear logout, etc.)
     const url = new URL(req.url);
     const action = await getRequestedAction(req, url);
 
+    // ── Actions (Nuclear Logout) ────────────────────────
     if (action === "nuclear_logout") {
       const authHeader = req.headers.get("authorization") ?? "";
       const token = authHeader.replace(/^Bearer\s+/i, "");
@@ -267,14 +262,13 @@ Deno.serve(async (req) => {
       }
       const { data: roleRow } = await adminClient.from("user_roles").select("role").eq("user_id", user.id).eq("role", "sysadmin").maybeSingle();
       if (!roleRow) {
-        return new Response(JSON.stringify({ error: "Unauthorized: sysadmin only" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const sessionId = getSessionIdFromJwt(token);
-      const result = await handleNuclearLogout(user.id, sessionId);
+      const result = await handleNuclearLogout(user.id, getSessionIdFromJwt(token));
       return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 3) Fetch Prometheus metrics
+    // ── Metrics Fetch (Prometheus) ─────────────────────
     const metricsUrl = `https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics`;
     const credentials = btoa(`service_role:${serviceRoleKey}`);
 
@@ -282,92 +276,32 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Basic ${credentials}` },
     });
     const rawText = await res.text();
-
     const parsed = parseMetrics(rawText);
 
-    // 4) If live disk IO is null, try history fallback
-    let diskIoBudget = parsed.diskIoBudget;
-    let diskIoSource: "live" | "history" | "unavailable" = diskIoBudget !== null ? "live" : "unavailable";
-    let diskIoLastSampleAt: string | null = null;
-    let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
+    // ZERO DATABASE POLICY (v6.0.zero-db) - REGLA JP: Ni lectura ni escritura para métricas
+    const diskIoBudget = parsed.diskIoBudget;
+    const diskIoSource: "live" | "unavailable" = diskIoBudget !== null ? "live" : "unavailable";
+    const diskIoLastSampleAt: string | null = diskIoBudget !== null ? new Date().toISOString() : null;
+    const diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
 
-    // Read fallback window from system_config (default 48h)
-    let fallbackHours = 48;
-    try {
-      const { data: cfgRow } = await adminClient
-        .from("system_config")
-        .select("value")
-        .eq("key", "history_fallback_max_hours")
-        .maybeSingle();
-      if (cfgRow?.value) {
-        fallbackHours = Math.max(1, Number(cfgRow.value) || 48);
-      }
-    } catch (e) {
-      console.warn("Could not read history_fallback_max_hours:", e);
-    }
+    // No hacemos query a 'system_metrics_history' para evitar consumo de I/O por lectura
+    // La monitorización ahora es 100% en vivo vía Prometheus (Shotgun Detection)
 
-    // Fetch last 48h of history
-    const histCutoff = new Date(Date.now() - fallbackHours * 60 * 60 * 1000).toISOString();
-    try {
-      const { data: histRows } = await adminClient
-        .from("system_metrics_history")
-        .select("disk_io_budget, recorded_at")
-        .gte("recorded_at", histCutoff)
-        .order("recorded_at", { ascending: true });
-
-      if (histRows && histRows.length > 0) {
-        diskIoHistory = histRows.filter((r: any) => r.disk_io_budget !== null) as any;
-      }
-    } catch (e) {
-      console.warn("History query failed:", e);
-    }
-
-    // If live is null, use the latest non-null historical value
-    if (diskIoBudget === null && diskIoHistory.length > 0) {
-      const latest = diskIoHistory[diskIoHistory.length - 1];
-      if (latest && typeof latest.disk_io_budget === "number") {
-        diskIoBudget = clampPercent(latest.disk_io_budget);
-        diskIoSource = "history";
-        diskIoLastSampleAt = latest.recorded_at;
-        const ageMin = Math.round((Date.now() - new Date(latest.recorded_at).getTime()) / 60_000);
-        console.log(`Disk IO fallback: using historical value ${diskIoBudget}% from ${ageMin} min ago`);
-      }
-    }
-
-    // 5) Save current live value to history (only if live and > 0)
-    if (parsed.diskIoBudget !== null) {
-      try {
-        await adminClient.from("system_metrics_history").insert({
-          disk_io_budget: parsed.diskIoBudget,
-          recorded_at: new Date().toISOString(),
-        });
-      } catch (e) {
-        console.warn("Failed to save metric to history:", e);
-      }
-    }
-
-    // 6) Return full response
     return new Response(JSON.stringify({
       ...parsed,
       diskIoBudget,
       diskIoSource,
       diskIoLastSampleAt,
       diskIoHistory,
-      timestamp: new Date().toISOString(),
-      version: "4.0.fallback",
+      version: "6.0.zero-db"
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (err: any) {
-    console.error("get-system-metrics unhandled error:", err);
-    return new Response(JSON.stringify({
-      error: err.message ?? "Unknown error",
-      stack: String(err.stack ?? "").slice(0, 500),
-      timestamp: new Date().toISOString(),
-      version: "4.0.fallback",
-    }), {
+    console.error("Critical error:", err);
+    return new Response(JSON.stringify({ error: err.message, version: "5.0.clean" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
