@@ -1055,19 +1055,31 @@ export type Database = {
       }
       system_metrics_history: {
         Row: {
+          auth_requests: number | null
           disk_io_budget: number | null
           id: string
+          realtime_requests: number | null
           recorded_at: string
+          rest_requests: number | null
+          storage_requests: number | null
         }
         Insert: {
+          auth_requests?: number | null
           disk_io_budget?: number | null
           id?: string
+          realtime_requests?: number | null
           recorded_at?: string
+          rest_requests?: number | null
+          storage_requests?: number | null
         }
         Update: {
+          auth_requests?: number | null
           disk_io_budget?: number | null
           id?: string
+          realtime_requests?: number | null
           recorded_at?: string
+          rest_requests?: number | null
+          storage_requests?: number | null
         }
         Relationships: []
       }
