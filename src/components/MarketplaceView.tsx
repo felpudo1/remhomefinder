@@ -85,7 +85,10 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showGroupSelectModal, setShowGroupSelectModal] = useState(false);
+  const [pendingSaveProperty, setPendingSaveProperty] = useState<MarketplaceProperty | null>(null);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const contactTipInterval = Number.isInteger(Number(contactTipIntervalRaw)) && Number(contactTipIntervalRaw) >= 1
     ? Number(contactTipIntervalRaw)
     : Number(MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT);
@@ -300,8 +303,24 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const handleSave = async (property: MarketplaceProperty) => {
     setSavingId(property.id);
     try {
-      await saveToList.mutateAsync({ property });
-      toast({ title: "¡Guardada!", description: `"${property.title}" fue agregada a tu listado.` });
+      // Verificar si el usuario tiene grupos familiares
+      const familyGroups = groups.filter(g => g.type === "family");
+      
+      if (familyGroups.length === 0) {
+        // No tiene grupos → guardar solo para el agente
+        await saveToList.mutateAsync({ property });
+        toast({ title: "¡Guardada!", description: `"${property.title}" fue agregada a tu listado.` });
+      } else if (familyGroups.length === 1) {
+        // Tiene 1 grupo → preguntar si quiere guardar también en el grupo
+        setPendingSaveProperty(property);
+        setSelectedGroupId(familyGroups[0].id);
+        setShowGroupSelectModal(true);
+      } else {
+        // Tiene >1 grupos → mostrar modal para seleccionar
+        setPendingSaveProperty(property);
+        setSelectedGroupId(null);
+        setShowGroupSelectModal(true);
+      }
 
       const isTipDisabled = localStorage.getItem(MARKET_TIP_DISABLED_KEY) === "true";
       if (!isTipDisabled) {
@@ -313,6 +332,49 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           setShowContactTipModal(true);
         }
       }
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleConfirmSaveToGroup = async () => {
+    if (!pendingSaveProperty) return;
+    
+    setSavingId(pendingSaveProperty.id);
+    try {
+      // Guardar en el grupo seleccionado
+      await saveToList.mutateAsync({ 
+        property: pendingSaveProperty, 
+        groupId: selectedGroupId 
+      });
+      const groupName = groups.find(g => g.id === selectedGroupId)?.name;
+      toast({ 
+        title: "¡Guardada!", 
+        description: `"${pendingSaveProperty.title}" fue agregada a tu listado${groupName ? ` en "${groupName}"` : ""}.` 
+      });
+      setShowGroupSelectModal(false);
+      setPendingSaveProperty(null);
+      setSelectedGroupId(null);
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleSaveOnlyForAgent = async () => {
+    if (!pendingSaveProperty) return;
+    
+    setSavingId(pendingSaveProperty.id);
+    try {
+      // Guardar solo para el agente (sin grupo)
+      await saveToList.mutateAsync({ property: pendingSaveProperty, groupId: null });
+      toast({ title: "¡Guardada!", description: `"${pendingSaveProperty.title}" fue guardada. Podés contactar al agente.` });
+      setShowGroupSelectModal(false);
+      setPendingSaveProperty(null);
+      setSelectedGroupId(null);
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
     } finally {
@@ -539,6 +601,66 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         open={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
       />
+
+      {/* Modal para seleccionar grupo familiar al guardar desde HFMarket */}
+      <Dialog
+        open={showGroupSelectModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowGroupSelectModal(false);
+            setPendingSaveProperty(null);
+            setSelectedGroupId(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              {groups.filter(g => g.type === "family").length === 1 
+                ? "¿Guardar en tu grupo familiar?" 
+                : "¿En qué grupo querés guardar esta propiedad?"}
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              {groups.filter(g => g.type === "family").length === 1 
+                ? `Esta propiedad está publicada por un agente. Podés guardarla en tu grupo familiar "${groups.find(g => g.type === "family")?.name}" para hacer seguimiento interno del estado.`
+                : "Seleccioná el grupo familiar donde querés guardar esta propiedad para hacer seguimiento interno."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {groups.filter(g => g.type === "family").length > 1 && (
+            <div className="space-y-2 py-4">
+              {groups.filter(g => g.type === "family").map((group) => (
+                <label
+                  key={group.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                >
+                  <Checkbox
+                    checked={selectedGroupId === group.id}
+                    onCheckedChange={() => setSelectedGroupId(group.id)}
+                  />
+                  <span className="text-sm font-medium">{group.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={handleSaveOnlyForAgent}
+              disabled={!!savingId}
+            >
+              Guardar solo para contactar
+            </Button>
+            <Button
+              onClick={handleConfirmSaveToGroup}
+              disabled={!!savingId || (groups.filter(g => g.type === "family").length > 1 && !selectedGroupId)}
+            >
+              {savingId ? "Guardando..." : "Guardar en mi grupo"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

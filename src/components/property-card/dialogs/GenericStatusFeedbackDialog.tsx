@@ -110,29 +110,33 @@ export function GenericStatusFeedbackDialog({
       case "text":
         return (
           <div key={field.field_id} className="space-y-2">
-            <Label className="text-sm font-medium text-foreground text-left block">
-              {field.field_label}
-            </Label>
-            <Input
-              placeholder={field.placeholder || ""}
-              value={formData[field.field_id] || ""}
-              onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
-              className="rounded-xl border-border focus-visible:ring-primary"
-            />
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium text-foreground whitespace-nowrap">
+                {field.field_label}
+              </Label>
+              <Input
+                placeholder={field.placeholder || ""}
+                value={formData[field.field_id] || ""}
+                onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
+                className="rounded-xl border-border focus-visible:ring-primary flex-1"
+              />
+            </div>
           </div>
         );
       case "date":
         return (
           <div key={field.field_id} className="space-y-2">
-            <Label className="text-sm font-medium text-foreground text-left block">
-              {field.field_label}
-            </Label>
-            <Input
-              type="datetime-local"
-              value={formData[field.field_id] || ""}
-              onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
-              className="rounded-xl border-border focus-visible:ring-primary"
-            />
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium text-foreground whitespace-nowrap">
+                {field.field_label}
+              </Label>
+              <Input
+                type="datetime-local"
+                value={formData[field.field_id] || ""}
+                onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
+                className="rounded-xl border-border focus-visible:ring-primary flex-1"
+              />
+            </div>
           </div>
         );
       case "info":

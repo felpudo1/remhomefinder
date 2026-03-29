@@ -6,13 +6,13 @@ import { useCurrentUser } from "@/contexts/AuthProvider";
 /**
  * Hook para gestionar el sistema de estrellas (property_reviews).
  * Usa organizations + organization_members en lugar de groups.
- * 
+ *
  * NOTA: Se eliminó el canal Realtime dinámico que creaba 1 WebSocket
  * por cada propiedad abierta (escalabilidad). La mutation ya refetchea
  * vía invalidateQueries al votar. Si otro usuario vota, se actualiza
  * al reabrir el modal.
  */
-export function usePropertyRating(propertyId: string, groupId: string | null) {
+export function usePropertyRating(propertyId: string, groupId: string | null, sourceMarketplaceId?: string | null) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { user: authUser } = useCurrentUser();
@@ -52,6 +52,33 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
                 totalGroupMembers: groupMembersCount || 0,
                 userId: authUser.id
             };
+        },
+    });
+
+    // Obtener calificación general del marketplace (si viene de marketplace)
+    // Esto se ejecuta aunque no haya grupo familiar
+    const { data: marketplaceRatingData } = useQuery({
+        queryKey: ["marketplace-rating", sourceMarketplaceId],
+        enabled: !!sourceMarketplaceId,
+        queryFn: async () => {
+            if (!sourceMarketplaceId) return null;
+            
+            const { data, error } = await supabase
+                .from("agent_publications")
+                .select("property_id")
+                .eq("id", sourceMarketplaceId)
+                .single();
+            
+            if (error || !data) return null;
+            
+            // Obtener el promedio global desde public_global_rating (VIEW)
+            const { data: ratingData } = await supabase
+                .from("public_global_rating")
+                .select("avg_rating, total_votes")
+                .eq("property_id", data.property_id)
+                .maybeSingle();
+            
+            return ratingData;
         },
     });
 
@@ -97,6 +124,8 @@ export function usePropertyRating(propertyId: string, groupId: string | null) {
         averageRating: ratingsData?.averageRating || 0,
         totalVotes: ratingsData?.totalVotes || 0,
         totalGroupMembers: ratingsData?.totalGroupMembers || 0,
+        marketplaceAverageRating: marketplaceRatingData?.avg_rating || 0,
+        marketplaceTotalVotes: marketplaceRatingData?.total_votes || 0,
         isLoading,
         rate: (val: number) => rateMutation.mutate(val),
     };

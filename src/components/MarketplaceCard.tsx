@@ -110,6 +110,7 @@ export function MarketplaceCard({
             totalGroupMembers={Math.max(totalVotes, 1)}
             readonly={true}
             showUserRating={false}
+            marketplaceMode={true}
           />
         }
         bottomLeftOverlay={

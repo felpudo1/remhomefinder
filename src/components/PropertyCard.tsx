@@ -6,7 +6,7 @@ import { Property, PropertyStatus, AgentPubStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { ExternalLink, Building2, MessageCircle, Trash2, User, CalendarIcon } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { StarRating } from "@/components/ui/StarRating";
+import { StarRating, PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
@@ -89,9 +89,10 @@ export function PropertyCard({
   const { openVisitCalendarEntry } = usePropertyStatusActions(property, ownerEmail);
 
   // Hook de calificación por estrellas (solo si hay grupo)
-  const { userVote, averageRating, totalVotes, totalGroupMembers, rate } = usePropertyRating(
-    property.propertyId || property.id, 
-    property.groupId || null
+  const { userVote, averageRating, totalVotes, totalGroupMembers, rate, marketplaceAverageRating, marketplaceTotalVotes } = usePropertyRating(
+    property.propertyId || property.id,
+    property.groupId || null,
+    property.sourceMarketplaceId || null
   );
 
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
@@ -146,15 +147,18 @@ export function PropertyCard({
           />
         }
         ratingOverlay={
-          property.groupId && (
+          (property.groupId || property.sourceMarketplaceId) && (
             <div className={cn("flex flex-col gap-2", mktOverlay && "mt-10")}>
-              <StarRating
-                rating={userVote}
-                averageRating={averageRating}
-                totalVotes={totalVotes}
+              <PropertyRatingBadge
+                marketplaceAverageRating={marketplaceAverageRating}
+                marketplaceTotalVotes={marketplaceTotalVotes}
+                userVote={userVote}
+                familyAverageRating={averageRating}
+                familyTotalVotes={totalVotes}
                 totalGroupMembers={totalGroupMembers}
                 onRate={rate}
                 readonly={isDiscarded}
+                hasFamilyGroup={totalGroupMembers > 1}
               />
             </div>
           )
