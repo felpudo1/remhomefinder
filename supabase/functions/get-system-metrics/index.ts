@@ -368,29 +368,33 @@ Deno.serve(async (req: Request) => {
     // Crear cliente Supabase para guardar histórico
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Insertar snapshot en histórico (solo si hay dato válido)
-    let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string }> = [];
-    if (diskIoBudget !== null) {
-      // Guardar en system_metrics_history
+    // Insertar snapshot en histórico con contadores de requests
+    let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string; rest_requests: number; auth_requests: number; realtime_requests: number; storage_requests: number }> = [];
+    {
+      const row: Record<string, unknown> = {
+        recorded_at: new Date().toISOString(),
+        disk_io_budget: diskIoBudget,
+        rest_requests: parsed.restRequests ?? 0,
+        auth_requests: parsed.authRequests ?? 0,
+        realtime_requests: parsed.realtimeRequests ?? 0,
+        storage_requests: parsed.storageRequests ?? 0,
+      };
       const { error: historyError } = await supabase
         .from("system_metrics_history")
-        .insert({
-          disk_io_budget: diskIoBudget,
-          recorded_at: new Date().toISOString(),
-        });
+        .insert(row);
 
       if (historyError) {
         console.error("Failed to save history:", historyError);
-      } else {
-        // Leer últimos 50 registros para la tendencia
-        const { data: historyData } = await supabase
-          .from("system_metrics_history")
-          .select("disk_io_budget, recorded_at")
-          .order("recorded_at", { ascending: false })
-          .limit(50);
-
-        diskIoHistory = historyData || [];
       }
+
+      // Leer últimos 200 registros (aprox 3h de datos a 1/min) para filtros de período
+      const { data: historyData } = await supabase
+        .from("system_metrics_history")
+        .select("disk_io_budget, recorded_at, rest_requests, auth_requests, realtime_requests, storage_requests")
+        .order("recorded_at", { ascending: false })
+        .limit(200);
+
+      diskIoHistory = (historyData as any[]) || [];
     }
 
     return new Response(JSON.stringify({

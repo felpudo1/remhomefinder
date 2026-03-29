@@ -8,6 +8,10 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 export interface DiskIoHistoryPoint {
   disk_io_budget: number;
   recorded_at: string;
+  rest_requests?: number;
+  auth_requests?: number;
+  realtime_requests?: number;
+  storage_requests?: number;
 }
 
 export interface SystemMetrics {
