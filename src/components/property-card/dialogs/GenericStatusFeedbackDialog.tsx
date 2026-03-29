@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
 import { PropertyStatus } from "@/types/property";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 
 interface GenericStatusFeedbackDialogProps {
   open: boolean;
@@ -92,12 +92,19 @@ export function GenericStatusFeedbackDialog({
     switch (field.field_type) {
       case "rating":
         return (
-          <RatingField
-            key={field.field_id}
-            value={formData[field.field_id] || 0}
-            onChange={(val) => handleFieldChange(field.field_id, val)}
-            label={field.field_label}
-          />
+          <div key={field.field_id} className="flex items-center justify-between gap-4 py-2">
+            <Label className="text-sm font-medium text-foreground text-left block flex-1">
+              {field.field_label}
+            </Label>
+            <div className="shrink-0">
+              <RatingField
+                value={formData[field.field_id] || 0}
+                onChange={(val) => handleFieldChange(field.field_id, val)}
+                label=""
+                inline={true}
+              />
+            </div>
+          </div>
         );
       case "text":
         return (
@@ -125,6 +132,18 @@ export function GenericStatusFeedbackDialog({
               onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
               className="rounded-xl border-border focus-visible:ring-primary"
             />
+          </div>
+        );
+      case "info":
+        return (
+          <div key={field.field_id} className="p-3 bg-blue-50 border border-blue-200 rounded-lg w-full">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-blue-900 font-medium">{field.field_label}</p>
+            </div>
+            {field.placeholder && (
+              <p className="text-xs text-blue-700 mt-1 ml-6">{field.placeholder}</p>
+            )}
           </div>
         );
       default:

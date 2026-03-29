@@ -1,6 +1,6 @@
 import { PropertyStatus } from "@/types/property";
 
-export type FeedbackFieldType = "rating" | "boolean" | "text" | "date";
+export type FeedbackFieldType = "rating" | "boolean" | "text" | "date" | "info";
 
 export interface FeedbackQuestion {
   id: string;

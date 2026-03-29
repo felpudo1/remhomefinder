@@ -74,7 +74,7 @@ export function AdminEstadisticas() {
     const [savingFeedbackAttributeId, setSavingFeedbackAttributeId] = useState<string | null>(null);
     const [newAttributeName, setNewAttributeName] = useState("");
     const [newAttributeOrder, setNewAttributeOrder] = useState<number>(1);
-    const [mainTab, setMainTab] = useState<"propiedades" | "interes" | "scraping">("propiedades");
+    const [mainTab, setMainTab] = useState<"interes" | "scraping">("interes");
     const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
 
@@ -656,9 +656,8 @@ export function AdminEstadisticas() {
                 </div>
             </div>
 
-            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "propiedades" | "interes" | "scraping")} className="space-y-4">
-                <TabsList className="grid w-full max-w-[420px] grid-cols-3 rounded-xl">
-                    <TabsTrigger value="propiedades">Propiedades</TabsTrigger>
+            <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "interes" | "scraping")} className="space-y-4">
+                <TabsList className="grid w-full max-w-[420px] grid-cols-2 rounded-xl">
                     <TabsTrigger value="interes" className="flex items-center gap-1.5">
                         <TrendingUp className="w-4 h-4" />
                         Interés
@@ -668,145 +667,6 @@ export function AdminEstadisticas() {
                         Scraping
                     </TabsTrigger>
                 </TabsList>
-
-                <TabsContent value="propiedades" className="space-y-8">
-            <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <h4 className="font-semibold text-sm text-foreground">Opciones de cambios de estado</h4>
-                        <p className="text-[11px] text-muted-foreground">
-                            Gestioná las opciones que se usan en descarte y análisis estadístico.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
-                    <div className="md:col-span-6">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nombre</label>
-                        <input
-                            value={newAttributeName}
-                            onChange={(e) => setNewAttributeName(e.target.value)}
-                            placeholder="Ej: Otros"
-                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
-                        />
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</label>
-                        <input
-                            type="number"
-                            min={1}
-                            value={newAttributeOrder}
-                            onChange={(e) => setNewAttributeOrder(Number(e.target.value))}
-                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
-                        />
-                    </div>
-                    <div className="md:col-span-4">
-                        <button
-                            onClick={handleCreateFeedbackAttribute}
-                            className="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Agregar opción
-                        </button>
-                    </div>
-                </div>
-
-                {loadingFeedbackAttributes ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Cargando opciones...
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {feedbackAttributes.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No hay opciones cargadas.</p>
-                        ) : (
-                            feedbackAttributes.map((row) => (
-                                <div key={row.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center border border-border/60 rounded-lg p-2.5">
-                                    <div className="md:col-span-6">
-                                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nombre</label>
-                                        <input
-                                            value={row.name}
-                                            onChange={(e) =>
-                                                setFeedbackAttributes((prev) =>
-                                                    prev.map((item) => item.id === row.id ? { ...item, name: e.target.value } : item)
-                                                )
-                                            }
-                                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            value={row.display_order}
-                                            onChange={(e) =>
-                                                setFeedbackAttributes((prev) =>
-                                                    prev.map((item) => item.id === row.id ? { ...item, display_order: Number(e.target.value) } : item)
-                                                )
-                                            }
-                                            className="w-full h-8 mt-1 rounded-md border border-border bg-background px-2.5 text-xs"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2 flex items-center gap-2 mt-4 md:mt-0">
-                                        <input
-                                            id={`active-${row.id}`}
-                                            type="checkbox"
-                                            checked={row.active}
-                                            onChange={(e) =>
-                                                setFeedbackAttributes((prev) =>
-                                                    prev.map((item) => item.id === row.id ? { ...item, active: e.target.checked } : item)
-                                                )
-                                            }
-                                            className="h-4 w-4"
-                                        />
-                                        <label htmlFor={`active-${row.id}`} className="text-xs text-foreground">
-                                            Activa
-                                        </label>
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <button
-                                            onClick={() => handleUpdateFeedbackAttribute(row)}
-                                            disabled={savingFeedbackAttributeId === row.id}
-                                            className="w-full h-8 rounded-md border border-border text-xs font-medium inline-flex items-center justify-center gap-1.5 hover:bg-muted transition-colors disabled:opacity-50"
-                                        >
-                                            {savingFeedbackAttributeId === row.id ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                    Guardando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="w-4 h-4" />
-                                                    Guardar
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                    Podés editar nombre, orden y si la opción está activa. Las opciones inactivas no aparecen para el usuario final.
-                </p>
-            </div>
-
-            <EstadisticasTab
-                statProps={sortedStats}
-                loadingStats={statsSubTab === "marketplace" ? loadingMarket : loadingPersonal}
-                sortConfig={sortConfig}
-                handleSort={handleSort}
-                page={statsSubTab === "marketplace" ? pageMarket : pagePersonal}
-                setPage={statsSubTab === "marketplace" ? setPageMarket : setPagePersonal}
-                totalCount={statsSubTab === "marketplace" ? totalMarketCount : totalPersonalCount}
-                pageSize={PAGE_SIZE}
-                subTab={statsSubTab}
-                onSubTabChange={setStatsSubTab}
-            />
-                </TabsContent>
 
                 <TabsContent value="interes" className="space-y-4">
                     <AdminInteres />

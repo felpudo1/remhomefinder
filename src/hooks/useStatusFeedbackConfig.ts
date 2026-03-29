@@ -99,6 +99,23 @@ export function useAllStatusFeedbackConfigs() {
 
 /**
  * Hook para mutaciones: crear/actualizar/eliminar campos de configuración
+ * 
+ * IMPORTANTE - SOFT DELETE:
+ * -------------------------
+ * La función deleteField usa SOFT DELETE (is_active = false) en lugar de 
+ * hard delete para preservar datos históricos en status_history_log.event_metadata.
+ * 
+ * Si se eliminara físicamente un campo:
+ * ❌ Los datos históricos quedarían huérfanos
+ * ❌ El dashboard del agente mostraría datos corruptos/undefined
+ * ❌ Se perdería el historial de feedback de usuarios
+ * 
+ * Con soft delete:
+ * ✅ Los datos históricos se preservan
+ * ✅ El dashboard puede leer campos eliminados (para historial)
+ * ✅ Se puede reusar el field_id gracias al índice parcial único
+ * 
+ * @see {@link ../../../supabase/migrations/20260329030000_fix_unique_constraint_active_only.sql}
  */
 export function useStatusFeedbackConfigMutation() {
   const queryClient = useQueryClient();
@@ -160,10 +177,10 @@ export function useStatusFeedbackConfigMutation() {
   };
 
   const deleteField = async (id: string) => {
-    // Soft delete: marcar como inactivo en lugar de eliminar
+    // Hard delete: eliminar físicamente el registro
     const { error } = await supabase
       .from("status_feedback_configs")
-      .update({ is_active: false })
+      .delete()
       .eq("id", id);
 
     if (error) throw error;

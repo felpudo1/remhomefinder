@@ -4,7 +4,7 @@
 
 -- Create enum for feedback field types
 DO $$ BEGIN
-    CREATE TYPE feedback_field_type AS ENUM ('rating', 'boolean', 'text', 'date');
+    CREATE TYPE feedback_field_type AS ENUM ('rating', 'boolean', 'text', 'date', 'info');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
