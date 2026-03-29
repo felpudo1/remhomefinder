@@ -349,22 +349,6 @@ Deno.serve(async (req: Request) => {
       const result = await handleNuclearLogout(user.id, getSessionIdFromJwt(token));
       return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-      const authHeader = req.headers.get("authorization") ?? "";
-      const token = authHeader.replace(/^Bearer\s+/i, "");
-      if (!token) {
-        return new Response(JSON.stringify({ error: "No token" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const { data: { user }, error: authErr } = await adminClient.auth.getUser(token);
-      if (authErr || !user) {
-        return new Response(JSON.stringify({ error: "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const { data: roleRow } = await adminClient.from("user_roles").select("role").eq("user_id", user.id).eq("role", "sysadmin").maybeSingle();
-      if (!roleRow) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const result = await handleNuclearLogout(user.id, getSessionIdFromJwt(token));
-      return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
 
     // ── Metrics Fetch (Prometheus) ─────────────────────
     const metricsUrl = `https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics`;
