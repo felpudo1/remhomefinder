@@ -197,6 +197,7 @@ export function usePropertyMutations() {
             discardedSurvey,
             metaAchievedFeedback,
             closingFeedback,
+            metadata,
         }: {
             id: string;
             status: PropertyStatus;
@@ -229,6 +230,7 @@ export function usePropertyMutations() {
                 closeGuaranteeScore: number;
                 closeMovingScore: number;
             };
+            metadata?: Record<string, any>;
         }) => {
             if (!authUser) throw new Error("No autenticado");
             const user = authUser;
@@ -286,6 +288,11 @@ export function usePropertyMutations() {
                 eventMetadata.close_security_score = closingFeedback.closeSecurityScore;
                 eventMetadata.close_guarantee_score = closingFeedback.closeGuaranteeScore;
                 eventMetadata.close_moving_score = closingFeedback.closeMovingScore;
+            }
+
+            // Merge generic metadata if provided
+            if (metadata) {
+                Object.assign(eventMetadata, metadata);
             }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)

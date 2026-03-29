@@ -9,6 +9,7 @@ import {
   type AgentPropertyInsight,
   type AgentUserInsight,
 } from "@/hooks/useAgentPropertyInsights";
+import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
 import { Agency } from "./AgentProfile";
 
 type StatusFilter = "todos" | "ingresado" | "contactado" | "visita_coordinada" | "descartado" | "firme_candidato" | "posible_interes" | "meta_conseguida";
@@ -57,81 +58,27 @@ function RatingRow({ label, value }: { label: string; value: number }) {
 
 /** Renders ratings card for a given status */
 function StatusRatingCard({ status, user }: { status: string; user: AgentUserInsight }) {
-  const r = user.ratingsByStatus;
+  // Leer configuración dinámica para este estado
+  const { data: fields } = useStatusFeedbackConfig(status);
+  const meta = user.ratingsByStatus[status];
+  
+  if (!meta || !fields || fields.length === 0) return null;
 
-  const statusLabels: Record<string, string> = {
-    contactado: "Contactado",
-    visita_coordinada: "Visita Coordinada",
-    firme_candidato: "Alta Prioridad",
-    posible_interes: "Interesado",
-    meta_conseguida: "Meta Conseguida",
-    descartado: "Descartado",
-  };
+  // Filtrar solo campos de tipo rating que tengan valor
+  const rows = fields
+    .filter((f) => f.field_type === "rating")
+    .map((field) => ({
+      label: field.field_label,
+      value: Number(meta[field.field_id] || 0),
+    }))
+    .filter((row) => row.value > 0);
 
-  let rows: Array<{ label: string; value: number }> = [];
-
-  switch (status) {
-    case "contactado":
-      if (!r.contactado) return null;
-      rows = [
-        { label: "Interés inicial", value: r.contactado.contacted_interest },
-        { label: "Urgencia de mudanza", value: r.contactado.contacted_urgency },
-      ];
-      break;
-    case "visita_coordinada":
-      if (!r.visita_coordinada) return null;
-      rows = [
-        { label: "Velocidad de respuesta", value: r.visita_coordinada.coordinated_agent_response_speed },
-        { label: "Calidad de atención", value: r.visita_coordinada.coordinated_attention_quality },
-      ];
-      if (r.visita_coordinada.coordinated_app_help_score) {
-        rows.push({ label: "Ayuda de la app", value: r.visita_coordinada.coordinated_app_help_score });
-      }
-      break;
-    case "firme_candidato":
-    case "posible_interes": {
-      const closing = status === "firme_candidato" ? r.firme_candidato : r.posible_interes;
-      if (!closing) return null;
-      rows = [
-        { label: "Precio", value: closing.close_price_score },
-        { label: "Estado general", value: closing.close_condition_score },
-        { label: "Seguridad", value: closing.close_security_score },
-        { label: "Garantía", value: closing.close_guarantee_score },
-        { label: "Mudanza", value: closing.close_moving_score },
-      ];
-      break;
-    }
-    case "meta_conseguida":
-      if (!r.meta_conseguida) return null;
-      rows = [
-        { label: "Puntualidad agente", value: r.meta_conseguida.meta_agent_punctuality },
-        { label: "Atención agente", value: r.meta_conseguida.meta_agent_attention },
-        { label: "Funcionamiento app", value: r.meta_conseguida.meta_app_performance },
-        { label: "Soporte app", value: r.meta_conseguida.meta_app_support },
-        { label: "Precio app", value: r.meta_conseguida.meta_app_price },
-      ];
-      break;
-    case "descartado":
-      if (!r.descartado) return null;
-      rows = [
-        { label: "Estado general", value: r.descartado.discarded_overall_condition },
-        { label: "Entorno", value: r.descartado.discarded_surroundings },
-        { label: "Seguridad", value: r.descartado.discarded_house_security },
-        { label: "Tamaño esperado", value: r.descartado.discarded_expected_size },
-        { label: "Fotos vs realidad", value: r.descartado.discarded_photos_reality },
-      ];
-      break;
-    default:
-      return null;
-  }
-
-  const hasData = rows.some((r) => r.value > 0);
-  if (!hasData) return null;
+  if (rows.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-border bg-card p-3 space-y-2 min-w-[200px] shrink-0">
       <Badge variant="secondary" className="capitalize text-xs">
-        {statusLabels[status] || status.replace("_", " ")}
+        {status.replace(/_/g, " ")}
       </Badge>
       <div className="space-y-1.5">
         {rows.map((row) => (

@@ -52,14 +52,7 @@ export interface AgentUserInsight {
   updatedAtRelative: string;
   coordinatedDate?: string;
   userListingId: string;
-  ratingsByStatus: {
-    contactado?: ContactadoRatings;
-    visita_coordinada?: VisitaRatings;
-    firme_candidato?: ClosingRatings;
-    posible_interes?: ClosingRatings;
-    meta_conseguida?: MetaRatings;
-    descartado?: DescartadoRatings;
-  };
+  ratingsByStatus: Record<string, any>; // Dinámico para soportar STATUS_FEEDBACK_CONFIG
 }
 
 export interface AgentPropertyInsight {
@@ -187,62 +180,14 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
 
           userLogs.forEach((log) => {
             const meta = log.event_metadata || {};
-            switch (log.new_status) {
-              case "contactado":
-                ratingsByStatus.contactado = {
-                  contacted_interest: safeNum(meta.contacted_interest),
-                  contacted_urgency: safeNum(meta.contacted_urgency),
-                  contacted_name: meta.contacted_name || undefined,
-                };
-                totalInterest += safeNum(meta.contacted_interest);
-                totalUrgency += safeNum(meta.contacted_urgency);
-                if (safeNum(meta.contacted_interest) > 0) interestCount++;
-                break;
-              case "visita_coordinada":
-                ratingsByStatus.visita_coordinada = {
-                  coordinated_agent_response_speed: safeNum(meta.coordinated_agent_response_speed),
-                  coordinated_attention_quality: safeNum(meta.coordinated_attention_quality),
-                  coordinated_app_help_score: meta.coordinated_app_help_score != null ? safeNum(meta.coordinated_app_help_score) : undefined,
-                  coordinated_date: meta.coordinated_date || undefined,
-                };
-                break;
-              case "firme_candidato":
-                ratingsByStatus.firme_candidato = {
-                  close_price_score: safeNum(meta.close_price_score),
-                  close_condition_score: safeNum(meta.close_condition_score),
-                  close_security_score: safeNum(meta.close_security_score),
-                  close_guarantee_score: safeNum(meta.close_guarantee_score),
-                  close_moving_score: safeNum(meta.close_moving_score),
-                };
-                break;
-              case "posible_interes":
-                ratingsByStatus.posible_interes = {
-                  close_price_score: safeNum(meta.close_price_score),
-                  close_condition_score: safeNum(meta.close_condition_score),
-                  close_security_score: safeNum(meta.close_security_score),
-                  close_guarantee_score: safeNum(meta.close_guarantee_score),
-                  close_moving_score: safeNum(meta.close_moving_score),
-                };
-                break;
-              case "meta_conseguida":
-                ratingsByStatus.meta_conseguida = {
-                  meta_agent_punctuality: safeNum(meta.meta_agent_punctuality),
-                  meta_agent_attention: safeNum(meta.meta_agent_attention),
-                  meta_app_performance: safeNum(meta.meta_app_performance),
-                  meta_app_support: safeNum(meta.meta_app_support),
-                  meta_app_price: safeNum(meta.meta_app_price),
-                };
-                break;
-              case "descartado":
-                ratingsByStatus.descartado = {
-                  reason: meta.reason || undefined,
-                  discarded_overall_condition: safeNum(meta.discarded_overall_condition),
-                  discarded_surroundings: safeNum(meta.discarded_surroundings),
-                  discarded_house_security: safeNum(meta.discarded_house_security),
-                  discarded_expected_size: safeNum(meta.discarded_expected_size),
-                  discarded_photos_reality: safeNum(meta.discarded_photos_reality),
-                };
-                break;
+            // Guardamos todo el metadata dinámicamente
+            ratingsByStatus[log.new_status] = { ...meta };
+
+            // Acumuladores para los promedios globales de la propiedad (solo para contactado)
+            if (log.new_status === "contactado") {
+              totalInterest += safeNum(meta.contacted_interest);
+              totalUrgency += safeNum(meta.contacted_urgency);
+              if (safeNum(meta.contacted_interest) > 0) interestCount++;
             }
           });
 

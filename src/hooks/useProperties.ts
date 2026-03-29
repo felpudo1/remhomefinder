@@ -49,8 +49,24 @@ export function useProperties() {
         closeSecurityScore: number;
         closeGuaranteeScore: number;
         closeMovingScore: number;
-      }
-    ) => updateStatus({ id, status, deletedReason, coordinatedDate, groupId, contactedName, discardedAttributeIds, prosAndCons, contactedFeedback, coordinatedFeedback, discardedSurvey, metaAchievedFeedback, closingFeedback }),
+      },
+      metadata?: Record<string, any>
+    ) => updateStatus({
+      id,
+      status,
+      deletedReason,
+      coordinatedDate,
+      groupId,
+      contactedName,
+      discardedAttributeIds,
+      prosAndCons,
+      contactedFeedback,
+      coordinatedFeedback,
+      discardedSurvey,
+      metaAchievedFeedback,
+      closingFeedback,
+      metadata
+    }),
     addComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) =>
       addComment({ propertyId: id, comment }),
     refetch,

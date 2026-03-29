@@ -21,11 +21,7 @@ import { PropertyStatusSelector } from "./property-card/PropertyStatusSelector";
 import { PropertyCardHeader } from "./property-card/PropertyCardHeader";
 
 // Diálogos modulares
-import { StatusDiscardDialog } from "./property-card/dialogs/StatusDiscardDialog";
-import { StatusCoordinatedDialog } from "./property-card/dialogs/StatusCoordinatedDialog";
-import { StatusContactedDialog } from "./property-card/dialogs/StatusContactedDialog";
-import { StatusProsConsDialog, ProsConsFeedback } from "./property-card/dialogs/StatusProsConsDialog";
-import { StatusMetaDialogs } from "./property-card/dialogs/StatusMetaDialogs";
+import { GenericStatusFeedbackDialog } from "./property-card/dialogs/GenericStatusFeedbackDialog";
 import { StatusCalendarOfferDialog } from "./property-card/dialogs/StatusCalendarOfferDialog";
 
 export interface ProsAndConsAttributeIds {
@@ -55,20 +51,9 @@ interface PropertyCardProps {
       expectedSize: number;
       photosReality: number;
     },
-    metaAchievedFeedback?: {
-      agentPunctuality: number;
-      agentAttention: number;
-      appPerformance: number;
-      appSupport: number;
-      appPrice: number;
-    },
-    closingFeedback?: {
-      closePriceScore: number;
-      closeConditionScore: number;
-      closeSecurityScore: number;
-      closeGuaranteeScore: number;
-      closeMovingScore: number;
-    }
+    metaAchievedFeedback?: any,
+    closingFeedback?: any,
+    metadata?: Record<string, any>
   ) => void;
   onClick: () => void;
   ownerEmail?: string | null;
@@ -117,22 +102,14 @@ export function PropertyCard({
    * Manejador de cambio de estado: detecta qué acción requiere un diálogo de confirmación adicional.
    */
   const handleStatusChangeRequest = (val: string) => {
-    if (val === "eliminado") {
+    const statusVal = val as PropertyStatus;
+    if (statusVal === "eliminado") {
       dialogs.setShowDeleteConfirm(true);
-    } else if (val === "descartado") {
-      dialogs.setShowDiscardConfirm(true);
-    } else if (val === "visita_coordinada") {
-      dialogs.setIsEditingCoordinatedVisit(false);
-      dialogs.setShowCoordinatedConfirm(true);
-    } else if (val === "contactado") {
-      dialogs.setShowContactedConfirm(true);
-    } else if (val === "meta_conseguida") {
-      dialogs.setShowMetaAchievedConfirm(true);
-    } else if (val === "firme_candidato" || val === "posible_interes") {
-      dialogs.setPendingProsConsStatus(val);
-      dialogs.setShowProsConsConfirm(true);
+    } else if (["contactado", "visita_coordinada", "descartado", "firme_candidato", "posible_interes", "meta_conseguida"].includes(statusVal)) {
+      dialogs.setPendingStatus(statusVal);
+      dialogs.setShowGenericFeedback(true);
     } else {
-      onStatusChange(property.id, val as PropertyStatus);
+      onStatusChange(property.id, statusVal);
     }
   };
 
@@ -350,38 +327,19 @@ export function PropertyCard({
               />
             </StatusChangeConfirmDialog>
 
-            <StatusDiscardDialog
-              open={dialogs.showDiscardConfirm}
-              onOpenChange={dialogs.setShowDiscardConfirm}
+            <GenericStatusFeedbackDialog
+              open={dialogs.showGenericFeedback}
+              onOpenChange={dialogs.setShowGenericFeedback}
               propertyTitle={property.title}
-              onConfirm={(reason, survey) => {
-                onStatusChange(property.id, "descartado", reason, undefined, undefined, undefined, undefined, undefined, undefined, undefined, survey);
-                dialogs.setShowDiscardConfirm(false);
-              }}
-            />
-
-            <StatusProsConsDialog
-              open={dialogs.showProsConsConfirm}
-              onOpenChange={dialogs.setShowProsConsConfirm}
-              propertyTitle={property.title}
-              status={dialogs.pendingProsConsStatus}
-              onConfirm={(status, feedback) => {
-                onStatusChange(property.id, status, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, feedback);
-                dialogs.setShowProsConsConfirm(false);
-              }}
-            />
-
-            <StatusCoordinatedDialog
-              open={dialogs.showCoordinatedConfirm}
-              onOpenChange={dialogs.setShowCoordinatedConfirm}
-              propertyTitle={property.title}
-              isEditing={dialogs.isEditingCoordinatedVisit}
-              initialDate={dialogs.coordinatedDateTime}
-              appBrandName={appBrandName}
-              onConfirm={(isoDate, survey) => {
-                onStatusChange(property.id, "visita_coordinada", undefined, isoDate || null, undefined, undefined, undefined, undefined, undefined, survey);
-                dialogs.setShowCoordinatedConfirm(false);
-                if (isoDate) dialogs.handleCalendarOffer(isoDate);
+              status={dialogs.pendingStatus || "ingresado"}
+              onConfirm={(metadata) => {
+                onStatusChange(property.id, dialogs.pendingStatus!, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, metadata);
+                dialogs.setShowGenericFeedback(false);
+                
+                // Si coordinamos visita y hay fecha en la metadata, ofrecemos calendario
+                if (dialogs.pendingStatus === "visita_coordinada" && metadata.coordinated_date) {
+                  dialogs.handleCalendarOffer(metadata.coordinated_date);
+                }
               }}
             />
 
@@ -392,29 +350,6 @@ export function PropertyCard({
               onConfirm={() => {
                 if (dialogs.calendarOfferDate) openVisitCalendarEntry(dialogs.calendarOfferDate);
                 dialogs.setShowCalendarOfferConfirm(false);
-              }}
-            />
-
-            <StatusContactedDialog
-              open={dialogs.showContactedConfirm}
-              onOpenChange={dialogs.setShowContactedConfirm}
-              propertyTitle={property.title}
-              onConfirm={(name, feedback) => {
-                onStatusChange(property.id, "contactado", undefined, undefined, undefined, name, undefined, undefined, feedback);
-                dialogs.setShowContactedConfirm(false);
-              }}
-            />
-
-            <StatusMetaDialogs
-              showTrophy={dialogs.showMetaAchievedConfirm}
-              setShowTrophy={dialogs.setShowMetaAchievedConfirm}
-              showSurvey={dialogs.showMetaSurveyConfirm}
-              setShowSurvey={dialogs.setShowMetaSurveyConfirm}
-              propertyTitle={property.title}
-              appBrandName={appBrandName}
-              onConfirm={(feedback) => {
-                onStatusChange(property.id, "meta_conseguida", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, feedback);
-                dialogs.setShowMetaSurveyConfirm(false);
               }}
             />
           </>

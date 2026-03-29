@@ -17,14 +17,15 @@ import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
 import { AdminGrupos } from "@/components/admin/AdminGrupos";
 import { AdminDatosAdmin } from "@/components/admin/AdminDatosAdmin";
 import { AdminGeografia } from "@/components/admin/AdminGeografia";
+import { AdminStatusFeedbackConfig } from "@/components/admin/status-feedback/AdminStatusFeedbackConfig";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin" | "geografia";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin" | "geografia" | "feedback";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin", "geografia"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin", "geografia", "feedback"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -37,6 +38,7 @@ const MENU_ITEMS: {
     { id: "publicaciones", label: "Publicaciones", icon: FileText, description: "Todas las publicaciones guardadas por usuarios" },
     { id: "grupos", label: "Grupos / Equipos", icon: Users, description: "Todos los grupos y equipos de la plataforma" },
     { id: "geografia", label: "Geografía", icon: MapPin, description: "Gestión de Departamentos y Barrios" },
+    { id: "feedback", label: "Feedback Config", icon: Settings, description: "Configuración de campos de feedback por estado" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
@@ -112,6 +114,7 @@ const Admin = () => {
       case "publicaciones": return <AdminPublicaciones toast={toast} />;
       case "grupos": return <AdminGrupos toast={toast} />;
       case "geografia": return <AdminGeografia toast={toast} />;
+      case "feedback": return <AdminStatusFeedbackConfig />;
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;

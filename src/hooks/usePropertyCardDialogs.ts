@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toDatetimeLocalString } from "@/lib/date-utils";
-import { Property } from "@/types/property";
+import { Property, PropertyStatus } from "@/types/property";
 
 /**
  * Hook para centralizar todos los estados de los diálogos de confirmación
@@ -28,9 +28,9 @@ export const usePropertyCardDialogs = (property: Property) => {
     const [calendarOfferDate, setCalendarOfferDate] = useState<Date | null>(null);
 
     // Otros diálogos (contactado, meta conseguida, encuesta)
-    const [showContactedConfirm, setShowContactedConfirm] = useState(false);
-    const [showMetaAchievedConfirm, setShowMetaAchievedConfirm] = useState(false);
     const [showMetaSurveyConfirm, setShowMetaSurveyConfirm] = useState(false);
+    const [showGenericFeedback, setShowGenericFeedback] = useState(false);
+    const [pendingStatus, setPendingStatus] = useState<PropertyStatus | null>(null);
 
     // Galería de imágenes
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -64,9 +64,9 @@ export const usePropertyCardDialogs = (property: Property) => {
         isEditingCoordinatedVisit, setIsEditingCoordinatedVisit,
         showCalendarOfferConfirm, setShowCalendarOfferConfirm,
         calendarOfferDate, setCalendarOfferDate,
-        showContactedConfirm, setShowContactedConfirm,
-        showMetaAchievedConfirm, setShowMetaAchievedConfirm,
         showMetaSurveyConfirm, setShowMetaSurveyConfirm,
+        showGenericFeedback, setShowGenericFeedback,
+        pendingStatus, setPendingStatus,
         isGalleryOpen, setIsGalleryOpen,
         galleryInitialImg, setGalleryInitialImg,
 

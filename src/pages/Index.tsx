@@ -233,10 +233,11 @@ const Index = () => {
       closeSecurityScore: number;
       closeGuaranteeScore: number;
       closeMovingScore: number;
-    }
+    },
+    metadata?: Record<string, any>
   ) => {
     try {
-      await updateStatus(
+      await updateStatus({
         id,
         status,
         deletedReason,
@@ -249,8 +250,9 @@ const Index = () => {
         coordinatedFeedback,
         discardedSurvey,
         metaAchievedFeedback,
-        closingFeedback
-      );
+        closingFeedback,
+        metadata
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error desconocido";
       const isEnumError = /enum|invalid.*firme_candidato|invalid.*posible_interes|invalid.*meta_conseguida|user_listing_status/i.test(msg);
