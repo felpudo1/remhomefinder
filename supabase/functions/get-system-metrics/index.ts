@@ -252,8 +252,103 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const action = await getRequestedAction(req, url);
 
-    // ── Actions (Nuclear Logout) ────────────────────────
+    // ── Auth helper for actions ────────────────────────
+    async function authenticateSysadmin(reqObj: Request) {
+      const authHeader = reqObj.headers.get("authorization") ?? "";
+      const token = authHeader.replace(/^Bearer\s+/i, "");
+      if (!token) return { user: null, token: "", error: "No token" };
+      const { data: { user }, error: authErr } = await adminClient.auth.getUser(token);
+      if (authErr || !user) return { user: null, token, error: "Auth failed" };
+      const { data: roleRow } = await adminClient.from("user_roles").select("role").eq("user_id", user.id).eq("role", "sysadmin").maybeSingle();
+      if (!roleRow) return { user: null, token, error: "Unauthorized" };
+      return { user, token, error: null };
+    }
+
+    // ── List Sessions ───────────────────────────────────
+    if (action === "list_sessions") {
+      const { user, error: authError } = await authenticateSysadmin(req);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: authError || "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+      if (!dbUrl) {
+        return new Response(JSON.stringify({ error: "SUPABASE_DB_URL not configured" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
+      const sql = postgres(dbUrl);
+      try {
+        const rows = await sql`
+          SELECT s.id AS session_id, s.user_id, s.created_at, s.updated_at,
+                 COALESCE(p.display_name, '') AS display_name,
+                 COALESCE(p.email, '') AS email,
+                 COALESCE(ur.role::text, 'user') AS role
+          FROM auth.sessions s
+          LEFT JOIN public.profiles p ON p.user_id = s.user_id
+          LEFT JOIN public.user_roles ur ON ur.user_id = s.user_id
+          ORDER BY s.updated_at DESC
+          LIMIT 200
+        `;
+        await sql.end();
+        return new Response(JSON.stringify({ sessions: rows }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (err: any) {
+        await sql.end();
+        return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Close single session ────────────────────────────
+    if (action === "close_session") {
+      const { user, token, error: authError } = await authenticateSysadmin(req);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: authError || "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      let targetSessionId: string | null = null;
+      try {
+        const body = await req.clone().json() as { session_id?: string };
+        targetSessionId = body.session_id || url.searchParams.get("session_id");
+      } catch {
+        targetSessionId = url.searchParams.get("session_id");
+      }
+      if (!targetSessionId) {
+        return new Response(JSON.stringify({ error: "session_id required" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+      if (!dbUrl) {
+        return new Response(JSON.stringify({ error: "SUPABASE_DB_URL not configured" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.4/mod.js");
+      const sql = postgres(dbUrl);
+      try {
+        await sql`DELETE FROM auth.refresh_tokens WHERE session_id = ${targetSessionId}`;
+        const result = await sql`DELETE FROM auth.sessions WHERE id = ${targetSessionId}`;
+        await sql.end();
+        return new Response(JSON.stringify({ success: true, deleted: result.count ?? 0 }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (err: any) {
+        await sql.end();
+        return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Close all sessions (except caller) ──────────────
+    if (action === "close_all_sessions") {
+      const { user, token, error: authError } = await authenticateSysadmin(req);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: authError || "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const callerSessionId = getSessionIdFromJwt(token);
+      const result = await handleNuclearLogout(user.id, callerSessionId);
+      return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── Nuclear Logout (legacy alias) ───────────────────
     if (action === "nuclear_logout") {
+      const { user, token, error: authError } = await authenticateSysadmin(req);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: authError || "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const result = await handleNuclearLogout(user.id, getSessionIdFromJwt(token));
+      return new Response(JSON.stringify(result), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
       const authHeader = req.headers.get("authorization") ?? "";
       const token = authHeader.replace(/^Bearer\s+/i, "");
       if (!token) {
