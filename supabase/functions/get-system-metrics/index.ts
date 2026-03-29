@@ -6,7 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PROJECT_REF = "cuyfrpuiokvqvhvoerga";
+// Identificador del proyecto (ahora dinámico vía env vars para Vercel/Prod)
+const PROJECT_REF = Deno.env.get("SUPABASE_URL") 
+  ? new URL(Deno.env.get("SUPABASE_URL")!).hostname.split('.')[0] 
+  : "cuyfrpuiokvqvhvoerga"; // Fallback local
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -147,7 +150,7 @@ function parseMetrics(raw: string): ParsedMetrics {
     ramTotalMb,
     dbConnections,
     timestamp: new Date().toISOString(),
-    version: "4.0.fallback",
+    version: "6.0.zero-db",
   };
 }
 
@@ -293,7 +296,7 @@ Deno.serve(async (req: Request) => {
       diskIoSource,
       diskIoLastSampleAt,
       diskIoHistory,
-      version: "6.0.zero-db"
+      version: "6.0.zero-db-dynamic"
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
