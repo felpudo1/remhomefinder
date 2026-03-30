@@ -45,6 +45,10 @@ export interface StatusChangeConfirmDialogProps {
   onConfirm: () => void | Promise<void>;
   /** className opcional en el contenedor del contenido */
   contentClassName?: string;
+  /** Clases extra en el título del header (p. ej. otro tamaño para un flujo) */
+  headerTitleClassName?: string;
+  /** Clases extra en la descripción del header */
+  headerDescriptionClassName?: string;
 }
 
 /**
@@ -63,6 +67,8 @@ export function StatusChangeConfirmDialog({
   confirmDisabled = false,
   onConfirm,
   contentClassName,
+  headerTitleClassName,
+  headerDescriptionClassName,
 }: StatusChangeConfirmDialogProps) {
   const handleConfirm = async () => {
     try {
@@ -86,16 +92,38 @@ export function StatusChangeConfirmDialog({
         )}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle className="px-6 pt-6 text-xl font-semibold tracking-tight">{title}</AlertDialogTitle>
+          <AlertDialogTitle
+            className={cn(
+              "px-5 pt-3 pb-0 text-[19.2px] font-semibold leading-tight tracking-tight",
+              headerTitleClassName
+            )}
+          >
+            {title}
+          </AlertDialogTitle>
           {description != null && description !== "" ? (
             <AlertDialogDescription asChild>
-              <div className="px-6 pt-1 text-sm leading-relaxed text-muted-foreground">{description}</div>
+              <div
+                className={cn(
+                  "px-5 pb-0 text-[12.8px] leading-tight text-muted-foreground",
+                  headerDescriptionClassName
+                )}
+              >
+                {description}
+              </div>
             </AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
-        <div className="px-6 py-4">{children}</div>
-        <AlertDialogFooter className="gap-2 border-t border-border/60 bg-muted/20 px-6 py-4">
-          <AlertDialogCancel className="h-10 rounded-xl border border-border/80 bg-background px-5 text-sm font-medium hover:bg-muted">
+        {/*
+          Los textos largos de formularios (p. ej. preguntas al descartar) no viven aquí:
+          los renderiza el padre en `children` (típico: GenericStatusFeedbackDialog + labels desde BD).
+        */}
+        <div className="px-5 py-0.5">{children}</div>
+        {/*
+          Grid 1/3 + 2/3 en una sola fila también en móvil. El AlertDialogFooter base usa
+          flex-col-reverse debajo de sm; display:grid pisa ese layout sin tocar alert-dialog.tsx.
+        */}
+        <AlertDialogFooter className="grid w-full grid-cols-3 gap-2 border-t border-border/60 bg-muted/20 px-5 py-2 sm:space-x-0">
+          <AlertDialogCancel className="col-span-1 mt-0 h-10 min-w-0 rounded-xl border border-border/80 bg-background px-4 text-sm font-medium hover:bg-muted">
             {cancelLabel}
           </AlertDialogCancel>
           <Button
@@ -103,7 +131,7 @@ export function StatusChangeConfirmDialog({
             disabled={confirmDisabled}
             className={cn(
               buttonVariants(),
-              "h-10 rounded-xl px-5 text-sm font-semibold shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]",
+              "col-span-2 h-10 min-w-0 rounded-xl px-4 text-sm font-semibold shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]",
               confirmClassName
             )}
             onClick={handleConfirm}

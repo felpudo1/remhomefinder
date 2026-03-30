@@ -83,16 +83,48 @@ export const STATUS_FEEDBACK_CONFIG: Partial<Record<PropertyStatus, StatusFeedba
     ],
   },
   descartado: {
-    title: "🗑️ Descartar Propiedad",
-    description: "¿Por qué decidiste no seguir con esta opción?",
-    confirmLabel: "Confirmar descarte",
+    title: "🗑️ Descartar propiedad",
+    description: "🤔 ¿Por qué decidiste no seguir con esta opción? 👇",
+    confirmLabel: "✅ Confirmar descarte",
     questions: [
-      { id: "reason", label: "Motivo principal", type: "text", placeholder: "Ej: Muy ruidosa, no aceptan mascotas..." },
-      { id: "discarded_overall_condition", label: "Estado general", type: "rating" },
-      { id: "discarded_surroundings", label: "Entorno/Barrio", type: "rating" },
-      { id: "discarded_house_security", label: "Seguridad", type: "rating" },
-      { id: "discarded_expected_size", label: "Tamaño (vs esperado)", type: "rating" },
-      { id: "discarded_photos_reality", label: "Fotos vs Realidad", type: "rating" },
+      {
+        id: "reason",
+        label: "✍️ Motivo principal — ¿Qué te gustó 💚 y qué mejorarías 🔧?",
+        type: "text",
+        placeholder: "Ej: Barrio ruidoso 🔔, no aceptan mascotas 🐕…",
+      },
+      {
+        id: "discarded_overall_condition",
+        label:
+          "🏗️ ¿Cómo percibió la calidad estructural y conservación? 🏠 (Acabados, humedad 💧, techos 🧱)",
+        type: "rating",
+      },
+      {
+        id: "discarded_surroundings",
+        label: "📍 Entorno (vecindario 🏘️ y acceso a servicios 🚌) 🌳",
+        type: "rating",
+      },
+      {
+        id: "discarded_house_security",
+        label: "🔒 Seguridad en la casa (rejas, alarma 🔔, cámaras 📹) 🛡️",
+        type: "rating",
+      },
+      {
+        id: "discarded_expected_size",
+        label: "📐 ¿Dimensiones y distribución congruentes con lo publicado? 🗺️📏",
+        type: "rating",
+      },
+      {
+        id: "discarded_photos_reality",
+        label:
+          "🖼️ ¿Qué tan real es el estado vs. las fotos publicadas? 📷👀✨",
+        type: "rating",
+      },
+      {
+        id: "discarded_price_value",
+        label: "💰 ¿El costo es acorde al valor percibido? 💎⚖️",
+        type: "rating",
+      },
     ],
   },
 };

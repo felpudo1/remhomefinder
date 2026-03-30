@@ -75,6 +75,8 @@ export function StatusProsConsDialog({
       confirmDisabled={isConfirmDisabled}
       confirmClassName="bg-blue-600 text-white hover:bg-blue-700"
       onConfirm={handleConfirm}
+      headerTitleClassName={status === "firme_candidato" ? "text-[23.04px]" : undefined}
+      headerDescriptionClassName={status === "firme_candidato" ? "text-[15.36px]" : undefined}
     >
       <div className="space-y-3 py-2">
         <RatingField

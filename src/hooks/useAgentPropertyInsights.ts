@@ -40,6 +40,7 @@ export interface DescartadoRatings {
   discarded_house_security: number;
   discarded_expected_size: number;
   discarded_photos_reality: number;
+  discarded_price_value?: number;
 }
 
 export interface AgentUserInsight {

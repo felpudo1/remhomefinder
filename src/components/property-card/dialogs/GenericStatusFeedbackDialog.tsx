@@ -93,11 +93,11 @@ export function GenericStatusFeedbackDialog({
     switch (field.field_type) {
       case "rating":
         return (
-          <div key={field.field_id} className="flex items-center justify-between gap-4 py-2">
-            <Label className="text-sm font-medium text-foreground text-left block flex-1">
+          <div key={field.field_id} className="flex items-start gap-3 py-2">
+            <Label className="min-w-0 flex-1 text-left text-sm font-medium leading-snug text-foreground break-words pr-1">
               {field.field_label}
             </Label>
-            <div className="shrink-0">
+            <div className="flex w-1/5 min-w-[6.5rem] shrink-0 justify-end">
               <RatingField
                 value={formData[field.field_id] || 0}
                 onChange={(val) => handleFieldChange(field.field_id, val)}
@@ -164,7 +164,7 @@ export function GenericStatusFeedbackDialog({
     visitado: "✅ Visitado",
     firme_candidato: "🔥 Alta prioridad",
     posible_interes: "💡 Interesado",
-    descartado: "🗑️ Descartar Propiedad",
+    descartado: "🗑️ Descartar propiedad",
     eliminado: "🗑️ Eliminado",
     meta_conseguida: "🏆 Meta Conseguida",
     a_analizar: "🤔 A analizar",
@@ -178,12 +178,17 @@ export function GenericStatusFeedbackDialog({
     visitado: "Propiedad visitada",
     firme_candidato: "¿Por qué esta propiedad es una de tus favoritas?",
     posible_interes: "Evaluación rápida de puntos clave",
-    descartado: "¿Por qué decidiste no seguir con esta opción?",
+    descartado: "🤔 ¿Por qué decidiste no seguir con esta opción? 👇",
     eliminado: "Propiedad eliminada",
     meta_conseguida: "¡Felicitaciones! Ayudanos con tu feedback final",
     a_analizar: "Propiedad en análisis",
     eliminado_agencia: "Propiedad finalizada por la agencia",
   };
+
+  /** Alta prioridad: header +20% respecto al tamaño base del StatusChangeConfirmDialog */
+  const isAltaPrioridad = status === "firme_candidato";
+  const altaPrioridadHeaderTitle = "text-[23.04px]";
+  const altaPrioridadHeaderDesc = "text-[15.36px]";
 
   return (
     <StatusChangeConfirmDialog
@@ -191,9 +196,11 @@ export function GenericStatusFeedbackDialog({
       onOpenChange={onOpenChange}
       title={statusTitles[status] || "Feedback"}
       description={(statusDescriptions[status] || "").replace("{propertyTitle}", propertyTitle)}
-      confirmLabel="Confirmar"
+      confirmLabel={status === "descartado" ? "✅ Confirmar descarte" : "Confirmar"}
       confirmDisabled={isConfirmDisabled}
       onConfirm={handleConfirm}
+      headerTitleClassName={isAltaPrioridad ? altaPrioridadHeaderTitle : undefined}
+      headerDescriptionClassName={isAltaPrioridad ? altaPrioridadHeaderDesc : undefined}
     >
       <div className="space-y-5 py-2">
         {fields.map((field) => renderField(field))}
