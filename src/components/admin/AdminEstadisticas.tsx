@@ -182,7 +182,7 @@ export function AdminEstadisticas() {
                     .order('created_at', { ascending: false })
                     .range(from, to),
                 (supabase.from("property_reviews") as any).select("property_id, rating"),
-                (supabase.from("property_insights_summary") as any).select("property_id, attribute_name, total_scores"),
+                Promise.resolve({ data: [] }),
                 (supabase.from("user_search_profiles") as any).select("id, user_id, operation, currency, min_budget, max_budget, min_bedrooms, city_id, neighborhood_ids, is_private, updated_at, created_at"),
             ]);
             if (pubRes.error) throw pubRes.error;
@@ -298,7 +298,7 @@ export function AdminEstadisticas() {
                     .order('created_at', { ascending: false })
                     .range(from, to),
                 (supabase.from("property_reviews") as any).select("property_id, rating"),
-                (supabase.from("property_insights_summary") as any).select("property_id, attribute_name, total_scores"),
+                Promise.resolve({ data: [] }),
                 (supabase.from("user_search_profiles") as any).select("id, user_id, operation, currency, min_budget, max_budget, min_bedrooms, city_id, neighborhood_ids, is_private, updated_at, created_at"),
             ]);
             if (listingsRes.error) throw listingsRes.error;

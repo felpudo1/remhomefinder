@@ -166,13 +166,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "agent_publications_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_insights_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
             foreignKeyName: "agent_publications_published_by_fkey"
             columns: ["published_by"]
             isOneToOne: false
@@ -210,42 +203,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      attribute_scores: {
-        Row: {
-          attribute_id: string
-          history_log_id: string
-          id: string
-          score: number
-        }
-        Insert: {
-          attribute_id: string
-          history_log_id: string
-          id?: string
-          score: number
-        }
-        Update: {
-          attribute_id?: string
-          history_log_id?: string
-          id?: string
-          score?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "attribute_scores_attribute_id_fkey"
-            columns: ["attribute_id"]
-            isOneToOne: false
-            referencedRelation: "feedback_attributes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attribute_scores_history_log_id_fkey"
-            columns: ["history_log_id"]
-            isOneToOne: false
-            referencedRelation: "status_history_log"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -376,30 +333,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      feedback_attributes: {
-        Row: {
-          active: boolean
-          created_at: string
-          display_order: number
-          id: string
-          name: string
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          display_order?: number
-          id?: string
-          name: string
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          display_order?: number
-          id?: string
-          name?: string
-        }
-        Relationships: []
       }
       neighborhoods: {
         Row: {
@@ -823,13 +756,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "property_reviews_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_insights_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
             foreignKeyName: "property_reviews_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -861,13 +787,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "property_views_log_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_insights_summary"
-            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -1227,13 +1146,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_listings_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_insights_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
             foreignKeyName: "user_listings_source_publication_id_fkey"
             columns: ["source_publication_id"]
             isOneToOne: false
@@ -1408,24 +1320,7 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "property_reviews_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_insights_summary"
-            referencedColumns: ["property_id"]
-          },
         ]
-      }
-      property_insights_summary: {
-        Row: {
-          attribute_name: string | null
-          avg_score: number | null
-          property_id: string | null
-          title: string | null
-          total_scores: number | null
-        }
-        Relationships: []
       }
       public_global_rating: {
         Row: {
@@ -1440,13 +1335,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "property_reviews_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_insights_summary"
-            referencedColumns: ["property_id"]
           },
         ]
       }

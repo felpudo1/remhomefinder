@@ -155,11 +155,7 @@ export const AgentEstadisticas = ({ agency }: AgentEstadisticasProps) => {
                         .select("property_id, avg_rating, total_votes")
                         .in("property_id", propertyIds)
                     : Promise.resolve({ data: [] }),
-                propertyIds.length > 0
-                    ? (supabase.from("property_insights_summary") as any)
-                        .select("property_id, attribute_name, total_scores")
-                        .in("property_id", propertyIds)
-                    : Promise.resolve({ data: [] }),
+                Promise.resolve({ data: [] }),
                 pubIds.length > 0
                     ? supabase.rpc("get_publications_save_counts", { _publication_ids: pubIds })
                     : Promise.resolve({ data: [] }),
