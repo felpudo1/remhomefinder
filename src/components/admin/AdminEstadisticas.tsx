@@ -410,8 +410,27 @@ export function AdminEstadisticas() {
         }
     };
 
+    const fetchScrapeUsage = async () => {
+        setLoadingScrapeUsage(true);
+        try {
+            const { data, error } = await supabase
+                .from("admin_scrape_usage_by_user" as any)
+                .select("*")
+                .order("total_token_charged", { ascending: false })
+                .limit(200);
+            if (error) throw error;
+            setScrapeUsageRows((data || []) as unknown as ScrapeUsageRow[]);
+        } catch (e: unknown) {
+            toast({
+                title: "Error en métricas de scraping",
+                description: e instanceof Error ? e.message : "Error desconocido",
+                variant: "destructive",
+            });
+        } finally {
+            setLoadingScrapeUsage(false);
+        }
+    };
 
-    const handleSort = (key: keyof StatProperty) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
         setSortConfig({ key, direction });
