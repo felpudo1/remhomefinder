@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Bot, TrendingUp } from "lucide-react";
+import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Bot, TrendingUp } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { AdminInteres } from "./AdminInteres";
 import { StatProperty } from "@/types/admin-publications";
@@ -30,12 +30,6 @@ interface Stats {
     admins: number;
 }
 
-interface FeedbackAttributeRow {
-    id: string;
-    name: string;
-    active: boolean;
-    display_order: number;
-}
 
 interface ScrapeUsageRow {
     user_id: string | null;
@@ -69,25 +63,20 @@ export function AdminEstadisticas() {
         direction: 'desc'
     });
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [feedbackAttributes, setFeedbackAttributes] = useState<FeedbackAttributeRow[]>([]);
-    const [loadingFeedbackAttributes, setLoadingFeedbackAttributes] = useState(true);
-    const [savingFeedbackAttributeId, setSavingFeedbackAttributeId] = useState<string | null>(null);
-    const [newAttributeName, setNewAttributeName] = useState("");
-    const [newAttributeOrder, setNewAttributeOrder] = useState<number>(1);
     const [mainTab, setMainTab] = useState<"interes" | "scraping">("interes");
     const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchFeedbackAttributes(), fetchScrapeUsage()]);
+        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchScrapeUsage()]);
         setIsRefreshing(false);
     };
 
     useEffect(() => { fetchStats(); }, []);
     useEffect(() => { fetchMarketStats(); }, [pageMarket]);
     useEffect(() => { fetchPersonalStats(); }, [pagePersonal]);
-    useEffect(() => { fetchFeedbackAttributes(); }, []);
+    
     useEffect(() => { fetchScrapeUsage(); }, []);
 
     const fetchStats = async () => {
@@ -421,28 +410,6 @@ export function AdminEstadisticas() {
         }
     };
 
-    const fetchFeedbackAttributes = async () => {
-        setLoadingFeedbackAttributes(true);
-        try {
-            const { data, error } = await supabase
-                .from("feedback_attributes")
-                .select("id, name, active, display_order")
-                .order("display_order", { ascending: true });
-
-            if (error) throw error;
-            const rows = (data || []) as FeedbackAttributeRow[];
-            setFeedbackAttributes(rows);
-            const nextOrder = rows.length > 0
-                ? Math.max(...rows.map((r) => Number(r.display_order || 0))) + 1
-                : 1;
-            setNewAttributeOrder(nextOrder);
-        } catch (e: unknown) {
-            toast({ title: "Error cargando opciones de estado", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
-        } finally {
-            setLoadingFeedbackAttributes(false);
-        }
-    };
-
     const fetchScrapeUsage = async () => {
         setLoadingScrapeUsage(true);
         try {
@@ -461,55 +428,6 @@ export function AdminEstadisticas() {
             });
         } finally {
             setLoadingScrapeUsage(false);
-        }
-    };
-
-    const handleCreateFeedbackAttribute = async () => {
-        const trimmedName = newAttributeName.trim();
-        if (!trimmedName) {
-            toast({ title: "Nombre requerido", description: "Escribí un nombre para la nueva opción.", variant: "destructive" });
-            return;
-        }
-        try {
-            const { error } = await supabase
-                .from("feedback_attributes")
-                .insert({
-                    name: trimmedName,
-                    display_order: Number.isFinite(newAttributeOrder) ? newAttributeOrder : 1,
-                    active: true,
-                });
-            if (error) throw error;
-            toast({ title: "Opción creada", description: "La nueva opción fue guardada correctamente." });
-            setNewAttributeName("");
-            await fetchFeedbackAttributes();
-        } catch (e: unknown) {
-            toast({ title: "Error creando opción", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
-        }
-    };
-
-    const handleUpdateFeedbackAttribute = async (row: FeedbackAttributeRow) => {
-        const trimmedName = row.name.trim();
-        if (!trimmedName) {
-            toast({ title: "Nombre requerido", description: "El nombre no puede quedar vacío.", variant: "destructive" });
-            return;
-        }
-        setSavingFeedbackAttributeId(row.id);
-        try {
-            const { error } = await supabase
-                .from("feedback_attributes")
-                .update({
-                    name: trimmedName,
-                    display_order: Number.isFinite(row.display_order) ? row.display_order : 1,
-                    active: row.active,
-                })
-                .eq("id", row.id);
-            if (error) throw error;
-            toast({ title: "Opción actualizada", description: "Los cambios se guardaron correctamente." });
-            await fetchFeedbackAttributes();
-        } catch (e: unknown) {
-            toast({ title: "Error actualizando opción", description: e instanceof Error ? e.message : "Error desconocido", variant: "destructive" });
-        } finally {
-            setSavingFeedbackAttributeId(null);
         }
     };
 

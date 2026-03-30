@@ -310,35 +310,8 @@ export function usePropertyMutations() {
 
             if (error) throw error;
 
-            // Si hay motivos de descarte, insertar en attribute_scores (score=1 indica motivo seleccionado)
-            if (insertedLog?.id && discardedAttributeIds?.length) {
-                const rows = discardedAttributeIds.map((attribute_id) => ({
-                    history_log_id: insertedLog.id,
-                    attribute_id,
-                    score: 1,
-                }));
-                const { error: scoresError } = await (supabase.from("attribute_scores") as any).insert(rows);
-                if (scoresError) throw scoresError;
-            }
-
-            // Si hay pros/contras (firme_candidato, posible_interes): score 5 = positivo, score 1 = negativo
-            if (insertedLog?.id && prosAndCons) {
-                const positiveRows = prosAndCons.positiveIds.map((attribute_id) => ({
-                    history_log_id: insertedLog.id,
-                    attribute_id,
-                    score: 5,
-                }));
-                const negativeRows = prosAndCons.negativeIds.map((attribute_id) => ({
-                    history_log_id: insertedLog.id,
-                    attribute_id,
-                    score: 1,
-                }));
-                const allRows = [...positiveRows, ...negativeRows];
-                if (allRows.length > 0) {
-                    const { error: scoresError } = await (supabase.from("attribute_scores") as any).insert(allRows);
-                    if (scoresError) throw scoresError;
-                }
-            }
+            // NOTE: attribute_scores table was removed (obsolete).
+            // All feedback data is now stored in event_metadata JSONB.
 
             // Update org if groupId changed
             if (groupId !== undefined) {
