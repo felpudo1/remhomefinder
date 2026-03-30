@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Plus, Save, Bot, TrendingUp } from "lucide-react";
+import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Bot, TrendingUp } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { AdminInteres } from "./AdminInteres";
 import { StatProperty } from "@/types/admin-publications";
