@@ -14,6 +14,7 @@ import { DbStatusBadge } from "@/components/ui/DbStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLES, ROUTES } from "@/lib/constants";
 import { Footer } from "@/components/Footer";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import {
   SHOW_AUTH_VIDEO_CONFIG_KEY,
@@ -458,6 +459,18 @@ const Auth = () => {
                       "Crear cuenta"}
               </Button>
             </form>
+
+            {/* Separador y Google OAuth (solo en login) */}
+            {isLogin && (
+              <>
+                <div className="relative flex items-center gap-4">
+                  <div className="flex-1 border-t border-border/60" />
+                  <span className="text-xs text-muted-foreground">o</span>
+                  <div className="flex-1 border-t border-border/60" />
+                </div>
+                <GoogleSignInButton />
+              </>
+            )}
 
             {/* Info para agentes */}
             {!isLogin && accountType === "agency" &&

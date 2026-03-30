@@ -32,6 +32,7 @@ export const ROUTES = {
     AUTH_RESET_PASSWORD: "/auth/restablecer",
     /** Auth abriendo formulario de registro (vuelta desde páginas legales) */
     AUTH_REGISTER: "/auth?register=1",
+    AUTH_CALLBACK: "/auth/callback",
     /** Términos y condiciones (página pública) */
     TERMS: "/terminos",
     /** Política de privacidad (página pública) */

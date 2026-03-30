@@ -31,6 +31,7 @@ const LegalTerms = routeLazy(() => import("./pages/LegalTerms"));
 const LegalPrivacy = routeLazy(() => import("./pages/LegalPrivacy"));
 const AuthRecoverPassword = routeLazy(() => import("./pages/AuthRecoverPassword"));
 const AuthResetPassword = routeLazy(() => import("./pages/AuthResetPassword"));
+const AuthCallback = routeLazy(() => import("./pages/AuthCallback"));
 
 // Caché global: 5 min de staleTime evita refetch en cada mount/window focus.
 // gcTime de 10 min mantiene los datos en memoria limpia por más tiempo.
@@ -69,6 +70,7 @@ const App = () => (
                 <Route path={ROUTES.AUTH} element={<Auth />} />
                 <Route path={ROUTES.AUTH_RECOVER} element={<AuthRecoverPassword />} />
                 <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<AuthResetPassword />} />
+                <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallback />} />
                 <Route path={ROUTES.TERMS} element={<LegalTerms />} />
                 <Route path={ROUTES.PRIVACY} element={<LegalPrivacy />} />
                 <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
