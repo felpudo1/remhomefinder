@@ -30,7 +30,7 @@ export function RatingField({ value, onChange, label, variant = "blue", inline =
           >
             <Star
               className={cn(
-                "h-4 w-4 shrink-0 transition-colors",
+                "h-3 w-3 shrink-0 transition-colors sm:h-4 sm:w-4",
                 starValue <= value ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"
               )}
             />

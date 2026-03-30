@@ -95,16 +95,16 @@ export function GenericStatusFeedbackDialog({
         return (
           <div
             key={field.field_id}
-            className="flex w-full min-w-0 flex-row items-start gap-2 py-2"
+            className="grid w-full grid-cols-[80%_20%] items-start gap-0 py-2"
           >
-            {/*
-              Siempre una sola línea de layout: texto ~3/4, estrellas ~1/4 (flex 3:1).
-              El texto hace wrap dentro de su columna; las estrellas no bajan.
+            {/* 
+              4/5 del ancho para el texto (80%)
+              1/5 del ancho para las estrellas (20%)
             */}
-            <Label className="min-w-0 flex-[4] text-left text-sm font-medium leading-snug text-foreground break-words pr-1">
+            <Label className="min-w-0 text-left text-sm font-medium leading-snug text-foreground break-words pr-3 pt-0.5 cursor-pointer">
               {field.field_label}
             </Label>
-            <div className="flex min-w-0 flex-[1] shrink-0 justify-end">
+            <div className="flex min-w-0 justify-end">
               <RatingField
                 value={formData[field.field_id] || 0}
                 onChange={(val) => handleFieldChange(field.field_id, val)}
@@ -209,15 +209,15 @@ export function GenericStatusFeedbackDialog({
     visitado: "Propiedad visitada",
     firme_candidato: "¿Por qué esta propiedad es una de tus favoritas?",
     posible_interes: "Evaluación rápida de puntos clave",
-    descartado: "🤔 ¿Por qué decidiste no seguir con esta opción?",
+    descartado: "Sentimos que esta opción no haya cumplido con lo que buscabas. 🏡 Como último favor, nos encantaría saber qué le faltó para que la próxima propiedad sea la definitiva. 💎",
     eliminado: "Propiedad eliminada",
-    meta_conseguida: "¡Felicitaciones! Ayudanos con tu feedback final",
+    meta_conseguida: "¡Objetivo cumplido! 🏆 Estamos felices de haberte acompañado en este camino. Ayudanos con un último feedback para seguir mejorando. 💎",
     a_analizar: "Propiedad en análisis",
     eliminado_agencia: "Propiedad finalizada por la agencia",
   };
 
   /** Alta prioridad: header +20% respecto al tamaño base del StatusChangeConfirmDialog */
-  const isAltaPrioridad = status === "firme_candidato";
+  const isAltaPrioridad = status === "descartado" || status === "firme_candidato" || status === "meta_conseguida";
   const altaPrioridadHeaderTitle = "text-[23.04px]";
   const altaPrioridadHeaderDesc = "text-[15.36px]";
 
@@ -227,7 +227,7 @@ export function GenericStatusFeedbackDialog({
       onOpenChange={onOpenChange}
       title={statusTitles[status] || "Feedback"}
       description={(statusDescriptions[status] || "").replace("{propertyTitle}", propertyTitle)}
-      confirmLabel={status === "descartado" ? "✅ Confirmar descarte" : "Confirmar"}
+      confirmLabel={status === "descartado" ? "✅ Mandar feedback y descartar" : "Confirmar"}
       confirmDisabled={isConfirmDisabled}
       onConfirm={handleConfirm}
       headerTitleClassName={isAltaPrioridad ? altaPrioridadHeaderTitle : undefined}

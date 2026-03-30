@@ -39,7 +39,7 @@ export function PropertyStatusSelector({
     ingresado: new Set<PropertyStatus>(["contactado", "descartado"]),
     contactado: new Set<PropertyStatus>(["visita_coordinada", "descartado"]),
     visita_coordinada: new Set<PropertyStatus>(["firme_candidato", "posible_interes", "descartado"]),
-    posible_interes: new Set<PropertyStatus>(["firme_candidato", "meta_conseguida", "descartado"]),
+    posible_interes: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
     firme_candidato: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
   };
 
