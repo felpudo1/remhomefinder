@@ -63,25 +63,20 @@ export function AdminEstadisticas() {
         direction: 'desc'
     });
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [feedbackAttributes, setFeedbackAttributes] = useState<FeedbackAttributeRow[]>([]);
-    const [loadingFeedbackAttributes, setLoadingFeedbackAttributes] = useState(true);
-    const [savingFeedbackAttributeId, setSavingFeedbackAttributeId] = useState<string | null>(null);
-    const [newAttributeName, setNewAttributeName] = useState("");
-    const [newAttributeOrder, setNewAttributeOrder] = useState<number>(1);
     const [mainTab, setMainTab] = useState<"interes" | "scraping">("interes");
     const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchFeedbackAttributes(), fetchScrapeUsage()]);
+        await Promise.all([fetchStats(), fetchMarketStats(), fetchPersonalStats(), fetchScrapeUsage()]);
         setIsRefreshing(false);
     };
 
     useEffect(() => { fetchStats(); }, []);
     useEffect(() => { fetchMarketStats(); }, [pageMarket]);
     useEffect(() => { fetchPersonalStats(); }, [pagePersonal]);
-    useEffect(() => { fetchFeedbackAttributes(); }, []);
+    
     useEffect(() => { fetchScrapeUsage(); }, []);
 
     const fetchStats = async () => {
