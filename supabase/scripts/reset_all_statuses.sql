@@ -115,7 +115,7 @@ SELECT
 -- - event_metadata (feedback, estrellas, comentarios)
 -- - Estados personalizados (contactado, visita_coordinada, etc.)
 -- - contact_name, contact_phone, contact_source en user_listings
--- - feedback_attributes (tabla obsoleta)
+-- - feedback_attributes y attribute_scores (tablas eliminadas del esquema)
 
 -- 📊 Impacto en el sistema:
 -- - Dashboard del agente (AgentPropertyListing): SIN DATOS
