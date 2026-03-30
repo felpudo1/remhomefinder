@@ -140,7 +140,7 @@ function parseMetrics(raw: string): ParsedMetrics {
     sumMetric(raw, "connection_stats_connection_count");
 
   return {
-    diskIoBudget: diskIoConsumption !== null ? clampPercent(diskIoConsumption) : null,
+    diskIoBudget: diskIoConsumption !== null ? clampPercent(100 - diskIoConsumption) : null,
     restRequests,
     authRequests,
     realtimeRequests,
