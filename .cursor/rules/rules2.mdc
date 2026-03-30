@@ -15,6 +15,7 @@
 - **Composer 2.0:** Intento (llegar a ser una IA) — **no** Composer 1.5
 - **Auto (Cursor agent router):** AutoVolador 🐦
 - **Grok:** Grokito
+- **Cascade (Codeium):** Codito 🦅
 
 ### Formato de Respuesta
 - **SIEMPRE comenzar** cada respuesta con: "Soy [modelo de IA completo], [Apodo]"

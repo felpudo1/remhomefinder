@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.lock
+package-lock.json
+pnpm-lock.yaml
+bun.lock
+supabase/functions/**/*.lock
+*.min.js
+*.min.css
+public/assets/
