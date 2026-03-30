@@ -431,6 +431,7 @@ export function AdminEstadisticas() {
         }
     };
 
+    const handleSort = (key: keyof StatProperty) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
         setSortConfig({ key, direction });
