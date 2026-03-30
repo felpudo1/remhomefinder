@@ -70,18 +70,7 @@ SET
     updated_at = NOW();
 
 -- ============================================================================
--- PASO 5: LIMPIAR TABLAS OBSOLETAS (OPCIONAL)
--- ============================================================================
--- Estas tablas no se usan en el sistema actual
-
--- Limpiar feedback_attributes (tabla obsoleta - no se usa en modales)
-DELETE FROM feedback_attributes;
-
--- Limpiar attribute_scores (solo si no hay datos útiles)
--- DELETE FROM attribute_scores;
-
--- ============================================================================
--- PASO 6: VERIFICAR RESET COMPLETO
+-- PASO 5: VERIFICAR RESET COMPLETO
 -- ============================================================================
 SELECT '=== ESTADO POST-RESET ===' as info;
 
@@ -94,10 +83,6 @@ ORDER BY cantidad DESC;
 -- Debería mostrar 0 registros
 SELECT 'status_history_log:' as contexto, COUNT(*) as total_registros 
 FROM status_history_log;
-
--- Debería mostrar 0 registros (feedback_attributes)
-SELECT 'feedback_attributes:' as contexto, COUNT(*) as total_registros 
-FROM feedback_attributes;
 
 -- ============================================================================
 -- RESUMEN DEL RESET
@@ -112,10 +97,6 @@ WHERE current_status = 'ingresado'
 UNION ALL
 SELECT 
     'status_history_log borrados:', 
-    0
-UNION ALL
-SELECT
-    'feedback_attributes borrados:',
     0;
 
 -- ============================================================================
