@@ -30,12 +30,6 @@ interface Stats {
     admins: number;
 }
 
-interface FeedbackAttributeRow {
-    id: string;
-    name: string;
-    active: boolean;
-    display_order: number;
-}
 
 interface ScrapeUsageRow {
     user_id: string | null;
