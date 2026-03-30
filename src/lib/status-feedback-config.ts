@@ -84,45 +84,43 @@ export const STATUS_FEEDBACK_CONFIG: Partial<Record<PropertyStatus, StatusFeedba
   },
   descartado: {
     title: "🗑️ Descartar propiedad",
-    description: "🤔 ¿Por qué decidiste no seguir con esta opción? 👇",
+    description: "🤔 ¿Por qué decidiste no seguir con esta opción?",
     confirmLabel: "✅ Confirmar descarte",
     questions: [
       {
         id: "reason",
-        label: "✍️ Motivo principal — ¿Qué te gustó 💚 y qué mejorarías 🔧?",
+        label: "✍️ Motivo principal: ¿qué te gustó y qué mejorarías?",
         type: "text",
-        placeholder: "Ej: Barrio ruidoso 🔔, no aceptan mascotas 🐕…",
+        placeholder: "Ej: muy ruidosa, no aceptan mascotas, lejos del trabajo…",
       },
       {
         id: "discarded_overall_condition",
-        label:
-          "🏗️ ¿Cómo percibió la calidad estructural y conservación? 🏠 (Acabados, humedad 💧, techos 🧱)",
+        label: "🏗️ Calidad estructural y conservación (acabados, humedad, techos)",
         type: "rating",
       },
       {
         id: "discarded_surroundings",
-        label: "📍 Entorno (vecindario 🏘️ y acceso a servicios 🚌) 🌳",
+        label: "📍 Entorno (vecindario y acceso a servicios)",
         type: "rating",
       },
       {
         id: "discarded_house_security",
-        label: "🔒 Seguridad en la casa (rejas, alarma 🔔, cámaras 📹) 🛡️",
+        label: "🔒 Seguridad en la casa (rejas, alarma, cámaras)",
         type: "rating",
       },
       {
         id: "discarded_expected_size",
-        label: "📐 ¿Dimensiones y distribución congruentes con lo publicado? 🗺️📏",
+        label: "📐 Dimensiones y distribución vs. lo publicado",
         type: "rating",
       },
       {
         id: "discarded_photos_reality",
-        label:
-          "🖼️ ¿Qué tan real es el estado vs. las fotos publicadas? 📷👀✨",
+        label: "🖼️ Estado real vs. fotos publicadas",
         type: "rating",
       },
       {
         id: "discarded_price_value",
-        label: "💰 ¿El costo es acorde al valor percibido? 💎⚖️",
+        label: "💰 Costo vs. valor percibido",
         type: "rating",
       },
     ],

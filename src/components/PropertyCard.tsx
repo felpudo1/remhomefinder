@@ -248,7 +248,7 @@ export function PropertyCard({
           </div>
         }
         bottomContent={
-          property.status === "visita_coordinada" && property.coordinatedDate ? (
+          property.status === "visita_coordinada" ? (
             <div className="flex justify-end pt-0" onClick={(e) => e.stopPropagation()}>
               <Button
                 type="button"
@@ -257,7 +257,15 @@ export function PropertyCard({
                 className="h-7 px-2 text-[10px] font-medium rounded-lg shadow-md bg-black/60 text-white border-0 hover:bg-black/75 backdrop-blur-md"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openVisitCalendarEntry(property.coordinatedDate!);
+                  const visitAt = property.coordinatedDate ?? new Date();
+                  if (!property.coordinatedDate) {
+                    toast({
+                      title: "Sin fecha guardada en el historial",
+                      description:
+                        "Se abrió Google Calendar con la hora actual. Ajustá fecha y hora en el evento.",
+                    });
+                  }
+                  openVisitCalendarEntry(visitAt);
                 }}
                 title="Agendar en Google Calendar"
               >

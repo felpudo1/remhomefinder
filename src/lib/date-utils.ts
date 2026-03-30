@@ -1,5 +1,57 @@
 import { format } from "date-fns";
 
+/**
+ * Normaliza event_metadata (JSONB) si llega como objeto o string serializado.
+ */
+export function normalizeEventMetadata(raw: unknown): Record<string, unknown> {
+  if (raw == null) return {};
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      /* ignorar */
+    }
+  }
+  return {};
+}
+
+/**
+ * Obtiene la fecha/hora de visita desde event_metadata del historial.
+ * Cubre coordinated_date (canónico), camelCase y field_id distintos en config de BD,
+ * y valores con formato datetime-local (YYYY-MM-DDTHH:mm).
+ */
+export function parseCoordinatedVisitDateFromMetadata(meta: unknown): Date | undefined {
+  const m = normalizeEventMetadata(meta);
+  const directKeys = [
+    "coordinated_date",
+    "coordinatedDate",
+    "fecha_visita",
+    "visit_date",
+  ] as const;
+  for (const k of directKeys) {
+    const v = m[k];
+    if (v == null || v === "") continue;
+    const d = new Date(String(v));
+    if (!isNaN(d.getTime())) return d;
+  }
+  for (const v of Object.values(m)) {
+    if (typeof v !== "string") continue;
+    const t = v.trim();
+    if (!t) continue;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(t)) {
+      const d = new Date(t);
+      if (!isNaN(d.getTime())) return d;
+    }
+  }
+  return undefined;
+}
+
 /** 
  * Formatea una fecha para visualización amigable: dd/MM/yyyy HH:mm 
  */

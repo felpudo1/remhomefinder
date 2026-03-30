@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { parseCoordinatedVisitDateFromMetadata } from "@/lib/date-utils";
 
 /** Rating keys extracted from event_metadata per status */
 export interface ContactadoRatings {
@@ -51,7 +52,8 @@ export interface AgentUserInsight {
   currentStatus: string;
   updatedAt: string;
   updatedAtRelative: string;
-  coordinatedDate?: string;
+  /** Fecha de visita si está en event_metadata (varias claves posibles). */
+  coordinatedDate?: Date;
   userListingId: string;
   ratingsByStatus: Record<string, any>; // Dinámico para soportar STATUS_FEEDBACK_CONFIG
 }
@@ -192,9 +194,9 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
             }
           });
 
-          // Find coordinated_date from visita log
+          // Fecha de visita: metadata puede usar coordinated_date u otros field_id (config BD)
           const visitaLog = userLogs.find((l) => l.new_status === "visita_coordinada");
-          const coordinatedDate = visitaLog?.event_metadata?.coordinated_date || undefined;
+          const coordinatedDate = parseCoordinatedVisitDateFromMetadata(visitaLog?.event_metadata);
 
           let updatedAtRelative = "";
           try {

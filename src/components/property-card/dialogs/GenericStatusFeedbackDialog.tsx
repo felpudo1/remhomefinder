@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
 import { PropertyStatus } from "@/types/property";
-import { Loader2, Info } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface GenericStatusFeedbackDialogProps {
   open: boolean;
@@ -93,11 +93,18 @@ export function GenericStatusFeedbackDialog({
     switch (field.field_type) {
       case "rating":
         return (
-          <div key={field.field_id} className="flex items-start gap-3 py-2">
-            <Label className="min-w-0 flex-1 text-left text-sm font-medium leading-snug text-foreground break-words pr-1">
+          <div
+            key={field.field_id}
+            className="flex w-full min-w-0 flex-row items-start gap-2 py-2"
+          >
+            {/*
+              Siempre una sola línea de layout: texto ~3/4, estrellas ~1/4 (flex 3:1).
+              El texto hace wrap dentro de su columna; las estrellas no bajan.
+            */}
+            <Label className="min-w-0 flex-[4] text-left text-sm font-medium leading-snug text-foreground break-words pr-1">
               {field.field_label}
             </Label>
-            <div className="flex w-1/5 min-w-[6.5rem] shrink-0 justify-end">
+            <div className="flex min-w-0 flex-[1] shrink-0 justify-end">
               <RatingField
                 value={formData[field.field_id] || 0}
                 onChange={(val) => handleFieldChange(field.field_id, val)}
@@ -108,17 +115,37 @@ export function GenericStatusFeedbackDialog({
           </div>
         );
       case "text":
+        // Motivo de descarte (y similares): texto largo en bloque, no una sola línea
+        if (field.field_id === "reason") {
+          return (
+            <div key={field.field_id} className="min-w-0 w-full max-w-full space-y-2">
+              <Label className="block text-left text-sm font-medium leading-snug text-foreground break-words">
+                {field.field_label}
+              </Label>
+              <Textarea
+                placeholder={field.placeholder || ""}
+                value={formData[field.field_id] || ""}
+                onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
+                className="min-h-[88px] w-full max-w-full resize-y rounded-xl border-border focus-visible:ring-primary"
+              />
+            </div>
+          );
+        }
         return (
-          <div key={field.field_id} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium text-foreground whitespace-nowrap">
+          <div key={field.field_id} className="min-w-0 w-full max-w-full space-y-2">
+            {/*
+              Móvil: pregunta arriba y caja de texto abajo (evita que el input salga de la pantalla).
+              sm+: fila como antes.
+            */}
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+              <Label className="block w-full min-w-0 shrink-0 text-left text-sm font-medium leading-snug text-foreground break-words sm:max-w-[45%] sm:whitespace-normal">
                 {field.field_label}
               </Label>
               <Input
                 placeholder={field.placeholder || ""}
                 value={formData[field.field_id] || ""}
                 onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
-                className="rounded-xl border-border focus-visible:ring-primary flex-1"
+                className="h-10 w-full min-w-0 max-w-full rounded-xl border-border focus-visible:ring-primary sm:flex-1"
               />
             </div>
           </div>
@@ -141,14 +168,18 @@ export function GenericStatusFeedbackDialog({
         );
       case "info":
         return (
-          <div key={field.field_id} className="p-3 bg-blue-50 border border-blue-200 rounded-lg w-full">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-              <p className="text-sm text-blue-900 font-medium">{field.field_label}</p>
-            </div>
-            {field.placeholder && (
-              <p className="text-xs text-blue-700 mt-1 ml-6">{field.placeholder}</p>
-            )}
+          <div
+            key={field.field_id}
+            className="w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-blue-200 bg-blue-50 p-3 sm:p-3.5"
+          >
+            <p className="min-w-0 text-left text-sm font-medium leading-relaxed text-blue-900 break-words hyphens-auto">
+              {field.field_label}
+            </p>
+            {field.placeholder ? (
+              <p className="mt-2 border-t border-blue-200/80 pt-2 text-left text-xs leading-relaxed text-blue-800/95">
+                {field.placeholder}
+              </p>
+            ) : null}
           </div>
         );
       default:
@@ -178,7 +209,7 @@ export function GenericStatusFeedbackDialog({
     visitado: "Propiedad visitada",
     firme_candidato: "¿Por qué esta propiedad es una de tus favoritas?",
     posible_interes: "Evaluación rápida de puntos clave",
-    descartado: "🤔 ¿Por qué decidiste no seguir con esta opción? 👇",
+    descartado: "🤔 ¿Por qué decidiste no seguir con esta opción?",
     eliminado: "Propiedad eliminada",
     meta_conseguida: "¡Felicitaciones! Ayudanos con tu feedback final",
     a_analizar: "Propiedad en análisis",
@@ -202,7 +233,13 @@ export function GenericStatusFeedbackDialog({
       headerTitleClassName={isAltaPrioridad ? altaPrioridadHeaderTitle : undefined}
       headerDescriptionClassName={isAltaPrioridad ? altaPrioridadHeaderDesc : undefined}
     >
-      <div className="space-y-5 py-2">
+      <div
+        className={
+          status === "descartado"
+            ? "min-w-0 max-w-full space-y-4 py-2"
+            : "min-w-0 max-w-full space-y-5 py-2"
+        }
+      >
         {fields.map((field) => renderField(field))}
       </div>
     </StatusChangeConfirmDialog>

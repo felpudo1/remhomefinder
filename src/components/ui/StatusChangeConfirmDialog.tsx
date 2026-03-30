@@ -117,7 +117,7 @@ export function StatusChangeConfirmDialog({
           Los textos largos de formularios (p. ej. preguntas al descartar) no viven aquí:
           los renderiza el padre en `children` (típico: GenericStatusFeedbackDialog + labels desde BD).
         */}
-        <div className="px-5 py-0.5">{children}</div>
+        <div className="min-w-0 overflow-x-hidden px-5 py-0.5">{children}</div>
         {/*
           Grid 1/3 + 2/3 en una sola fila también en móvil. El AlertDialogFooter base usa
           flex-col-reverse debajo de sm; display:grid pisa ese layout sin tocar alert-dialog.tsx.

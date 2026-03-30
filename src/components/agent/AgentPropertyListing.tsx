@@ -328,15 +328,16 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                             <Badge variant="outline" className="capitalize text-xs">
                               {user.currentStatus.replace(/_/g, " ")}
                             </Badge>
-                            {user.currentStatus === "visita_coordinada" && user.coordinatedDate && (
+                            {user.currentStatus === "visita_coordinada" && (
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const refLabel = selectedProperty?.ref ? ` Ref ${selectedProperty.ref}` : "";
+                                  const startAt = user.coordinatedDate ?? new Date();
                                   const url = buildGoogleCalendarUrl(
                                     `Visita: ${selectedProperty?.title || "Propiedad"}${refLabel} - ${user.displayName}`,
-                                    user.coordinatedDate!,
+                                    startAt.toISOString(),
                                     `Usuario: ${user.displayName} (${user.emailMasked})${refLabel}`
                                   );
                                   window.open(url, "_blank", "noopener,noreferrer");

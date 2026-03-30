@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyComment, AgentPubStatus } from "@/types/property";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
+import { parseCoordinatedVisitDateFromMetadata } from "@/lib/date-utils";
 import type { UserListingStatus } from "@/types/supabase";
 
 /** Cantidad de listings por página. */
@@ -42,10 +43,8 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
       discardedReason = meta?.reason || undefined;
       discardedByEmail = log.changed_by ? (changerProfiles[log.changed_by] || undefined) : undefined;
     } else if (log.new_status === "visita_coordinada" && !coordinatedDate) {
-      if (meta?.coordinated_date) {
-        const d = new Date(meta.coordinated_date);
-        if (!isNaN(d.getTime())) coordinatedDate = d;
-      }
+      const d = parseCoordinatedVisitDateFromMetadata(meta);
+      if (d) coordinatedDate = d;
       coordinatedBy = log.changed_by ? (changerProfiles[log.changed_by] || undefined) : undefined;
     }
   }
