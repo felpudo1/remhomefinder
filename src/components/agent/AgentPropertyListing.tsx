@@ -376,9 +376,19 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
         <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="font-semibold text-foreground">Usuarios en esta propiedad</h4>
-            <Button variant="outline" size="sm" className="text-xs">
-              <Clock3 className="w-3.5 h-3.5 mr-1" /> Vista reciente
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={showCharts ? "default" : "outline"}
+                size="sm"
+                className="text-xs gap-1.5"
+                onClick={() => setShowCharts(!showCharts)}
+              >
+                <BarChart3 className="w-3.5 h-3.5" /> {showCharts ? "Ocultar Gráficas" : "Ver Gráficas"}
+              </Button>
+              <Button variant="outline" size="sm" className="text-xs">
+                <Clock3 className="w-3.5 h-3.5 mr-1" /> Vista reciente
+              </Button>
+            </div>
           </div>
 
           <Tabs
