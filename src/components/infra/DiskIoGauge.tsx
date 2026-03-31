@@ -118,7 +118,7 @@ export function DiskIoGauge({ value, source = "live", lastSampleAt = null }: Dis
           <div className="mt-2 w-full max-w-lg rounded-md border border-yellow-700/60 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300 flex items-start gap-2">
             <Info className="w-4 h-4 mt-0.5 shrink-0 text-yellow-400" />
             <span>
-              Mostrando último dato histórico válido ({formattedLastSample}) porque la métrica en vivo llegó como nula.
+              Mostrando último dato histórico válido ({formattedLastSample}) como fallback. El endpoint de métricas de Supabase/Prometheus no está reportando datos en vivo temporalmente (limitación de la API de terceros, no es un error de nuestro código).
               {dataAgeLabel && <strong className="ml-1">({dataAgeLabel})</strong>}
             </span>
           </div>
