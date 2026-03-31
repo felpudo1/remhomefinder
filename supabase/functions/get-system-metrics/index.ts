@@ -200,16 +200,19 @@ function getSessionIdFromJwt(token: string): string | null {
   }
 }
 
-async function getRequestedAction(req: Request, url: URL): Promise<string | null> {
+async function parseRequestBody(req: Request): Promise<Record<string, unknown>> {
+  if (req.method === "GET" || req.method === "HEAD") return {};
+  try {
+    return (await req.clone().json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function getActionFromBody(body: Record<string, unknown>, url: URL): string | null {
   const fromQuery = url.searchParams.get("action");
   if (fromQuery) return fromQuery;
-  if (req.method === "GET" || req.method === "HEAD") return null;
-  try {
-    const body = await req.clone().json() as { action?: unknown };
-    return typeof body.action === "string" ? body.action : null;
-  } catch {
-    return null;
-  }
+  return typeof body.action === "string" ? body.action : null;
 }
 
 async function handleNuclearLogout(callerUserId: string, callerSessionId: string | null) {

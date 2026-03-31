@@ -99,6 +99,10 @@ export default function InfraMonitorPage() {
             <Activity className="w-4 h-4 mr-1.5" />
             Métricas
           </TabsTrigger>
+          <TabsTrigger value="sessions" className="data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-400 text-slate-400">
+            <Users className="w-4 h-4 mr-1.5" />
+            Sesiones
+          </TabsTrigger>
           <TabsTrigger value="db-schema" className="data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-400 text-slate-400">
             <Database className="w-4 h-4 mr-1.5" />
             Datos BD
