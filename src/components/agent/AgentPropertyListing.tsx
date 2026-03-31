@@ -200,6 +200,7 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [activeStatusTab, setActiveStatusTab] = useState<StatusFilter>("todos");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { data: discardFields } = useStatusFeedbackConfig("descartado");
 
   // Auto-select first property
   const effectiveSelectedId = selectedPropertyId || insights[0]?.publicationId || null;
