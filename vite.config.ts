@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => ({
     ],
     hmr: {
       overlay: false,
+      timeout: 60000,
+    },
+    watch: {
+      usePolling: false,
     },
   },
   plugins: [
