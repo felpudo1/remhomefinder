@@ -334,13 +334,8 @@ Deno.serve(async (req: Request) => {
       if (authError || !user) {
         return new Response(JSON.stringify({ error: authError || "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      let targetSessionId: string | null = null;
-      try {
-        const body = await req.clone().json() as { session_id?: string };
-        targetSessionId = body.session_id || url.searchParams.get("session_id");
-      } catch {
-        targetSessionId = url.searchParams.get("session_id");
-      }
+      let targetSessionId: string | null = (parsedBody.session_id as string) || url.searchParams.get("session_id") || null;
+      console.log("[close_session] target:", targetSessionId);
       if (!targetSessionId) {
         return new Response(JSON.stringify({ error: "session_id required" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
