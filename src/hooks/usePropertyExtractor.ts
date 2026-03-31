@@ -18,15 +18,17 @@ function safeUUID(): string {
   });
 }
 
-function normalizeCurrency(value: unknown): "UYU" | "USD" {
-  return value === "USD" ? "USD" : "UYU";
+function normalizeCurrency(value: unknown): "UYU" | "USD" | "UI" {
+  if (value === "USD") return "USD";
+  if (value === "UI") return "UI";
+  return "UYU";
 }
 
 export type PropertyData = {
   title: string;
   priceRent: string;
   priceExpenses: string;
-  currency: "UYU" | "USD";
+  currency: "UYU" | "USD" | "UI";
   department: string;
   department_id: string;
   neighborhood: string;
