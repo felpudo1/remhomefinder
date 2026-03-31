@@ -46,7 +46,6 @@ export default function PaymentStatus() {
           <PaymentSuccess
             onNavigateBack={handleReturn}
             className="w-full"
-            autoRedirectDelay={4000}
           />
         ) : status === "failure" || status === "rejected" ? (
           <PaymentFailure onRetry={handleRetry} className="w-full" />
