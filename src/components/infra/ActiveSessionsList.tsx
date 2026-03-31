@@ -268,10 +268,7 @@ export function ActiveSessionsList() {
                         variant="ghost"
                         size="sm"
                         disabled={isClosing || user.role === "sysadmin"}
-                        onClick={() => {
-                          // Close all sessions for this user
-                          sessionIds.forEach(id => closeSession(id));
-                        }}
+                        onClick={() => closeUserSessions(sessionIds)}
                         className="text-red-400 hover:text-red-300 hover:bg-red-950/40 h-7 px-2"
                         title={user.role === "sysadmin" ? "No se puede cerrar la sesión del sysadmin" : `Cerrar ${count} sesión(es)`}
                       >
