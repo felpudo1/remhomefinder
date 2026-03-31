@@ -194,7 +194,7 @@ function DiscardImpactChart({
   );
 }
 
-
+export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
   const { data: insights = [], isLoading } = useAgentPropertyInsights(agency.id);
   const [query, setQuery] = useState("");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
