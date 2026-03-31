@@ -79,12 +79,27 @@ interface ParsedMetrics {
 }
 
 function parseMetrics(raw: string): ParsedMetrics {
-  // Try multiple metric names for disk IO
+  // Try multiple metric names for disk IO consumption (percentage 0-100)
+  // NOTE: node_disk_io_time_weighted_seconds_total is a cumulative counter, NOT a percentage — excluded
   const diskIoConsumption =
     firstMetric(raw, "disk_io_consumption") ??
     firstMetric(raw, "disk_io_utilized_percentage") ??
-    firstMetric(raw, "disk_io_used_percentage") ??
-    firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
+    firstMetric(raw, "disk_io_used_percentage");
+
+  // Also try direct budget metric (already 0-100 percentage of remaining budget)
+  const diskIoBudgetDirect =
+    firstMetric(raw, "disk_io_budget_remaining") ??
+    firstMetric(raw, "disk_io_budget_percent");
+
+  // Log diagnostic info for disk IO metric resolution
+  console.log("[disk-io-debug]", JSON.stringify({
+    disk_io_consumption: firstMetric(raw, "disk_io_consumption"),
+    disk_io_utilized_percentage: firstMetric(raw, "disk_io_utilized_percentage"),
+    disk_io_used_percentage: firstMetric(raw, "disk_io_used_percentage"),
+    disk_io_budget_remaining: firstMetric(raw, "disk_io_budget_remaining"),
+    disk_io_budget_percent: firstMetric(raw, "disk_io_budget_percent"),
+    node_disk_io_weighted: firstMetric(raw, "node_disk_io_time_weighted_seconds_total"),
+  }));
 
   const restRequests =
     sumMetric(raw, "postgrest_requests_total") ??
@@ -139,8 +154,22 @@ function parseMetrics(raw: string): ParsedMetrics {
     sumMetric(raw, "db_sql_connection_open") ??
     sumMetric(raw, "connection_stats_connection_count");
 
+  // Resolve disk IO budget: prefer consumption-based calc, fallback to direct budget metric
+  const resolvedDiskIoBudget =
+    diskIoConsumption !== null
+      ? clampPercent(100 - diskIoConsumption)
+      : diskIoBudgetDirect !== null
+        ? clampPercent(diskIoBudgetDirect)
+        : null;
+
+  console.log("[disk-io-resolved]", JSON.stringify({
+    consumption: diskIoConsumption,
+    directBudget: diskIoBudgetDirect,
+    resolved: resolvedDiskIoBudget,
+  }));
+
   return {
-    diskIoBudget: diskIoConsumption !== null ? clampPercent(100 - diskIoConsumption) : null,
+    diskIoBudget: resolvedDiskIoBudget,
     restRequests,
     authRequests,
     realtimeRequests,
@@ -150,7 +179,7 @@ function parseMetrics(raw: string): ParsedMetrics {
     ramTotalMb,
     dbConnections,
     timestamp: new Date().toISOString(),
-    version: "6.0.zero-db",
+    version: "7.0.fix-disk-io",
   };
 }
 
@@ -361,19 +390,16 @@ Deno.serve(async (req: Request) => {
     const parsed = parseMetrics(rawText);
 
     // Guardar histórico de Disk IO Budget
-    const diskIoBudget = parsed.diskIoBudget;
-    const diskIoSource: "live" | "unavailable" = diskIoBudget !== null ? "live" : "unavailable";
-    const diskIoLastSampleAt: string | null = diskIoBudget !== null ? new Date().toISOString() : null;
+    const liveDiskIo = parsed.diskIoBudget;
 
     // Crear cliente Supabase para guardar histórico
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Insertar snapshot en histórico con contadores de requests
-    let diskIoHistory: Array<{ disk_io_budget: number; recorded_at: string; rest_requests: number; auth_requests: number; realtime_requests: number; storage_requests: number }> = [];
-    {
+    // Solo guardar snapshot si tenemos un valor real de disk IO
+    if (liveDiskIo !== null) {
       const row: Record<string, unknown> = {
         recorded_at: new Date().toISOString(),
-        disk_io_budget: diskIoBudget,
+        disk_io_budget: liveDiskIo,
         rest_requests: parsed.restRequests ?? 0,
         auth_requests: parsed.authRequests ?? 0,
         realtime_requests: parsed.realtimeRequests ?? 0,
@@ -382,19 +408,45 @@ Deno.serve(async (req: Request) => {
       const { error: historyError } = await supabase
         .from("system_metrics_history")
         .insert(row);
+      if (historyError) console.error("Failed to save history:", historyError);
+    }
 
-      if (historyError) {
-        console.error("Failed to save history:", historyError);
+    // Leer últimos 200 registros para filtros de período
+    const { data: historyData } = await supabase
+      .from("system_metrics_history")
+      .select("disk_io_budget, recorded_at, rest_requests, auth_requests, realtime_requests, storage_requests")
+      .order("recorded_at", { ascending: false })
+      .limit(200);
+
+    const diskIoHistory = (historyData as any[]) || [];
+
+    // Read configurable fallback window (default 48h)
+    const { data: cfgRow } = await supabase
+      .from("system_config")
+      .select("value")
+      .eq("key", "history_fallback_max_hours")
+      .maybeSingle();
+    const fallbackMaxHours = Number(cfgRow?.value) || 48;
+    const fallbackMaxAgeMs = fallbackMaxHours * 60 * 60 * 1000;
+
+    // Resolve final diskIo value with historical fallback
+    let diskIoBudget = liveDiskIo;
+    let diskIoSource: "live" | "history" | "unavailable" = liveDiskIo !== null ? "live" : "unavailable";
+    let diskIoLastSampleAt: string | null = liveDiskIo !== null ? new Date().toISOString() : null;
+
+    if (liveDiskIo === null) {
+      // Find most recent non-null historical value within fallback window
+      const cutoff = new Date(Date.now() - fallbackMaxAgeMs).toISOString();
+      const fallback = diskIoHistory.find(
+        (h: any) => h.disk_io_budget !== null && h.recorded_at >= cutoff
+      );
+      if (fallback) {
+        diskIoBudget = fallback.disk_io_budget;
+        diskIoSource = "history";
+        diskIoLastSampleAt = fallback.recorded_at;
+        const ageMin = Math.round((Date.now() - new Date(fallback.recorded_at).getTime()) / 60_000);
+        console.log(`[disk-io-fallback] Using historical value ${fallback.disk_io_budget}% from ${ageMin} min ago`);
       }
-
-      // Leer últimos 200 registros (aprox 3h de datos a 1/min) para filtros de período
-      const { data: historyData } = await supabase
-        .from("system_metrics_history")
-        .select("disk_io_budget, recorded_at, rest_requests, auth_requests, realtime_requests, storage_requests")
-        .order("recorded_at", { ascending: false })
-        .limit(200);
-
-      diskIoHistory = (historyData as any[]) || [];
     }
 
     return new Response(JSON.stringify({
@@ -403,7 +455,7 @@ Deno.serve(async (req: Request) => {
       diskIoSource,
       diskIoLastSampleAt,
       diskIoHistory,
-      version: "6.0.zero-db-dynamic"
+      version: "7.0.fix-disk-io"
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -411,7 +463,7 @@ Deno.serve(async (req: Request) => {
 
   } catch (err: any) {
     console.error("Critical error:", err);
-    return new Response(JSON.stringify({ error: err.message, version: "5.0.clean" }), {
+    return new Response(JSON.stringify({ error: err.message, version: "7.0.fix-disk-io" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
