@@ -79,12 +79,27 @@ interface ParsedMetrics {
 }
 
 function parseMetrics(raw: string): ParsedMetrics {
-  // Try multiple metric names for disk IO
+  // Try multiple metric names for disk IO consumption (percentage 0-100)
+  // NOTE: node_disk_io_time_weighted_seconds_total is a cumulative counter, NOT a percentage — excluded
   const diskIoConsumption =
     firstMetric(raw, "disk_io_consumption") ??
     firstMetric(raw, "disk_io_utilized_percentage") ??
-    firstMetric(raw, "disk_io_used_percentage") ??
-    firstMetric(raw, "node_disk_io_time_weighted_seconds_total");
+    firstMetric(raw, "disk_io_used_percentage");
+
+  // Also try direct budget metric (already 0-100 percentage of remaining budget)
+  const diskIoBudgetDirect =
+    firstMetric(raw, "disk_io_budget_remaining") ??
+    firstMetric(raw, "disk_io_budget_percent");
+
+  // Log diagnostic info for disk IO metric resolution
+  console.log("[disk-io-debug]", JSON.stringify({
+    disk_io_consumption: firstMetric(raw, "disk_io_consumption"),
+    disk_io_utilized_percentage: firstMetric(raw, "disk_io_utilized_percentage"),
+    disk_io_used_percentage: firstMetric(raw, "disk_io_used_percentage"),
+    disk_io_budget_remaining: firstMetric(raw, "disk_io_budget_remaining"),
+    disk_io_budget_percent: firstMetric(raw, "disk_io_budget_percent"),
+    node_disk_io_weighted: firstMetric(raw, "node_disk_io_time_weighted_seconds_total"),
+  }));
 
   const restRequests =
     sumMetric(raw, "postgrest_requests_total") ??
