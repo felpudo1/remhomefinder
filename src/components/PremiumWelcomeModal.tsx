@@ -30,7 +30,7 @@ export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWel
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-[0_0_50px_rgba(var(--primary-rgb),0.3)] animate-in zoom-in-95 duration-300">
+            <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-[0_0_50px_rgba(var(--primary-rgb),0.3)] animate-in zoom-in-95 duration-300 [&>button]:bg-white/10 [&>button]:border [&>button]:border-white/20 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:rounded-full [&>button]:p-2.5 [&>button]:top-5 [&>button]:right-5 [&>button>svg]:w-5 [&>button>svg]:h-5">
                 {/* Fondo con Graduado Animado y Partículas Visuales */}
                 <div className="bg-gradient-to-br from-[#1a1c2c] via-[#4a192c] to-[#1a1c2c] p-10 text-white relative overflow-hidden min-h-[500px] flex flex-col items-center justify-center text-center">
 
@@ -76,7 +76,7 @@ export function PremiumWelcomeModal({ open, onClose, type = "user" }: PremiumWel
                                 { icon: Star, text: "Sello de Verificado" },
                                 { icon: Sparkles, text: "Soporte VIP" }
                             ] : [
-                                { icon: Zap, text: "Lista Ilimitada" },
+                                { icon: Zap, text: "Lista X 20" },
                                 { icon: CheckCircle2, text: "Sin Restricciones" },
                                 { icon: Star, text: "Acceso VIP" },
                                 { icon: Sparkles, text: "Tooltips Pro" }

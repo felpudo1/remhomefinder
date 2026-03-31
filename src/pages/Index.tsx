@@ -152,7 +152,7 @@ const Index = () => {
   const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
   const OWN_LINK_TIP_SHOWN_KEY = "hf_own_link_first_tip_shown";
 
-  const { canSaveMore, maxSaves, isPremium } = useSubscription();
+  const { canSaveMore, maxSaves, isPremium, referralBonus } = useSubscription();
 
   const handleRefreshProperties = async () => {
     setIsRefreshingList(true);
@@ -510,7 +510,7 @@ const Index = () => {
                       <div className="mb-6 space-y-4">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Propiedades ({filteredAndSorted.length})</h1>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Avisos Guardados ({filteredAndSorted.length}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})</h1>
                             <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                           </div>
                           <button

@@ -8,7 +8,6 @@ import {
   Megaphone,
   Sparkles,
   AlertTriangle,
-  X,
   ChevronRight,
   Bell,
   Clock,
@@ -92,7 +91,7 @@ export function AnnouncementOverlay() {
         }
       }}>
         <DialogContent
-          className={`max-w-lg rounded-[2rem] p-0 overflow-hidden border-none shadow-[0_0_60px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-300 ${
+          className={`max-w-lg rounded-[2rem] p-0 overflow-hidden border-none animate-in zoom-in-95 duration-300 [&>button]:bg-white/10 [&>button]:border [&>button]:border-white/20 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:rounded-full [&>button]:p-2.5 [&>button]:top-5 [&>button]:right-5 [&>button>svg]:w-5 [&>button>svg]:h-5 ${
             isUrgent
               ? "shadow-[0_0_60px_rgba(239,68,68,0.3)]"
               : "shadow-[0_0_60px_rgba(var(--primary-rgb),0.2)]"

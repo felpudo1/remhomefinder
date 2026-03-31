@@ -6,8 +6,12 @@ import { useSystemConfig } from "./useSystemConfig";
 import {
     USER_FREE_PLAN_SAVE_LIMIT_KEY,
     USER_FREE_PLAN_SAVE_LIMIT_DEFAULT,
+    USER_PREMIUM_PLAN_SAVE_LIMIT_KEY,
+    USER_PREMIUM_PLAN_SAVE_LIMIT_DEFAULT,
     AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY,
-    AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT
+    AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT,
+    AGENT_REFERRAL_BONUS_SAVES_KEY,
+    AGENT_REFERRAL_BONUS_SAVES_DEFAULT
 } from "@/lib/config-keys";
 
 /**
@@ -30,12 +34,32 @@ export function useSubscription() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("plan_type")
+                .select("plan_type, referred_by_id")
                 .eq("user_id", authUser.id)
                 .maybeSingle();
 
             if (error) throw error;
             return data;
+        }
+    });
+
+    // 2. Verificar si el referrer del usuario es un agente (tiene organización)
+    const referredById = profile?.referred_by_id ?? null;
+    const { data: isReferredByAgent } = useQuery({
+        queryKey: ["referrer-is-agent", referredById],
+        enabled: !!referredById,
+        // Esto no cambia nunca — cachear largo
+        staleTime: 60 * 60 * 1000,
+        queryFn: async () => {
+            if (!referredById) return false;
+            // Si el referrer tiene una organización de tipo agencia, es agente
+            const { count, error } = await (supabase
+                .from("organizations") as any)
+                .select("id", { count: "exact", head: true })
+                .eq("created_by", referredById)
+                .eq("type", "agency_team");
+            if (error) return false;
+            return (count ?? 0) > 0;
         }
     });
 
@@ -45,15 +69,35 @@ export function useSubscription() {
         USER_FREE_PLAN_SAVE_LIMIT_DEFAULT
     );
 
+    // Límite de guardado para usuarios premium (configurable desde admin)
+    const { value: premiumSaveLimitRaw, isLoading: isLoadingPremiumConfig } = useSystemConfig(
+        USER_PREMIUM_PLAN_SAVE_LIMIT_KEY,
+        USER_PREMIUM_PLAN_SAVE_LIMIT_DEFAULT
+    );
+
     const { value: publishLimitRaw, isLoading: isLoadingPublishConfig } = useSystemConfig(
         AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY,
         AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT
     );
 
+    // Bonus de referral de agente (configurable desde admin)
+    const { value: referralBonusRaw, isLoading: isLoadingBonusConfig } = useSystemConfig(
+        AGENT_REFERRAL_BONUS_SAVES_KEY,
+        AGENT_REFERRAL_BONUS_SAVES_DEFAULT
+    );
+
     const isPremium = profile?.plan_type === "premium";
 
-    // Límites para usuarios regulares
-    const maxSaves = isPremium ? Infinity : parseInt(saveLimitRaw || USER_FREE_PLAN_SAVE_LIMIT_DEFAULT);
+    // Bonus por referral de agente (solo si el referrer es agente)
+    const referralBonus = isReferredByAgent
+        ? parseInt(referralBonusRaw || AGENT_REFERRAL_BONUS_SAVES_DEFAULT)
+        : 0;
+
+    // Límites dinámicos para usuarios (plan + bonus de referral)
+    const baseSaves = isPremium
+        ? parseInt(premiumSaveLimitRaw || USER_PREMIUM_PLAN_SAVE_LIMIT_DEFAULT)
+        : parseInt(saveLimitRaw || USER_FREE_PLAN_SAVE_LIMIT_DEFAULT);
+    const maxSaves = baseSaves + referralBonus;
 
     // Límites para agentes/agencias
     const maxAgentPublishes = isPremium ? Infinity : parseInt(publishLimitRaw || AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT);
@@ -81,6 +125,7 @@ export function useSubscription() {
         canSaveMore,
         maxAgentPublishes,
         canAgentPublishMore,
-        isLoading: isLoadingProfile || isLoadingSaveConfig || isLoadingPublishConfig
+        referralBonus,
+        isLoading: isLoadingProfile || isLoadingSaveConfig || isLoadingPremiumConfig || isLoadingPublishConfig || isLoadingBonusConfig
     };
 }

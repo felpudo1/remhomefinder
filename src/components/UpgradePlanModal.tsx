@@ -4,7 +4,7 @@ import {
     DialogContent,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star, X } from "lucide-react";
+import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star } from "lucide-react";
 
 interface UpgradePlanModalProps {
     open: boolean;
@@ -56,7 +56,7 @@ export function UpgradePlanModal({
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent
-                className="max-w-lg rounded-[2rem] p-0 overflow-hidden border-none shadow-[0_0_60px_rgba(30,64,175,0.3)] animate-in zoom-in-95 duration-300"
+                className="max-w-lg rounded-[2rem] p-0 overflow-hidden border-none shadow-[0_0_60px_rgba(30,64,175,0.3)] animate-in zoom-in-95 duration-300 [&>button]:bg-white/10 [&>button]:border [&>button]:border-white/20 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:rounded-full [&>button]:p-2.5 [&>button]:top-5 [&>button]:right-5 [&>button>svg]:w-5 [&>button>svg]:h-5"
             >
                 <div className="relative overflow-hidden min-h-[550px] flex flex-col bg-gradient-to-br from-[#1a1c2c] via-[#1a2040] to-[#1a1c2c]">
 
@@ -70,7 +70,7 @@ export function UpgradePlanModal({
 
                         {/* Badge superior */}
                         <div className={`transition-all duration-500 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}>
-                            <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center mb-6">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-yellow-500/10 border-yellow-500/20 text-yellow-200 backdrop-blur-md">
                                     {/* Efecto de brillo shimmer */}
                                     <Gem className="w-3.5 h-3.5 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
@@ -78,13 +78,6 @@ export function UpgradePlanModal({
                                         Plan Exclusive
                                     </span>
                                 </div>
-                                {/* Botón cerrar */}
-                                <button
-                                    onClick={onClose}
-                                    className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
                             </div>
                         </div>
 

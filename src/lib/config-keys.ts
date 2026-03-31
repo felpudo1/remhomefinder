@@ -23,6 +23,10 @@ export const SUPPORT_PHONE_DEFAULT = "";
 export const USER_FREE_PLAN_SAVE_LIMIT_KEY = "user_free_plan_save_limit";
 export const USER_FREE_PLAN_SAVE_LIMIT_DEFAULT = "10";
 
+// Límite de guardado para el plan premium
+export const USER_PREMIUM_PLAN_SAVE_LIMIT_KEY = "user_premium_plan_save_limit";
+export const USER_PREMIUM_PLAN_SAVE_LIMIT_DEFAULT = "200";
+
 // Límite de publicaciones en marketplace para agentes gratuitos
 export const AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY = "agent_free_plan_publish_limit";
 export const AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT = "3";
@@ -34,3 +38,7 @@ export const MARKETPLACE_CONTACT_TIP_INTERVAL_DEFAULT = "3";
 // Nombre de marca para textos dinámicos en la app
 export const APP_BRAND_NAME_KEY = "app_brand_name";
 export const APP_BRAND_NAME_DEFAULT = "HomeFinder";
+
+// Bonus de avisos extra para users referidos por un agente
+export const AGENT_REFERRAL_BONUS_SAVES_KEY = "agent_referral_bonus_saves";
+export const AGENT_REFERRAL_BONUS_SAVES_DEFAULT = "5";
