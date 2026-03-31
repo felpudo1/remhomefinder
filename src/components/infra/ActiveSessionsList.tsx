@@ -81,12 +81,38 @@ export function ActiveSessionsList() {
         body: JSON.stringify({ action: "close_session", session_id: sessionId }),
       });
       const result = await res.json();
+      console.log("[closeSession] result:", result);
       if (result.success) {
         toast.success("Sesión cerrada");
         setSessions((prev) => prev?.filter((s) => s.session_id !== sessionId) ?? null);
       } else {
         toast.error(result.error || "Error al cerrar sesión");
       }
+    } catch (err: any) {
+      toast.error(err?.message || "Error de red");
+    } finally {
+      setClosingId(null);
+    }
+  };
+
+  const closeUserSessions = async (sessionIds: string[]) => {
+    setClosingId(sessionIds[0]);
+    try {
+      for (const id of sessionIds) {
+        const headers = await getAuthHeaders();
+        const res = await fetch(getEdgeFunctionUrl(), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "close_session", session_id: id }),
+        });
+        const result = await res.json();
+        console.log("[closeUserSessions] session:", id, "result:", result);
+        if (!result.success) {
+          toast.error(result.error || `Error cerrando sesión ${id.slice(0, 8)}`);
+        }
+      }
+      toast.success(`${sessionIds.length} sesión(es) cerrada(s)`);
+      setSessions((prev) => prev?.filter((s) => !sessionIds.includes(s.session_id)) ?? null);
     } catch (err: any) {
       toast.error(err?.message || "Error de red");
     } finally {
