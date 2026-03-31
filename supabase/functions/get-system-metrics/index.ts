@@ -200,16 +200,19 @@ function getSessionIdFromJwt(token: string): string | null {
   }
 }
 
-async function getRequestedAction(req: Request, url: URL): Promise<string | null> {
+async function parseRequestBody(req: Request): Promise<Record<string, unknown>> {
+  if (req.method === "GET" || req.method === "HEAD") return {};
+  try {
+    return (await req.clone().json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function getActionFromBody(body: Record<string, unknown>, url: URL): string | null {
   const fromQuery = url.searchParams.get("action");
   if (fromQuery) return fromQuery;
-  if (req.method === "GET" || req.method === "HEAD") return null;
-  try {
-    const body = await req.clone().json() as { action?: unknown };
-    return typeof body.action === "string" ? body.action : null;
-  } catch {
-    return null;
-  }
+  return typeof body.action === "string" ? body.action : null;
 }
 
 async function handleNuclearLogout(callerUserId: string, callerSessionId: string | null) {
@@ -278,8 +281,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const url = new URL(req.url);
-    const action = await getRequestedAction(req, url);
+    const parsedBody = await parseRequestBody(req);
+    const action = getActionFromBody(parsedBody, url);
 
     // ── Auth helper for actions ────────────────────────
     async function authenticateSysadmin(reqObj: Request) {
@@ -331,13 +334,8 @@ Deno.serve(async (req: Request) => {
       if (authError || !user) {
         return new Response(JSON.stringify({ error: authError || "Auth failed" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      let targetSessionId: string | null = null;
-      try {
-        const body = await req.clone().json() as { session_id?: string };
-        targetSessionId = body.session_id || url.searchParams.get("session_id");
-      } catch {
-        targetSessionId = url.searchParams.get("session_id");
-      }
+      let targetSessionId: string | null = (parsedBody.session_id as string) || url.searchParams.get("session_id") || null;
+      console.log("[close_session] target:", targetSessionId);
       if (!targetSessionId) {
         return new Response(JSON.stringify({ error: "session_id required" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }

@@ -9,7 +9,7 @@ import { AdminMaintenance } from "@/components/admin/system/AdminMaintenance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { RefreshCw, Activity, LogOut, ArrowLeft, Database } from "lucide-react";
+import { RefreshCw, Activity, LogOut, ArrowLeft, Database, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ROUTES } from "@/lib/constants";
@@ -99,6 +99,10 @@ export default function InfraMonitorPage() {
             <Activity className="w-4 h-4 mr-1.5" />
             Métricas
           </TabsTrigger>
+          <TabsTrigger value="sessions" className="data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-400 text-slate-400">
+            <Users className="w-4 h-4 mr-1.5" />
+            Sesiones
+          </TabsTrigger>
           <TabsTrigger value="db-schema" className="data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-400 text-slate-400">
             <Database className="w-4 h-4 mr-1.5" />
             Datos BD
@@ -160,9 +164,12 @@ export default function InfraMonitorPage() {
                 ramTotalMb={data.ramTotalMb}
                 dbConnections={data.dbConnections}
               />
-              <ActiveSessionsList />
             </div>
           ) : null}
+        </TabsContent>
+
+        <TabsContent value="sessions">
+          <ActiveSessionsList />
         </TabsContent>
 
         <TabsContent value="db-schema">
