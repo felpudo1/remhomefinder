@@ -319,11 +319,23 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
               }
 
               // 3. Location matching (map UUIDs to Names to compare with pub.properties.neighborhood)
-              const selectedNeighborhoods: string[] = userSearch.neighborhood_ids || [];
-              const selectedNames = selectedNeighborhoods.map((id: string) => neighborhoodMap[id]);
-              const pubNeighborhood = pub.properties?.neighborhood;
+              let selectedNeighborhoods: string[] = [];
+              if (Array.isArray(userSearch.neighborhood_ids)) {
+                 selectedNeighborhoods = userSearch.neighborhood_ids;
+              } else if (typeof userSearch.neighborhood_ids === "string") {
+                 // Fallback if DB returned a string instead of array
+                 selectedNeighborhoods = [(userSearch.neighborhood_ids as string)];
+              }
 
-              if (selectedNeighborhoods.length === 0 || selectedNames.includes(pubNeighborhood)) {
+              const pubNeighborhood = pub.properties?.neighborhood;
+              let hasNeighborhoodMatch = selectedNeighborhoods.length === 0;
+              
+              if (!hasNeighborhoodMatch) {
+                 const selectedNames = selectedNeighborhoods.map((id: string) => neighborhoodMap[id] || "");
+                 hasNeighborhoodMatch = selectedNames.includes(pubNeighborhood);
+              }
+
+              if (hasNeighborhoodMatch) {
                   matchScore += neighborhood_weight;
               }
 

@@ -100,8 +100,8 @@ export function ScraperInput({
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
                                 className="pl-9 rounded-xl"
-                                disabled={isUrlActionsLocked}
-                                onKeyDown={(e) => !isUrlActionsLocked && e.key === "Enter" && handleScrape()}
+                                disabled={isUrlActionsLocked || isLoading}
+                                onKeyDown={(e) => !isUrlActionsLocked && !isLoading && e.key === "Enter" && handleScrape()}
                             />
                         </div>
                         <Button
@@ -110,7 +110,7 @@ export function ScraperInput({
                             size="icon"
                             className="rounded-xl shrink-0"
                             onClick={() => setQrOpen(true)}
-                            disabled={isUrlActionsLocked}
+                            disabled={isUrlActionsLocked || isLoading}
                             title="Escanear código QR"
                         >
                             <QrCode className="w-4 h-4" />
