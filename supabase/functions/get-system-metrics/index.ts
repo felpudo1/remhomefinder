@@ -282,6 +282,7 @@ Deno.serve(async (req: Request) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const parsedBody = await parseRequestBody(req);
+    const url = new URL(req.url);
     const action = getActionFromBody(parsedBody, url);
 
     // ── Auth helper for actions ────────────────────────
