@@ -281,8 +281,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const url = new URL(req.url);
-    const action = await getRequestedAction(req, url);
+    const parsedBody = await parseRequestBody(req);
+    const action = getActionFromBody(parsedBody, url);
 
     // ── Auth helper for actions ────────────────────────
     async function authenticateSysadmin(reqObj: Request) {
