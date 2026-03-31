@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User, PieChartIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
   useAgentPropertyInsights,
   type AgentPropertyInsight,
@@ -89,12 +90,117 @@ function StatusRatingCard({ status, user }: { status: string; user: AgentUserIns
   );
 }
 
+const PIE_COLORS = ["#f97316", "#eab308", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#14b8a6", "#f43f5e"];
+
+/** Converts a field_id like "discarded_overall_condition" to "Calidad estructural" */
+function fieldIdToLabel(fieldId: string): string {
+  return fieldId
+    .replace(/^discarded_/, "")
+    .replace(/_/g, " ")
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
+/** Aggregated discard impact pie chart across all users of a property */
+function DiscardImpactChart({
+  users,
+  feedbackFields,
+}: {
+  users: AgentUserInsight[];
+  feedbackFields?: Array<{ field_id: string; field_label: string; field_type: string }> | null;
+}) {
+  const chartData = useMemo(() => {
+    // Accumulate all numeric rating values from descartado metadata across users
+    const acc: Record<string, { sum: number; count: number; label: string }> = {};
+
+    users.forEach((user) => {
+      const meta = user.ratingsByStatus?.descartado;
+      if (!meta) return;
+
+      Object.entries(meta).forEach(([key, rawVal]) => {
+        // Skip non-numeric fields (reason, text fields, etc.)
+        const val = Number(rawVal);
+        if (!Number.isFinite(val) || val <= 0) return;
+        // Skip known text keys
+        if (key === "reason" || key === "notes" || key === "comment") return;
+
+        if (!acc[key]) {
+          // Try to find a human-readable label from feedback config
+          const configField = feedbackFields?.find((f) => f.field_id === key);
+          const label = configField
+            ? configField.field_label.replace(/^[^\w]*/, "").trim() // Remove leading emoji
+            : fieldIdToLabel(key);
+          acc[key] = { sum: 0, count: 0, label };
+        }
+        acc[key].sum += val;
+        acc[key].count += 1;
+      });
+    });
+
+    return Object.entries(acc)
+      .map(([key, { sum, count, label }]) => ({
+        name: label,
+        value: Math.round((sum / count) * 10) / 10, // average rating
+        total: sum,
+        count,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [users, feedbackFields]);
+
+  if (chartData.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground italic text-center py-4">
+        Sin datos de descarte para analizar.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={40}
+            outerRadius={75}
+            dataKey="value"
+            nameKey="name"
+            paddingAngle={2}
+          >
+            {chartData.map((_, idx) => (
+              <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+            formatter={(value: number, name: string) => [`${value.toFixed(1)} ★ prom.`, name]}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="grid grid-cols-1 gap-1">
+        {chartData.map((entry, idx) => (
+          <div key={entry.name} className="flex items-center gap-2 text-xs">
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}
+            />
+            <span className="text-muted-foreground truncate flex-1">{entry.name}</span>
+            <span className="font-medium text-foreground">{entry.value.toFixed(1)} ★</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
   const { data: insights = [], isLoading } = useAgentPropertyInsights(agency.id);
   const [query, setQuery] = useState("");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [activeStatusTab, setActiveStatusTab] = useState<StatusFilter>("todos");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { data: discardFields } = useStatusFeedbackConfig("descartado");
 
   // Auto-select first property
   const effectiveSelectedId = selectedPropertyId || insights[0]?.publicationId || null;
@@ -424,6 +530,28 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                         </p>
                       )}
                     </div>
+
+                    {/* Discard Impact Pie Chart - aggregated across all discarded users */}
+                    {selectedProperty && (() => {
+                      const discardedUsers = selectedProperty.users.filter(
+                        (u) => u.ratingsByStatus?.descartado
+                      );
+                      if (discardedUsers.length === 0) return null;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                            <PieChartIcon className="w-3.5 h-3.5" />
+                            Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
+                          </p>
+                          <div className="rounded-lg border border-border bg-card p-3">
+                            <DiscardImpactChart
+                              users={discardedUsers}
+                              feedbackFields={discardFields}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </aside>
