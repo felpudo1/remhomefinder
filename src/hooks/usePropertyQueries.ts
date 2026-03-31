@@ -212,20 +212,22 @@ export function usePropertyQueries() {
   useEffect(() => {
     if (!currentUserId) return;
 
-    // Canal único: escucha user_listings (incluye cambios por trigger de comentarios)
-    // y attachments. El canal de family_comments ya NO es necesario porque el trigger
-    // trg_comment_updates_listing actualiza updated_at del listing automáticamente.
-    // Solo escuchamos user_listings filtrado por added_by.
-    // Los adjuntos ya actualizan updated_at del listing via trigger trg_attachment_updates_listing.
+    // Remove any existing channel with the same name before creating a new one
+    // to prevent "cannot add callbacks after subscribe()" errors
+    const channelName = `properties_realtime_listings_${currentUserId}`;
+    const existing = supabase.channel(channelName);
+    supabase.removeChannel(existing);
+
     const channelListings = supabase
-      .channel("properties_realtime_listings")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_listings", filter: `added_by=eq.${currentUserId}` }, handleRealtimeEvent)
       .subscribe();
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       supabase.removeChannel(channelListings);
     };
-  }, [queryClient, currentUserId, handleRealtimeEvent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId]);
 
   const query = useInfiniteQuery({
     queryKey: ["properties", currentUserId],
