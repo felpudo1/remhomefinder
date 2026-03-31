@@ -14,77 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      announcement_reads: {
-        Row: {
-          announcement_id: string
-          dismissed_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          announcement_id: string
-          dismissed_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          announcement_id?: string
-          dismissed_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "announcement_reads_announcement_id_fkey"
-            columns: ["announcement_id"]
-            isOneToOne: false
-            referencedRelation: "announcements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      announcements: {
-        Row: {
-          audience: Database["public"]["Enums"]["announcement_audience"]
-          body: string
-          created_at: string
-          created_by: string
-          expires_at: string | null
-          id: string
-          image_url: string
-          is_active: boolean
-          priority: Database["public"]["Enums"]["announcement_priority"]
-          target_user_id: string | null
-          title: string
-        }
-        Insert: {
-          audience?: Database["public"]["Enums"]["announcement_audience"]
-          body: string
-          created_at?: string
-          created_by: string
-          expires_at?: string | null
-          id?: string
-          image_url?: string
-          is_active?: boolean
-          priority?: Database["public"]["Enums"]["announcement_priority"]
-          target_user_id?: string | null
-          title: string
-        }
-        Update: {
-          audience?: Database["public"]["Enums"]["announcement_audience"]
-          body?: string
-          created_at?: string
-          created_by?: string
-          expires_at?: string | null
-          id?: string
-          image_url?: string
-          is_active?: boolean
-          priority?: Database["public"]["Enums"]["announcement_priority"]
-          target_user_id?: string | null
-          title?: string
-        }
-        Relationships: []
-      }
       admin_keys: {
         Row: {
           created_at: string
@@ -1482,50 +1411,6 @@ export type Database = {
       }
     }
     Functions: {
-      get_all_announcements: {
-        Args: Record<string, never>
-        Returns: {
-          id: string
-          title: string
-          body: string
-          image_url: string
-          audience: Database["public"]["Enums"]["announcement_audience"]
-          target_user_id: string | null
-          is_active: boolean
-          priority: Database["public"]["Enums"]["announcement_priority"]
-          created_by: string
-          created_at: string
-          expires_at: string | null
-          reads_count: number
-        }[]
-      }
-      get_pending_announcements: {
-        Args: { p_user_id: string; p_user_roles: string[] }
-        Returns: {
-          id: string
-          title: string
-          body: string
-          image_url: string
-          audience: Database["public"]["Enums"]["announcement_audience"]
-          priority: Database["public"]["Enums"]["announcement_priority"]
-          created_at: string
-          created_by: string
-          expires_at: string | null
-        }[]
-      }
-      get_user_announcement_history: {
-        Args: { p_user_id: string }
-        Returns: {
-          id: string
-          title: string
-          body: string
-          image_url: string
-          audience: Database["public"]["Enums"]["announcement_audience"]
-          priority: Database["public"]["Enums"]["announcement_priority"]
-          created_at: string
-          dismissed_at: string
-        }[]
-      }
       admin_physical_delete_user: {
         Args: { _deleted_by: string; _reason: string; _user_id: string }
         Returns: undefined
@@ -1677,6 +1562,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      is_agent_referrer: { Args: { _user_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -1694,8 +1580,6 @@ export type Database = {
       }
     }
     Enums: {
-      announcement_audience: "all" | "agents" | "users" | "specific"
-      announcement_priority: "normal" | "urgent"
       agent_pub_status:
         | "disponible"
         | "reservado"
@@ -1849,8 +1733,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      announcement_audience: ["all", "agents", "users", "specific"],
-      announcement_priority: ["normal", "urgent"],
       agent_pub_status: [
         "disponible",
         "reservado",
