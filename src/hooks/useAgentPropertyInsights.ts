@@ -56,6 +56,9 @@ export interface AgentUserInsight {
   coordinatedDate?: Date;
   userListingId: string;
   ratingsByStatus: Record<string, any>; // Dinámico para soportar STATUS_FEEDBACK_CONFIG
+  personalRating?: number;
+  familyRating?: number;
+  orgId: string;
 }
 
 export interface AgentPropertyInsight {
@@ -110,7 +113,7 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
       // 2. Get user_listings linked to these publications
       const { data: listings, error: listErr } = await supabase
         .from("user_listings")
-        .select("id, source_publication_id, added_by, current_status, updated_at")
+        .select("id, source_publication_id, added_by, current_status, updated_at, org_id")
         .in("source_publication_id", pubIds);
       if (listErr) throw listErr;
       if (!listings?.length) {
@@ -153,6 +156,28 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
       (logs || []).forEach((l: any) => {
         if (!logsByListing[l.user_listing_id]) logsByListing[l.user_listing_id] = [];
         logsByListing[l.user_listing_id].push(l);
+      });
+
+      // 4.5 Get Property Reviews for the relevant properties and family orgs
+      const propertyIds = [...new Set(pubs.map((p: any) => p.property_id))];
+      const { data: reviews } = await supabase
+        .from("property_reviews")
+        .select("property_id, user_id, org_id, rating")
+        .in("property_id", propertyIds);
+
+      // Agrupar reseñas por usuario y propiedad
+      const userReviewMap: Record<string, number> = {};
+      // Agrupar reseñas por org_id y propiedad para sacar promedio familiar
+      const familyReviewAcc: Record<string, { sum: number; count: number }> = {};
+
+      (reviews || []).forEach((r: any) => {
+        const userKey = `${r.property_id}_${r.user_id}`;
+        userReviewMap[userKey] = r.rating;
+
+        const orgKey = `${r.property_id}_${r.org_id}`;
+        if (!familyReviewAcc[orgKey]) familyReviewAcc[orgKey] = { sum: 0, count: 0 };
+        familyReviewAcc[orgKey].sum += r.rating;
+        familyReviewAcc[orgKey].count += 1;
       });
 
       // 5. Build per-publication insights
@@ -205,6 +230,17 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
             updatedAtRelative = listing.updated_at || "";
           }
 
+          const userReviewKey = `${pub.property_id}_${listing.added_by}`;
+          const personalRating = userReviewMap[userReviewKey];
+
+          const originOrgId = listing.org_id;
+          const familyReviewKey = `${pub.property_id}_${originOrgId}`;
+          let familyRating = undefined;
+          if (familyReviewAcc[familyReviewKey]) {
+            const { sum, count } = familyReviewAcc[familyReviewKey];
+            familyRating = Math.round((sum / count) * 10) / 10;
+          }
+
           return {
             userId: listing.added_by,
             displayName: profile.display_name || "Usuario",
@@ -216,6 +252,9 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
             coordinatedDate,
             userListingId: listing.id,
             ratingsByStatus,
+            personalRating,
+            familyRating,
+            orgId: originOrgId,
           };
         });
 

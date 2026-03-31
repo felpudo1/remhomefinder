@@ -4,7 +4,9 @@ import {
     DialogContent,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star } from "lucide-react";
+import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface UpgradePlanModalProps {
     open: boolean;
@@ -30,6 +32,8 @@ export function UpgradePlanModal({
 }: UpgradePlanModalProps) {
     const isAgent = type === "agent";
     const [showContent, setShowContent] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
 
     // Animación de entrada escalonada
     useEffect(() => {
@@ -134,14 +138,48 @@ export function UpgradePlanModal({
                         <div className={`pt-5 space-y-3 transition-all duration-700 delay-500 ${showContent ? "opacity-100" : "opacity-0"}`}>
                             {/* CTA Principal */}
                             <Button
-                                className="w-full h-14 rounded-2xl text-base font-black border-none shadow-[0_10px_30px_rgba(250,204,21,0.25)] hover:shadow-[0_15px_40px_rgba(250,204,21,0.35)] transition-all bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 hover:from-yellow-300 hover:to-orange-500 text-white flex items-center justify-center gap-3 active:scale-95 hover:scale-[1.02] group relative overflow-hidden"
-                                onClick={() => {
-                                    window.open("https://wa.me/+5491112345678?text=Hola!%20Quiero%20información%20sobre%20el%20Plan%20Premium", "_blank");
+                                disabled={isLoading}
+                                onClick={async () => {
+                                    try {
+                                        setIsLoading(true);
+                                        const { data, error } = await supabase.functions.invoke("mp-create-preference", {
+                                            body: { 
+                                                amount: 1, 
+                                                currency: "USD",
+                                                description: isAgent ? "Upgrade Elite Agent" : "Upgrade Elite Member",
+                                                locationOrigin: window.location.origin
+                                            }
+                                        });
+
+                                        if (error) throw error;
+                                        if (data?.error) throw new Error(data.error);
+
+                                        if (data?.init_point) {
+                                            window.location.href = data.init_point;
+                                        } else {
+                                            throw new Error("No se pudo obtener el link de pago");
+                                        }
+                                    } catch (err: any) {
+                                        console.error("Error al crear pago:", err);
+                                        toast({
+                                            title: "Error de pago",
+                                            description: err.message || "Ocurrió un error al conectar con Mercado Pago.",
+                                            variant: "destructive"
+                                        });
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
                                 }}
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:animate-shimmer" />
-                                <Rocket className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
-                                <span className="relative z-10 uppercase">Activa tu Modo Pro</span>
+                                {isLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <Rocket className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+                                )}
+                                <span className="relative z-10 uppercase">
+                                    {isLoading ? "PROCESANDO..." : "Activa tu Modo Pro"}
+                                </span>
                             </Button>
 
                             {/* Botón Secundario */}

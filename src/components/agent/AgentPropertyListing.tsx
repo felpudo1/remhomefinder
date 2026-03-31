@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -307,6 +307,7 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                     <tr className="border-b border-border text-muted-foreground">
                       <th className="text-left py-2 px-3 font-medium">Usuario</th>
                       <th className="text-left py-2 px-3 font-medium">Estado</th>
+                      <th className="text-left py-2 px-3 font-medium">Rank</th>
                       <th className="text-left py-2 px-3 font-medium">Contacto</th>
                       <th className="text-left py-2 px-3 font-medium">Actualizado</th>
                     </tr>
@@ -348,6 +349,26 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                                 <CalendarPlus className="w-4 h-4" />
                               </button>
                             )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5" title="Calificación individual">
+                              <User className="w-3 h-3 text-muted-foreground" />
+                              {user.personalRating !== undefined ? (
+                                stars(user.personalRating)
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">S/D</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5" title="Promedio familiar">
+                              <Users className="w-3 h-3 text-muted-foreground" />
+                              {user.familyRating !== undefined ? (
+                                stars(user.familyRating)
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">S/D</span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="py-3 px-3">

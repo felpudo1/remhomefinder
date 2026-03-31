@@ -52,14 +52,15 @@ export function useSubscription() {
         staleTime: 60 * 60 * 1000,
         queryFn: async () => {
             if (!referredById) return false;
-            // Si el referrer tiene una organización de tipo agencia, es agente
-            const { count, error } = await (supabase
-                .from("organizations") as any)
-                .select("id", { count: "exact", head: true })
-                .eq("created_by", referredById)
-                .eq("type", "agency_team");
-            if (error) return false;
-            return (count ?? 0) > 0;
+            // Usamos un RPC para saltar el RLS de organizations
+            const { data, error } = await supabase
+                .rpc("is_agent_referrer", { _user_id: referredById });
+            
+            if (error) {
+                console.error("Error al verificar referrer:", error);
+                return false;
+            }
+            return !!data;
         }
     });
 
