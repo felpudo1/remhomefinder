@@ -7,6 +7,7 @@ import { AdminButtons } from "./system/AdminButtons";
 import { AdminAuditLog } from "./system/AdminAuditLog";
 import { AdminMarketplaceTips } from "./system/AdminMarketplaceTips";
 import { AdminBranding } from "./system/AdminBranding";
+import { AdminMatchScore } from "./system/AdminMatchScore";
 import { Separator } from "@/components/ui/separator";
 
 /**
@@ -41,6 +42,9 @@ export function AdminSystem() {
 
             {/* Configuración de nombre comercial de la app */}
             <AdminBranding />
+
+            {/* Configuración del algoritmo de Match Score */}
+            <AdminMatchScore />
 
             <Separator className="my-2" />
 

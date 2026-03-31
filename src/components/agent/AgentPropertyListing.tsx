@@ -194,6 +194,70 @@ function DiscardImpactChart({
   );
 }
 
+/** Torta de distribución de todos los estados de los usuarios en la propiedad */
+function StatusDistributionChart({
+  statusCounts,
+  statusLabel,
+}: {
+  statusCounts: Record<string, number>;
+  statusLabel: Record<string, string>;
+}) {
+  const chartData = useMemo(() => {
+    return Object.entries(statusCounts)
+      .filter(([status, count]) => status !== "todos" && count > 0)
+      .map(([status, count]) => ({
+        name: statusLabel[status] || status,
+        value: count,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [statusCounts, statusLabel]);
+
+  if (chartData.length === 0) {
+    return null;
+  }
+
+  const totalUsers = chartData.reduce((acc, curr) => acc + curr.value, 0);
+
+  return (
+    <div className="space-y-2">
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={40}
+            outerRadius={75}
+            dataKey="value"
+            nameKey="name"
+            paddingAngle={2}
+          >
+            {chartData.map((_, idx) => (
+              <Cell key={idx} fill={PIE_COLORS[(idx * 2) % PIE_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+            formatter={(value: number, name: string) => [`${value} usuario(s) (${Math.round((value / totalUsers) * 100)}%)`, name]}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="grid grid-cols-1 gap-1">
+        {chartData.map((entry, idx) => (
+          <div key={entry.name} className="flex items-center gap-2 text-xs">
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: PIE_COLORS[(idx * 2) % PIE_COLORS.length] }}
+            />
+            <span className="text-muted-foreground truncate flex-1">{entry.name}</span>
+            <span className="font-medium text-foreground">{entry.value} ({Math.round((entry.value / totalUsers) * 100)}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
   const { data: insights = [], isLoading } = useAgentPropertyInsights(agency.id);
   const [query, setQuery] = useState("");
@@ -346,19 +410,17 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Interés inicial</p>
+                  <p className="text-[11px] text-muted-foreground">Publicado el</p>
                   <p className="text-sm font-semibold">
-                    {property.avgContactedInterest > 0
-                      ? `${property.avgContactedInterest.toFixed(1)}/5`
+                    {property.publishedAt
+                      ? new Date(property.publishedAt).toLocaleDateString()
                       : "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground">Urgencia mudanza</p>
-                  <p className="text-sm font-semibold">
-                    {property.avgContactedUrgency > 0
-                      ? `${property.avgContactedUrgency.toFixed(1)}/5`
-                      : "—"}
+                  <p className="text-[11px] text-muted-foreground">Antigüedad</p>
+                  <p className="text-sm font-semibold first-letter:capitalize">
+                    {property.publishedAtRelative || "—"}
                   </p>
                 </div>
               </div>
@@ -412,28 +474,45 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
             </TabsList>
           </Tabs>
 
-          {/* Discard Impact Pie Chart - shown when charts toggled */}
+          {/* Charts section - shown when toggled */}
           {showCharts && selectedProperty && (() => {
             const discardedUsers = selectedProperty.users.filter(
               (u) => u.ratingsByStatus?.descartado
             );
-            if (discardedUsers.length === 0) return (
-              <div className="rounded-xl border border-border bg-card p-6 text-center">
-                <p className="text-sm text-muted-foreground italic">
-                  No hay usuarios que hayan descartado esta propiedad aún.
-                </p>
-              </div>
-            );
+            
             return (
-              <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <PieChartIcon className="w-4 h-4" />
-                  Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
-                </p>
-                <DiscardImpactChart
-                  users={discardedUsers}
-                  feedbackFields={discardFields}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Status Distribution */}
+                <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <PieChartIcon className="w-4 h-4" />
+                    Distribución de Estados ({statusCounts.todos} en total)
+                  </p>
+                  <StatusDistributionChart
+                    statusCounts={statusCounts}
+                    statusLabel={statusLabel}
+                  />
+                </div>
+
+                {/* 2. Discard Impact */}
+                <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <BarChart3 className="w-4 h-4" />
+                    Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
+                  </p>
+                  {discardedUsers.length === 0 ? (
+                    <div className="h-[200px] flex items-center justify-center">
+                      <p className="text-sm text-muted-foreground italic text-center px-4">
+                        No hay usuarios que hayan descartado esta propiedad aún.
+                      </p>
+                    </div>
+                  ) : (
+                    <DiscardImpactChart
+                      users={discardedUsers}
+                      feedbackFields={discardFields}
+                    />
+                  )}
+                </div>
               </div>
             );
           })()}
@@ -450,6 +529,7 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                     <tr className="border-b border-border text-muted-foreground">
                       <th className="text-left py-2 px-3 font-medium">Usuario</th>
                       <th className="text-left py-2 px-3 font-medium">Estado</th>
+                      <th className="text-left py-2 px-3 font-medium text-center">Match</th>
                       <th className="text-left py-2 px-3 font-medium">Rank</th>
                       <th className="text-left py-2 px-3 font-medium">Contacto</th>
                       <th className="text-left py-2 px-3 font-medium">Actualizado</th>
@@ -493,6 +573,24 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                               </button>
                             )}
                           </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {user.matchScore !== undefined ? (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 ${
+                                user.matchScore >= 80
+                                  ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/10"
+                                  : user.matchScore >= 40
+                                  ? "border-yellow-500/50 text-yellow-500 bg-yellow-500/10"
+                                  : "border-red-500/50 text-red-500 bg-red-500/10"
+                              }`}
+                            >
+                              {user.matchScore}%
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">S/D</span>
+                          )}
                         </td>
                         <td className="py-3 px-3">
                           <div className="flex flex-col gap-1.5">

@@ -58,6 +58,7 @@ export interface AgentUserInsight {
   ratingsByStatus: Record<string, any>; // Dinámico para soportar STATUS_FEEDBACK_CONFIG
   personalRating?: number;
   familyRating?: number;
+  matchScore?: number;
   orgId: string;
 }
 
@@ -68,6 +69,8 @@ export interface AgentPropertyInsight {
   neighborhood: string;
   ref?: string;
   usersSaved: number;
+  publishedAt: string;
+  publishedAtRelative: string;
   avgContactedInterest: number;
   avgContactedUrgency: number;
   statusBreakdown: string;
@@ -102,7 +105,7 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
       // 1. Get agent publications
       const { data: pubs, error: pubErr } = await supabase
         .from("agent_publications")
-        .select("id, property_id, properties(title, neighborhood, ref), status")
+        .select("id, property_id, properties(title, neighborhood, ref, price_amount, rooms), status, created_at, listing_type")
         .eq("org_id", agencyOrgId)
         .neq("status", "eliminado");
       if (pubErr) throw pubErr;
@@ -117,18 +120,29 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
         .in("source_publication_id", pubIds);
       if (listErr) throw listErr;
       if (!listings?.length) {
-        return pubs.map((pub: any) => ({
-          publicationId: pub.id,
-          propertyId: pub.property_id,
-          title: pub.properties?.title || "",
-          neighborhood: pub.properties?.neighborhood || "",
-          ref: pub.properties?.ref || undefined,
-          usersSaved: 0,
-          avgContactedInterest: 0,
-          avgContactedUrgency: 0,
-          statusBreakdown: "",
-          users: [],
-        }));
+        return pubs.map((pub: any) => {
+          let publishedAtRelative = "";
+          try {
+            publishedAtRelative = formatDistanceToNow(parseISO(pub.created_at), { addSuffix: true, locale: es });
+          } catch {
+            publishedAtRelative = pub.created_at || "";
+          }
+
+          return {
+            publicationId: pub.id,
+            propertyId: pub.property_id,
+            title: pub.properties?.title || "",
+            neighborhood: pub.properties?.neighborhood || "",
+            ref: pub.properties?.ref || undefined,
+            usersSaved: 0,
+            publishedAt: pub.created_at || "",
+            publishedAtRelative,
+            avgContactedInterest: 0,
+            avgContactedUrgency: 0,
+            statusBreakdown: "",
+            users: [],
+          };
+        });
       }
 
       const listingIds = listings.map((l: any) => l.id);
@@ -178,6 +192,37 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
         if (!familyReviewAcc[orgKey]) familyReviewAcc[orgKey] = { sum: 0, count: 0 };
         familyReviewAcc[orgKey].sum += r.rating;
         familyReviewAcc[orgKey].count += 1;
+      });
+
+      // 4.6 Get algorithm config and user search profiles
+      const { data: configRows } = await supabase
+        .from("system_config")
+        .select("value")
+        .eq("key", "match_score_weights")
+        .maybeSingle();
+
+      let matchWeights = { operation_weight: 30, budget_weight: 40, neighborhood_weight: 20, rooms_weight: 10 };
+      if (configRows?.value) {
+        try { matchWeights = JSON.parse(configRows.value); } catch (e) { }
+      }
+
+      const { data: searchProfiles } = await supabase
+        .from("user_search_profiles")
+        .select("*")
+        .in("user_id", userIds);
+
+      const searchProfileMap: Record<string, any> = {};
+      (searchProfiles || []).forEach(sp => {
+        searchProfileMap[sp.user_id] = sp;
+      });
+
+      // 4.7 Fetch Neighborhoods for mapping UUIDs to names
+      const { data: allNeighborhoods } = await supabase
+        .from("neighborhoods")
+        .select("id, name");
+      const neighborhoodMap: Record<string, string> = {};
+      (allNeighborhoods || []).forEach(n => {
+        neighborhoodMap[n.id] = n.name;
       });
 
       // 5. Build per-publication insights
@@ -235,10 +280,61 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
 
           const originOrgId = listing.org_id;
           const familyReviewKey = `${pub.property_id}_${originOrgId}`;
-          let familyRating = undefined;
-          if (familyReviewAcc[familyReviewKey]) {
-            const { sum, count } = familyReviewAcc[familyReviewKey];
-            familyRating = Math.round((sum / count) * 10) / 10;
+          const famRev = familyReviewAcc[familyReviewKey];
+          const familyRating = famRev && famRev.count > 0 ? famRev.sum / famRev.count : undefined;
+
+          // Compute match score
+          let matchScore: number | undefined = undefined;
+          const userSearch = searchProfileMap[listing.added_by];
+          
+          if (userSearch) {
+              matchScore = 0;
+              const { operation_weight = 30, budget_weight = 40, neighborhood_weight = 20, rooms_weight = 10 } = matchWeights;
+
+              // 1. Operation matching (supports UI Spanish terms from BuyerProfileModal)
+              const op = String(userSearch.operation || "").trim().toLowerCase();
+              const wantRent = op === "rent" || op === "alquilar";
+              const wantBuy = op === "buy" || op === "comprar";
+              const wantBoth = op === "all" || op === "ambas" || !op;
+              const isRent = pub.listing_type === "rent";
+              const isSale = pub.listing_type === "sale";
+
+              if (wantBoth || (wantRent && isRent) || (wantBuy && isSale)) {
+                  matchScore += operation_weight;
+              }
+
+              // 2. Budget matching (with currency protection)
+              const min_b = userSearch.min_budget || 0;
+              const max_b = userSearch.max_budget || 999999999;
+              const pubPrice = Number(pub.properties?.price_amount || 0);
+              const userCurrency = userSearch.currency === "$" ? "UYU" : "USD";
+              const pubCurrency = pub.properties?.currency || "USD"; // Default to USD
+              
+              if (pubPrice > 0 && userCurrency === pubCurrency) {
+                 if (pubPrice >= min_b && pubPrice <= max_b) {
+                     matchScore += budget_weight;
+                 } else if (pubPrice >= min_b * 0.85 && pubPrice <= max_b * 1.15) {
+                     matchScore += budget_weight * 0.5; // Half points if within 15% tolerance
+                 }
+              }
+
+              // 3. Location matching (map UUIDs to Names to compare with pub.properties.neighborhood)
+              const selectedNeighborhoods: string[] = userSearch.neighborhood_ids || [];
+              const selectedNames = selectedNeighborhoods.map((id: string) => neighborhoodMap[id]);
+              const pubNeighborhood = pub.properties?.neighborhood;
+
+              if (selectedNeighborhoods.length === 0 || selectedNames.includes(pubNeighborhood)) {
+                  matchScore += neighborhood_weight;
+              }
+
+              // 4. Rooms matching
+              const minRooms = userSearch.min_bedrooms || 0;
+              const pubRooms = pub.properties?.rooms || 0;
+              if (minRooms === 0 || pubRooms >= minRooms) {
+                 matchScore += rooms_weight;
+              }
+              
+              matchScore = Math.floor(Math.min(100, Math.max(0, matchScore)));
           }
 
           return {
@@ -254,14 +350,22 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
             ratingsByStatus,
             personalRating,
             familyRating,
+            matchScore,
             orgId: originOrgId,
-          };
+          } satisfies AgentUserInsight;
         });
 
         // Status breakdown string
         const breakdownParts = Object.entries(statusCounts)
           .sort((a, b) => b[1] - a[1])
           .map(([status, count]) => `${count} ${status.replace("_", " ")}`);
+
+        let publishedAtRelative = "";
+        try {
+          publishedAtRelative = formatDistanceToNow(parseISO(pub.created_at), { addSuffix: true, locale: es });
+        } catch {
+          publishedAtRelative = pub.created_at || "";
+        }
 
         return {
           publicationId: pub.id,
@@ -270,6 +374,8 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
           neighborhood: pub.properties?.neighborhood || "",
           ref: pub.properties?.ref || undefined,
           usersSaved: pubListings.length,
+          publishedAt: pub.created_at || "",
+          publishedAtRelative,
           avgContactedInterest: interestCount > 0 ? totalInterest / interestCount : 0,
           avgContactedUrgency: interestCount > 0 ? totalUrgency / interestCount : 0,
           statusBreakdown: breakdownParts.join(" · "),

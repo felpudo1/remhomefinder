@@ -42,3 +42,7 @@ export const APP_BRAND_NAME_DEFAULT = "HomeFinder";
 // Bonus de avisos extra para users referidos por un agente
 export const AGENT_REFERRAL_BONUS_SAVES_KEY = "agent_referral_bonus_saves";
 export const AGENT_REFERRAL_BONUS_SAVES_DEFAULT = "5";
+
+// Configuracion de pesos para el algoritmo de Match Score (json)
+export const MATCH_SCORE_WEIGHTS_KEY = "match_score_weights";
+export const MATCH_SCORE_WEIGHTS_DEFAULT = '{"operation_weight": 30, "budget_weight": 40, "neighborhood_weight": 20, "rooms_weight": 10}';
