@@ -412,6 +412,32 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
             </TabsList>
           </Tabs>
 
+          {/* Discard Impact Pie Chart - shown when charts toggled */}
+          {showCharts && selectedProperty && (() => {
+            const discardedUsers = selectedProperty.users.filter(
+              (u) => u.ratingsByStatus?.descartado
+            );
+            if (discardedUsers.length === 0) return (
+              <div className="rounded-xl border border-border bg-card p-6 text-center">
+                <p className="text-sm text-muted-foreground italic">
+                  No hay usuarios que hayan descartado esta propiedad aún.
+                </p>
+              </div>
+            );
+            return (
+              <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <PieChartIcon className="w-4 h-4" />
+                  Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
+                </p>
+                <DiscardImpactChart
+                  users={discardedUsers}
+                  feedbackFields={discardFields}
+                />
+              </div>
+            );
+          })()}
+
           {usersByStatus.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               No hay usuarios en este estado.
