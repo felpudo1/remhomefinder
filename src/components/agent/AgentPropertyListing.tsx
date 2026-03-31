@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User, PieChartIcon } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User, PieChartIcon, BarChart3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
