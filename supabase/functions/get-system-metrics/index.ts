@@ -154,8 +154,22 @@ function parseMetrics(raw: string): ParsedMetrics {
     sumMetric(raw, "db_sql_connection_open") ??
     sumMetric(raw, "connection_stats_connection_count");
 
+  // Resolve disk IO budget: prefer consumption-based calc, fallback to direct budget metric
+  const resolvedDiskIoBudget =
+    diskIoConsumption !== null
+      ? clampPercent(100 - diskIoConsumption)
+      : diskIoBudgetDirect !== null
+        ? clampPercent(diskIoBudgetDirect)
+        : null;
+
+  console.log("[disk-io-resolved]", JSON.stringify({
+    consumption: diskIoConsumption,
+    directBudget: diskIoBudgetDirect,
+    resolved: resolvedDiskIoBudget,
+  }));
+
   return {
-    diskIoBudget: diskIoConsumption !== null ? clampPercent(100 - diskIoConsumption) : null,
+    diskIoBudget: resolvedDiskIoBudget,
     restRequests,
     authRequests,
     realtimeRequests,
@@ -165,7 +179,7 @@ function parseMetrics(raw: string): ParsedMetrics {
     ramTotalMb,
     dbConnections,
     timestamp: new Date().toISOString(),
-    version: "6.0.zero-db",
+    version: "7.0.fix-disk-io",
   };
 }
 
