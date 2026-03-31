@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User, PieChartIcon } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User, PieChartIcon, BarChart3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -200,6 +200,7 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [activeStatusTab, setActiveStatusTab] = useState<StatusFilter>("todos");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
   const { data: discardFields } = useStatusFeedbackConfig("descartado");
 
   // Auto-select first property
@@ -375,9 +376,19 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
         <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="font-semibold text-foreground">Usuarios en esta propiedad</h4>
-            <Button variant="outline" size="sm" className="text-xs">
-              <Clock3 className="w-3.5 h-3.5 mr-1" /> Vista reciente
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={showCharts ? "default" : "outline"}
+                size="sm"
+                className="text-xs gap-1.5"
+                onClick={() => setShowCharts(!showCharts)}
+              >
+                <BarChart3 className="w-3.5 h-3.5" /> {showCharts ? "Ocultar Gráficas" : "Ver Gráficas"}
+              </Button>
+              <Button variant="outline" size="sm" className="text-xs">
+                <Clock3 className="w-3.5 h-3.5 mr-1" /> Vista reciente
+              </Button>
+            </div>
           </div>
 
           <Tabs
@@ -400,6 +411,32 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
               ))}
             </TabsList>
           </Tabs>
+
+          {/* Discard Impact Pie Chart - shown when charts toggled */}
+          {showCharts && selectedProperty && (() => {
+            const discardedUsers = selectedProperty.users.filter(
+              (u) => u.ratingsByStatus?.descartado
+            );
+            if (discardedUsers.length === 0) return (
+              <div className="rounded-xl border border-border bg-card p-6 text-center">
+                <p className="text-sm text-muted-foreground italic">
+                  No hay usuarios que hayan descartado esta propiedad aún.
+                </p>
+              </div>
+            );
+            return (
+              <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <PieChartIcon className="w-4 h-4" />
+                  Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
+                </p>
+                <DiscardImpactChart
+                  users={discardedUsers}
+                  feedbackFields={discardFields}
+                />
+              </div>
+            );
+          })()}
 
           {usersByStatus.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
@@ -530,28 +567,6 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                         </p>
                       )}
                     </div>
-
-                    {/* Discard Impact Pie Chart - aggregated across all discarded users */}
-                    {selectedProperty && (() => {
-                      const discardedUsers = selectedProperty.users.filter(
-                        (u) => u.ratingsByStatus?.descartado
-                      );
-                      if (discardedUsers.length === 0) return null;
-                      return (
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                            <PieChartIcon className="w-3.5 h-3.5" />
-                            Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
-                          </p>
-                          <div className="rounded-lg border border-border bg-card p-3">
-                            <DiscardImpactChart
-                              users={discardedUsers}
-                              feedbackFields={discardFields}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })()}
                   </div>
                 )}
               </aside>
