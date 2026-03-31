@@ -9,7 +9,7 @@ import { AdminMaintenance } from "@/components/admin/system/AdminMaintenance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { RefreshCw, Activity, LogOut, ArrowLeft, Database } from "lucide-react";
+import { RefreshCw, Activity, LogOut, ArrowLeft, Database, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ROUTES } from "@/lib/constants";
