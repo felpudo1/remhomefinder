@@ -1,0 +1,1 @@
+DELETE FROM system_metrics_history WHERE disk_io_budget = 0 AND recorded_at > '2026-03-30T15:00:00Z';
