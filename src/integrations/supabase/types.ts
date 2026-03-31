@@ -174,6 +174,77 @@ export type Database = {
           },
         ]
       }
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          dismissed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          dismissed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          dismissed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          audience: Database["public"]["Enums"]["announcement_audience"]
+          body: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          priority: Database["public"]["Enums"]["announcement_priority"]
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["announcement_audience"]
+          body: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          priority?: Database["public"]["Enums"]["announcement_priority"]
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["announcement_audience"]
+          body?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          priority?: Database["public"]["Enums"]["announcement_priority"]
+          target_user_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           description: string | null
@@ -1368,6 +1439,23 @@ export type Database = {
           type: Database["public"]["Enums"]["org_type"]
         }[]
       }
+      get_all_announcements: {
+        Args: never
+        Returns: {
+          audience: Database["public"]["Enums"]["announcement_audience"]
+          body: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          priority: Database["public"]["Enums"]["announcement_priority"]
+          reads_count: number
+          target_user_id: string
+          title: string
+        }[]
+      }
       get_global_property_ratings: {
         Args: { _property_ids: string[] }
         Returns: {
@@ -1396,6 +1484,20 @@ export type Database = {
         Returns: Json
       }
       get_my_referrer_display_name: { Args: never; Returns: string }
+      get_pending_announcements: {
+        Args: { p_user_id: string; p_user_roles: string[] }
+        Returns: {
+          audience: Database["public"]["Enums"]["announcement_audience"]
+          body: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          image_url: string
+          priority: Database["public"]["Enums"]["announcement_priority"]
+          title: string
+        }[]
+      }
       get_publications_save_counts: {
         Args: { _publication_ids: string[] }
         Returns: {
@@ -1421,6 +1523,19 @@ export type Database = {
           is_required: boolean
           placeholder: string
           sort_order: number
+        }[]
+      }
+      get_user_announcement_history: {
+        Args: { p_user_id: string }
+        Returns: {
+          audience: Database["public"]["Enums"]["announcement_audience"]
+          body: string
+          created_at: string
+          dismissed_at: string
+          id: string
+          image_url: string
+          priority: Database["public"]["Enums"]["announcement_priority"]
+          title: string
         }[]
       }
       get_user_listings_page: {
@@ -1471,6 +1586,8 @@ export type Database = {
         | "alquilado"
         | "eliminado"
         | "pausado"
+      announcement_audience: "all" | "agents" | "users" | "specific"
+      announcement_priority: "normal" | "urgent"
       app_role: "admin" | "agency" | "user" | "agencymember" | "sysadmin"
       currency_code: "USD" | "ARS" | "UYU" | "CLP"
       feedback_field_type: "rating" | "boolean" | "text" | "date" | "info"
@@ -1623,6 +1740,8 @@ export const Constants = {
         "eliminado",
         "pausado",
       ],
+      announcement_audience: ["all", "agents", "users", "specific"],
+      announcement_priority: ["normal", "urgent"],
       app_role: ["admin", "agency", "user", "agencymember", "sysadmin"],
       currency_code: ["USD", "ARS", "UYU", "CLP"],
       feedback_field_type: ["rating", "boolean", "text", "date", "info"],
