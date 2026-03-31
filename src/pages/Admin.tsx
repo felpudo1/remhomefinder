@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
   Building2, Users, Bot, BarChart3,
-  Settings, FileText, KeyRound, MapPin
+  Settings, FileText, KeyRound, MapPin, MessageSquare
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
@@ -18,14 +18,15 @@ import { AdminGrupos } from "@/components/admin/AdminGrupos";
 import { AdminDatosAdmin } from "@/components/admin/AdminDatosAdmin";
 import { AdminGeografia } from "@/components/admin/AdminGeografia";
 import { AdminStatusFeedbackConfig } from "@/components/admin/status-feedback/AdminStatusFeedbackConfig";
+import { AdminAnnouncements } from "@/components/admin/AdminAnnouncements";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin" | "geografia" | "feedback";
+type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin" | "geografia" | "feedback" | "mensajes";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin", "geografia", "feedback"];
+const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin", "geografia", "feedback", "mensajes"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -41,6 +42,7 @@ const MENU_ITEMS: {
     { id: "feedback", label: "Feedback Config", icon: Settings, description: "Configuración de campos de feedback por estado" },
     { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
+    { id: "mensajes", label: "Mensajes", icon: MessageSquare, description: "Enviar novedades y anuncios a usuarios y agentes" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
     { id: "datos-admin", label: "Datos Admin", icon: KeyRound, description: "Datos privados del administrador (cuentas, claves, notas)" },
   ];
@@ -115,6 +117,7 @@ const Admin = () => {
       case "grupos": return <AdminGrupos toast={toast} />;
       case "geografia": return <AdminGeografia toast={toast} />;
       case "feedback": return <AdminStatusFeedbackConfig />;
+      case "mensajes": return <AdminAnnouncements />;
       case "prompt": return <AdminPrompt toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;

@@ -33,6 +33,24 @@ export type AppRole = Database["public"]["Enums"]["app_role"];
 /** Estado del usuario: "active" | "pending" | "suspended" | "rejected" */
 export type DbUserStatus = Database["public"]["Enums"]["user_status"];
 
+/** Audiencia de un anuncio: "all" | "agents" | "users" | "specific" */
+export type AnnouncementAudience = Database["public"]["Enums"]["announcement_audience"];
+
+/** Prioridad de un anuncio: "normal" | "urgent" */
+export type AnnouncementPriority = Database["public"]["Enums"]["announcement_priority"];
+
+/** Fila completa de la tabla announcements (lectura) */
+export type AnnouncementRow = Database["public"]["Tables"]["announcements"]["Row"];
+
+/** Tipo para insertar en la tabla announcements */
+export type AnnouncementInsert = Database["public"]["Tables"]["announcements"]["Insert"];
+
+/** Fila completa de la tabla announcement_reads (lectura) */
+export type AnnouncementReadRow = Database["public"]["Tables"]["announcement_reads"]["Row"];
+
+/** Tipo para insertar en la tabla announcement_reads */
+export type AnnouncementReadInsert = Database["public"]["Tables"]["announcement_reads"]["Insert"];
+
 /**
  * Helper genérico para extraer el tipo Row de cualquier tabla.
  * Ejemplo: TableRow<"profiles"> retorna el tipo de una fila de profiles.
