@@ -1,7 +1,8 @@
+import { useState, useEffect } from "react";
 import {
-    Sheet,
-    SheetContent,
-} from "@/components/ui/sheet";
+    Dialog,
+    DialogContent,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star, X } from "lucide-react";
 
@@ -15,9 +16,9 @@ interface UpgradePlanModalProps {
 }
 
 /**
- * UpgradePlanModal - Rediseño UX Pro "Elite Experience" v8 (Floating Side Drawer)
- * Se muestra como un lateral derecho flotante, ocupando 1/3 del ancho.
- * Mejoras: Sin X de cierre, botón de exploración con borde, Gem con brillo.
+ * UpgradePlanModal - Rediseño "Dark Premium" v9 (Dialog centrado)
+ * Modal centrado con estilo dark premium (glassmorphism + gradientes oscuros).
+ * Mismo texto y funcionalidad que antes, nueva apariencia unificada.
  */
 export function UpgradePlanModal({ 
     open, 
@@ -28,6 +29,16 @@ export function UpgradePlanModal({
     description 
 }: UpgradePlanModalProps) {
     const isAgent = type === "agent";
+    const [showContent, setShowContent] = useState(false);
+
+    // Animación de entrada escalonada
+    useEffect(() => {
+        if (open) {
+            setShowContent(false);
+            const timer = setTimeout(() => setShowContent(true), 100);
+            return () => clearTimeout(timer);
+        }
+    }, [open]);
 
     // Beneficios con UX Copywriting de Alto Impacto
     const benefits = isAgent ? [
@@ -43,98 +54,122 @@ export function UpgradePlanModal({
     ];
 
     return (
-        <Sheet open={open} onOpenChange={onClose}>
-            <SheetContent 
-                side="right" 
-                hideClose
-                className="w-[85vw] sm:max-w-none sm:w-[35vw] p-0 border-none bg-transparent shadow-none transition-all duration-700 right-4 sm:right-4 top-4 bottom-4 h-[calc(100vh-2rem)] translate-x-[-2%] sm:translate-x-0"
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent
+                className="max-w-lg rounded-[2rem] p-0 overflow-hidden border-none shadow-[0_0_60px_rgba(30,64,175,0.3)] animate-in zoom-in-95 duration-300"
             >
-                {/* Contenedor Principal Flotante con Bordeado Curvo Total */}
-                <div className="h-full flex flex-col bg-white rounded-[3rem] overflow-hidden shadow-[-20px_20px_80px_rgba(0,0,0,0.2)] border border-white/10 relative">
-                    
-                    {/* 🌌 Cabecera: Royal Blue (Proporción optimizada) */}
-                    <div className="h-[32%] bg-gradient-to-br from-[#1E40AF] to-[#3B82F6] p-10 text-white relative flex flex-col items-center justify-center text-center overflow-hidden">
-                        
-                        {/* Elementos Decorativos: Corona de Fondo Submarina (Reducida 50%) */}
-                        <Crown className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[18rem] h-[18rem] rotate-12 opacity-10 text-white" />
-                        
-                        {/* Efectos de Iluminación UX Pro */}
-                        <div className="absolute top-0 right-0 w-[150%] h-[150%] bg-gradient-to-br from-white/5 to-transparent rounded-full -mr-[50%] -mt-[50%]" />
-                        <Sparkles className="absolute top-10 right-10 w-6 h-6 text-yellow-300 opacity-50 animate-pulse" />
+                <div className="relative overflow-hidden min-h-[550px] flex flex-col bg-gradient-to-br from-[#1a1c2c] via-[#1a2040] to-[#1a1c2c]">
 
-                        <div className="relative z-10 space-y-4">
-                            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-5 py-2 rounded-full border border-white/20 shadow-lg relative overflow-hidden group">
-                                {/* ✨ Efecto de Brillo (Shimmer) en la gema */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] animate-shimmer" />
-                                <Gem className="w-4 h-4 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
-                                <span className="text-[11px] font-black uppercase tracking-[0.3em] text-yellow-100 italic">Plan Exclusive</span>
-                            </div>
+                    {/* ═══════════ Decoraciones de fondo ═══════════ */}
+                    <div className="absolute top-[-10%] left-[-10%] w-40 h-40 rounded-full blur-3xl animate-pulse bg-blue-500/15" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-40 h-40 rounded-full blur-3xl animate-pulse delay-700 bg-yellow-500/15" />
+                    <div className="absolute top-[40%] right-[-5%] w-24 h-24 rounded-full blur-2xl animate-pulse delay-300 bg-primary/10" />
 
-                            <div className="space-y-1">
-                                <h2 className="text-3xl lg:text-4xl font-black leading-[1.1] uppercase tracking-tighter">
-                                    Multiplica tu <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-yellow-300 to-yellow-100 animate-shimmer">Potencial</span>
-                                </h2>
-                                <p className="text-blue-100/90 text-[10px] font-black uppercase tracking-[0.4em]">
-                                    {title || "Experiencia Elite"}
-                                </p>
+                    {/* ═══════════ Contenido ═══════════ */}
+                    <div className="relative z-10 p-8 flex-1 flex flex-col">
+
+                        {/* Badge superior */}
+                        <div className={`transition-all duration-500 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}>
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-yellow-500/10 border-yellow-500/20 text-yellow-200 backdrop-blur-md">
+                                    {/* Efecto de brillo shimmer */}
+                                    <Gem className="w-3.5 h-3.5 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                                        Plan Exclusive
+                                    </span>
+                                </div>
+                                {/* Botón cerrar */}
+                                <button
+                                    onClick={onClose}
+                                    className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
                             </div>
                         </div>
-                    </div>
 
-                    {/* ✨ Cuerpo: Clean Luxury (Fondo blanco optimizado) */}
-                    <div className="flex-1 p-8 bg-white flex flex-col justify-between relative overflow-hidden">
-                        
-                        {/* Lista de Beneficios */}
-                        <div className="space-y-5 pt-2">
-                            {benefits.map((benefit, i) => (
-                                <div 
-                                    key={i} 
-                                    className="flex items-center gap-4 group transition-transform duration-300 hover:translate-x-1"
-                                    style={{ animationDelay: `${i * 100}ms` }}
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 shadow-sm group-hover:bg-primary/5 group-hover:border-primary/20 transition-all duration-500">
-                                        <benefit.icon className="w-5 h-5 text-primary transition-transform group-hover:scale-110" />
+                        {/* Ícono Central con Corona */}
+                        <div className={`transition-all duration-700 delay-100 ${showContent ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}>
+                            <div className="flex justify-center mb-5">
+                                <div className="relative inline-block">
+                                    <div className="absolute inset-0 blur-2xl opacity-40 animate-pulse bg-yellow-500" />
+                                    <div className="relative p-4 rounded-2xl shadow-2xl bg-gradient-to-b from-yellow-400 via-orange-500 to-yellow-600">
+                                        <Crown className="w-10 h-10 text-white drop-shadow-lg" />
                                     </div>
-                                    <div className="space-y-0.5">
-                                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-wide">{benefit.label}</h4>
-                                        <p className="text-[11px] font-semibold text-slate-500 leading-tight">{benefit.text}</p>
+                                    <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-yellow-300 animate-pulse" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Título */}
+                        <div className={`text-center mb-6 transition-all duration-700 delay-200 ${showContent ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+                            <h2 className="text-2xl font-black tracking-tight text-white leading-tight mb-1">
+                                Multiplica tu{" "}
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-orange-400">
+                                    Potencial
+                                </span>
+                            </h2>
+                            <p className="text-[10px] text-blue-200/60 font-black uppercase tracking-[0.4em]">
+                                {title || "Experiencia Elite"}
+                            </p>
+                        </div>
+
+                        {/* Lista de Beneficios */}
+                        <div className={`space-y-3 flex-1 transition-all duration-700 delay-300 ${showContent ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+                            {benefits.map((benefit, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm hover:bg-white/8 transition-all group"
+                                    style={{ transitionDelay: `${300 + i * 80}ms` }}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:border-primary/20 transition-all">
+                                        <benefit.icon className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
+                                    </div>
+                                    <div className="space-y-0.5 min-w-0">
+                                        <h4 className="text-[10px] font-black text-yellow-200/90 uppercase tracking-wide">
+                                            {benefit.label}
+                                        </h4>
+                                        <p className="text-[11px] font-medium text-gray-400 leading-tight">
+                                            {benefit.text}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Sección de Acción: Siempre visible sin scroll */}
-                        <div className="space-y-5 pt-4">
+                        {/* Botones de Acción */}
+                        <div className={`pt-5 space-y-3 transition-all duration-700 delay-500 ${showContent ? "opacity-100" : "opacity-0"}`}>
+                            {/* CTA Principal */}
                             <Button
-                                className="w-full h-16 rounded-[1.5rem] text-lg font-black shadow-[0_15px_30px_rgba(30,64,175,0.2)] hover:shadow-[0_20px_40px_rgba(30,64,175,0.3)] transition-all bg-gradient-to-br from-yellow-400 via-orange-500 to-yellow-600 hover:from-yellow-300 hover:to-orange-500 text-white border-none flex items-center justify-center gap-3 active:scale-95 group relative overflow-hidden"
+                                className="w-full h-14 rounded-2xl text-base font-black border-none shadow-[0_10px_30px_rgba(250,204,21,0.25)] hover:shadow-[0_15px_40px_rgba(250,204,21,0.35)] transition-all bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 hover:from-yellow-300 hover:to-orange-500 text-white flex items-center justify-center gap-3 active:scale-95 hover:scale-[1.02] group relative overflow-hidden"
                                 onClick={() => {
                                     window.open("https://wa.me/+5491112345678?text=Hola!%20Quiero%20información%20sobre%20el%20Plan%20Premium", "_blank");
                                 }}
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:animate-shimmer" />
-                                <Rocket className="w-6 h-6 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+                                <Rocket className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                                 <span className="relative z-10 uppercase">Activa tu Modo Pro</span>
                             </Button>
-                            
-                            <div className="text-center space-y-4">
-                                <button
-                                    onClick={onClose}
-                                    className="w-full py-4 text-[10px] text-slate-500 hover:text-primary hover:bg-slate-50 border border-slate-200 rounded-2xl transition-all font-black uppercase tracking-[0.3em] active:scale-95 shadow-sm"
-                                >
-                                    Explorar funciones gratis
-                                </button>
-                                
-                                <div className="pt-4 border-t border-slate-100">
-                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.5em] opacity-60">
-                                        {isAgent ? "Elite Member Agent Edition" : "Elite Member Premium Access"}
-                                    </p>
-                                </div>
-                            </div>
+
+                            {/* Botón Secundario */}
+                            <button
+                                onClick={onClose}
+                                className="w-full py-3 text-[10px] text-gray-500 hover:text-blue-300 bg-white/3 hover:bg-white/5 border border-white/10 rounded-2xl transition-all font-black uppercase tracking-[0.3em] active:scale-95"
+                            >
+                                Explorar funciones gratis
+                            </button>
                         </div>
                     </div>
+
+                    {/* Footer discreto */}
+                    <div className="p-3 text-center border-t bg-[#0f111a] border-white/5">
+                        <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.3em]">
+                            {isAgent ? "👑 Elite Member Agent Edition" : "👑 Elite Member Premium Access"}
+                        </p>
+                    </div>
                 </div>
-            </SheetContent>
-        </Sheet>
+            </DialogContent>
+        </Dialog>
     );
 }
+
