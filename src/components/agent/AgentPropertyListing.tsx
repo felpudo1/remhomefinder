@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User } from "lucide-react";
+import { Building2, CalendarPlus, Clock3, Loader2, Phone, Star, Users, User, PieChartIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
   useAgentPropertyInsights,
   type AgentPropertyInsight,
