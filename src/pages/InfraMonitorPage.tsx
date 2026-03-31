@@ -164,9 +164,12 @@ export default function InfraMonitorPage() {
                 ramTotalMb={data.ramTotalMb}
                 dbConnections={data.dbConnections}
               />
-              <ActiveSessionsList />
             </div>
           ) : null}
+        </TabsContent>
+
+        <TabsContent value="sessions">
+          <ActiveSessionsList />
         </TabsContent>
 
         <TabsContent value="db-schema">
