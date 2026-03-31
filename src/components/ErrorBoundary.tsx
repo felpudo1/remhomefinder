@@ -23,13 +23,27 @@ class ErrorBoundaryCore extends Component<Props, State> {
     };
 
     public static getDerivedStateFromError(error: Error): State {
-        // Actualiza el estado para que el siguiente renderizado muestre la interfaz de repuesto
         return { hasError: true, error };
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        // Aquí se podría integrar un reporte de errores como Sentry
         console.error("ErrorBoundary atrapó un error fatal:", error, errorInfo);
+
+        // Auto-recovery: si es el error de instancias duplicadas de React
+        // (ocurre tras inactividad prolongada + recarga), recargamos una sola vez
+        const msg = error?.message || "";
+        const isReactDupeError =
+            msg.includes("Cannot read properties of null") &&
+            (msg.includes("useEffect") || msg.includes("useRef") || msg.includes("useState") || msg.includes("useContext"));
+
+        const RELOAD_KEY = "hf_react_dupe_reload";
+        if (isReactDupeError && !sessionStorage.getItem(RELOAD_KEY)) {
+            sessionStorage.setItem(RELOAD_KEY, "1");
+            window.location.reload();
+            return;
+        }
+        // Limpiar flag si llegamos aquí sin ese error
+        sessionStorage.removeItem(RELOAD_KEY);
     }
 
     private handleReset = () => {
