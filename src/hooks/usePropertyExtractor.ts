@@ -28,7 +28,7 @@ export type PropertyData = {
   title: string;
   priceRent: string;
   priceExpenses: string;
-  currency: "UYU" | "USD";
+  currency: "UYU" | "USD" | "UI";
   department: string;
   department_id: string;
   neighborhood: string;

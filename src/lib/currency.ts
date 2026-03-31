@@ -5,6 +5,8 @@ export function currencySymbol(currency: string): string {
     case "ARS":
     case "UYU":
       return "$U";
+    case "UI":
+      return "UI";
     default:
       return currency;
   }

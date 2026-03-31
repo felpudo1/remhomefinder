@@ -1590,7 +1590,7 @@ export type Database = {
       announcement_audience: "all" | "agents" | "users" | "specific"
       announcement_priority: "normal" | "urgent"
       app_role: "admin" | "agency" | "user" | "agencymember" | "sysadmin"
-      currency_code: "USD" | "ARS" | "UYU" | "CLP"
+      currency_code: "USD" | "ARS" | "UYU" | "CLP" | "UI"
       feedback_field_type: "rating" | "boolean" | "text" | "date" | "info"
       listing_type: "rent" | "sale"
       org_role: "owner" | "agent" | "member" | "system_admin_delegate"
@@ -1744,7 +1744,7 @@ export const Constants = {
       announcement_audience: ["all", "agents", "users", "specific"],
       announcement_priority: ["normal", "urgent"],
       app_role: ["admin", "agency", "user", "agencymember", "sysadmin"],
-      currency_code: ["USD", "ARS", "UYU", "CLP"],
+      currency_code: ["USD", "ARS", "UYU", "CLP", "UI"],
       feedback_field_type: ["rating", "boolean", "text", "date", "info"],
       listing_type: ["rent", "sale"],
       org_role: ["owner", "agent", "member", "system_admin_delegate"],
