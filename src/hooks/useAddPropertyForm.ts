@@ -6,7 +6,7 @@ export type FormState = {
   title: string;
   priceRent: string;
   priceExpenses: string;
-  currency: "USD" | "UYU";
+  currency: "USD" | "UYU" | "UI";
   neighborhood: string;
   neighborhood_id: string;
   city: string;
