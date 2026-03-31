@@ -530,6 +530,28 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
                         </p>
                       )}
                     </div>
+
+                    {/* Discard Impact Pie Chart - aggregated across all discarded users */}
+                    {selectedProperty && (() => {
+                      const discardedUsers = selectedProperty.users.filter(
+                        (u) => u.ratingsByStatus?.descartado
+                      );
+                      if (discardedUsers.length === 0) return null;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                            <PieChartIcon className="w-3.5 h-3.5" />
+                            Impacto de Descarte ({discardedUsers.length} usuario{discardedUsers.length !== 1 ? "s" : ""})
+                          </p>
+                          <div className="rounded-lg border border-border bg-card p-3">
+                            <DiscardImpactChart
+                              users={discardedUsers}
+                              feedbackFields={discardFields}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </aside>
