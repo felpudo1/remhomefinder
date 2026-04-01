@@ -148,8 +148,8 @@ export function UpgradePlanModal({
                                         setIsLoading(true);
                                         const { data, error } = await supabase.functions.invoke("mp-create-preference", {
                                             body: { 
-                                                amount: 1, 
-                                                currency: "USD",
+                                                amount: Number(configPrice) || 1, 
+                                                currency: configCurrency || "USD",
                                                 description: isAgent ? "Upgrade Elite Agent" : "Upgrade Elite Member",
                                                 locationOrigin: window.location.origin
                                             }
