@@ -167,7 +167,7 @@ export function usePropertyMutations() {
                 if (!isPremium) {
                     const maxSaves = parseInt(limitConfig?.value || "10");
                     if (currentListingCount >= maxSaves) {
-                        throw new Error(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan gratuito. Mejorá tu plan para guardar más.`);
+                        throw new PlanLimitError(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan gratuito. Mejorá tu plan para guardar más.`);
                     }
                 }
             }
