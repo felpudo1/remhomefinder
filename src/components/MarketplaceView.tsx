@@ -64,7 +64,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
-  const { isPremium } = useSubscription();
+  const { isPremium, canSaveMore, maxSaves } = useSubscription();
   const { groups } = useGroups();
   const userOrgId = groups?.[0]?.id || null;
   const referredAgentId = profile?.referredById;
@@ -303,6 +303,20 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const handleSave = async (property: MarketplaceProperty) => {
     setSavingId(property.id);
     try {
+      // Verificar límite de guardado contra count real en BD antes de intentar guardar
+      if (!isPremium) {
+        const { count, error: countError } = await supabase
+          .from("user_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", userOrgId!);
+
+        if (!countError && (count ?? 0) >= maxSaves) {
+          setShowPremiumModal(true);
+          setSavingId(null);
+          return;
+        }
+      }
+
       // Verificar si el usuario tiene grupos familiares
       const familyGroups = groups.filter(g => g.type === "family");
       
