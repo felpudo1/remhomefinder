@@ -1,5 +1,5 @@
 import { MarketplaceProperty } from "@/types/property";
-import { Bookmark, Building2, Star } from "lucide-react";
+import { Bookmark, Building2, Star, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
@@ -9,6 +9,7 @@ import { useState } from "react";
 import { MatchiAIBadge } from "@/components/ui/MatchiAIBadge";
 import { StarRating } from "@/components/ui/StarRating";
 import { cn } from "@/lib/utils";
+import { QRCodeModal } from "@/components/marketplace/QRCodeModal";
 
 interface MarketplaceCardProps {
   property: MarketplaceProperty;
@@ -48,6 +49,7 @@ export function MarketplaceCard({
 }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isQROpen, setIsQROpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const overlay = STATUS_OVERLAY_CONFIG[property.status];
   const isSaveCtaHighlighted = Boolean(isMatchAIMagicActive && !alreadySaved && !isSaving);
@@ -127,20 +129,34 @@ export function MarketplaceCard({
           </div>
         }
         actions={
-          <Button
-            size="sm"
-            variant={alreadySaved ? "secondary" : "default"}
-            className={`gap-1.5 rounded-lg ${isSaveCtaHighlighted ? "matchai-save-cta-glow" : ""}`}
-            style={isSaveCtaHighlighted ? { animationDelay: `${Math.min(matchAIRank * 90, 700)}ms` } : undefined}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSave(property);
-            }}
-            disabled={isSaving || alreadySaved}
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${alreadySaved ? "fill-current" : ""}`} />
-            {alreadySaved ? "Guardada" : "Guardar"}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1 rounded-lg px-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsQROpen(true);
+              }}
+              title="Generar QR"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant={alreadySaved ? "secondary" : "default"}
+              className={`gap-1.5 rounded-lg ${isSaveCtaHighlighted ? "matchai-save-cta-glow" : ""}`}
+              style={isSaveCtaHighlighted ? { animationDelay: `${Math.min(matchAIRank * 90, 700)}ms` } : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSave(property);
+              }}
+              disabled={isSaving || alreadySaved}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${alreadySaved ? "fill-current" : ""}`} />
+              {alreadySaved ? "Guardada" : "Guardar"}
+            </Button>
+          </div>
         }
       />
 
@@ -155,6 +171,14 @@ export function MarketplaceCard({
         isOpen={isGalleryOpen}
         initialIndex={currentImgIndex}
         onClose={() => setIsGalleryOpen(false)}
+      />
+
+      <QRCodeModal
+        open={isQROpen}
+        onClose={() => setIsQROpen(false)}
+        propertyTitle={property.title}
+        propertyId={property.propertyId || property.id}
+        publicationId={property.id}
       />
     </>
   );

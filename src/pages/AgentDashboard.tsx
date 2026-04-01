@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  Building2, Loader2, Home, BarChart3, Users, Gift, LineChart,
+  Building2, Loader2, Home, BarChart3, Users, Gift, LineChart, QrCode,
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
@@ -12,6 +12,7 @@ import { AgentIndicadores } from "@/components/agent/AgentIndicadores";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentReferralSection } from "@/components/agent/AgentReferralSection";
+import { QRAnalytics } from "@/components/agent/QRAnalytics";
 import { AgentPropertyListing } from "@/components/agent/AgentPropertyListing";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
@@ -22,7 +23,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 
-type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias";
+type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias" | "qr_analytics";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
@@ -30,6 +31,7 @@ const TABS = [
   { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
   { id: "indicadores", label: "Indicadores", icon: LineChart },
+  { id: "qr_analytics", label: "QR Leads", icon: QrCode },
   { id: "referencias", label: "Referencias", icon: Gift },
 ];
 
@@ -208,6 +210,9 @@ const AgentDashboard = () => {
               )}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "indicadores" && <AgentIndicadores />}
+              {activeTab === "qr_analytics" && agency && userId && (
+                <QRAnalytics agencyId={agency.id} userId={userId} />
+              )}
               {activeTab === "referencias" && <AgentReferralSection agency={agency} />}
             </div>
           ) : profileStatus === "pending" ? (
