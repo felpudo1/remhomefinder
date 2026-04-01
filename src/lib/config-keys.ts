@@ -50,3 +50,11 @@ export const LIMIT_INCLUDES_MARKETPLACE_DEFAULT = "true";
 // Configuracion de pesos para el algoritmo de Match Score (json)
 export const MATCH_SCORE_WEIGHTS_KEY = "match_score_weights";
 export const MATCH_SCORE_WEIGHTS_DEFAULT = '{"operation_weight": 30, "budget_weight": 40, "neighborhood_weight": 20, "rooms_weight": 10}';
+
+// Precio del plan premium para MercadoPago
+export const PREMIUM_PLAN_PRICE_KEY = "premium_plan_price";
+export const PREMIUM_PLAN_PRICE_DEFAULT = "1";
+
+// Moneda del plan premium para MercadoPago
+export const PREMIUM_PLAN_CURRENCY_KEY = "premium_plan_currency";
+export const PREMIUM_PLAN_CURRENCY_DEFAULT = "USD";
