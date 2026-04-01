@@ -115,6 +115,24 @@ export const AdminPlans = () => {
     const [bonusDraft, setBonusDraft] = useState(referralBonus);
     useEffect(() => { setBonusDraft(referralBonus); }, [referralBonus]);
 
+    // Precio del plan premium (MercadoPago)
+    const {
+        value: premiumPrice,
+        isLoading: isLoadingPrice,
+        setValue: setPremiumPrice,
+        isSaving: isSavingPrice,
+    } = useSystemConfig(PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT);
+
+    const {
+        value: premiumCurrency,
+        isLoading: isLoadingCurrency,
+        setValue: setPremiumCurrency,
+        isSaving: isSavingCurrency,
+    } = useSystemConfig(PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT);
+
+    const [priceDraft, setPriceDraft] = useState(premiumPrice);
+    useEffect(() => { setPriceDraft(premiumPrice); }, [premiumPrice]);
+
     // Guardar bonus de referral
     const handleSaveBonusLimit = async () => {
         try {
@@ -125,7 +143,26 @@ export const AdminPlans = () => {
         }
     };
 
-    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle;
+    // Guardar precio premium
+    const handleSavePrice = async () => {
+        try {
+            await setPremiumPrice(priceDraft.trim());
+            toast({ title: "Precio guardado", description: `El plan premium ahora cuesta ${priceDraft.trim()} ${premiumCurrency}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar precio", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const handleCurrencyChange = async (val: string) => {
+        try {
+            await setPremiumCurrency(val);
+            toast({ title: "Moneda actualizada", description: `La moneda del plan premium ahora es ${val}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar moneda", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle || isLoadingPrice || isSavingPrice || isLoadingCurrency || isSavingCurrency;
 
     const handleToggleMarketplace = async (checked: boolean) => {
         try {
