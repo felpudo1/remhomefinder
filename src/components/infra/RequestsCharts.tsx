@@ -23,6 +23,7 @@ function getPeriodCutoff(period: Period): Date | null {
     case "week": return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     case "48h": return new Date(now.getTime() - 48 * 60 * 60 * 1000);
     case "24h": return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    case "1h": return new Date(now.getTime() - 1 * 60 * 60 * 1000);
     default: return null;
   }
 }
