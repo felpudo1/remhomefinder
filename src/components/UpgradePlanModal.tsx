@@ -36,6 +36,8 @@ export function UpgradePlanModal({
     const [showContent, setShowContent] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const { value: configPrice } = useSystemConfig(PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT);
+    const { value: configCurrency } = useSystemConfig(PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT);
 
     // Animación de entrada escalonada
     useEffect(() => {
