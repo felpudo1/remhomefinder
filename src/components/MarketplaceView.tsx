@@ -64,7 +64,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
-  const { isPremium } = useSubscription();
+  const { isPremium, canSaveMore, maxSaves } = useSubscription();
   const { groups } = useGroups();
   const userOrgId = groups?.[0]?.id || null;
   const referredAgentId = profile?.referredById;
