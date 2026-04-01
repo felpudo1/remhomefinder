@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { normalizeUrl } from "@/lib/duplicateCheck";
+import { PlanLimitError } from "@/hooks/useSaveToList";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
 
