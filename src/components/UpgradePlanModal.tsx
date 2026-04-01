@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT, PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT } from "@/lib/config-keys";
 
 interface UpgradePlanModalProps {
     open: boolean;
