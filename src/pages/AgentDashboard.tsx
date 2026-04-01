@@ -12,6 +12,7 @@ import { AgentIndicadores } from "@/components/agent/AgentIndicadores";
 import { AgentWelcome } from "@/components/agent/AgentWelcome";
 import { AgentTeamProperties } from "@/components/agent/AgentTeamProperties";
 import { AgentReferralSection } from "@/components/agent/AgentReferralSection";
+import { QRAnalytics } from "@/components/agent/QRAnalytics";
 import { AgentPropertyListing } from "@/components/agent/AgentPropertyListing";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
