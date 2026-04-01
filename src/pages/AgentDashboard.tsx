@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  Building2, Loader2, Home, BarChart3, Users, Gift, LineChart,
+  Building2, Loader2, Home, BarChart3, Users, Gift, LineChart, QrCode,
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { AgentProfile, Agency } from "@/components/agent/AgentProfile";
