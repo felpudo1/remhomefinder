@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
-import { useSaveToList } from "@/hooks/useSaveToList";
+import { useSaveToList, PlanLimitError } from "@/hooks/useSaveToList";
 import { useProperties } from "@/hooks/useProperties";
 import { useProfile } from "@/hooks/useProfile";
 import { useGeography } from "@/hooks/useGeography";
@@ -347,7 +347,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         }
       }
     } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      if (e instanceof PlanLimitError) {
+        setShowPremiumModal(true);
+      } else {
+        toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      }
     } finally {
       setSavingId(null);
     }
@@ -372,7 +376,12 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       setPendingSaveProperty(null);
       setSelectedGroupId(null);
     } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      if (e instanceof PlanLimitError) {
+        setShowPremiumModal(true);
+        setShowGroupSelectModal(false);
+      } else {
+        toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      }
     } finally {
       setSavingId(null);
     }
@@ -390,7 +399,12 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       setPendingSaveProperty(null);
       setSelectedGroupId(null);
     } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      if (e instanceof PlanLimitError) {
+        setShowPremiumModal(true);
+        setShowGroupSelectModal(false);
+      } else {
+        toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      }
     } finally {
       setSavingId(null);
     }

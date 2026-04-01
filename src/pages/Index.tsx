@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
+import { PlanLimitError } from "@/hooks/useSaveToList";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
@@ -286,8 +287,14 @@ const Index = () => {
       toast({ title: "Éxito", description: _successMessage || "Propiedad agregada correctamente" });
       maybeShowContactTip(formWithoutMeta.url);
     } catch (e: unknown) {
-      toast({ title: "Error", description: getErrorMessage(e), variant: "destructive" });
-      throw e; // Re-lanzar para que el modal no se cierre si falla
+      if (e instanceof PlanLimitError) {
+        setIsAddOpen(false);
+        setIsAddZenRowsOpen(false);
+        setIsUpgradeOpen(true);
+      } else {
+        toast({ title: "Error", description: getErrorMessage(e), variant: "destructive" });
+      }
+      throw e;
     }
   };
 

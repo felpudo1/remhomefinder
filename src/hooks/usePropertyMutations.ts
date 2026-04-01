@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, InfiniteData } from "@tanstack/react-query
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { normalizeUrl } from "@/lib/duplicateCheck";
+import { PlanLimitError } from "@/hooks/useSaveToList";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import type { CurrencyCode, UserListingStatus } from "@/types/supabase";
 
@@ -166,7 +167,7 @@ export function usePropertyMutations() {
                 if (!isPremium) {
                     const maxSaves = parseInt(limitConfig?.value || "10");
                     if (currentListingCount >= maxSaves) {
-                        throw new Error(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan gratuito. Mejorá tu plan para guardar más.`);
+                        throw new PlanLimitError(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan gratuito. Mejorá tu plan para guardar más.`);
                     }
                 }
             }

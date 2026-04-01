@@ -4,6 +4,14 @@ import { useCurrentUser } from "@/contexts/AuthProvider";
 import { useSubscription } from "@/hooks/useSubscription";
 import { MarketplaceProperty } from "@/types/property";
 
+/** Error especial para señalizar que se alcanzó el límite del plan */
+export class PlanLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PlanLimitError";
+  }
+}
+
 /**
  * Hook para guardar una propiedad del marketplace al listado personal del usuario.
  * Crea un user_listing apuntando al mismo property_id con source_publication_id.
@@ -44,7 +52,7 @@ export function useSaveToList() {
 
       const currentCount = count ?? 0;
       if (!canSaveMore(currentCount)) {
-        throw new Error(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan. Mejorá tu plan para guardar más.`);
+        throw new PlanLimitError(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan. Mejorá tu plan para guardar más.`);
       }
 
       const { data: pub, error: pubError } = await supabase
