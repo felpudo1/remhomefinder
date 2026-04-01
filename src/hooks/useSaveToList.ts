@@ -34,6 +34,19 @@ export function useSaveToList() {
 
       if (!finalOrgId) throw new Error("No pertenecés a ninguna organización");
 
+      // Validar límite de guardado consultando count real en BD
+      const { count, error: countError } = await supabase
+        .from("user_listings")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", finalOrgId);
+
+      if (countError) throw countError;
+
+      const currentCount = count ?? 0;
+      if (!canSaveMore(currentCount)) {
+        throw new Error(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan. Mejorá tu plan para guardar más.`);
+      }
+
       const { data: pub, error: pubError } = await supabase
         .from("agent_publications")
         .select("property_id")
