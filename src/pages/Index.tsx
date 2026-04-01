@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
+import { PlanLimitError } from "@/hooks/useSaveToList";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
