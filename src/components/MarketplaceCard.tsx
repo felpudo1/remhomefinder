@@ -1,5 +1,5 @@
 import { MarketplaceProperty } from "@/types/property";
-import { Bookmark, Building2, Star } from "lucide-react";
+import { Bookmark, Building2, Star, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
@@ -9,6 +9,7 @@ import { useState } from "react";
 import { MatchiAIBadge } from "@/components/ui/MatchiAIBadge";
 import { StarRating } from "@/components/ui/StarRating";
 import { cn } from "@/lib/utils";
+import { QRCodeModal } from "@/components/marketplace/QRCodeModal";
 
 interface MarketplaceCardProps {
   property: MarketplaceProperty;

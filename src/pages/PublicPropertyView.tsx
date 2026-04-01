@@ -1,13 +1,20 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, BedDouble, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, Bookmark, Loader2, Share2 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
+import { useCurrentUser } from "@/contexts/AuthProvider";
+import { ROUTES } from "@/lib/constants";
 
 interface PublicProperty {
   id: string;
   title: string;
   neighborhood: string;
+  city: string;
   rooms: number;
   sq_meters: number;
   price_rent: number;
@@ -15,23 +22,50 @@ interface PublicProperty {
   total_cost: number;
   currency: string;
   images: string[];
+  details: string;
+  ref: string;
 }
+
+const PENDING_SAVE_KEY = "pending_property_save";
 
 export default function PublicPropertyView() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { trackEvent, claimAnonymousEvents } = useAnalytics();
+
   const [property, setProperty] = useState<PublicProperty | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeImg, setActiveImg] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
+  // Track if QR scan event was already fired
+  const qrTrackedRef = useRef(false);
+
+  const source = searchParams.get("source");
+  const pubId = searchParams.get("pub_id");
+
+  // Auth state — may be null on public view
+  let user: any = null;
+  try {
+    const ctx = useCurrentUser();
+    user = ctx.user;
+  } catch {
+    // Outside AuthProvider — anonymous access
+  }
+
+  // Fetch property data
   useEffect(() => {
     if (!id) return;
-
     const fetchProperty = async () => {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from("properties")
-        .select("id, title, neighborhood, rooms, m2_total, price_amount, price_expenses, total_cost, currency, images")
+        .select("id, title, neighborhood, city, rooms, m2_total, price_amount, price_expenses, total_cost, currency, images, details, ref")
         .eq("id", id)
         .single();
 
@@ -42,6 +76,7 @@ export default function PublicPropertyView() {
           id: data.id,
           title: data.title,
           neighborhood: data.neighborhood,
+          city: data.city || "",
           rooms: data.rooms,
           sq_meters: Number(data.m2_total),
           price_rent: Number(data.price_amount),
@@ -49,18 +84,189 @@ export default function PublicPropertyView() {
           total_cost: Number(data.total_cost),
           currency: data.currency,
           images: data.images || [],
+          details: data.details || "",
+          ref: data.ref || "",
         });
       }
       setLoading(false);
     };
-
     fetchProperty();
   }, [id]);
+
+  // Track QR scan event (once)
+  useEffect(() => {
+    if (!id || !source || source !== "qr" || qrTrackedRef.current) return;
+    qrTrackedRef.current = true;
+    trackEvent({
+      eventType: "qr_scan",
+      propertyId: id,
+      sourcePublicationId: pubId,
+      userId: user?.id || null,
+      metadata: { qr_source: "qr", user_agent: navigator.userAgent },
+    });
+  }, [id, source, pubId, user?.id, trackEvent]);
+
+  // Track property view event
+  useEffect(() => {
+    if (!id) return;
+    trackEvent({
+      eventType: "property_view",
+      propertyId: id,
+      sourcePublicationId: pubId,
+      userId: user?.id || null,
+    });
+  }, [id, pubId, user?.id, trackEvent]);
+
+  // Check for pending save after OAuth redirect
+  useEffect(() => {
+    if (!user?.id) return;
+    const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
+    if (!pendingSave) return;
+
+    try {
+      const { propertyId, publicationId } = JSON.parse(pendingSave);
+      if (propertyId === id) {
+        sessionStorage.removeItem(PENDING_SAVE_KEY);
+        handleSaveProperty(user.id);
+      }
+    } catch {
+      sessionStorage.removeItem(PENDING_SAVE_KEY);
+    }
+  }, [user?.id, id]);
+
+  const handleSaveProperty = useCallback(
+    async (userId: string) => {
+      if (!id || saving || saved) return;
+      setSaving(true);
+
+      try {
+        // Claim anonymous analytics events
+        if (pubId) {
+          await claimAnonymousEvents(userId, id, pubId);
+        }
+
+        // Get user's org
+        const { data: membership } = await supabase
+          .from("organization_members")
+          .select("org_id")
+          .eq("user_id", userId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!membership?.org_id) {
+          toast({
+            title: "Error",
+            description: "No se encontró una organización asociada a tu cuenta.",
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+
+        // Get property_id from publication if available
+        let propertyId = id;
+        if (pubId) {
+          const { data: pub } = await supabase
+            .from("agent_publications")
+            .select("property_id")
+            .eq("id", pubId)
+            .single();
+          if (pub) propertyId = pub.property_id;
+        }
+
+        // Check if already saved
+        const { data: existing } = await supabase
+          .from("user_listings")
+          .select("id")
+          .eq("property_id", propertyId)
+          .eq("org_id", membership.org_id)
+          .maybeSingle();
+
+        if (existing) {
+          setSaved(true);
+          toast({ title: "Ya tenés esta propiedad guardada" });
+          setSaving(false);
+          return;
+        }
+
+        // Insert user listing with status 'ingresado'
+        const { error: insertError } = await supabase
+          .from("user_listings")
+          .insert({
+            property_id: propertyId,
+            org_id: membership.org_id,
+            listing_type: "rent",
+            source_publication_id: pubId || null,
+            added_by: userId,
+          });
+
+        if (insertError) throw insertError;
+
+        // Track listing_saved event
+        await trackEvent({
+          eventType: "listing_saved",
+          propertyId: propertyId,
+          sourcePublicationId: pubId,
+          userId,
+          orgId: membership.org_id,
+        });
+
+        setSaved(true);
+        toast({
+          title: "¡Propiedad guardada!",
+          description: "La encontrarás en tu listado personal.",
+        });
+
+        // Redirect to dashboard after short delay
+        setTimeout(() => navigate(ROUTES.DASHBOARD), 1500);
+      } catch (err: any) {
+        console.error("Save error:", err);
+        toast({
+          title: "Error al guardar",
+          description: err?.message || "Intentá nuevamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setSaving(false);
+      }
+    },
+    [id, pubId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents]
+  );
+
+  const handleSaveClick = () => {
+    if (user?.id) {
+      handleSaveProperty(user.id);
+    } else {
+      // Store pending save state
+      sessionStorage.setItem(
+        PENDING_SAVE_KEY,
+        JSON.stringify({ propertyId: id, publicationId: pubId })
+      );
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleAuthenticated = (userId: string) => {
+    setShowAuthModal(false);
+    handleSaveProperty(userId);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: property?.title, url });
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copiado" });
+    }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Cargando propiedad...</div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -70,7 +276,9 @@ export default function PublicPropertyView() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold text-foreground">Propiedad no encontrada</p>
-          <p className="text-sm text-muted-foreground">Es posible que el link sea incorrecto o la propiedad fue eliminada.</p>
+          <p className="text-sm text-muted-foreground">
+            Es posible que el link sea incorrecto o la propiedad fue eliminada.
+          </p>
         </div>
       </div>
     );
@@ -79,23 +287,48 @@ export default function PublicPropertyView() {
   return (
     <div className="min-h-screen bg-background flex items-start justify-center py-8 px-4">
       <div className="w-full max-w-2xl bg-card rounded-2xl shadow-lg overflow-hidden border border-border">
+        {/* Image carousel */}
         <div className="relative h-72 sm:h-80 bg-muted">
           {property.images.length > 0 ? (
-            <img src={property.images[activeImg]} alt={property.title} className="w-full h-full object-cover" />
+            <img
+              src={property.images[activeImg]}
+              alt={property.title}
+              className="w-full h-full object-cover"
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">Sin imágenes</div>
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              Sin imágenes
+            </div>
           )}
           {property.images.length > 1 && (
             <>
-              <button onClick={() => setActiveImg((p) => (p - 1 + property.images.length) % property.images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors">
+              <button
+                onClick={() =>
+                  setActiveImg(
+                    (p) => (p - 1 + property.images.length) % property.images.length
+                  )
+                }
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors"
+              >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <button onClick={() => setActiveImg((p) => (p + 1) % property.images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors">
+              <button
+                onClick={() =>
+                  setActiveImg((p) => (p + 1) % property.images.length)
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-card/90 rounded-full p-1.5 hover:bg-card transition-colors"
+              >
                 <ChevronRight className="w-5 h-5" />
               </button>
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {property.images.map((_, i) => (
-                  <button key={i} onClick={() => setActiveImg(i)} className={`w-2 h-2 rounded-full transition-all ${i === activeImg ? "bg-card scale-125" : "bg-card/50"}`} />
+                  <button
+                    key={i}
+                    onClick={() => setActiveImg(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      i === activeImg ? "bg-card scale-125" : "bg-card/50"
+                    }`}
+                  />
                 ))}
               </div>
             </>
@@ -104,13 +337,19 @@ export default function PublicPropertyView() {
 
         <div className="p-6 space-y-5">
           <div>
-            <h1 className="text-xl font-bold text-foreground leading-tight">{property.title}</h1>
+            <h1 className="text-xl font-bold text-foreground leading-tight">
+              {property.title}
+            </h1>
             <div className="flex items-center gap-1.5 text-muted-foreground mt-1">
               <MapPin className="w-4 h-4" />
-              <span className="text-sm">{property.neighborhood}</span>
+              <span className="text-sm">
+                {property.neighborhood}
+                {property.city ? `, ${property.city}` : ""}
+              </span>
             </div>
           </div>
 
+          {/* Stats grid */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-muted rounded-xl p-3 text-center">
               <div className="text-lg font-bold text-foreground">{property.sq_meters}</div>
@@ -118,30 +357,78 @@ export default function PublicPropertyView() {
             </div>
             <div className="bg-muted rounded-xl p-3 text-center">
               <div className="text-lg font-bold text-foreground">{property.rooms}</div>
-              <div className="text-xs text-muted-foreground">{property.rooms === 1 ? "Ambiente" : "Ambientes"}</div>
+              <div className="text-xs text-muted-foreground">
+                {property.rooms === 1 ? "Ambiente" : "Ambientes"}
+              </div>
             </div>
             <div className="bg-muted rounded-xl p-3 text-center">
-              <div className="text-lg font-bold text-foreground">{currencySymbol(property.currency)}</div>
+              <div className="text-lg font-bold text-foreground">
+                {currencySymbol(property.currency)}
+              </div>
               <div className="text-xs text-muted-foreground">Moneda</div>
             </div>
           </div>
 
+          {/* Price breakdown */}
           <div className="bg-muted rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Alquiler mensual</span>
-              <span className="font-medium text-foreground">{currencySymbol(property.currency)} {property.price_rent.toLocaleString()}</span>
+              <span className="font-medium text-foreground">
+                {currencySymbol(property.currency)}{" "}
+                {property.price_rent.toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">G/C</span>
-              <span className="font-medium text-foreground">{currencySymbol(property.currency)} {property.price_expenses.toLocaleString()}</span>
+              <span className="font-medium text-foreground">
+                {currencySymbol(property.currency)}{" "}
+                {property.price_expenses.toLocaleString()}
+              </span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">
               <span className="font-semibold text-foreground">Costo mensual total</span>
-              <span className="font-bold text-foreground text-lg">{currencySymbol(property.currency)} {property.total_cost.toLocaleString()}</span>
+              <span className="font-bold text-foreground text-lg">
+                {currencySymbol(property.currency)}{" "}
+                {property.total_cost.toLocaleString()}
+              </span>
             </div>
+          </div>
+
+          {/* Details */}
+          {property.details && (
+            <div className="text-sm text-muted-foreground whitespace-pre-line">
+              {property.details}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 gap-2"
+              size="lg"
+              onClick={handleSaveClick}
+              disabled={saving || saved}
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+              )}
+              {saved ? "Guardada" : "Guardar en mi listado"}
+            </Button>
+            <Button variant="outline" size="lg" onClick={handleShare}>
+              <Share2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
+
+      <RequireAuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthenticated={handleAuthenticated}
+        returnUrl={window.location.pathname + window.location.search}
+      />
     </div>
   );
 }
