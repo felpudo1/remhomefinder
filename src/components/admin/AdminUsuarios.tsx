@@ -242,13 +242,29 @@ export function AdminUsuarios({ toast }: Props) {
         setConfirmDeleteSingle("");
         const reason = deleteReason.trim();
         setDeleteReason("");
+
         try {
             setIsActionInProgress(true);
+
+            const {
+                data: { user: adminUser },
+                error: authError,
+            } = await supabase.auth.getUser();
+
+            if (authError) {
+                throw authError;
+            }
+
+            if (!adminUser?.id) {
+                throw new Error("No se pudo identificar al administrador autenticado.");
+            }
+
             const { error } = await supabase.rpc("admin_physical_delete_user" as any, {
                 _user_id: userId,
                 _reason: reason,
-                _deleted_by: null, // RPC uses auth.uid() internally
+                _deleted_by: adminUser.id,
             });
+
             if (error) {
                 toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
             } else {
