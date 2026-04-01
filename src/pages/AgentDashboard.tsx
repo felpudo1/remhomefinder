@@ -210,6 +210,9 @@ const AgentDashboard = () => {
               )}
               {activeTab === "estadisticas" && <AgentEstadisticas agency={agency} />}
               {activeTab === "indicadores" && <AgentIndicadores />}
+              {activeTab === "qr_analytics" && agency && userId && (
+                <QRAnalytics agencyId={agency.id} userId={userId} />
+              )}
               {activeTab === "referencias" && <AgentReferralSection agency={agency} />}
             </div>
           ) : profileStatus === "pending" ? (
