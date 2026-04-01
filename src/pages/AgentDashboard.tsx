@@ -31,6 +31,7 @@ const TABS = [
   { id: "equipo", label: "Equipo", icon: Users },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
   { id: "indicadores", label: "Indicadores", icon: LineChart },
+  { id: "qr_analytics", label: "QR Leads", icon: QrCode },
   { id: "referencias", label: "Referencias", icon: Gift },
 ];
 
