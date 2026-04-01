@@ -347,7 +347,11 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
         }
       }
     } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      if (e instanceof PlanLimitError) {
+        setShowPremiumModal(true);
+      } else {
+        toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      }
     } finally {
       setSavingId(null);
     }
