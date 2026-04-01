@@ -1,24 +1,19 @@
-import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyStatus, PropertyComment } from "@/types/property";
 import { useProperties } from "@/hooks/useProperties";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
-import { PropertyCard } from "@/components/PropertyCard";
-import { FilterSidebar } from "@/components/FilterSidebar";
-import { ListadoFiltersDropdown } from "@/components/ListadoFiltersDropdown";
 import { MarketplaceView } from "@/components/MarketplaceView";
-import { UserWelcome } from "@/components/UserWelcome";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Loader2, Users, SlidersHorizontal, Store, X, RefreshCw, Mail, CheckCircle2, ChevronRight, Search, UserPlus } from "lucide-react";
+import { Home, Plus, Users, SlidersHorizontal, Store, X, Mail, CheckCircle2, ChevronRight, UserPlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/constants";
@@ -37,9 +32,16 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
 import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
-
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { MiListadoTabPanel } from "@/components/MiListadoTabPanel";
+import { useIndexOnboarding } from "@/hooks/useIndexOnboarding";
+import { useIndexListingController } from "@/hooks/useIndexListingController";
+import type {
+  IndexDetailModalState,
+  IndexGroupContext,
+  IndexHeaderActions,
+  IndexHeaderListingSummary,
+  IndexModalVisibilityState,
+} from "@/types/index-page";
 import {
   Dialog,
   DialogContent,
@@ -48,8 +50,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type SortOption = "total-asc" | "total-desc" | "newest" | "oldest";
 
 /**
  * Componente Corazón de la Aplicación.
@@ -83,13 +83,6 @@ const Index = () => {
     [profile, authUser]
   );
   const profileStatus = profile?.status ?? "active";
-  const [selectedStatuses, setSelectedStatuses] = useState<PropertyStatus[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [hideDiscarded, setHideDiscarded] = useState(true);
-  /** Misma lógica que HFMarket: ON = fotos expandidas en las tarjetas; OFF = colapsadas (“Ver fotos”). */
-  const [expandPhotos, setExpandPhotos] = useState(true);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -132,62 +125,56 @@ const Index = () => {
   const { value: supportPhone } = useSystemConfig(SUPPORT_PHONE_CONFIG_KEY, SUPPORT_PHONE_DEFAULT);
   const addButtonConfig = (addButtonConfigRaw as AddButtonConfig) || ADD_BUTTON_DEFAULT;
 
-  // Bienvenida
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return localStorage.getItem("hf_user_welcome_dismissed") !== "true";
-  });
-
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
-  const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
   const [welcomeType, setWelcomeType] = useState<"user" | "agent">("user");
-  const [showRegWelcome, setShowRegWelcome] = useState(false);
-  const [dontShowRegAgain, setDontShowRegAgain] = useState(false);
   const [isRefreshingList, setIsRefreshingList] = useState(false);
-  const [showContactTipModal, setShowContactTipModal] = useState(false);
-  const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
   const [showAIProfileModal, setShowAIProfileModal] = useState(false);
 
-  const MARKET_TIP_DISABLED_KEY = "hf_market_save_tip_disabled";
-  const OWN_LINK_TIP_SHOWN_KEY = "hf_own_link_first_tip_shown";
-
   const { canSaveMore, maxSaves, isPremium, referralBonus } = useSubscription();
+  const {
+    showWelcome,
+    showRegWelcome,
+    isPremiumWelcomeOpen,
+    showContactTipModal,
+    dontShowContactTipAgain,
+    setDontShowContactTipAgain,
+    setIsPremiumWelcomeOpen,
+    handleDismissWelcome,
+    closeRegistrationWelcome,
+    maybeShowContactTip,
+    closeContactTipModal,
+    handleContactTipOpenChange,
+  } = useIndexOnboarding({
+    locationSearch: location.search,
+    isPremium,
+    profileUserId: profile?.userId,
+  });
+  const {
+    selectedStatuses,
+    sortBy,
+    searchQuery,
+    hideDiscarded,
+    expandPhotos,
+    filteredAndSorted,
+    statusCounts,
+    setSortBy,
+    setSearchQuery,
+    setHideDiscarded,
+    setExpandPhotos,
+    handleStatusToggle,
+    handleClearFilters,
+  } = useIndexListingController({
+    properties,
+    activeGroupId,
+  });
 
   const handleRefreshProperties = async () => {
     setIsRefreshingList(true);
     await refetch();
     setIsRefreshingList(false);
   };
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get("registered") === "true") {
-      setShowRegWelcome(true);
-    }
-  }, [location.search]);
-
-  // Notificación de Premium recién adquirido (REGLA 2: Lógica robusta)
-  useEffect(() => {
-    if (showRegWelcome) return; // No abrir mientras el overlay de registro está activo
-    if (isPremium && profile?.userId) {
-      const key = `hf_premium_welcome_shown_${profile.userId}`;
-      if (localStorage.getItem(key) !== "true") {
-        setIsPremiumWelcomeOpen(true);
-        localStorage.setItem(key, "true");
-      }
-    }
-  }, [isPremium, profile?.userId, showRegWelcome]);
-
-  // Perfil IA (matchmaking): solo se abre manualmente desde el menú (onAIProfileClick), no al cargar el dashboard.
-
-  // Implementación de Debouncing para la búsqueda (REGLA 2: Performance)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const selectedProperty = useMemo(
     () => properties.find((p) => p.id === selectedPropertyId) || null,
@@ -297,46 +284,11 @@ const Index = () => {
       setIsAddOpen(false);
       setIsAddZenRowsOpen(false);
       toast({ title: "Éxito", description: _successMessage || "Propiedad agregada correctamente" });
-
-      const hasSourceUrl = typeof formWithoutMeta.url === "string" && formWithoutMeta.url.trim().length > 0;
-      const isTipDisabled = localStorage.getItem(MARKET_TIP_DISABLED_KEY) === "true";
-      const wasShownBefore = localStorage.getItem(OWN_LINK_TIP_SHOWN_KEY) === "true";
-      if (hasSourceUrl && !isTipDisabled && !wasShownBefore) {
-        localStorage.setItem(OWN_LINK_TIP_SHOWN_KEY, "true");
-        setDontShowContactTipAgain(false);
-        setShowContactTipModal(true);
-      }
+      maybeShowContactTip(formWithoutMeta.url);
     } catch (e: unknown) {
       toast({ title: "Error", description: getErrorMessage(e), variant: "destructive" });
       throw e; // Re-lanzar para que el modal no se cierre si falla
     }
-  };
-
-  const handleCloseContactTipModal = () => {
-    if (dontShowContactTipAgain) {
-      localStorage.setItem(MARKET_TIP_DISABLED_KEY, "true");
-    }
-    setShowContactTipModal(false);
-    setDontShowContactTipAgain(false);
-  };
-
-  const handleStatusToggle = (status: PropertyStatus) => {
-    setSelectedStatuses((prev) =>
-      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
-    );
-  };
-
-  const handleClearFilters = () => {
-    setSelectedStatuses([]);
-    setSortBy("newest");
-    setSearchQuery("");
-  };
-
-  const handleDismissWelcome = (dontShowAgain: boolean) => {
-    if (dontShowAgain) {
-      localStorage.setItem("hf_user_welcome_dismissed", "true");
-    }
-    setShowWelcome(false);
   };
 
   const handleCardClick = (property: Property) => {
@@ -351,47 +303,40 @@ const Index = () => {
     setIsDetailOpen(true);
   };
 
-  const filteredAndSorted = useMemo(() => {
-    let result = [...properties];
-    if (activeGroupId) {
-      result = result.filter((p) => p.groupId === activeGroupId);
-    }
-    // Eliminación lógica visual: nunca mostrar estado eliminado en listados de usuario.
-    result = result.filter((p) => p.status !== "eliminado");
-    if (debouncedSearchQuery.trim()) {
-      const q = debouncedSearchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.neighborhood.toLowerCase().includes(q) ||
-          p.aiSummary.toLowerCase().includes(q)
-      );
-    }
-    if (selectedStatuses.length > 0) {
-      result = result.filter((p) => selectedStatuses.includes(p.status));
-    }
-    if (hideDiscarded) {
-      result = result.filter((p) => p.status !== "descartado");
-    }
-    switch (sortBy) {
-      case "total-asc": result.sort((a, b) => a.totalCost - b.totalCost); break;
-      case "total-desc": result.sort((a, b) => b.totalCost - a.totalCost); break;
-      case "newest": result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
-      case "oldest": result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break;
-    }
-    result.sort((a, b) => (a.status === "descartado" ? 1 : 0) - (b.status === "descartado" ? 1 : 0));
-    return result;
-  }, [properties, selectedStatuses, sortBy, debouncedSearchQuery, activeGroupId, hideDiscarded]);
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<PropertyStatus, number> = {
-      ingresado: 0, contactado: 0, visita_coordinada: 0, visitado: 0, descartado: 0, a_analizar: 0, eliminado: 0, eliminado_agencia: 0, firme_candidato: 0, posible_interes: 0, meta_conseguida: 0
-    };
-    properties.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status]++; });
-    return counts;
-  }, [properties]);
-
   const isRegistered = new URLSearchParams(location.search).get("registered") === "true";
+  const listingSummary: IndexHeaderListingSummary = {
+    selectedStatuses,
+    statusCounts,
+    onStatusToggle: handleStatusToggle,
+  };
+  const headerActions: IndexHeaderActions = {
+    onOpenGroups: () => setIsGroupsOpen(true),
+    onAIProfileClick: () => setShowAIProfileModal(true),
+    onLogout: handleLogout,
+  };
+  const detailModal: IndexDetailModalState = {
+    selectedProperty,
+    isOpen: isDetailOpen,
+    setIsOpen: setIsDetailOpen,
+    currentUserEmail: userEmail,
+    currentUserDisplayName: profile?.displayName,
+  };
+  const modalVisibility: IndexModalVisibilityState = {
+    isAddZenRowsOpen,
+    setIsAddZenRowsOpen,
+    isAddOpen,
+    setIsAddOpen,
+    isGroupsOpen,
+    setIsGroupsOpen,
+    isUpgradeOpen,
+    setIsUpgradeOpen,
+    isPremiumWelcomeOpen,
+    setIsPremiumWelcomeOpen,
+  };
+  const groupContext: IndexGroupContext = {
+    activeGroupId,
+    setActiveGroupId,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -426,7 +371,7 @@ const Index = () => {
             <div className="space-y-4 pt-2">
               <Button
                 className="w-full h-14 rounded-2xl text-md font-bold shadow-xl shadow-primary/20 gap-2 group"
-                onClick={() => setShowRegWelcome(false)}
+                onClick={closeRegistrationWelcome}
               >
                 ¡Entendido, vamos! <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -447,13 +392,9 @@ const Index = () => {
 
       <UserHeader
         userEmail={userEmail}
-        selectedStatuses={selectedStatuses}
-        handleStatusToggle={handleStatusToggle}
-        statusCounts={statusCounts}
+        listingSummary={listingSummary}
         activeGroupId={activeGroupId}
-        setIsGroupsOpen={setIsGroupsOpen}
-        onAIProfileClick={() => setShowAIProfileModal(true)}
-        handleLogout={handleLogout}
+        actions={headerActions}
       />
 
       {profileStatus !== "active" ? (
@@ -484,145 +425,38 @@ const Index = () => {
               </TabsList>
 
               {/* Orden: primero la pestaña por defecto (mi-listado) para que el DOM no deje “abajo” el HFMarket al hidratar. */}
-              <TabsContent value="mi-listado">
-                {showWelcome ? (
-                  <UserWelcome
-                    onDismiss={handleDismissWelcome}
-                    userName={welcomeDisplayName}
-                    userPhone={welcomePhone}
-                  />
-                ) : (
-                  <div>
-                    <FilterSidebar
-                      selectedStatuses={selectedStatuses}
-                      onStatusToggle={handleStatusToggle}
-                      sortBy={sortBy}
-                      onSortChange={setSortBy}
-                      onClearFilters={handleClearFilters}
-                      totalCount={properties.length}
-                      filteredCount={filteredAndSorted.length}
-                      searchQuery={searchQuery}
-                      onSearchChange={setSearchQuery}
-                      mobileOpen={isMobileFiltersOpen}
-                      onMobileClose={() => setIsMobileFiltersOpen(false)}
-                    />
-                    <main className="flex-1 min-w-0">
-                      <div className="mb-6 space-y-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tus Avisos Guardados ({filteredAndSorted.length}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})</h1>
-                            <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRefreshProperties}
-                            disabled={loading || isRefreshingList}
-                            className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
-                            title="Refrescar listado"
-                          >
-                            <RefreshCw className={`w-4 h-4 ${isRefreshingList ? "animate-spin" : ""}`} />
-                          </button>
-                        </div>
-                        {/* Escritorio: debajo del título — filtro → buscador → switches */}
-                        <div className="hidden lg:flex flex-row flex-wrap items-center gap-4 min-w-0">
-                          <ListadoFiltersDropdown
-                            selectedStatuses={selectedStatuses}
-                            onStatusToggle={handleStatusToggle}
-                            sortBy={sortBy}
-                            onSortChange={setSortBy}
-                            onClearFilters={handleClearFilters}
-                            totalCount={properties.length}
-                            filteredCount={filteredAndSorted.length}
-                            searchQuery={searchQuery}
-                            onSearchChange={setSearchQuery}
-                          />
-                          <div className="relative flex-1 min-w-[200px] max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                            <Input
-                              placeholder="Buscar propiedad..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="pl-9 h-10 w-full rounded-xl bg-muted border-0 text-sm"
-                            />
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 shrink-0">
-                            <div className="flex items-center gap-3">
-                              <Switch
-                                id="hide-discarded-list-lg"
-                                checked={hideDiscarded}
-                                onCheckedChange={setHideDiscarded}
-                              />
-                              <Label htmlFor="hide-discarded-list-lg" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                                Ocultar descartados
-                              </Label>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Switch
-                                id="expand-photos-listado-lg"
-                                checked={expandPhotos}
-                                onCheckedChange={setExpandPhotos}
-                              />
-                              <Label htmlFor="expand-photos-listado-lg" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                                Mostrar fotos
-                              </Label>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-nowrap items-center justify-between gap-2 sm:justify-start sm:gap-6 w-full min-w-0 lg:hidden">
-                          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
-                            <Switch
-                              id="hide-discarded-list"
-                              checked={hideDiscarded}
-                              onCheckedChange={setHideDiscarded}
-                            />
-                            <Label htmlFor="hide-discarded-list" className="text-xs sm:text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                              Ocultar descartados
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
-                            <Switch
-                              id="expand-photos-listado"
-                              checked={expandPhotos}
-                              onCheckedChange={setExpandPhotos}
-                            />
-                            <Label htmlFor="expand-photos-listado" className="text-xs sm:text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                              Mostrar fotos
-                            </Label>
-                          </div>
-                        </div>
-                      </div>
-                      {loading ? (
-                        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-                      ) : filteredAndSorted.length === 0 ? (
-                        <div className="text-center py-20 text-muted-foreground">
-                          <Home className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                          <p className="font-medium">Copiá un link de cualquier portal y pegalo en el botón (+) acá para empezar</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {filteredAndSorted.map((property) => (
-                            <PropertyCard
-                              key={property.id}
-                              property={property}
-                              forceExpandImages={expandPhotos}
-                              onStatusChange={handleStatusChange}
-                              onClick={() => handleCardClick(property)}
-                              ownerEmail={property.createdByEmail || null}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {/* Punto 4 (Checklist): Prefetch agresivo — sentinel con IntersectionObserver */}
-                      {hasNextPage && !loading && (
-                        <LoadMoreSentinel
-                          fetchNextPage={fetchNextPage}
-                          isFetchingNextPage={isFetchingNextPage}
-                        />
-                      )}
-                    </main>
-                  </div>
-                )}
-              </TabsContent>
+              <MiListadoTabPanel
+                showWelcome={showWelcome}
+                onDismissWelcome={handleDismissWelcome}
+                welcomeDisplayName={welcomeDisplayName}
+                welcomePhone={welcomePhone}
+                selectedStatuses={selectedStatuses}
+                onStatusToggle={handleStatusToggle}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                onClearFilters={handleClearFilters}
+                totalCount={properties.length}
+                filteredCount={filteredAndSorted.length}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                isMobileFiltersOpen={isMobileFiltersOpen}
+                onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
+                referralBonus={referralBonus}
+                maxSaves={maxSaves}
+                onRefresh={handleRefreshProperties}
+                loading={loading}
+                isRefreshingList={isRefreshingList}
+                hideDiscarded={hideDiscarded}
+                onHideDiscardedChange={setHideDiscarded}
+                expandPhotos={expandPhotos}
+                onExpandPhotosChange={setExpandPhotos}
+                filteredProperties={filteredAndSorted}
+                onStatusChange={handleStatusChange}
+                onCardClick={handleCardClick}
+                hasNextPage={hasNextPage}
+                fetchNextPage={fetchNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+              />
 
               <TabsContent value="marketplace">
                 <MarketplaceView
@@ -667,29 +501,16 @@ const Index = () => {
 
           {/* Orquestación de Modales (Refactoreado) */}
           <IndexModals
-            selectedProperty={selectedProperty}
-            isDetailOpen={isDetailOpen}
-            setIsDetailOpen={setIsDetailOpen}
-            currentUserEmail={userEmail}
-            currentUserDisplayName={profile?.displayName}
-            onStatusChange={handleStatusChange}
-            onAddComment={handleAddComment}
-            onAddProperty={handleAddProperty}
-            onOpenExistingListing={handleOpenExistingListing}
-            isAddZenRowsOpen={isAddZenRowsOpen}
-            setIsAddZenRowsOpen={setIsAddZenRowsOpen}
-            isAddOpen={isAddOpen}
-            setIsAddOpen={setIsAddOpen}
-            isGroupsOpen={isGroupsOpen}
-            setIsGroupsOpen={setIsGroupsOpen}
-            isUpgradeOpen={isUpgradeOpen}
-            setIsUpgradeOpen={setIsUpgradeOpen}
-            isPremiumWelcomeOpen={isPremiumWelcomeOpen}
-            setIsPremiumWelcomeOpen={setIsPremiumWelcomeOpen}
-            activeGroupId={activeGroupId}
-            setActiveGroupId={setActiveGroupId}
+            detailModal={detailModal}
+            propertyActions={{
+              onStatusChange: handleStatusChange,
+              onAddComment: handleAddComment,
+              onAddProperty: handleAddProperty,
+              onOpenExistingListing: handleOpenExistingListing,
+            }}
+            visibility={modalVisibility}
+            groupContext={groupContext}
             maxSaves={maxSaves}
-            propertiesCount={properties.length}
             welcomeType={welcomeType}
           />
 
@@ -702,13 +523,7 @@ const Index = () => {
 
           <Dialog
             open={showContactTipModal}
-            onOpenChange={(open) => {
-              if (!open) {
-                handleCloseContactTipModal();
-                return;
-              }
-              setShowContactTipModal(true);
-            }}
+            onOpenChange={handleContactTipOpenChange}
           >
             <DialogContent className="sm:max-w-lg rounded-2xl">
               <DialogHeader>
@@ -735,7 +550,7 @@ const Index = () => {
                 </label>
               </div>
               <DialogFooter>
-                <Button onClick={handleCloseContactTipModal}>Entendido</Button>
+                <Button onClick={closeContactTipModal}>Entendido</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -752,46 +567,5 @@ const Index = () => {
     </div>
   );
 };
-
-/**
- * Punto 4 (Checklist): Sentinel invisible que dispara prefetch cuando el usuario
- * está a ~2 pantallas del final del listado. Usa IntersectionObserver con rootMargin.
- */
-function LoadMoreSentinel({
-  fetchNextPage,
-  isFetchingNextPage,
-}: {
-  fetchNextPage: () => void;
-  isFetchingNextPage: boolean;
-}) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: "600px" } // ~2 pantallas antes del final
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [fetchNextPage, isFetchingNextPage]);
-
-  return (
-    <div ref={sentinelRef} className="flex justify-center py-6">
-      {isFetchingNextPage && (
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" /> Cargando más...
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default Index;

@@ -4,71 +4,25 @@ import { AddPropertyModal } from "./AddPropertyModal";
 import { GroupsModal } from "./GroupsModal";
 import { UpgradePlanModal } from "./UpgradePlanModal";
 import { PremiumWelcomeModal } from "./PremiumWelcomeModal";
-import { Property, PropertyStatus, PropertyComment } from "@/types/property";
+import type {
+    IndexAddCommentHandler,
+    IndexDetailModalState,
+    IndexGroupContext,
+    IndexModalVisibilityState,
+    IndexStatusChangeHandler,
+} from "@/types/index-page";
 
 interface IndexModalsProps {
-    // Estados de detalle
-    selectedProperty: Property | null;
-    isDetailOpen: boolean;
-    setIsDetailOpen: (open: boolean) => void;
-    currentUserEmail: string | null;
-    currentUserDisplayName?: string | null;
-
-    // Handlers de propiedad
-    onStatusChange: (
-        id: string,
-        status: PropertyStatus,
-        deletedReason?: string,
-        coordinatedDate?: string | null,
-        groupId?: string | null,
-        contactedName?: string,
-        discardedAttributeIds?: string[],
-        prosAndCons?: { positiveIds: string[]; negativeIds: string[] },
-        contactedFeedback?: { interest: number; urgency: number },
-        coordinatedFeedback?: { agentResponseSpeed: number; attentionQuality: number; appHelpScore?: number },
-        discardedSurvey?: {
-            overallCondition: number;
-            surroundings: number;
-            houseSecurity: number;
-            expectedSize: number;
-            photosReality: number;
-        },
-        metaAchievedFeedback?: {
-            agentPunctuality: number;
-            agentAttention: number;
-            appPerformance: number;
-            appSupport: number;
-            appPrice: number;
-        },
-        closingFeedback?: {
-            closePriceScore: number;
-            closeConditionScore: number;
-            closeSecurityScore: number;
-            closeGuaranteeScore: number;
-            closeMovingScore: number;
-        }
-    ) => Promise<void>;
-    onAddComment: (id: string, comment: Omit<PropertyComment, "id" | "createdAt">) => Promise<void>;
-    onAddProperty: (form: any) => Promise<void>;
-    onOpenExistingListing?: (userListingId: string) => void;
-
-    // Estados de control de apertura
-    isAddZenRowsOpen: boolean;
-    setIsAddZenRowsOpen: (open: boolean) => void;
-    isAddOpen: boolean;
-    setIsAddOpen: (open: boolean) => void;
-    isGroupsOpen: boolean;
-    setIsGroupsOpen: (open: boolean) => void;
-    isUpgradeOpen: boolean;
-    setIsUpgradeOpen: (open: boolean) => void;
-    isPremiumWelcomeOpen: boolean;
-    setIsPremiumWelcomeOpen: (open: boolean) => void;
-
-    // Datos de contexto
-    activeGroupId: string | null;
-    setActiveGroupId: (id: string | null) => void;
+    detailModal: IndexDetailModalState;
+    propertyActions: {
+        onStatusChange: IndexStatusChangeHandler;
+        onAddComment: IndexAddCommentHandler;
+        onAddProperty: (form: any) => Promise<void>;
+        onOpenExistingListing?: (userListingId: string) => void;
+    };
+    visibility: IndexModalVisibilityState;
+    groupContext: IndexGroupContext;
     maxSaves: number;
-    propertiesCount: number;
     welcomeType?: "user" | "agent";
 }
 
@@ -77,75 +31,58 @@ interface IndexModalsProps {
  * Extraído para reducir la complejidad visual del componente principal (REGLA 2).
  */
 export const IndexModals: React.FC<IndexModalsProps> = ({
-    selectedProperty,
-    isDetailOpen,
-    setIsDetailOpen,
-    currentUserEmail,
-    currentUserDisplayName,
-    onStatusChange,
-    onAddComment,
-    onAddProperty,
-    onOpenExistingListing,
-    isAddZenRowsOpen,
-    setIsAddZenRowsOpen,
-    isAddOpen,
-    setIsAddOpen,
-    isGroupsOpen,
-    setIsGroupsOpen,
-    isUpgradeOpen,
-    setIsUpgradeOpen,
-    isPremiumWelcomeOpen,
-    setIsPremiumWelcomeOpen,
-    activeGroupId,
-    setActiveGroupId,
+    detailModal,
+    propertyActions,
+    visibility,
+    groupContext,
     maxSaves,
     welcomeType = "user",
 }) => {
     return (
         <>
             <PropertyDetailModal
-                property={selectedProperty}
-                open={isDetailOpen}
-                onClose={() => setIsDetailOpen(false)}
-                onStatusChange={onStatusChange}
-                onAddComment={onAddComment}
-                currentUserEmail={currentUserEmail}
-                currentUserDisplayName={currentUserDisplayName}
+                property={detailModal.selectedProperty}
+                open={detailModal.isOpen}
+                onClose={() => detailModal.setIsOpen(false)}
+                onStatusChange={propertyActions.onStatusChange}
+                onAddComment={propertyActions.onAddComment}
+                currentUserEmail={detailModal.currentUserEmail}
+                currentUserDisplayName={detailModal.currentUserDisplayName}
             />
 
             <AddPropertyModal
-                open={isAddZenRowsOpen}
-                onClose={() => setIsAddZenRowsOpen(false)}
-                onAdd={onAddProperty}
-                activeGroupId={activeGroupId}
+                open={visibility.isAddZenRowsOpen}
+                onClose={() => visibility.setIsAddZenRowsOpen(false)}
+                onAdd={propertyActions.onAddProperty}
+                activeGroupId={groupContext.activeGroupId}
                 scraper="zenrows"
-                onOpenExisting={onOpenExistingListing}
+                onOpenExisting={propertyActions.onOpenExistingListing}
             />
 
             <AddPropertyModal
-                open={isAddOpen}
-                onClose={() => setIsAddOpen(false)}
-                onAdd={onAddProperty}
-                activeGroupId={activeGroupId}
-                onOpenExisting={onOpenExistingListing}
+                open={visibility.isAddOpen}
+                onClose={() => visibility.setIsAddOpen(false)}
+                onAdd={propertyActions.onAddProperty}
+                activeGroupId={groupContext.activeGroupId}
+                onOpenExisting={propertyActions.onOpenExistingListing}
             />
 
             <GroupsModal
-                open={isGroupsOpen}
-                onClose={() => setIsGroupsOpen(false)}
-                activeGroupId={activeGroupId}
-                onSelectGroup={setActiveGroupId}
+                open={visibility.isGroupsOpen}
+                onClose={() => visibility.setIsGroupsOpen(false)}
+                activeGroupId={groupContext.activeGroupId}
+                onSelectGroup={groupContext.setActiveGroupId}
             />
 
             <UpgradePlanModal
-                open={isUpgradeOpen}
-                onClose={() => setIsUpgradeOpen(false)}
+                open={visibility.isUpgradeOpen}
+                onClose={() => visibility.setIsUpgradeOpen(false)}
                 limit={maxSaves}
             />
 
             <PremiumWelcomeModal
-                open={isPremiumWelcomeOpen}
-                onClose={() => setIsPremiumWelcomeOpen(false)}
+                open={visibility.isPremiumWelcomeOpen}
+                onClose={() => visibility.setIsPremiumWelcomeOpen(false)}
                 type={welcomeType}
             />
         </>

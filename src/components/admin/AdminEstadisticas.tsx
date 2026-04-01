@@ -4,45 +4,17 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Building2, Users2, Loader2, Shield, RefreshCw, Bot, TrendingUp } from "lucide-react";
+import { Loader2, RefreshCw, Bot, TrendingUp } from "lucide-react";
 import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { AdminInteres } from "./AdminInteres";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateMatches, SearchProfile } from "@/hooks/usePropertyMatches";
-
-interface StatusCount {
-    label: string;
-    count: number;
-    color?: string;
-}
-
-interface CategoryStats {
-    total: number;
-    breakdown: StatusCount[];
-}
-
-interface Stats {
-    properties: CategoryStats;
-    agencies: CategoryStats;
-    users: CategoryStats;
-    admins: number;
-}
-
-
-interface ScrapeUsageRow {
-    user_id: string | null;
-    user_name: string | null;
-    user_email: string | null;
-    total_scrapes: number;
-    total_token_charged: number;
-    total_success: number;
-    total_failed: number;
-    total_url_scrapes: number;
-    total_image_scrapes: number;
-    last_scrape_at: string | null;
-}
+import { AdminScrapeUsageTable } from "./estadisticas/AdminScrapeUsageTable";
+import { AdminStatsSummaryCards } from "./estadisticas/AdminStatsSummaryCards";
+import type { ScrapeUsageRow, Stats } from "./estadisticas/adminEstadisticasTypes";
+import { useAdminEstadisticasController } from "./estadisticas/useAdminEstadisticasController";
 
 export function AdminEstadisticas() {
     const { toast } = useToast();
@@ -52,20 +24,25 @@ export function AdminEstadisticas() {
     const [personalProps, setPersonalProps] = useState<StatProperty[]>([]);
     const [loadingMarket, setLoadingMarket] = useState(true);
     const [loadingPersonal, setLoadingPersonal] = useState(true);
-    const [pageMarket, setPageMarket] = useState(0);
-    const [pagePersonal, setPagePersonal] = useState(0);
     const [totalMarketCount, setTotalMarketCount] = useState(0);
     const [totalPersonalCount, setTotalPersonalCount] = useState(0);
-    const [statsSubTab, setStatsSubTab] = useState<"marketplace" | "personal">("marketplace");
     const PAGE_SIZE = 50;
-    const [sortConfig, setSortConfig] = useState<{ key: keyof StatProperty; direction: 'asc' | 'desc' }>({
-        key: 'created_at',
-        direction: 'desc'
-    });
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [mainTab, setMainTab] = useState<"interes" | "scraping">("interes");
     const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
+    const {
+        pageMarket,
+        setPageMarket,
+        pagePersonal,
+        setPagePersonal,
+        statsSubTab,
+        setStatsSubTab,
+        mainTab,
+        setMainTab,
+        sortConfig,
+        sortedStats,
+        handleSort,
+    } = useAdminEstadisticasController(marketProps, personalProps);
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -431,30 +408,6 @@ export function AdminEstadisticas() {
         }
     };
 
-    const handleSort = (key: keyof StatProperty) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
-        setSortConfig({ key, direction });
-    };
-
-    const currentProps = statsSubTab === "marketplace" ? marketProps : personalProps;
-    const sortedStats = [...currentProps].sort((a, b) => {
-        let aVal = a[sortConfig.key];
-        let bVal = b[sortConfig.key];
-        if (sortConfig.key === 'discardReasons') {
-            const sum = (arr: { count: number }[] | undefined) => (arr || []).reduce((s, r) => s + r.count, 0);
-            aVal = sum(a.discardReasons);
-            bVal = sum(b.discardReasons);
-        }
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-            return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        }
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-            return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
-        }
-        return 0;
-    });
-
     if (loading) {
         return (
             <div className="flex justify-center py-12">
@@ -476,103 +429,7 @@ export function AdminEstadisticas() {
                     <span className="text-sm font-medium">Refrescar</span>
                 </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 flex items-center justify-center">
-                            <Home className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-foreground">Publicaciones</h4>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Marketplace</p>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-foreground">{stats?.properties.total}</span>
-                            <span className="text-xs text-muted-foreground mb-1">TOTAL</span>
-                        </div>
-                        <div className="pt-3 border-t border-border/50 space-y-2">
-                            {stats?.properties.breakdown.map(b => (
-                                <div key={b.label} className="flex justify-between text-xs font-medium">
-                                    <span className="text-muted-foreground">{b.label}</span>
-                                    <span className={b.color}>{b.count}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 flex items-center justify-center">
-                            <Building2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-foreground">Agencias</h4>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Socios HF</p>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-foreground">{stats?.agencies.total}</span>
-                            <span className="text-xs text-muted-foreground mb-1">TOTAL</span>
-                        </div>
-                        <div className="pt-3 border-t border-border/50 space-y-2">
-                            {stats?.agencies.breakdown.map(b => (
-                                <div key={b.label} className="flex justify-between text-xs font-medium">
-                                    <span className="text-muted-foreground">{b.label}</span>
-                                    <span className={b.color}>{b.count}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 flex items-center justify-center">
-                            <Users2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-foreground">Usuarios</h4>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Clientes</p>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-foreground">{stats?.users.total}</span>
-                            <span className="text-xs text-muted-foreground mb-1">REGISTRADOS</span>
-                        </div>
-                        <div className="pt-3 border-t border-border/50 space-y-2">
-                            {stats?.users.breakdown.map(b => (
-                                <div key={b.label} className="flex justify-between text-xs font-medium">
-                                    <span className="text-muted-foreground">{b.label}</span>
-                                    <span className={b.color}>{b.count}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/20 flex items-center justify-center">
-                            <Shield className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-foreground">Admin</h4>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Sistema</p>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-foreground">{stats?.admins}</span>
-                            <span className="text-xs text-muted-foreground mb-1">ADMINS</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <AdminStatsSummaryCards stats={stats} />
 
             <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "interes" | "scraping")} className="space-y-4">
                 <TabsList className="grid w-full max-w-[420px] grid-cols-2 rounded-xl">
@@ -591,75 +448,11 @@ export function AdminEstadisticas() {
                 </TabsContent>
 
                 <TabsContent value="scraping" className="space-y-4">
-                    <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-row items-start justify-between gap-4">
-                        <div>
-                            <h4 className="font-semibold text-sm text-foreground">Consumo de scrapers por usuario</h4>
-                            <p className="text-[11px] text-muted-foreground mt-1">
-                                Incluye intentos exitosos y fallidos, incluso cuando no se guardó la propiedad.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => fetchScrapeUsage()}
-                            disabled={loadingScrapeUsage}
-                            className="shrink-0 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
-                            title="Refrescar datos de scraping"
-                        >
-                            <RefreshCw className={`w-4 h-4 ${loadingScrapeUsage ? "animate-spin" : ""}`} />
-                        </button>
-                    </div>
-
-                    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-muted/50 border-b border-border">
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Usuario</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tokens consumidos</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Scrapes totales</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Éxitos</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fallos</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">URL</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Imagen</th>
-                                        <th className="p-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Último scrape</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {loadingScrapeUsage ? (
-                                        <tr>
-                                            <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                                                <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                                            </td>
-                                        </tr>
-                                    ) : scrapeUsageRows.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={8} className="p-8 text-center text-muted-foreground text-sm">
-                                                No hay registros todavía.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        scrapeUsageRows.map((row, index) => (
-                                            <tr key={row.user_id || row.user_email || `scrape-row-${index}`} className="hover:bg-muted/30 transition-colors text-xs">
-                                                <td className="p-3">
-                                                    <div className="font-semibold">{row.user_name || "Usuario"}</div>
-                                                    <div className="text-[10px] text-muted-foreground">{row.user_email || "Sin email"}</div>
-                                                </td>
-                                                <td className="p-3 font-bold text-primary">{row.total_token_charged || 0}</td>
-                                                <td className="p-3">{row.total_scrapes || 0}</td>
-                                                <td className="p-3 text-emerald-600">{row.total_success || 0}</td>
-                                                <td className="p-3 text-rose-600">{row.total_failed || 0}</td>
-                                                <td className="p-3">{row.total_url_scrapes || 0}</td>
-                                                <td className="p-3">{row.total_image_scrapes || 0}</td>
-                                                <td className="p-3 text-muted-foreground">
-                                                    {row.last_scrape_at ? new Date(row.last_scrape_at).toLocaleString() : "—"}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <AdminScrapeUsageTable
+                        rows={scrapeUsageRows}
+                        loading={loadingScrapeUsage}
+                        onRefresh={fetchScrapeUsage}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

@@ -16,27 +16,20 @@ import { useEffect, useState } from "react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import type { IndexHeaderActions, IndexHeaderListingSummary } from "@/types/index-page";
 
 interface HeaderProps {
     userEmail: string | null;
-    selectedStatuses: PropertyStatus[];
-    handleStatusToggle: (status: PropertyStatus) => void;
-    statusCounts: Record<PropertyStatus, number>;
+    listingSummary: IndexHeaderListingSummary;
     activeGroupId: string | null;
-    setIsGroupsOpen: (open: boolean) => void;
-    onAIProfileClick: () => void;
-    handleLogout: () => void;
+    actions: IndexHeaderActions;
 }
 
 export const UserHeader = ({
     userEmail,
-    selectedStatuses,
-    handleStatusToggle,
-    statusCounts,
+    listingSummary,
     activeGroupId,
-    setIsGroupsOpen,
-    onAIProfileClick,
-    handleLogout,
+    actions,
 }: HeaderProps) => {
     const { isPremium } = useSubscription();
     const { data: profile } = useProfile();
@@ -116,14 +109,14 @@ export const UserHeader = ({
                         ([key, cfg]) => (
                             <button
                                 key={key}
-                                onClick={() => handleStatusToggle(key)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedStatuses.includes(key)
+                                onClick={() => listingSummary.onStatusToggle(key)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${listingSummary.selectedStatuses.includes(key)
                                     ? `${cfg.bg} ${cfg.color}`
                                     : "bg-muted text-muted-foreground hover:bg-accent"
                                     }`}
                             >
                                 <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                                {statusCounts[key] || 0}
+                                {listingSummary.statusCounts[key] || 0}
                             </button>
                         )
                     )}
@@ -141,7 +134,7 @@ export const UserHeader = ({
                         variant={activeGroupId ? "default" : "outline"}
                         size="sm"
                         className="h-9 md:h-10 px-2 md:px-3 gap-1 md:gap-2 rounded-xl text-sm font-medium whitespace-normal"
-                        onClick={() => setIsGroupsOpen(true)}
+                        onClick={actions.onOpenGroups}
                         title="Grupos familiares"
                     >
                         <Users className="w-4 h-4 shrink-0" />
@@ -185,7 +178,7 @@ export const UserHeader = ({
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                                 className="cursor-pointer gap-2 py-2"
-                                onClick={onAIProfileClick}
+                                onClick={actions.onAIProfileClick}
                             >
                                 <Sparkles className="w-4 h-4 text-purple-500" />
                                 <span>Perfil IA</span>
@@ -193,7 +186,7 @@ export const UserHeader = ({
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                                 className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 py-2"
-                                onClick={handleLogout}
+                                onClick={actions.onLogout}
                             >
                                 <LogOut className="w-4 h-4" />
                                 <span>Cerrar Sesión</span>

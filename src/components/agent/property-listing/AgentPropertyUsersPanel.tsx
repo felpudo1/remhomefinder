@@ -1,0 +1,338 @@
+import { BarChart3, CalendarPlus, Clock3, Phone, Star, User, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
+import type {
+  PropertyInsight,
+  StatusFilter,
+  UserInsight,
+} from "./agentPropertyListingTypes";
+
+const ALL_STAGES = [
+  "contactado",
+  "visita_coordinada",
+  "firme_candidato",
+  "posible_interes",
+  "meta_conseguida",
+  "descartado",
+];
+
+function buildGoogleCalendarUrl(title: string, startIso: string, details?: string) {
+  const startDate = new Date(startIso);
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+  const formatDate = (date: Date) =>
+    `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(
+      date.getDate()
+    ).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}${String(
+      date.getMinutes()
+    ).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatDate(startDate)}/${formatDate(endDate)}`,
+  });
+
+  if (details) {
+    params.set("details", details);
+  }
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function renderStars(value: number) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((starValue) => (
+        <Star
+          key={starValue}
+          className={`h-3.5 w-3.5 ${
+            starValue <= value
+              ? "fill-yellow-400 text-yellow-400"
+              : "text-muted-foreground/30"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RatingRow({ label, value }: { label: string; value: number }) {
+  if (!value) return null;
+
+  return (
+    <div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      {renderStars(value)}
+    </div>
+  );
+}
+
+function StatusRatingCard({ status, user }: { status: string; user: UserInsight }) {
+  const { data: fields } = useStatusFeedbackConfig(status);
+  const metadata = user.ratingsByStatus[status];
+
+  if (!metadata || !fields || fields.length === 0) return null;
+
+  const rows = fields
+    .filter((field) => field.field_type === "rating")
+    .map((field) => ({
+      label: field.field_label,
+      value: Number(metadata[field.field_id] || 0),
+    }))
+    .filter((row) => row.value > 0);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="min-w-[200px] shrink-0 space-y-2 rounded-lg border border-border bg-card p-3">
+      <Badge variant="secondary" className="text-xs capitalize">
+        {status.replace(/_/g, " ")}
+      </Badge>
+      <div className="space-y-1.5">
+        {rows.map((row) => (
+          <RatingRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface AgentPropertyUsersPanelProps {
+  property: PropertyInsight;
+  users: UserInsight[];
+  selectedUser: UserInsight | null;
+  selectedUserId: string | null;
+  onSelectUser: (userId: string) => void;
+  activeStatusTab: StatusFilter;
+  visibleTabs: StatusFilter[];
+  statusCounts: Record<StatusFilter, number>;
+  statusLabel: Record<string, string>;
+  onChangeStatusTab: (value: StatusFilter) => void;
+  showCharts: boolean;
+  onToggleCharts: () => void;
+}
+
+/**
+ * Renderiza tabs, tabla y panel de detalle del listado seleccionado.
+ */
+export function AgentPropertyUsersPanel({
+  property,
+  users,
+  selectedUser,
+  selectedUserId,
+  onSelectUser,
+  activeStatusTab,
+  visibleTabs,
+  statusCounts,
+  statusLabel,
+  onChangeStatusTab,
+  showCharts,
+  onToggleCharts,
+}: AgentPropertyUsersPanelProps) {
+  return (
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="font-semibold text-foreground">Usuarios en esta propiedad</h4>
+        <div className="flex gap-2">
+          <Button
+            variant={showCharts ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={onToggleCharts}
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+            {showCharts ? "Ocultar Gráficas" : "Ver Gráficas"}
+          </Button>
+          <Button variant="outline" size="sm" className="text-xs">
+            <Clock3 className="mr-1 h-3.5 w-3.5" /> Vista reciente
+          </Button>
+        </div>
+      </div>
+
+      <Tabs
+        value={activeStatusTab}
+        onValueChange={(value) => onChangeStatusTab(value as StatusFilter)}
+        className="w-full"
+      >
+        <TabsList className="h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+          {visibleTabs.map((tab) => (
+            <TabsTrigger
+              key={tab}
+              value={tab}
+              className="rounded-full border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              {statusLabel[tab]} ({statusCounts[tab]})
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {users.length === 0 ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">
+          No hay usuarios en este estado.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.5fr_1fr]">
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-medium">Usuario</th>
+                  <th className="px-3 py-2 text-left font-medium">Estado</th>
+                  <th className="px-3 py-2 text-center font-medium">Match</th>
+                  <th className="px-3 py-2 text-left font-medium">Rank</th>
+                  <th className="px-3 py-2 text-left font-medium">Contacto</th>
+                  <th className="px-3 py-2 text-left font-medium">Actualizado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr
+                    key={user.userListingId}
+                    onClick={() => onSelectUser(user.userId)}
+                    className={`cursor-pointer border-b border-border/70 last:border-b-0 ${
+                      selectedUserId === user.userId ? "bg-primary/5" : "hover:bg-muted/40"
+                    }`}
+                  >
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-foreground">{user.displayName}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {user.currentStatus.replace(/_/g, " ")}
+                        </Badge>
+                        {user.currentStatus === "visita_coordinada" && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const refLabel = property.ref ? ` Ref ${property.ref}` : "";
+                              const startAt = user.coordinatedDate ?? new Date();
+                              const url = buildGoogleCalendarUrl(
+                                `Visita: ${property.title || "Propiedad"}${refLabel} - ${user.displayName}`,
+                                startAt.toISOString(),
+                                `Usuario: ${user.displayName} (${user.emailMasked})${refLabel}`
+                              );
+
+                              window.open(url, "_blank", "noopener,noreferrer");
+                            }}
+                            className="inline-flex items-center rounded-md p-1 text-primary hover:bg-primary/10"
+                            title="Agendar en Google Calendar"
+                          >
+                            <CalendarPlus className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      {user.matchScore !== undefined ? (
+                        <Badge
+                          variant="outline"
+                          className={`px-1.5 py-0 text-[10px] ${
+                            user.matchScore >= 80
+                              ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
+                              : user.matchScore >= 40
+                              ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-500"
+                              : "border-red-500/50 bg-red-500/10 text-red-500"
+                          }`}
+                        >
+                          {user.matchScore}%
+                        </Badge>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">S/D</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1.5" title="Calificación individual">
+                          <User className="h-3 w-3 text-muted-foreground" />
+                          {user.personalRating !== undefined ? (
+                            renderStars(user.personalRating)
+                          ) : (
+                            <span className="text-xs italic text-muted-foreground">S/D</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5" title="Promedio familiar">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          {user.familyRating !== undefined ? (
+                            renderStars(user.familyRating)
+                          ) : (
+                            <span className="text-xs italic text-muted-foreground">S/D</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="text-xs text-muted-foreground">{user.emailMasked}</p>
+                      <p className="text-xs text-muted-foreground">{user.phone}</p>
+                    </td>
+                    <td className="px-3 py-3 text-xs text-muted-foreground">
+                      {user.updatedAtRelative}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <aside className="rounded-xl border border-border bg-muted/20 p-4">
+            {!selectedUser ? (
+              <p className="text-sm text-muted-foreground">
+                No hay usuarios para este estado.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {selectedUser.displayName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedUser.emailMasked}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Phone className="h-3 w-3" /> {selectedUser.phone || "Sin teléfono"}
+                  </p>
+                </div>
+
+                {selectedUser.ratingsByStatus.descartado?.reason && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <p className="text-xs font-medium text-destructive">
+                      Motivo de descarte
+                    </p>
+                    <p className="mt-1 text-xs text-foreground">
+                      {selectedUser.ratingsByStatus.descartado.reason}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Calificaciones por etapa
+                  </p>
+                  <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
+                    {ALL_STAGES.map((stage) => (
+                      <StatusRatingCard key={stage} status={stage} user={selectedUser} />
+                    ))}
+                  </div>
+                  {ALL_STAGES.every(
+                    (stage) =>
+                      !selectedUser.ratingsByStatus[
+                        stage as keyof typeof selectedUser.ratingsByStatus
+                      ]
+                  ) && (
+                    <p className="text-xs italic text-muted-foreground">
+                      Sin datos de calificación todavía.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
+    </div>
+  );
+}
