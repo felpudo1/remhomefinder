@@ -394,8 +394,16 @@ Deno.serve(async (req: Request) => {
     // Crear cliente Supabase para guardar histórico
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Solo guardar snapshot si tenemos un valor real de disk IO
-    if (liveDiskIo !== null) {
+    // Guardar snapshot de requests siempre que tengamos al menos un contador real.
+    // disk_io_budget puede venir null hoy, pero igual necesitamos histórico reciente para filtros 1h/24h/48h.
+    const hasAnyRequestMetric = [
+      parsed.restRequests,
+      parsed.authRequests,
+      parsed.realtimeRequests,
+      parsed.storageRequests,
+    ].some((value) => value !== null && value !== undefined);
+
+    if (liveDiskIo !== null || hasAnyRequestMetric) {
       const row: Record<string, unknown> = {
         recorded_at: new Date().toISOString(),
         disk_io_budget: liveDiskIo,
@@ -410,14 +418,21 @@ Deno.serve(async (req: Request) => {
       if (historyError) console.error("Failed to save history:", historyError);
     }
 
-    // Leer últimos 200 registros para filtros de período
+    // Leer últimos registros para filtros de período
     const { data: historyData } = await supabase
       .from("system_metrics_history")
       .select("disk_io_budget, recorded_at, rest_requests, auth_requests, realtime_requests, storage_requests")
       .order("recorded_at", { ascending: false })
-      .limit(200);
+      .limit(2000);
 
-    const diskIoHistory = (historyData as any[]) || [];
+    const allHistory = (historyData as any[]) || [];
+    const diskIoHistory = allHistory.filter((row: any) => row.disk_io_budget !== null);
+    const requestsHistory = allHistory.filter((row: any) =>
+      row.rest_requests !== null ||
+      row.auth_requests !== null ||
+      row.realtime_requests !== null ||
+      row.storage_requests !== null
+    );
 
     // Read configurable fallback window (default 48h)
     const { data: cfgRow } = await supabase
@@ -454,7 +469,8 @@ Deno.serve(async (req: Request) => {
       diskIoSource,
       diskIoLastSampleAt,
       diskIoHistory,
-      version: "7.0.fix-disk-io"
+      requestsHistory,
+      version: "7.1.requests-history-separation"
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
