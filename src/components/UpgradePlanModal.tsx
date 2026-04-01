@@ -8,7 +8,13 @@ import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star, Loader2 } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT, PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT } from "@/lib/config-keys";
+import {
+    PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT,
+    PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT,
+    AGENT_MONTHLY_PRICE_KEY, AGENT_MONTHLY_PRICE_DEFAULT,
+    AGENT_ANNUAL_PRICE_KEY, AGENT_ANNUAL_PRICE_DEFAULT,
+    AGENT_SUB_CURRENCY_KEY, AGENT_SUB_CURRENCY_DEFAULT,
+} from "@/lib/config-keys";
 
 interface UpgradePlanModalProps {
     open: boolean;
@@ -19,11 +25,6 @@ interface UpgradePlanModalProps {
     description?: string;
 }
 
-/**
- * UpgradePlanModal - Rediseño "Dark Premium" v9 (Dialog centrado)
- * Modal centrado con estilo dark premium (glassmorphism + gradientes oscuros).
- * Mismo texto y funcionalidad que antes, nueva apariencia unificada.
- */
 export function UpgradePlanModal({ 
     open, 
     onClose, 
@@ -35,11 +36,18 @@ export function UpgradePlanModal({
     const isAgent = type === "agent";
     const [showContent, setShowContent] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedInterval, setSelectedInterval] = useState<"monthly" | "yearly">("monthly");
     const { toast } = useToast();
+
+    // User one-time payment config
     const { value: configPrice } = useSystemConfig(PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT);
     const { value: configCurrency } = useSystemConfig(PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT);
 
-    // Animación de entrada escalonada
+    // Agent subscription config
+    const { value: agentMonthlyPrice } = useSystemConfig(AGENT_MONTHLY_PRICE_KEY, AGENT_MONTHLY_PRICE_DEFAULT);
+    const { value: agentAnnualPrice } = useSystemConfig(AGENT_ANNUAL_PRICE_KEY, AGENT_ANNUAL_PRICE_DEFAULT);
+    const { value: agentCurrency } = useSystemConfig(AGENT_SUB_CURRENCY_KEY, AGENT_SUB_CURRENCY_DEFAULT);
+
     useEffect(() => {
         if (open) {
             setShowContent(false);
@@ -48,7 +56,6 @@ export function UpgradePlanModal({
         }
     }, [open]);
 
-    // Beneficios con UX Copywriting de Alto Impacto
     const benefits = isAgent ? [
         { icon: Zap, label: "Alcance Infinito", text: "Publicaciones ilimitadas en el Marketplace sin restricciones de stock." },
         { icon: Star, label: "Visibilidad Elite", text: "Prioridad máxima en resultados de búsqueda para mayor exposición." },
@@ -61,6 +68,67 @@ export function UpgradePlanModal({
         { icon: Shield, label: "Soporte Elite", text: "Respaldo técnico 24/7 para una experiencia fluida y profesional." }
     ];
 
+    const handleUserPayment = async () => {
+        try {
+            setIsLoading(true);
+            const { data, error } = await supabase.functions.invoke("mp-create-preference", {
+                body: { 
+                    amount: Number(configPrice) || 1, 
+                    currency: configCurrency || "USD",
+                    description: "Upgrade Elite Member",
+                    locationOrigin: window.location.origin
+                }
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            if (data?.init_point) {
+                window.location.href = data.init_point;
+            } else {
+                throw new Error("No se pudo obtener el link de pago");
+            }
+        } catch (err: any) {
+            console.error("Error al crear pago:", err);
+            toast({ title: "Error de pago", description: err.message || "Ocurrió un error al conectar con Mercado Pago.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleAgentSubscription = async () => {
+        try {
+            setIsLoading(true);
+            const price = selectedInterval === "yearly" ? agentAnnualPrice : agentMonthlyPrice;
+            const { data, error } = await supabase.functions.invoke("mp-create-subscription", {
+                body: {
+                    amount: Number(price) || 15,
+                    currency: agentCurrency || "USD",
+                    interval: selectedInterval,
+                    description: selectedInterval === "yearly" 
+                        ? "Suscripción Anual Agente Premium" 
+                        : "Suscripción Mensual Agente Premium",
+                    locationOrigin: window.location.origin
+                }
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            if (data?.init_point) {
+                window.location.href = data.init_point;
+            } else {
+                throw new Error("No se pudo obtener el link de suscripción");
+            }
+        } catch (err: any) {
+            console.error("Error al crear suscripción:", err);
+            toast({ title: "Error de suscripción", description: err.message || "Ocurrió un error al conectar con Mercado Pago.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const displayPrice = isAgent
+        ? (selectedInterval === "yearly" ? agentAnnualPrice : agentMonthlyPrice)
+        : configPrice;
+    const displayCurrency = isAgent ? agentCurrency : configCurrency;
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent
@@ -68,28 +136,27 @@ export function UpgradePlanModal({
             >
                 <div className="relative overflow-hidden min-h-[550px] flex flex-col bg-gradient-to-br from-[#1a1c2c] via-[#1a2040] to-[#1a1c2c]">
 
-                    {/* ═══════════ Decoraciones de fondo ═══════════ */}
+                    {/* Decoraciones de fondo */}
                     <div className="absolute top-[-10%] left-[-10%] w-40 h-40 rounded-full blur-3xl animate-pulse bg-blue-500/15" />
                     <div className="absolute bottom-[-10%] right-[-10%] w-40 h-40 rounded-full blur-3xl animate-pulse delay-700 bg-yellow-500/15" />
                     <div className="absolute top-[40%] right-[-5%] w-24 h-24 rounded-full blur-2xl animate-pulse delay-300 bg-primary/10" />
 
-                    {/* ═══════════ Contenido ═══════════ */}
+                    {/* Contenido */}
                     <div className="relative z-10 p-8 flex-1 flex flex-col">
 
-                        {/* Badge superior */}
+                        {/* Badge */}
                         <div className={`transition-all duration-500 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}>
                             <div className="flex items-center mb-6">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-yellow-500/10 border-yellow-500/20 text-yellow-200 backdrop-blur-md">
-                                    {/* Efecto de brillo shimmer */}
                                     <Gem className="w-3.5 h-3.5 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                                        Plan Exclusive
+                                        {isAgent ? "Plan Agente Pro" : "Plan Exclusive"}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Ícono Central con Corona */}
+                        {/* Ícono Central */}
                         <div className={`transition-all duration-700 delay-100 ${showContent ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}>
                             <div className="flex justify-center mb-5">
                                 <div className="relative inline-block">
@@ -103,7 +170,7 @@ export function UpgradePlanModal({
                         </div>
 
                         {/* Título */}
-                        <div className={`text-center mb-6 transition-all duration-700 delay-200 ${showContent ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+                        <div className={`text-center mb-4 transition-all duration-700 delay-200 ${showContent ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
                             <h2 className="text-2xl font-black tracking-tight text-white leading-tight mb-1">
                                 Multiplica tu{" "}
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-orange-400">
@@ -115,7 +182,36 @@ export function UpgradePlanModal({
                             </p>
                         </div>
 
-                        {/* Lista de Beneficios */}
+                        {/* Interval Selector (solo agentes) */}
+                        {isAgent && (
+                            <div className={`flex justify-center gap-2 mb-4 transition-all duration-700 delay-250 ${showContent ? "opacity-100" : "opacity-0"}`}>
+                                <button
+                                    onClick={() => setSelectedInterval("monthly")}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                                        selectedInterval === "monthly"
+                                            ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40"
+                                            : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
+                                    }`}
+                                >
+                                    Mensual · {agentMonthlyPrice} {agentCurrency}
+                                </button>
+                                <button
+                                    onClick={() => setSelectedInterval("yearly")}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all relative ${
+                                        selectedInterval === "yearly"
+                                            ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40"
+                                            : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10"
+                                    }`}
+                                >
+                                    Anual · {agentAnnualPrice} {agentCurrency}
+                                    <span className="absolute -top-2 -right-2 text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-black">
+                                        AHORRO
+                                    </span>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Beneficios */}
                         <div className={`space-y-3 flex-1 transition-all duration-700 delay-300 ${showContent ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
                             {benefits.map((benefit, i) => (
                                 <div
@@ -138,42 +234,11 @@ export function UpgradePlanModal({
                             ))}
                         </div>
 
-                        {/* Botones de Acción */}
+                        {/* Botones */}
                         <div className={`pt-5 space-y-3 transition-all duration-700 delay-500 ${showContent ? "opacity-100" : "opacity-0"}`}>
-                            {/* CTA Principal */}
                             <Button
                                 disabled={isLoading}
-                                onClick={async () => {
-                                    try {
-                                        setIsLoading(true);
-                                        const { data, error } = await supabase.functions.invoke("mp-create-preference", {
-                                            body: { 
-                                                amount: Number(configPrice) || 1, 
-                                                currency: configCurrency || "USD",
-                                                description: isAgent ? "Upgrade Elite Agent" : "Upgrade Elite Member",
-                                                locationOrigin: window.location.origin
-                                            }
-                                        });
-
-                                        if (error) throw error;
-                                        if (data?.error) throw new Error(data.error);
-
-                                        if (data?.init_point) {
-                                            window.location.href = data.init_point;
-                                        } else {
-                                            throw new Error("No se pudo obtener el link de pago");
-                                        }
-                                    } catch (err: any) {
-                                        console.error("Error al crear pago:", err);
-                                        toast({
-                                            title: "Error de pago",
-                                            description: err.message || "Ocurrió un error al conectar con Mercado Pago.",
-                                            variant: "destructive"
-                                        });
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
+                                onClick={isAgent ? handleAgentSubscription : handleUserPayment}
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:animate-shimmer" />
                                 {isLoading ? (
@@ -182,11 +247,15 @@ export function UpgradePlanModal({
                                     <Rocket className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                                 )}
                                 <span className="relative z-10 uppercase">
-                                    {isLoading ? "PROCESANDO..." : "Activa tu Modo Pro"}
+                                    {isLoading 
+                                        ? "PROCESANDO..." 
+                                        : isAgent 
+                                            ? `Suscribirme · ${displayPrice} ${displayCurrency}/${selectedInterval === "yearly" ? "año" : "mes"}`
+                                            : "Activa tu Modo Pro"
+                                    }
                                 </span>
                             </Button>
 
-                            {/* Botón Secundario */}
                             <button
                                 onClick={onClose}
                                 className="w-full py-3 text-[10px] text-gray-500 hover:text-blue-300 bg-white/3 hover:bg-white/5 border border-white/10 rounded-2xl transition-all font-black uppercase tracking-[0.3em] active:scale-95"
@@ -196,10 +265,10 @@ export function UpgradePlanModal({
                         </div>
                     </div>
 
-                    {/* Footer discreto */}
+                    {/* Footer */}
                     <div className="p-3 text-center border-t bg-[#0f111a] border-white/5">
                         <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.3em]">
-                            {isAgent ? "👑 Elite Member Agent Edition" : "👑 Elite Member Premium Access"}
+                            {isAgent ? "👑 Elite Agent · Suscripción Recurrente" : "👑 Elite Member Premium Access"}
                         </p>
                     </div>
                 </div>
@@ -207,4 +276,3 @@ export function UpgradePlanModal({
         </Dialog>
     );
 }
-
