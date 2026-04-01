@@ -129,20 +129,34 @@ export function MarketplaceCard({
           </div>
         }
         actions={
-          <Button
-            size="sm"
-            variant={alreadySaved ? "secondary" : "default"}
-            className={`gap-1.5 rounded-lg ${isSaveCtaHighlighted ? "matchai-save-cta-glow" : ""}`}
-            style={isSaveCtaHighlighted ? { animationDelay: `${Math.min(matchAIRank * 90, 700)}ms` } : undefined}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSave(property);
-            }}
-            disabled={isSaving || alreadySaved}
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${alreadySaved ? "fill-current" : ""}`} />
-            {alreadySaved ? "Guardada" : "Guardar"}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1 rounded-lg px-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsQROpen(true);
+              }}
+              title="Generar QR"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant={alreadySaved ? "secondary" : "default"}
+              className={`gap-1.5 rounded-lg ${isSaveCtaHighlighted ? "matchai-save-cta-glow" : ""}`}
+              style={isSaveCtaHighlighted ? { animationDelay: `${Math.min(matchAIRank * 90, 700)}ms` } : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSave(property);
+              }}
+              disabled={isSaving || alreadySaved}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${alreadySaved ? "fill-current" : ""}`} />
+              {alreadySaved ? "Guardada" : "Guardar"}
+            </Button>
+          </div>
         }
       />
 
@@ -157,6 +171,14 @@ export function MarketplaceCard({
         isOpen={isGalleryOpen}
         initialIndex={currentImgIndex}
         onClose={() => setIsGalleryOpen(false)}
+      />
+
+      <QRCodeModal
+        open={isQROpen}
+        onClose={() => setIsQROpen(false)}
+        propertyTitle={property.title}
+        propertyId={property.propertyId || property.id}
+        publicationId={property.id}
       />
     </>
   );
