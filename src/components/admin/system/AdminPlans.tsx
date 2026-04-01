@@ -327,6 +327,55 @@ export const AdminPlans = () => {
                     </Button>
                 </div>
             </div>
+
+            {/* Precio del Plan Premium (MercadoPago) */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-yellow-500" />
+                    <h3 className="font-semibold text-foreground text-sm">Precio del Plan Premium (MercadoPago)</h3>
+                </div>
+                <p className="text-xs text-muted-foreground pl-6">
+                    Monto que se cobra al usuario cuando activa el plan Premium vía MercadoPago.
+                </p>
+
+                <div className="flex gap-2 pl-6 max-w-sm">
+                    <div className="relative flex-1">
+                        <Input
+                            type="number"
+                            placeholder="Ej: 10"
+                            value={priceDraft}
+                            onChange={(e) => setPriceDraft(e.target.value)}
+                            disabled={isGlobalLoading}
+                            className="rounded-xl border-border bg-card"
+                            min={1}
+                            step="0.01"
+                        />
+                    </div>
+                    <Select
+                        value={premiumCurrency}
+                        onValueChange={handleCurrencyChange}
+                        disabled={isGlobalLoading}
+                    >
+                        <SelectTrigger className="w-24 rounded-xl">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="UYU">UYU</SelectItem>
+                            <SelectItem value="ARS">ARS</SelectItem>
+                            <SelectItem value="BRL">BRL</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        onClick={handleSavePrice}
+                        disabled={isGlobalLoading || priceDraft === premiumPrice}
+                        className="rounded-xl shrink-0"
+                        size="sm"
+                    >
+                        Actualizar
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 };
