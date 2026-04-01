@@ -82,21 +82,29 @@ export function RequestsCharts({ restRequests, authRequests, realtimeRequests, s
       return { rest: restRequests, auth: authRequests, realtime: realtimeRequests, storage: storageRequests };
     }
 
-    // Find the earliest point at or after cutoff
+    // Always use the most recent point as "newest"
+    const newest = sorted[sorted.length - 1];
+
+    // Find the point closest to (but not after) the cutoff as baseline.
+    // If none exists before cutoff, use the earliest point in range.
     const cutoffTime = cutoff.getTime();
-    const inRange = sorted.filter(h => new Date(h.recorded_at).getTime() >= cutoffTime);
-    
-    // If we have points in range, delta = latest - earliest in range
-    // If no points in range, use all available and show what we have
-    const pointsToUse = inRange.length >= 2 ? inRange : sorted;
-    const oldest = pointsToUse[0];
-    const newest = pointsToUse[pointsToUse.length - 1];
+    let baseline = sorted[0]; // fallback: earliest available
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (new Date(sorted[i].recorded_at).getTime() <= cutoffTime) {
+        baseline = sorted[i];
+        break;
+      }
+    }
+    // If all points are after cutoff, use the earliest one
+    if (new Date(baseline.recorded_at).getTime() > cutoffTime) {
+      baseline = sorted[0];
+    }
 
     return {
-      rest: Math.max(0, (newest.rest_requests ?? 0) - (oldest.rest_requests ?? 0)),
-      auth: Math.max(0, (newest.auth_requests ?? 0) - (oldest.auth_requests ?? 0)),
-      realtime: Math.max(0, (newest.realtime_requests ?? 0) - (oldest.realtime_requests ?? 0)),
-      storage: Math.max(0, (newest.storage_requests ?? 0) - (oldest.storage_requests ?? 0)),
+      rest: Math.max(0, (newest.rest_requests ?? 0) - (baseline.rest_requests ?? 0)),
+      auth: Math.max(0, (newest.auth_requests ?? 0) - (baseline.auth_requests ?? 0)),
+      realtime: Math.max(0, (newest.realtime_requests ?? 0) - (baseline.realtime_requests ?? 0)),
+      storage: Math.max(0, (newest.storage_requests ?? 0) - (baseline.storage_requests ?? 0)),
     };
   }, [period, history, restRequests, authRequests, realtimeRequests, storageRequests]);
 
