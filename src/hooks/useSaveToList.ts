@@ -1,17 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
+import { useSubscription } from "@/hooks/useSubscription";
 import { MarketplaceProperty } from "@/types/property";
 
 /**
  * Hook para guardar una propiedad del marketplace al listado personal del usuario.
  * Crea un user_listing apuntando al mismo property_id con source_publication_id.
  *
- * OPTIMIZACIÓN: Usa AuthProvider en lugar de supabase.auth.getUser() (1 auth request eliminado).
+ * Incluye validación de límite de guardado según plan del usuario.
  */
 export function useSaveToList() {
   const queryClient = useQueryClient();
   const { user: authUser } = useCurrentUser();
+  const { canSaveMore, maxSaves } = useSubscription();
 
   return useMutation({
     mutationFn: async ({ property, groupId }: { property: MarketplaceProperty; groupId?: string | null }) => {
