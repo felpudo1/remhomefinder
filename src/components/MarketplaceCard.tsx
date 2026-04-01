@@ -49,6 +49,7 @@ export function MarketplaceCard({
 }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isQROpen, setIsQROpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const overlay = STATUS_OVERLAY_CONFIG[property.status];
   const isSaveCtaHighlighted = Boolean(isMatchAIMagicActive && !alreadySaved && !isSaving);
