@@ -139,6 +139,33 @@ export const AdminPlans = () => {
     const [priceDraft, setPriceDraft] = useState(premiumPrice);
     useEffect(() => { setPriceDraft(premiumPrice); }, [premiumPrice]);
 
+    // Precios de suscripción de agentes
+    const {
+        value: agentMonthlyPrice,
+        isLoading: isLoadingAgentMonthly,
+        setValue: setAgentMonthlyPrice,
+        isSaving: isSavingAgentMonthly,
+    } = useSystemConfig(AGENT_MONTHLY_PRICE_KEY, AGENT_MONTHLY_PRICE_DEFAULT);
+
+    const {
+        value: agentAnnualPrice,
+        isLoading: isLoadingAgentAnnual,
+        setValue: setAgentAnnualPrice,
+        isSaving: isSavingAgentAnnual,
+    } = useSystemConfig(AGENT_ANNUAL_PRICE_KEY, AGENT_ANNUAL_PRICE_DEFAULT);
+
+    const {
+        value: agentSubCurrency,
+        isLoading: isLoadingAgentCurrency,
+        setValue: setAgentSubCurrency,
+        isSaving: isSavingAgentCurrency,
+    } = useSystemConfig(AGENT_SUB_CURRENCY_KEY, AGENT_SUB_CURRENCY_DEFAULT);
+
+    const [agentMonthlyDraft, setAgentMonthlyDraft] = useState(agentMonthlyPrice);
+    const [agentAnnualDraft, setAgentAnnualDraft] = useState(agentAnnualPrice);
+    useEffect(() => { setAgentMonthlyDraft(agentMonthlyPrice); }, [agentMonthlyPrice]);
+    useEffect(() => { setAgentAnnualDraft(agentAnnualPrice); }, [agentAnnualPrice]);
+
     // Guardar bonus de referral
     const handleSaveBonusLimit = async () => {
         try {
@@ -168,7 +195,35 @@ export const AdminPlans = () => {
         }
     };
 
-    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle || isLoadingPrice || isSavingPrice || isLoadingCurrency || isSavingCurrency;
+    // Guardar precios de suscripción agentes
+    const handleSaveAgentMonthly = async () => {
+        try {
+            await setAgentMonthlyPrice(agentMonthlyDraft.trim());
+            toast({ title: "Precio mensual guardado", description: `La suscripción mensual de agentes ahora cuesta ${agentMonthlyDraft.trim()} ${agentSubCurrency}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const handleSaveAgentAnnual = async () => {
+        try {
+            await setAgentAnnualPrice(agentAnnualDraft.trim());
+            toast({ title: "Precio anual guardado", description: `La suscripción anual de agentes ahora cuesta ${agentAnnualDraft.trim()} ${agentSubCurrency}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const handleAgentCurrencyChange = async (val: string) => {
+        try {
+            await setAgentSubCurrency(val);
+            toast({ title: "Moneda actualizada", description: `La moneda de suscripción de agentes ahora es ${val}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar moneda", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle || isLoadingPrice || isSavingPrice || isLoadingCurrency || isSavingCurrency || isLoadingAgentMonthly || isSavingAgentMonthly || isLoadingAgentAnnual || isSavingAgentAnnual || isLoadingAgentCurrency || isSavingAgentCurrency;
 
     const handleToggleMarketplace = async (checked: boolean) => {
         try {
