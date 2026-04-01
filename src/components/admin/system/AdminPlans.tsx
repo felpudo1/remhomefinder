@@ -49,6 +49,14 @@ export const AdminPlans = () => {
         isSaving: isSavingPublish,
     } = useSystemConfig(AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY, AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT);
 
+    // Toggle: incluir marketplace en la limitación
+    const {
+        value: limitIncludesMarketplace,
+        isLoading: isLoadingMarketToggle,
+        setValue: setLimitIncludesMarketplace,
+        isSaving: isSavingMarketToggle,
+    } = useSystemConfig(LIMIT_INCLUDES_MARKETPLACE_KEY, LIMIT_INCLUDES_MARKETPLACE_DEFAULT);
+
     const [limitDraft, setLimitDraft] = useState(saveLimit);
     const [premiumLimitDraft, setPremiumLimitDraft] = useState(premiumSaveLimit);
     const [publishDraft, setPublishDraft] = useState(publishLimit);
