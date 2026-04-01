@@ -49,14 +49,8 @@ export default function PublicPropertyView() {
   const source = searchParams.get("source");
   const pubId = searchParams.get("pub_id");
 
-  // Auth state — may be null on public view
-  let user: any = null;
-  try {
-    const ctx = useCurrentUser();
-    user = ctx.user;
-  } catch {
-    // Outside AuthProvider — anonymous access
-  }
+  // Auth state — user may be null on public view (not behind ProtectedRoute)
+  const { user } = useCurrentUser();
 
   // Fetch property data
   useEffect(() => {
