@@ -142,6 +142,35 @@ export function usePropertyMutations() {
                 return { id: pubData.id, property_id: propId, is_delegated: true } as any;
             }
 
+            // Validar límite de guardado contra count real en BD
+            const { count: currentListingCount, error: countErr } = await supabase
+                .from("user_listings")
+                .select("id", { count: "exact", head: true })
+                .eq("org_id", orgId);
+
+            if (!countErr && currentListingCount !== null) {
+                // Leer límite desde system_config
+                const { data: limitConfig } = await supabase
+                    .from("system_config")
+                    .select("value")
+                    .eq("key", "user_free_plan_save_limit")
+                    .maybeSingle();
+
+                const { data: profileData } = await supabase
+                    .from("profiles")
+                    .select("plan_type")
+                    .eq("user_id", targetUserId)
+                    .maybeSingle();
+
+                const isPremium = profileData?.plan_type === "premium";
+                if (!isPremium) {
+                    const maxSaves = parseInt(limitConfig?.value || "10");
+                    if (currentListingCount >= maxSaves) {
+                        throw new Error(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan gratuito. Mejorá tu plan para guardar más.`);
+                    }
+                }
+            }
+
             // Flujo Normal (Usuarios/Familias): Insert into user_listings (tracking)
             const listingInsert: any = {
                     property_id: propId,
