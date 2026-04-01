@@ -138,6 +138,18 @@ export const AdminPlans = () => {
                     Ajustá el límite de propiedades que un usuario con plan **Free** puede guardar en su lista personal.
                 </p>
 
+                <div className="flex items-center gap-2 pl-6">
+                    <Checkbox
+                        id="limit-includes-marketplace"
+                        checked={limitIncludesMarketplace === "true"}
+                        onCheckedChange={handleToggleMarketplace}
+                        disabled={isGlobalLoading}
+                    />
+                    <label htmlFor="limit-includes-marketplace" className="text-xs text-muted-foreground cursor-pointer select-none">
+                        Incluir marketplace en la limitación
+                    </label>
+                </div>
+
                 <div className="flex gap-2 pl-6 max-w-sm">
                     <div className="relative flex-1">
                         <Input
