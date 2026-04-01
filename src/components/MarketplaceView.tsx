@@ -311,7 +311,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
           .eq("org_id", userOrgId!);
 
         if (!countError && (count ?? 0) >= maxSaves) {
-          setIsUpgradeOpen(true);
+          setShowPremiumModal(true);
           setSavingId(null);
           return;
         }
