@@ -114,7 +114,16 @@ export const AdminPlans = () => {
         }
     };
 
-    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus;
+    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle;
+
+    const handleToggleMarketplace = async (checked: boolean) => {
+        try {
+            await setLimitIncludesMarketplace(checked ? "true" : "false");
+            toast({ title: "Configuración guardada", description: checked ? "El marketplace ahora cuenta para el límite." : "El marketplace ya no cuenta para el límite." });
+        } catch (error: any) {
+            toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+        }
+    };
 
     return (
         <div className="space-y-6">
