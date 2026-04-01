@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Crown, Sparkles, Rocket, Zap, Shield, Gem, Star, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT, PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT } from "@/lib/config-keys";
 
 interface UpgradePlanModalProps {
     open: boolean;
@@ -34,6 +36,8 @@ export function UpgradePlanModal({
     const [showContent, setShowContent] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const { value: configPrice } = useSystemConfig(PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT);
+    const { value: configCurrency } = useSystemConfig(PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT);
 
     // Animación de entrada escalonada
     useEffect(() => {
@@ -144,8 +148,8 @@ export function UpgradePlanModal({
                                         setIsLoading(true);
                                         const { data, error } = await supabase.functions.invoke("mp-create-preference", {
                                             body: { 
-                                                amount: 1, 
-                                                currency: "USD",
+                                                amount: Number(configPrice) || 1, 
+                                                currency: configCurrency || "USD",
                                                 description: isAgent ? "Upgrade Elite Agent" : "Upgrade Elite Member",
                                                 locationOrigin: window.location.origin
                                             }

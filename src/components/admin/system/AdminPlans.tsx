@@ -15,8 +15,19 @@ import {
     AGENT_REFERRAL_BONUS_SAVES_KEY,
     AGENT_REFERRAL_BONUS_SAVES_DEFAULT,
     LIMIT_INCLUDES_MARKETPLACE_KEY,
-    LIMIT_INCLUDES_MARKETPLACE_DEFAULT
+    LIMIT_INCLUDES_MARKETPLACE_DEFAULT,
+    PREMIUM_PLAN_PRICE_KEY,
+    PREMIUM_PLAN_PRICE_DEFAULT,
+    PREMIUM_PLAN_CURRENCY_KEY,
+    PREMIUM_PLAN_CURRENCY_DEFAULT,
 } from "@/lib/config-keys";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 /**
  * Componente para gestionar los límites de los clientes en el plan gratuito.
@@ -104,6 +115,24 @@ export const AdminPlans = () => {
     const [bonusDraft, setBonusDraft] = useState(referralBonus);
     useEffect(() => { setBonusDraft(referralBonus); }, [referralBonus]);
 
+    // Precio del plan premium (MercadoPago)
+    const {
+        value: premiumPrice,
+        isLoading: isLoadingPrice,
+        setValue: setPremiumPrice,
+        isSaving: isSavingPrice,
+    } = useSystemConfig(PREMIUM_PLAN_PRICE_KEY, PREMIUM_PLAN_PRICE_DEFAULT);
+
+    const {
+        value: premiumCurrency,
+        isLoading: isLoadingCurrency,
+        setValue: setPremiumCurrency,
+        isSaving: isSavingCurrency,
+    } = useSystemConfig(PREMIUM_PLAN_CURRENCY_KEY, PREMIUM_PLAN_CURRENCY_DEFAULT);
+
+    const [priceDraft, setPriceDraft] = useState(premiumPrice);
+    useEffect(() => { setPriceDraft(premiumPrice); }, [premiumPrice]);
+
     // Guardar bonus de referral
     const handleSaveBonusLimit = async () => {
         try {
@@ -114,7 +143,26 @@ export const AdminPlans = () => {
         }
     };
 
-    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle;
+    // Guardar precio premium
+    const handleSavePrice = async () => {
+        try {
+            await setPremiumPrice(priceDraft.trim());
+            toast({ title: "Precio guardado", description: `El plan premium ahora cuesta ${priceDraft.trim()} ${premiumCurrency}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar precio", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const handleCurrencyChange = async (val: string) => {
+        try {
+            await setPremiumCurrency(val);
+            toast({ title: "Moneda actualizada", description: `La moneda del plan premium ahora es ${val}.` });
+        } catch (error: any) {
+            toast({ title: "Error al guardar moneda", description: error.message, variant: "destructive" });
+        }
+    };
+
+    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle || isLoadingPrice || isSavingPrice || isLoadingCurrency || isSavingCurrency;
 
     const handleToggleMarketplace = async (checked: boolean) => {
         try {
@@ -272,6 +320,55 @@ export const AdminPlans = () => {
                     <Button
                         onClick={handleSaveBonusLimit}
                         disabled={isGlobalLoading || bonusDraft === referralBonus}
+                        className="rounded-xl shrink-0"
+                        size="sm"
+                    >
+                        Actualizar
+                    </Button>
+                </div>
+            </div>
+
+            {/* Precio del Plan Premium (MercadoPago) */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-yellow-500" />
+                    <h3 className="font-semibold text-foreground text-sm">Precio del Plan Premium (MercadoPago)</h3>
+                </div>
+                <p className="text-xs text-muted-foreground pl-6">
+                    Monto que se cobra al usuario cuando activa el plan Premium vía MercadoPago.
+                </p>
+
+                <div className="flex gap-2 pl-6 max-w-sm">
+                    <div className="relative flex-1">
+                        <Input
+                            type="number"
+                            placeholder="Ej: 10"
+                            value={priceDraft}
+                            onChange={(e) => setPriceDraft(e.target.value)}
+                            disabled={isGlobalLoading}
+                            className="rounded-xl border-border bg-card"
+                            min={1}
+                            step="0.01"
+                        />
+                    </div>
+                    <Select
+                        value={premiumCurrency}
+                        onValueChange={handleCurrencyChange}
+                        disabled={isGlobalLoading}
+                    >
+                        <SelectTrigger className="w-24 rounded-xl">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="UYU">UYU</SelectItem>
+                            <SelectItem value="ARS">ARS</SelectItem>
+                            <SelectItem value="BRL">BRL</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button
+                        onClick={handleSavePrice}
+                        disabled={isGlobalLoading || priceDraft === premiumPrice}
                         className="rounded-xl shrink-0"
                         size="sm"
                     >
