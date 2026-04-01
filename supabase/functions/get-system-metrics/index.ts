@@ -455,7 +455,8 @@ Deno.serve(async (req: Request) => {
       diskIoSource,
       diskIoLastSampleAt,
       diskIoHistory,
-      version: "7.0.fix-disk-io"
+      requestsHistory,
+      version: "7.1.requests-history-separation"
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
