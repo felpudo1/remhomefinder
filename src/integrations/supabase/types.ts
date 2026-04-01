@@ -174,6 +174,75 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["analytics_event_type"]
+          id: string
+          metadata: Json | null
+          org_id: string | null
+          property_id: string
+          source_publication_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["analytics_event_type"]
+          id?: string
+          metadata?: Json | null
+          org_id?: string | null
+          property_id: string
+          source_publication_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["analytics_event_type"]
+          id?: string
+          metadata?: Json | null
+          org_id?: string | null
+          property_id?: string
+          source_publication_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_events_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_events_source_publication_id_fkey"
+            columns: ["source_publication_id"]
+            isOneToOne: false
+            referencedRelation: "agent_deserter_insights"
+            referencedColumns: ["publication_id"]
+          },
+          {
+            foreignKeyName: "analytics_events_source_publication_id_fkey"
+            columns: ["source_publication_id"]
+            isOneToOne: false
+            referencedRelation: "agent_publications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       announcement_reads: {
         Row: {
           announcement_id: string
@@ -1628,6 +1697,7 @@ export type Database = {
         | "alquilado"
         | "eliminado"
         | "pausado"
+      analytics_event_type: "qr_scan" | "property_view" | "listing_saved"
       announcement_audience: "all" | "agents" | "users" | "specific"
       announcement_priority: "normal" | "urgent"
       app_role: "admin" | "agency" | "user" | "agencymember" | "sysadmin"
@@ -1782,6 +1852,7 @@ export const Constants = {
         "eliminado",
         "pausado",
       ],
+      analytics_event_type: ["qr_scan", "property_view", "listing_saved"],
       announcement_audience: ["all", "agents", "users", "specific"],
       announcement_priority: ["normal", "urgent"],
       app_role: ["admin", "agency", "user", "agencymember", "sysadmin"],
