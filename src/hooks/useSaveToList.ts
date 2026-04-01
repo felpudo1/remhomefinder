@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { LIMIT_INCLUDES_MARKETPLACE_KEY, LIMIT_INCLUDES_MARKETPLACE_DEFAULT } from "@/lib/config-keys";
 import { MarketplaceProperty } from "@/types/property";
 
 /** Error especial para señalizar que se alcanzó el límite del plan */
@@ -17,11 +19,16 @@ export class PlanLimitError extends Error {
  * Crea un user_listing apuntando al mismo property_id con source_publication_id.
  *
  * Incluye validación de límite de guardado según plan del usuario.
+ * Si la config `limit_includes_marketplace` está en "false", no se aplica límite desde marketplace.
  */
 export function useSaveToList() {
   const queryClient = useQueryClient();
   const { user: authUser } = useCurrentUser();
   const { canSaveMore, maxSaves } = useSubscription();
+  const { value: limitIncludesMarketplace } = useSystemConfig(
+    LIMIT_INCLUDES_MARKETPLACE_KEY,
+    LIMIT_INCLUDES_MARKETPLACE_DEFAULT
+  );
 
   return useMutation({
     mutationFn: async ({ property, groupId }: { property: MarketplaceProperty; groupId?: string | null }) => {
@@ -42,17 +49,19 @@ export function useSaveToList() {
 
       if (!finalOrgId) throw new Error("No pertenecés a ninguna organización");
 
-      // Validar límite de guardado consultando count real en BD
-      const { count, error: countError } = await supabase
-        .from("user_listings")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", finalOrgId);
+      // Solo validar límite si la config incluye marketplace
+      if (limitIncludesMarketplace === "true") {
+        const { count, error: countError } = await supabase
+          .from("user_listings")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", finalOrgId);
 
-      if (countError) throw countError;
+        if (countError) throw countError;
 
-      const currentCount = count ?? 0;
-      if (!canSaveMore(currentCount)) {
-        throw new PlanLimitError(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan. Mejorá tu plan para guardar más.`);
+        const currentCount = count ?? 0;
+        if (!canSaveMore(currentCount)) {
+          throw new PlanLimitError(`Alcanzaste el límite de ${maxSaves} avisos guardados en tu plan. Mejorá tu plan para guardar más.`);
+        }
       }
 
       const { data: pub, error: pubError } = await supabase

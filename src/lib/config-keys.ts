@@ -43,6 +43,10 @@ export const APP_BRAND_NAME_DEFAULT = "HomeFinder";
 export const AGENT_REFERRAL_BONUS_SAVES_KEY = "agent_referral_bonus_saves";
 export const AGENT_REFERRAL_BONUS_SAVES_DEFAULT = "5";
 
+// Si la limitación de guardado incluye avisos del marketplace
+export const LIMIT_INCLUDES_MARKETPLACE_KEY = "limit_includes_marketplace";
+export const LIMIT_INCLUDES_MARKETPLACE_DEFAULT = "true";
+
 // Configuracion de pesos para el algoritmo de Match Score (json)
 export const MATCH_SCORE_WEIGHTS_KEY = "match_score_weights";
 export const MATCH_SCORE_WEIGHTS_DEFAULT = '{"operation_weight": 30, "budget_weight": 40, "neighborhood_weight": 20, "rooms_weight": 10}';

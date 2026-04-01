@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY,
     AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT,
@@ -12,7 +13,9 @@ import {
     USER_PREMIUM_PLAN_SAVE_LIMIT_KEY,
     USER_PREMIUM_PLAN_SAVE_LIMIT_DEFAULT,
     AGENT_REFERRAL_BONUS_SAVES_KEY,
-    AGENT_REFERRAL_BONUS_SAVES_DEFAULT
+    AGENT_REFERRAL_BONUS_SAVES_DEFAULT,
+    LIMIT_INCLUDES_MARKETPLACE_KEY,
+    LIMIT_INCLUDES_MARKETPLACE_DEFAULT
 } from "@/lib/config-keys";
 
 /**
@@ -45,6 +48,14 @@ export const AdminPlans = () => {
         setValue: setPublishLimit,
         isSaving: isSavingPublish,
     } = useSystemConfig(AGENT_FREE_PLAN_PUBLISH_LIMIT_KEY, AGENT_FREE_PLAN_PUBLISH_LIMIT_DEFAULT);
+
+    // Toggle: incluir marketplace en la limitación
+    const {
+        value: limitIncludesMarketplace,
+        isLoading: isLoadingMarketToggle,
+        setValue: setLimitIncludesMarketplace,
+        isSaving: isSavingMarketToggle,
+    } = useSystemConfig(LIMIT_INCLUDES_MARKETPLACE_KEY, LIMIT_INCLUDES_MARKETPLACE_DEFAULT);
 
     const [limitDraft, setLimitDraft] = useState(saveLimit);
     const [premiumLimitDraft, setPremiumLimitDraft] = useState(premiumSaveLimit);
@@ -103,7 +114,16 @@ export const AdminPlans = () => {
         }
     };
 
-    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus;
+    const isGlobalLoading = isLoadingLimit || isSavingLimit || isLoadingPremium || isSavingPremium || isLoadingPublish || isSavingPublish || isLoadingBonus || isSavingBonus || isLoadingMarketToggle || isSavingMarketToggle;
+
+    const handleToggleMarketplace = async (checked: boolean) => {
+        try {
+            await setLimitIncludesMarketplace(checked ? "true" : "false");
+            toast({ title: "Configuración guardada", description: checked ? "El marketplace ahora cuenta para el límite." : "El marketplace ya no cuenta para el límite." });
+        } catch (error: any) {
+            toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -117,6 +137,18 @@ export const AdminPlans = () => {
                 <p className="text-xs text-muted-foreground pl-6">
                     Ajustá el límite de propiedades que un usuario con plan **Free** puede guardar en su lista personal.
                 </p>
+
+                <div className="flex items-center gap-2 pl-6">
+                    <Checkbox
+                        id="limit-includes-marketplace"
+                        checked={limitIncludesMarketplace === "true"}
+                        onCheckedChange={handleToggleMarketplace}
+                        disabled={isGlobalLoading}
+                    />
+                    <label htmlFor="limit-includes-marketplace" className="text-xs text-muted-foreground cursor-pointer select-none">
+                        Incluir marketplace en la limitación
+                    </label>
+                </div>
 
                 <div className="flex gap-2 pl-6 max-w-sm">
                     <div className="relative flex-1">
