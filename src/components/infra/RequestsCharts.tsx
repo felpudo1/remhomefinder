@@ -82,23 +82,22 @@ export function RequestsCharts({ restRequests, authRequests, realtimeRequests, s
       return { rest: restRequests, auth: authRequests, realtime: realtimeRequests, storage: storageRequests };
     }
 
-    // Always use the most recent point as "newest"
+    const cutoffTime = cutoff.getTime();
     const newest = sorted[sorted.length - 1];
 
-    // Find the point closest to (but not after) the cutoff as baseline.
-    // If none exists before cutoff, use the earliest point in range.
-    const cutoffTime = cutoff.getTime();
-    let baseline = sorted[0]; // fallback: earliest available
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      if (new Date(sorted[i].recorded_at).getTime() <= cutoffTime) {
-        baseline = sorted[i];
-        break;
-      }
+    const inRange = sorted.filter((point) => new Date(point.recorded_at).getTime() >= cutoffTime);
+
+    // Si todavía no hay suficiente cobertura real del período, mostrar acumulado total
+    if (inRange.length < 2) {
+      return {
+        rest: restRequests,
+        auth: authRequests,
+        realtime: realtimeRequests,
+        storage: storageRequests,
+      };
     }
-    // If all points are after cutoff, use the earliest one
-    if (new Date(baseline.recorded_at).getTime() > cutoffTime) {
-      baseline = sorted[0];
-    }
+
+    const baseline = inRange[0];
 
     return {
       rest: Math.max(0, (newest.rest_requests ?? 0) - (baseline.rest_requests ?? 0)),
