@@ -23,7 +23,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 
-type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias";
+type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias" | "qr_analytics";
 
 const TABS = [
   { id: "propiedades", label: "Mis Propiedades", icon: Home },
