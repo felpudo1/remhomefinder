@@ -15,8 +15,19 @@ import {
     AGENT_REFERRAL_BONUS_SAVES_KEY,
     AGENT_REFERRAL_BONUS_SAVES_DEFAULT,
     LIMIT_INCLUDES_MARKETPLACE_KEY,
-    LIMIT_INCLUDES_MARKETPLACE_DEFAULT
+    LIMIT_INCLUDES_MARKETPLACE_DEFAULT,
+    PREMIUM_PLAN_PRICE_KEY,
+    PREMIUM_PLAN_PRICE_DEFAULT,
+    PREMIUM_PLAN_CURRENCY_KEY,
+    PREMIUM_PLAN_CURRENCY_DEFAULT,
 } from "@/lib/config-keys";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 /**
  * Componente para gestionar los límites de los clientes en el plan gratuito.
