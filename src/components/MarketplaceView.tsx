@@ -399,7 +399,12 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       setPendingSaveProperty(null);
       setSelectedGroupId(null);
     } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      if (e instanceof PlanLimitError) {
+        setShowPremiumModal(true);
+        setShowGroupSelectModal(false);
+      } else {
+        toast({ title: "Error", description: e instanceof Error ? e.message : "No se pudo guardar", variant: "destructive" });
+      }
     } finally {
       setSavingId(null);
     }
