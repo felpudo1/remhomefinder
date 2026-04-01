@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { Globe, Shield, Radio, Database } from "lucide-react";
 import type { DiskIoHistoryPoint } from "@/hooks/useSystemMetrics";
 
-type Period = "all" | "month" | "week" | "48h" | "24h";
+type Period = "all" | "month" | "week" | "48h" | "24h" | "1h";
 
 const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "all", label: "Acumulado" },
@@ -12,6 +12,7 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "week", label: "Última semana" },
   { value: "48h", label: "48 horas" },
   { value: "24h", label: "24 horas" },
+  { value: "1h", label: "Última hora" },
 ];
 
 function getPeriodCutoff(period: Period): Date | null {
