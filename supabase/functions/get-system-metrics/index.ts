@@ -419,6 +419,20 @@ Deno.serve(async (req: Request) => {
     }
 
     // Leer últimos registros para filtros de período
+    const { data: historyData } = await supabase
+      .from("system_metrics_history")
+      .select("disk_io_budget, recorded_at, rest_requests, auth_requests, realtime_requests, storage_requests")
+      .order("recorded_at", { ascending: false })
+      .limit(2000);
+
+    const allHistory = (historyData as any[]) || [];
+    const diskIoHistory = allHistory.filter((row: any) => row.disk_io_budget !== null);
+    const requestsHistory = allHistory.filter((row: any) =>
+      row.rest_requests !== null ||
+      row.auth_requests !== null ||
+      row.realtime_requests !== null ||
+      row.storage_requests !== null
+    );
 
     // Read configurable fallback window (default 48h)
     const { data: cfgRow } = await supabase
