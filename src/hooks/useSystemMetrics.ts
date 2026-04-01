@@ -28,6 +28,7 @@ export interface SystemMetrics {
   dbConnections: number | null;
   timestamp: string;
   diskIoHistory: DiskIoHistoryPoint[];
+  requestsHistory: DiskIoHistoryPoint[];
 }
 
 async function fetchSystemMetrics(): Promise<SystemMetrics> {

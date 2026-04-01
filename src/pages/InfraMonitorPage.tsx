@@ -156,7 +156,7 @@ export default function InfraMonitorPage() {
                 authRequests={data.authRequests}
                 realtimeRequests={data.realtimeRequests}
                 storageRequests={data.storageRequests}
-                history={data.diskIoHistory}
+                history={data.requestsHistory ?? data.diskIoHistory}
               />
               <ResourceCards
                 cpuUsage={data.cpuUsage}
