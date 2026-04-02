@@ -22,20 +22,11 @@ export function useIndexOnboarding({
   const [showWelcome, setShowWelcome] = useState(() => {
     return localStorage.getItem(WELCOME_DISMISSED_KEY) !== "true";
   });
-  const [showRegWelcome, setShowRegWelcome] = useState(false);
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(locationSearch);
-    if (searchParams.get("registered") === "true") {
-      setShowRegWelcome(true);
-    }
-  }, [locationSearch]);
-
-  useEffect(() => {
-    if (showRegWelcome) return;
     if (isPremium && profileUserId) {
       const key = `hf_premium_welcome_shown_${profileUserId}`;
       if (localStorage.getItem(key) !== "true") {
@@ -43,7 +34,7 @@ export function useIndexOnboarding({
         localStorage.setItem(key, "true");
       }
     }
-  }, [isPremium, profileUserId, showRegWelcome]);
+  }, [isPremium, profileUserId]);
 
   const handleDismissWelcome = useCallback((dontShowAgain: boolean) => {
     if (dontShowAgain) {
@@ -52,9 +43,6 @@ export function useIndexOnboarding({
     setShowWelcome(false);
   }, []);
 
-  const closeRegistrationWelcome = useCallback(() => {
-    setShowRegWelcome(false);
-  }, []);
 
   const maybeShowContactTip = useCallback((sourceUrl?: string | null) => {
     const hasSourceUrl = typeof sourceUrl === "string" && sourceUrl.trim().length > 0;
@@ -86,14 +74,12 @@ export function useIndexOnboarding({
 
   return {
     showWelcome,
-    showRegWelcome,
     isPremiumWelcomeOpen,
     showContactTipModal,
     dontShowContactTipAgain,
     setDontShowContactTipAgain,
     setIsPremiumWelcomeOpen,
     handleDismissWelcome,
-    closeRegistrationWelcome,
     maybeShowContactTip,
     closeContactTipModal,
     handleContactTipOpenChange,
