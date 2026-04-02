@@ -85,7 +85,7 @@ export function MiListadoTabPanel({
 }: MiListadoTabPanelProps) {
   const tooltipText = isPremium
     ? `${filteredCount} guardado(s) de ${maxSaves} disponibles (versión premium).`
-    : `${filteredCount} guardado(s) de ${maxSaves - referralBonus}${referralBonus > 0 ? `+${referralBonus}` : ''} disponibles (versión gratuita).${referralBonus > 0 ? ` +${referralBonus} bonus por referido de agente.` : ''}`;
+    : `${filteredCount} guardado(s) de ${maxSaves - referralBonus} disponibles (versión gratuita).${referralBonus > 0 ? `  +${referralBonus} disponibles (bonus referido).` : ''}`;
   return (
     <TabsContent value="mi-listado">
       {showWelcome ? (
