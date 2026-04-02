@@ -459,6 +459,16 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 onClose={() => setIsGalleryOpen(false)}
             />
 
+            {qrProperty && (
+                <QRCodeModal
+                    open={!!qrProperty}
+                    onClose={() => setQrProperty(null)}
+                    propertyTitle={qrProperty.title}
+                    propertyId={qrProperty.propertyId}
+                    publicationId={qrProperty.id}
+                />
+            )}
+
             <UpgradePlanModal open={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} limit={maxAgentPublishes} type="agent" />
             <PremiumWelcomeModal open={isPremiumWelcomeOpen} onClose={() => setIsPremiumWelcomeOpen(false)} />
         </div>
