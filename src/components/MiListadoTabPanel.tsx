@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Home, Loader2, RefreshCw, Search } from "lucide-react";
+import { HelpCircle, Home, Loader2, RefreshCw, Search } from "lucide-react";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { ListadoFiltersDropdown } from "@/components/ListadoFiltersDropdown";
