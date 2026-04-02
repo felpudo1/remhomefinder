@@ -81,7 +81,11 @@ export function MiListadoTabPanel({
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
+  isPremium,
 }: MiListadoTabPanelProps) {
+  const tooltipText = isPremium
+    ? `${filteredCount} guardado(s) de ${maxSaves} disponibles (versión premium).`
+    : `${filteredCount} guardado(s) de ${maxSaves - referralBonus}${referralBonus > 0 ? `+${referralBonus}` : ''} disponibles (versión gratuita).${referralBonus > 0 ? ` +${referralBonus} bonus por referido de agente.` : ''}`;
   return (
     <TabsContent value="mi-listado">
       {showWelcome ? (
