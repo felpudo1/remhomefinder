@@ -72,7 +72,6 @@ export function useIndexOnboarding({
 
   return {
     showWelcome,
-    showRegWelcome,
     isPremiumWelcomeOpen,
     showContactTipModal,
     dontShowContactTipAgain,
