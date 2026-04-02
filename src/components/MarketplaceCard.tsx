@@ -1,5 +1,5 @@
 import { MarketplaceProperty } from "@/types/property";
-import { Bookmark, Building2, Star, QrCode } from "lucide-react";
+import { Bookmark, Star, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
