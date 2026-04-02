@@ -10,7 +10,7 @@ import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Users, SlidersHorizontal, Store, X, Mail, CheckCircle2, ChevronRight, UserPlus } from "lucide-react";
+import { Home, Plus, Users, SlidersHorizontal, Store, X, ChevronRight, UserPlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
