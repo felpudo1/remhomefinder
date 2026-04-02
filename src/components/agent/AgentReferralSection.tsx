@@ -108,7 +108,7 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
           <Button
             variant="default"
             size="sm"
-            className="rounded-xl gap-2 h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm transition-all hover:scale-[1.02] flex-1 sm:flex-none"
+            className="rounded-xl gap-2 h-20 sm:h-10 bg-[#25D366] hover:bg-[#20ba5a] text-white border-none shadow-sm transition-all hover:scale-[1.02] flex-1 sm:flex-none"
             onClick={shareWhatsApp}
           >
             <Users className="w-4 h-4" /> WhatsApp
