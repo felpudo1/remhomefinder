@@ -90,7 +90,7 @@ export function UserReferralSection({ showTopDivider = true }: UserReferralSecti
                     variant="outline"
                     size="sm"
                     onClick={copyToClipboard}
-                    className="w-full h-16 sm:h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider gap-2 bg-muted/50 border-none hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                    className="w-full h-24 sm:h-8 rounded-xl text-sm sm:text-[10px] font-bold uppercase tracking-wider gap-2 bg-muted/50 border-none hover:bg-primary hover:text-primary-foreground transition-all duration-300"
                 >
                     {copied ? (
                         <>
