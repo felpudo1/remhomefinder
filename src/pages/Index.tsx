@@ -412,6 +412,7 @@ const Index = () => {
                 hasNextPage={hasNextPage}
                 fetchNextPage={fetchNextPage}
                 isFetchingNextPage={isFetchingNextPage}
+                isPremium={isPremium}
               />
 
               <TabsContent value="marketplace">

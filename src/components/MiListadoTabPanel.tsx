@@ -113,8 +113,18 @@ export function MiListadoTabPanel({
             <div className="mb-6 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-1.5">
                     Tus Avisos Guardados ({filteredCount}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-sm">
+                          {tooltipText}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </h1>
                   <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                 </div>
