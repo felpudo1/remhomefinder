@@ -26,7 +26,7 @@ import {
   APP_BRAND_NAME_KEY,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
-import { SupportWhatsAppLink } from "@/components/support/SupportWhatsAppLink";
+
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
