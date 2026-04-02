@@ -112,11 +112,7 @@ export function MarketplaceCard({
                   ? "bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 text-black font-bold border border-yellow-300/60"
                   : "bg-primary/10 text-primary"
               }`}>
-                {property.orgLogoUrl ? (
-                  <img src={property.orgLogoUrl} alt={property.orgName} className="w-4 h-4 rounded-full object-cover" />
-                ) : (
-                  <Building2 className="w-3 h-3" />
-                )}
+                <Building2 className="w-3 h-3" />
                 {property.orgName}
                 {isReferred && <Star className="w-3 h-3 fill-current" />}
               </span>

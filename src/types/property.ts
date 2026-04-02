@@ -88,7 +88,6 @@ export interface MarketplaceProperty {
   propertyId?: string;
   orgId: string;
   orgName: string;
-  orgLogoUrl?: string;
   agentId: string;
   title: string;
   description: string;
