@@ -136,14 +136,12 @@ const Index = () => {
   const { canSaveMore, maxSaves, isPremium, referralBonus } = useSubscription();
   const {
     showWelcome,
-    showRegWelcome,
     isPremiumWelcomeOpen,
     showContactTipModal,
     dontShowContactTipAgain,
     setDontShowContactTipAgain,
     setIsPremiumWelcomeOpen,
     handleDismissWelcome,
-    closeRegistrationWelcome,
     maybeShowContactTip,
     closeContactTipModal,
     handleContactTipOpenChange,
