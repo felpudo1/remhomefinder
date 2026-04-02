@@ -86,7 +86,7 @@ export function MarketplaceCard({
               <img
                 src={property.orgLogoUrl}
                 alt={property.orgName}
-                className="w-10 h-10 rounded-lg object-contain bg-white/90 shadow-md p-0.5"
+                className="w-[52px] h-[52px] rounded-lg object-contain bg-white/90 shadow-md p-0.5"
               />
             )}
             {isReferred && (
