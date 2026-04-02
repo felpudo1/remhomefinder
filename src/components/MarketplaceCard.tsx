@@ -81,28 +81,14 @@ export function MarketplaceCard({
         autoRotateImages
         imageTransitionMode="push"
         topOverlay={
-          <div className="flex flex-col gap-1.5 items-start">
-            {isReferred && (
+          isReferred ? (
+            <div className="flex flex-col gap-1.5 items-start">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-yellow-500 text-black shadow-lg animate-pulse">
                 <Star className="w-3 h-3 fill-current" />
                 TU AGENTE
               </span>
-            )}
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm shadow-md ${
-              isReferred
-                ? "bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 text-black font-bold shadow-[0_0_15px_rgba(234,179,8,0.6),0_0_30px_rgba(234,179,8,0.3),0_0_45px_rgba(234,179,8,0.15)] animate-[shimmer_2s_ease-in-out_infinite] border border-yellow-300/60"
-                : "bg-primary/90 text-primary-foreground"
-            }`}>
-              <Building2 className={`w-3 h-3 ${isReferred ? "drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]" : ""}`} />
-              {property.orgName}
-              {isReferred && <Star className="w-3 h-3 fill-current drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]" />}
-            </span>
-            {overlay && (
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm shadow-md ${overlay.className}`}>
-                {overlay.label}
-              </span>
-            )}
-          </div>
+            </div>
+          ) : undefined
         }
         ratingOverlay={
           <StarRating
