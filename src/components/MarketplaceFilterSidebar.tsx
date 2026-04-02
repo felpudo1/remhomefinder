@@ -4,6 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+export type MarketplaceSortOption = "recent" | "oldest" | "price_asc" | "price_desc";
+
+const SORT_OPTIONS: { value: MarketplaceSortOption; label: string }[] = [
+  { value: "recent", label: "Más recientes" },
+  { value: "oldest", label: "Más antiguos" },
+  { value: "price_asc", label: "Menor precio" },
+  { value: "price_desc", label: "Mayor precio" },
+];
+
 /** Props compartidas entre drawer móvil y panel dentro del popover de escritorio */
 export interface MarketplaceFiltersPanelProps {
   neighborhoods: string[];
@@ -23,6 +32,8 @@ export interface MarketplaceFiltersPanelProps {
   hasFilters: boolean;
   totalCount: number;
   filteredCount: number;
+  sortBy: MarketplaceSortOption;
+  onSortChange: (v: MarketplaceSortOption) => void;
   /** drawer: barra lateral móvil con botón cerrar · popover: sin sticky, para desplegable */
   panelVariant: "drawer" | "popover";
   /** Solo en drawer: callback para la X del header */
@@ -50,6 +61,8 @@ export function MarketplaceFiltersPanel({
   hasFilters,
   totalCount,
   filteredCount,
+  sortBy,
+  onSortChange,
   panelVariant,
   onMobileClose,
 }: MarketplaceFiltersPanelProps) {
@@ -100,6 +113,22 @@ export function MarketplaceFiltersPanel({
             Limpiar todos los filtros
           </Button>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ordenar por</p>
+        <Select value={sortBy} onValueChange={(v) => onSortChange(v as MarketplaceSortOption)}>
+          <SelectTrigger className="w-full h-9 rounded-xl bg-muted border-0 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
