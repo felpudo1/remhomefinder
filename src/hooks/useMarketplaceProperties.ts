@@ -42,6 +42,7 @@ export function useMarketplaceProperties() {
           propertyId: pub.property_id,
           orgId: pub.org_id,
           orgName: pub.org_name || "Organización",
+          orgLogoUrl: pub.org_logo_url || undefined,
           agentId: pub.published_by || pub.org_created_by || "",
           title: p.title || pub.description || "",
           description: pub.description || "",
