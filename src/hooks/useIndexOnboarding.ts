@@ -78,7 +78,6 @@ export function useIndexOnboarding({
     setDontShowContactTipAgain,
     setIsPremiumWelcomeOpen,
     handleDismissWelcome,
-    closeRegistrationWelcome,
     maybeShowContactTip,
     closeContactTipModal,
     handleContactTipOpenChange,
