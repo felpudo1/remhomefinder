@@ -85,7 +85,7 @@ export function MiListadoTabPanel({
 }: MiListadoTabPanelProps) {
   const tooltipText = isPremium
     ? `${filteredCount} guardado(s) de ${maxSaves} disponibles (versión premium).`
-    : `${filteredCount} guardado(s) de ${maxSaves - referralBonus}${referralBonus > 0 ? `+${referralBonus}` : ''} disponibles (versión gratuita).${referralBonus > 0 ? ` +${referralBonus} bonus por referido de agente.` : ''}`;
+    : `${filteredCount} guardado(s) de ${maxSaves - referralBonus} disponibles (versión gratuita).${referralBonus > 0 ? `  +${referralBonus} disponibles (bonus referido).` : ''}`;
   return (
     <TabsContent value="mi-listado">
       {showWelcome ? (
@@ -118,7 +118,7 @@ export function MiListadoTabPanel({
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help shrink-0" />
+                          <HelpCircle className="w-8 h-8 text-muted-foreground cursor-help shrink-0" />
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs text-sm">
                           {tooltipText}
