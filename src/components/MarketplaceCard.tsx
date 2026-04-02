@@ -105,7 +105,23 @@ export function MarketplaceCard({
           isMatchAIMagicActive ? <MatchiAIBadge /> : undefined
         }
         subImageContent={
-          <div className="px-4 pt-2 flex items-center justify-end">
+          <div className="px-4 pt-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                isReferred
+                  ? "bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 text-black font-bold border border-yellow-300/60"
+                  : "bg-primary/10 text-primary"
+              }`}>
+                <Building2 className="w-3 h-3" />
+                {property.orgName}
+                {isReferred && <Star className="w-3 h-3 fill-current" />}
+              </span>
+              {overlay && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${overlay.className}`}>
+                  {overlay.label}
+                </span>
+              )}
+            </div>
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${property.listingType === "sale"
               ? "bg-accent/15 text-accent-foreground"
               : "bg-primary/10 text-primary"
