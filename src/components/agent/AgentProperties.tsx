@@ -5,7 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw, Sparkles } from "lucide-react";
+import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw, Sparkles, QrCode } from "lucide-react";
+import { QRCodeModal } from "@/components/marketplace/QRCodeModal";
 import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -47,6 +48,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
     const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+    const [qrProperty, setQrProperty] = useState<{ id: string; propertyId: string; title: string } | null>(null);
 
     const isActive = profileStatus === "active";
 
@@ -369,6 +371,18 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                         <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1" onClick={() => handleEdit(p)}>
                                             <Edit className="w-3 h-3" /> Editar
                                         </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="gap-1 rounded-lg px-2 text-xs"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setQrProperty({ id: p.id, propertyId: p.propertyId, title: p.title });
+                                            }}
+                                            title="Generar QR"
+                                        >
+                                            <QrCode className="w-3.5 h-3.5" />
+                                        </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1">
@@ -444,6 +458,16 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                 isOpen={isGalleryOpen}
                 onClose={() => setIsGalleryOpen(false)}
             />
+
+            {qrProperty && (
+                <QRCodeModal
+                    open={!!qrProperty}
+                    onClose={() => setQrProperty(null)}
+                    propertyTitle={qrProperty.title}
+                    propertyId={qrProperty.propertyId}
+                    publicationId={qrProperty.id}
+                />
+            )}
 
             <UpgradePlanModal open={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} limit={maxAgentPublishes} type="agent" />
             <PremiumWelcomeModal open={isPremiumWelcomeOpen} onClose={() => setIsPremiumWelcomeOpen(false)} />
