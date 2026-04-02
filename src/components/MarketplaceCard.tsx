@@ -114,12 +114,11 @@ export function MarketplaceCard({
         subImageContent={
           <div className="px-4 pt-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium truncate max-w-[180px] ${
                 isReferred
                   ? "bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 text-black font-bold border border-yellow-300/60"
                   : "bg-primary/10 text-primary"
               }`}>
-                <Building2 className="w-3 h-3" />
                 {property.orgName}
                 {isReferred && <Star className="w-3 h-3 fill-current" />}
               </span>
