@@ -25,7 +25,6 @@ export function useIndexOnboarding({
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
 
   useEffect(() => {
-    if (showRegWelcome) return;
     if (isPremium && profileUserId) {
       const key = `hf_premium_welcome_shown_${profileUserId}`;
       if (localStorage.getItem(key) !== "true") {
