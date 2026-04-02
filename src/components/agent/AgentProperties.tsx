@@ -371,6 +371,18 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
                                         <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1" onClick={() => handleEdit(p)}>
                                             <Edit className="w-3 h-3" /> Editar
                                         </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="gap-1 rounded-lg px-2 text-xs"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setQrProperty({ id: p.id, propertyId: p.propertyId, title: p.title });
+                                            }}
+                                            title="Generar QR"
+                                        >
+                                            <QrCode className="w-3.5 h-3.5" />
+                                        </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1">
