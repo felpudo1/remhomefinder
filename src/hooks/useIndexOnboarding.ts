@@ -22,17 +22,7 @@ export function useIndexOnboarding({
   const [showWelcome, setShowWelcome] = useState(() => {
     return localStorage.getItem(WELCOME_DISMISSED_KEY) !== "true";
   });
-  const [showRegWelcome, setShowRegWelcome] = useState(false);
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
-  const [showContactTipModal, setShowContactTipModal] = useState(false);
-  const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(locationSearch);
-    if (searchParams.get("registered") === "true") {
-      setShowRegWelcome(true);
-    }
-  }, [locationSearch]);
 
   useEffect(() => {
     if (showRegWelcome) return;
