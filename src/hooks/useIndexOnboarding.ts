@@ -23,6 +23,8 @@ export function useIndexOnboarding({
     return localStorage.getItem(WELCOME_DISMISSED_KEY) !== "true";
   });
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
+  const [showContactTipModal, setShowContactTipModal] = useState(false);
+  const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
 
   useEffect(() => {
     if (isPremium && profileUserId) {
