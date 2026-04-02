@@ -52,8 +52,7 @@ export const Footer = ({ showDbStatus = false }: FooterProps) => {
                         <span>por</span>
                         <span className="font-bold text-foreground">{appBrandName}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground/60">© 2027 — Todos los derechos reservados.
-
+                    <p className="text-[11px] text-muted-foreground/60">© 2026 — Todos los derechos reservados.
           </p>
                 </div>
 
