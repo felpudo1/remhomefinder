@@ -32,7 +32,7 @@ export function useIndexOnboarding({
         localStorage.setItem(key, "true");
       }
     }
-  }, [isPremium, profileUserId, showRegWelcome]);
+  }, [isPremium, profileUserId]);
 
   const handleDismissWelcome = useCallback((dontShowAgain: boolean) => {
     if (dontShowAgain) {
