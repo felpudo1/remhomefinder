@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Home, Loader2, RefreshCw, Search } from "lucide-react";
+import { HelpCircle, Home, Loader2, RefreshCw, Search } from "lucide-react";
 import { PropertyCard } from "@/components/PropertyCard";
 import { FilterSidebar } from "@/components/FilterSidebar";
 import { ListadoFiltersDropdown } from "@/components/ListadoFiltersDropdown";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TabsContent } from "@/components/ui/tabs";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import type { Property, PropertyStatus } from "@/types/property";
 import type { IndexStatusChangeHandler, ListadoSortOption } from "@/types/index-page";
 
@@ -42,6 +43,7 @@ interface MiListadoTabPanelProps {
   hasNextPage: boolean;
   fetchNextPage: () => void;
   isFetchingNextPage: boolean;
+  isPremium: boolean;
 }
 
 /**
@@ -79,7 +81,11 @@ export function MiListadoTabPanel({
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
+  isPremium,
 }: MiListadoTabPanelProps) {
+  const tooltipText = isPremium
+    ? `${filteredCount} guardado(s) de ${maxSaves} disponibles (versión premium).`
+    : `${filteredCount} guardado(s) de ${maxSaves - referralBonus}${referralBonus > 0 ? `+${referralBonus}` : ''} disponibles (versión gratuita).${referralBonus > 0 ? ` +${referralBonus} bonus por referido de agente.` : ''}`;
   return (
     <TabsContent value="mi-listado">
       {showWelcome ? (
@@ -107,8 +113,18 @@ export function MiListadoTabPanel({
             <div className="mb-6 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-1.5">
                     Tus Avisos Guardados ({filteredCount}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-sm">
+                          {tooltipText}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </h1>
                   <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                 </div>
