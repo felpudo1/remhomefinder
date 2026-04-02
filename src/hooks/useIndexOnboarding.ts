@@ -41,9 +41,6 @@ export function useIndexOnboarding({
     setShowWelcome(false);
   }, []);
 
-  const closeRegistrationWelcome = useCallback(() => {
-    setShowRegWelcome(false);
-  }, []);
 
   const maybeShowContactTip = useCallback((sourceUrl?: string | null) => {
     const hasSourceUrl = typeof sourceUrl === "string" && sourceUrl.trim().length > 0;
