@@ -6,6 +6,7 @@ import { useProperties } from "@/hooks/useProperties";
 import { useProfile } from "@/hooks/useProfile";
 import { useGeography } from "@/hooks/useGeography";
 import { MarketplaceCard } from "@/components/MarketplaceCard";
+import type { MarketplaceSortOption } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceFilterSidebar } from "@/components/MarketplaceFilterSidebar";
 import { MarketplaceFiltersDropdown } from "@/components/MarketplaceFiltersDropdown";
 import { MarketplaceProperty } from "@/types/property";
@@ -81,6 +82,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
   const [selectedListingType, setSelectedListingType] = useState<string>("");
   const [hideSaved, setHideSaved] = useState(true);
   const [expandPhotos, setExpandPhotos] = useState(true);
+  const [sortBy, setSortBy] = useState<MarketplaceSortOption>("recent");
   const [matchAI, setMatchAI] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
@@ -125,6 +127,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     setSelectedRooms("");
     setSelectedListingType("");
     setMatchAI(false);
+    setSortBy("recent");
   };
 
   const handleMatchAIToggle = async (checked: boolean) => {
@@ -273,17 +276,12 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       result = result.filter((p) => !savedMarketplaceIds.has(p.id));
     }
 
-    // Ordenamiento PRO: 
-    // 1. No guardadas vs guardadas (guardadas al final)
-    // 2. Referido (Prioridad agente VIP)
-    // 3. Activas vs Inactivas
-    // 4. Fecha (Recientes primero)
+    // Ordenamiento: prioridades base + criterio seleccionado por el usuario
     result = [...result].sort((a, b) => {
       const aSaved = savedMarketplaceIds.has(a.id) ? 1 : 0;
       const bSaved = savedMarketplaceIds.has(b.id) ? 1 : 0;
       if (aSaved !== bSaved) return aSaved - bSaved;
 
-      // Prioridad socio-comercial (Referido)
       if (referredAgentId) {
         const aIsReferred = a.agentId === referredAgentId ? 0 : 1;
         const bIsReferred = b.agentId === referredAgentId ? 0 : 1;
@@ -294,11 +292,24 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       const bInactive = INACTIVE_STATUSES.has(b.status) ? 1 : 0;
       if (aInactive !== bInactive) return aInactive - bInactive;
 
+      if (sortBy === "price_asc") {
+        const costA = a.totalCost > 0 ? a.totalCost : (a.priceRent + a.priceExpenses);
+        const costB = b.totalCost > 0 ? b.totalCost : (b.priceRent + b.priceExpenses);
+        return costA - costB;
+      }
+      if (sortBy === "price_desc") {
+        const costA = a.totalCost > 0 ? a.totalCost : (a.priceRent + a.priceExpenses);
+        const costB = b.totalCost > 0 ? b.totalCost : (b.priceRent + b.priceExpenses);
+        return costB - costA;
+      }
+      if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     return result;
-  }, [marketplaceProperties, searchQuery, selectedNeighborhoods, selectedCurrency, minPrice, maxPrice, selectedRooms, selectedListingType, hideSaved, savedMarketplaceIds, referredAgentId]);
+  }, [marketplaceProperties, searchQuery, selectedNeighborhoods, selectedCurrency, minPrice, maxPrice, selectedRooms, selectedListingType, hideSaved, savedMarketplaceIds, referredAgentId, sortBy]);
 
   const handleSave = async (property: MarketplaceProperty) => {
     setSavingId(property.id);
@@ -438,6 +449,8 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
     hasFilters,
     totalCount: marketplaceProperties.length,
     filteredCount: filtered.length,
+    sortBy,
+    onSortChange: setSortBy,
   };
 
   return (
