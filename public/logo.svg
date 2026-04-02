@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Techo en forma de flecha -->
+  <path d="M20 45 L50 20 L80 45" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Paredes y base (sin techo) -->
+  <path d="M25 45 L25 80 L75 80 L75 45" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Puerta (15% más baja) -->
+  <path d="M42 80 L42 52 L58 52 L58 80" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+</svg>
