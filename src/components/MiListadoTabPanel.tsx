@@ -43,6 +43,7 @@ interface MiListadoTabPanelProps {
   hasNextPage: boolean;
   fetchNextPage: () => void;
   isFetchingNextPage: boolean;
+  isPremium: boolean;
 }
 
 /**
