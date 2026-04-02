@@ -48,6 +48,7 @@ export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentP
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
     const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+    const [qrProperty, setQrProperty] = useState<{ id: string; propertyId: string; title: string } | null>(null);
 
     const isActive = profileStatus === "active";
 
