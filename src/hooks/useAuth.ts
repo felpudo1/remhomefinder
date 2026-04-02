@@ -115,6 +115,7 @@ export const useAuth = () => {
                         account_type: accountType,
                         agency_name: orgName?.trim() || '',
                         agency_phone: orgPhone?.trim() || '',
+                        referral_id: sessionStorage.getItem("hf_referral_id") || undefined,
                     }
                 }
             });

@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 
 /**
  * Página de callback de OAuth.
- * Procesa el intercambio de sesión y redirige al dashboard por rol.
+ * Procesa el intercambio de sesión, vincula referidos y redirige al dashboard por rol.
  * Soporta ?returnTo= para volver a la propiedad pública tras OAuth desde QR.
  */
 const AuthCallback = () => {
@@ -25,6 +25,29 @@ const AuthCallback = () => {
         if (error) throw error;
 
         if (session?.user) {
+          // Vincular referido desde sessionStorage (OAuth no pasa metadata custom)
+          const referralId = sessionStorage.getItem("hf_referral_id");
+          if (referralId && referralId !== session.user.id) {
+            try {
+              const { data: profile } = await (supabase
+                .from("profiles") as any)
+                .select("referred_by_id")
+                .eq("user_id", session.user.id)
+                .maybeSingle();
+
+              if (profile && !profile.referred_by_id) {
+                await (supabase
+                  .from("profiles") as any)
+                  .update({ referred_by_id: referralId })
+                  .eq("user_id", session.user.id);
+                console.log("💎 AuthCallback: Referido vinculado:", referralId);
+              }
+              sessionStorage.removeItem("hf_referral_id");
+            } catch (refErr) {
+              console.error("💎 AuthCallback: Error al vincular referido:", refErr);
+            }
+          }
+
           // Check for returnTo param (from QR flow)
           const returnTo = searchParams.get("returnTo");
           if (returnTo && returnTo.startsWith("/p/")) {
