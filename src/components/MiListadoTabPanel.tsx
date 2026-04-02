@@ -118,7 +118,7 @@ export function MiListadoTabPanel({
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help shrink-0" />
+                          <HelpCircle className="w-8 h-8 text-muted-foreground cursor-help shrink-0" />
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs text-sm">
                           {tooltipText}
