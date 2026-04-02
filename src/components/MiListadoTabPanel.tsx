@@ -113,18 +113,21 @@ export function MiListadoTabPanel({
             <div className="mb-6 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground tracking-tight inline-flex items-center flex-wrap gap-x-0">
-                    <span>Tus Avisos Guardados ({filteredCount}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})</span>
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="w-5 h-5 text-muted-foreground cursor-help shrink-0 ml-1 inline-block align-middle" />
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-xs text-sm">
-                          {tooltipText}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                  <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                    <span className="block">Tus Avisos Guardados</span>
+                    <span className="inline-flex items-center">
+                      <span>({filteredCount}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})</span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="w-5 h-5 text-muted-foreground cursor-help shrink-0 ml-1" />
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs text-sm">
+                            {tooltipText}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </span>
                   </h1>
                   <p className="text-muted-foreground text-sm mt-1">Seguí, compará y colaborá en tu búsqueda</p>
                 </div>
