@@ -19,9 +19,8 @@ export function useIndexOnboarding({
   isPremium,
   profileUserId,
 }: UseIndexOnboardingParams) {
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return localStorage.getItem(WELCOME_DISMISSED_KEY) !== "true";
-  });
+  // TODO: Welcome screen desactivada temporalmente – se reemplazará por animación explicativa.
+  const [showWelcome, setShowWelcome] = useState(false);
   const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
   const [showContactTipModal, setShowContactTipModal] = useState(false);
   const [dontShowContactTipAgain, setDontShowContactTipAgain] = useState(false);
