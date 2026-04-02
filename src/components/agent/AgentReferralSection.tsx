@@ -92,7 +92,7 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl gap-2 h-20 sm:h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none"
+            className="rounded-xl gap-2 h-28 sm:h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none text-base sm:text-sm"
             onClick={copyToClipboard}
           >
             {copied ? (
