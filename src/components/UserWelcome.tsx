@@ -29,15 +29,7 @@ export const UserWelcome = ({ onDismiss, userName, userPhone }: UserWelcomeProps
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
                 ¡Bienvenido a <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{appBrandName}</span>{userName ? `, ${userName.split(' ')[0]}` : ''}!
             </h2>
-            {userPhone ? (
-                <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6 -mt-1">
-                    <Phone className="w-4 h-4 shrink-0 opacity-80" aria-hidden />
-                    <span>{userPhone}</span>
-                </p>
-            ) : null}
-            <p className="text-muted-foreground max-w-lg mb-10 text-sm md:text-base leading-relaxed">
-                El lugar ideal para organizar tu búsqueda de propiedades, comparar opciones en familia y guardar tus favoritos de cualquier portal en un solo lugar.
-            </p>
+            <div className="mb-10" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl w-full text-left mb-12">
                 <div className="p-6 rounded-3xl bg-card border border-border shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
