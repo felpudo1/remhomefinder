@@ -18,10 +18,10 @@ Nuestra misión es simplificar la toma de decisiones inmobiliarias mediante el u
 
 Para desarrollar o ejecutar el proyecto localmente necesitás:
 
-| Requisito | Versión recomendada | Notas |
-|-----------|----------------------|--------|
-| **Node.js** | ≥ 18 | LTS recomendado. Verificar con `node -v`. |
-| **pnpm** | ≥ 8 | Gestor de paquetes preferido. Instalación: `npm install -g pnpm`. |
+| Requisito   | Versión recomendada | Notas                                                             |
+| ----------- | ------------------- | ----------------------------------------------------------------- |
+| **Node.js** | ≥ 18                | LTS recomendado. Verificar con `node -v`.                         |
+| **pnpm**    | ≥ 8                 | Gestor de paquetes preferido. Instalación: `npm install -g pnpm`. |
 
 ---
 
@@ -29,7 +29,7 @@ Para desarrollar o ejecutar el proyecto localmente necesitás:
 
 - **Core:** [React](https://reactjs.org/) + [Vite](https://vitejs.dev/) (Alta velocidad de desarrollo).
 - **Lenguaje:** [TypeScript](https://www.typescriptlang.org/) (Seguridad y tipado estricto).
-- **Capa de Datos:** 
+- **Capa de Datos:**
   - [Supabase](https://supabase.com/) (PostgreSQL + Auth + Realtime).
   - [TanStack Query](https://tanstack.com/query) (Caché y Server State).
 - **Estado Global:** [Zustand](https://zustand-demo.pmnd.rs/) (Client State ultra-ligero).
@@ -93,15 +93,15 @@ pnpm run dev
 
 ### Scripts disponibles
 
-| Comando | Descripción |
-|---------|-------------|
-| `pnpm run dev` | Servidor de desarrollo con Vite (HMR). |
-| `pnpm run build` | Build de producción (`dist/`). |
-| `pnpm run build:dev` | Build en modo development (para pruebas de deploy). |
-| `pnpm run preview` | Sirve el build de producción localmente para probar antes de deploy. |
-| `pnpm run lint` | Ejecuta ESLint sobre el código. |
-| `pnpm run test` | Ejecuta tests con Vitest (una sola corrida). |
-| `pnpm run test:watch` | Tests en modo watch (re-ejecuta al cambiar archivos). |
+| Comando               | Descripción                                                          |
+| --------------------- | -------------------------------------------------------------------- |
+| `pnpm run dev`        | Servidor de desarrollo con Vite (HMR).                               |
+| `pnpm run build`      | Build de producción (`dist/`).                                       |
+| `pnpm run build:dev`  | Build en modo development (para pruebas de deploy).                  |
+| `pnpm run preview`    | Sirve el build de producción localmente para probar antes de deploy. |
+| `pnpm run lint`       | Ejecuta ESLint sobre el código.                                      |
+| `pnpm run test`       | Ejecuta tests con Vitest (una sola corrida).                         |
+| `pnpm run test:watch` | Tests en modo watch (re-ejecuta al cambiar archivos).                |
 
 ---
 
@@ -109,13 +109,13 @@ pnpm run dev
 
 Toda la documentación para el desarrollador del mañana está en la carpeta **`docs/`**:
 
-| Documento | Contenido |
-|-----------|-----------|
-| [docs/README.md](docs/README.md) | Índice de la documentación y guías. |
-| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Changelog técnico, schema de BD, auth, UI, correcciones Lovable. |
-| [docs/SETUP.md](docs/SETUP.md) | Setup paso a paso, troubleshooting y verificación. |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diagramas de flujo (auth, datos, roles). |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Cómo contribuir, estilo de código y buenas prácticas. |
+| Documento                                    | Contenido                                                        |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| [docs/README.md](docs/README.md)             | Índice de la documentación y guías.                              |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md)       | Changelog técnico, schema de BD, auth, UI, correcciones Lovable. |
+| [docs/SETUP.md](docs/SETUP.md)               | Setup paso a paso, troubleshooting y verificación.               |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diagramas de flujo (auth, datos, roles).                         |
+| [CONTRIBUTING.md](CONTRIBUTING.md)           | Cómo contribuir, estilo de código y buenas prácticas.            |
 
 ---
 
