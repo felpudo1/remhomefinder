@@ -105,6 +105,16 @@ pnpm run dev
 
 ---
 
+## 🌐 Demo
+
+Podés ver la aplicación en producción en:
+
+👉 **[https://homefinder.uy](https://homefinder.uy)**
+
+> En entornos de desarrollo y preview, el footer muestra un badge con la versión de Git (branch, commit y ambiente) para facilitar el debugging. Este badge se oculta automáticamente en producción.
+
+---
+
 ## 📚 Documentación técnica
 
 Toda la documentación para el desarrollador del mañana está en la carpeta **`docs/`**:
