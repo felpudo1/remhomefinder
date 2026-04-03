@@ -111,7 +111,8 @@ export const Footer = ({ showDbStatus = false }: FooterProps) => {
                         </>
                     )}
                     
-                    {/* Versión de la aplicación */}
+                    {/* Versión de la aplicación — solo visible en desarrollo/preview */}
+                    {environment !== 'production' && (
                     <button
             type="button"
             onClick={() => setShowVersionDetails(true)}
@@ -124,11 +125,6 @@ export const Footer = ({ showDbStatus = false }: FooterProps) => {
             <>
                                 <GitBranch className="w-3 h-3" />
                                 <span>v{version}</span>
-                                {environment === 'production' &&
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-green-500/20 text-green-600">
-                                        PROD
-                                    </span>
-              }
                                 {environment === 'preview' &&
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-yellow-500/20 text-yellow-600">
                                         PREV
@@ -137,6 +133,7 @@ export const Footer = ({ showDbStatus = false }: FooterProps) => {
                             </>
             }
                     </button>
+                    )}
                 </div>
             </div>
 
