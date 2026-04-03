@@ -17,13 +17,13 @@ const AuthCallback = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const handleCallback = async () => {
+    let handled = false;
+
+    const processSession = async (session: any) => {
+      if (handled) return;
+      handled = true;
+
       try {
-        // Supabase maneja automáticamente el hash con el token
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) throw error;
-
         if (session?.user) {
           // Vincular referido desde sessionStorage (OAuth no pasa metadata custom)
           const referralId = sessionStorage.getItem("hf_referral_id");
@@ -56,7 +56,6 @@ const AuthCallback = () => {
           }
           await redirectByRole(session.user.id);
         } else {
-          // Sin sesión, volver a auth
           navigate("/auth", { replace: true });
         }
       } catch (err: any) {
@@ -70,7 +69,32 @@ const AuthCallback = () => {
       }
     };
 
-    handleCallback();
+    // Escuchar el evento de auth para capturar el intercambio OAuth
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        processSession(session);
+      }
+    });
+
+    // Fallback: si la sesión ya existe (intercambio ya ocurrió)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) processSession(session);
+    });
+
+    // Timeout de seguridad: si no hay sesión en 10s, volver a auth
+    const timeout = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        navigate("/auth", { replace: true });
+      }
+    }, 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [navigate, searchParams, redirectByRole, toast]);
 
   return (
