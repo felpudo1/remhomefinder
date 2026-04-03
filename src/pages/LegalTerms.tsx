@@ -65,6 +65,11 @@ const LegalTerms = () => {
         razonable.
       </p>
 
+      <h2>7. Jurisdicción</h2>
+      <p>
+        Cualquier controversia derivada del uso de la plataforma o de la interpretación de estos términos se someterá a los tribunales competentes de la República Oriental del Uruguay.
+      </p>
+
       <p>
         Para consultas sobre estos términos{mail ? ":" : " configurá el correo de soporte en el panel de administración."}
         {mail && (
