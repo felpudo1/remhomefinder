@@ -3,5 +3,8 @@ project_id = "cuyfrpuiokvqvhvoerga"
 [functions.get-system-metrics]
 verify_jwt = false
 
+[functions.discover-agency-links]
+verify_jwt = false
+
 [functions.mp-create-subscription]
 verify_jwt = false
