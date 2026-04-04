@@ -41,6 +41,8 @@ export function PropertyStatusSelector({
     visita_coordinada: new Set<PropertyStatus>(["firme_candidato", "posible_interes", "descartado"]),
     posible_interes: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
     firme_candidato: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
+    /** Estado terminal: no se puede salir de descartado; el Set solo incluye el mismo valor para bloquear el resto en el Select */
+    descartado: new Set<PropertyStatus>(["descartado"]),
   };
 
   const allowedNextStatuses = statusTransitionsByOrigin[currentStatus];
