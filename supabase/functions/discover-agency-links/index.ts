@@ -33,14 +33,14 @@ serve(async (req) => {
 
     // Validar identidad
     const token = authHeader.replace("Bearer ", "").trim();
-    const { data: claimsData, error: claimsErr } = await sbUser.auth.getUser(token);
-    if (claimsErr || !claimsData?.user) {
+    const { data: claimsData, error: claimsErr } = await sbUser.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.user.id;
+    const userId = claimsData.claims.sub;
 
     // Parsear body
     const body = await req.json();
