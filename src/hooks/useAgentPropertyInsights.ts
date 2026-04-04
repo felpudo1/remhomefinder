@@ -151,6 +151,10 @@ function groupRpcRows(rows: RpcRow[]): AgentPropertyInsight[] {
         avgContactedUrgency: 0,
         statusBreakdown: "",
         users: [],
+        _listingType: row.listing_type,
+        _price: row.property_price,
+        _currency: row.property_currency,
+        _rooms: row.property_rooms,
       };
       pubMap.set(row.publication_id, pub);
       pubOrder.push(row.publication_id);
