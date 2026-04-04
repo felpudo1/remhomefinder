@@ -435,7 +435,7 @@ const Index = () => {
             type="button"
             onClick={() => setIsMobileFiltersOpen(true)}
             className={`fixed bottom-8 left-8 lg:hidden items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow z-30 text-sm font-medium ${
-              activeTab === "referidos" ? "hidden" : "flex"
+              activeTab === "referidos" || activeTab === "gold" ? "hidden" : "flex"
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" /> Filtros{" "}
