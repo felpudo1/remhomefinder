@@ -1549,6 +1549,32 @@ export type Database = {
           type: Database["public"]["Enums"]["org_type"]
         }[]
       }
+      get_agent_property_insights: {
+        Args: { p_limit?: number; p_offset?: number; p_org_id: string }
+        Returns: {
+          current_status: string
+          listing_type: string
+          property_currency: string
+          property_id: string
+          property_neighborhood: string
+          property_price: number
+          property_ref: string
+          property_rooms: number
+          property_title: string
+          pub_created_at: string
+          pub_status: string
+          publication_id: string
+          ratings_by_status: Json
+          status_counts: Json
+          user_display_name: string
+          user_email: string
+          user_id: string
+          user_listing_id: string
+          user_org_id: string
+          user_phone: string
+          user_updated_at: string
+        }[]
+      }
       get_all_announcements: {
         Args: never
         Returns: {
@@ -1651,6 +1677,15 @@ export type Database = {
       get_user_listings_page: {
         Args: { _cursor?: string; _page_size?: number }
         Returns: Json
+      }
+      get_user_status_history: {
+        Args: { p_user_listing_id: string }
+        Returns: {
+          changed_by: string
+          created_at: string
+          event_metadata: Json
+          new_status: string
+        }[]
       }
       has_role: {
         Args: {
