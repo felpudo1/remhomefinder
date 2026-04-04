@@ -50,12 +50,16 @@ const AgentDashboard = () => {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [showFormarEquipo, setShowFormarEquipo] = useState(false);
   const navigate = useNavigate();
+  const { setTask } = useImportActions();
 
   // Usuario del AuthProvider centralizado: 0 auth requests HTTP adicionales
   const { user: authUser } = useCurrentUser();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
   const profileStatus: UserStatus = profile?.status ?? "pending";
+
+  // Realtime listener para importación masiva (persistente entre tabs)
+  useImportRealtime();
 
   /**
    * Carga inicial de roles y agencia del usuario.
