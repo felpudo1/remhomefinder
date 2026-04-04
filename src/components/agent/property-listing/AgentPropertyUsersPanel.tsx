@@ -85,6 +85,20 @@ function BooleanRow({ label, value }: { label: string; value: boolean }) {
   );
 }
 
+/**
+ * Renderiza una fila para campos de texto (como el motivo de descarte)
+ */
+function TextRow({ label, value }: { label: string; value: string }) {
+  if (!value) return null;
+
+  return (
+    <div className="space-y-0.5 rounded-md bg-muted/30 p-2 border border-border/50">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{label}</p>
+      <p className="text-xs text-foreground leading-relaxed italic">"{value}"</p>
+    </div>
+  );
+}
+
 function StatusRatingCard({ status, user }: { status: string; user: UserInsight }) {
   const { data: fields } = useStatusFeedbackConfig(status);
   const metadata = user.ratingsByStatus[status];
@@ -108,30 +122,41 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
       value: Boolean(metadata[field.field_id]),
     }));
 
+  // Filtrar campos de tipo text (incluyendo motivo de descarte)
+  const textRows = fields
+    .filter((field) => field.field_type === "text")
+    .map((field) => ({
+      label: field.field_label,
+      value: String(metadata[field.field_id] || ""),
+    }))
+    .filter((row) => row.value.trim() !== "");
+
   // Si no hay datos de ningún tipo, no mostrar la tarjeta
-  // Excepto si es descartado y tiene motivo
-  const hasReason = status === "descartado" && metadata.reason;
-  if (ratingRows.length === 0 && booleanRows.length === 0 && !hasReason) return null;
+  if (ratingRows.length === 0 && booleanRows.length === 0 && textRows.length === 0) return null;
 
   return (
-    <div className="min-w-[200px] shrink-0 space-y-2 rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="text-xs capitalize">
+    <div className="min-w-[240px] shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 shadow-sm lg:min-w-[280px]">
+      <div className="flex items-center justify-between border-b border-border/50 pb-2">
+        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-bold uppercase tracking-tight">
           {status.replace(/_/g, " ")}
         </Badge>
-        {status === "descartado" && metadata.reason && (
-          <span className="text-xs text-muted-foreground italic">
-            {metadata.reason}
-          </span>
-        )}
       </div>
+      
       {(ratingRows.length > 0 || booleanRows.length > 0) && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {ratingRows.map((row) => (
             <RatingRow key={row.label} label={row.label} value={row.value} />
           ))}
           {booleanRows.map((row) => (
             <BooleanRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </div>
+      )}
+
+      {textRows.length > 0 && (
+        <div className="space-y-2 pt-1">
+          {textRows.map((row) => (
+            <TextRow key={row.label} label={row.label} value={row.value} />
           ))}
         </div>
       )}
