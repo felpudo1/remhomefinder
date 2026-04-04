@@ -260,6 +260,10 @@ const AgentDashboard = () => {
           canManageTeams={canManageTeams}
         />
       )}
+      {agency && userId && (
+        <AgencyMassImporter orgId={agency.id} userId={userId} />
+      )}
+      <ImportProgressIndicator />
       <Footer showDbStatus />
     </div>
   );
