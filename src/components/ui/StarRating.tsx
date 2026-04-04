@@ -166,7 +166,6 @@ export function PropertyRatingBadge({
     hasFamilyGroup = false,
 }: PropertyRatingBadgeProps) {
     const hasMarketplaceRating = marketplaceTotalVotes > 0;
-    const hasUserVote = userVote > 0;
     const hasFamilyRating = hasFamilyGroup && familyTotalVotes > 0;
 
     // Helper para renderizar estrellas fraccionarias

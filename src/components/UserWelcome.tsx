@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Home, CheckCircle2, ChevronRight, Layers, Phone } from "lucide-react";
+import { Sparkles, Home, CheckCircle2, ChevronRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
@@ -13,7 +13,7 @@ interface UserWelcomeProps {
     userPhone?: string;
 }
 
-export const UserWelcome = ({ onDismiss, userName, userPhone }: UserWelcomeProps) => {
+export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
     const [dontShowAgain, setDontShowAgain] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 

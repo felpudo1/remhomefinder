@@ -5,7 +5,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, RefreshCw, Bot, TrendingUp } from "lucide-react";
-import { EstadisticasTab } from "./publicaciones/EstadisticasTab";
 import { AdminInteres } from "./AdminInteres";
 import { StatProperty } from "@/types/admin-publications";
 import { useToast } from "@/hooks/use-toast";
@@ -22,26 +21,19 @@ export function AdminEstadisticas() {
     const [loading, setLoading] = useState(true);
     const [marketProps, setMarketProps] = useState<StatProperty[]>([]);
     const [personalProps, setPersonalProps] = useState<StatProperty[]>([]);
-    const [loadingMarket, setLoadingMarket] = useState(true);
-    const [loadingPersonal, setLoadingPersonal] = useState(true);
-    const [totalMarketCount, setTotalMarketCount] = useState(0);
-    const [totalPersonalCount, setTotalPersonalCount] = useState(0);
+    const [_loadingMarket, setLoadingMarket] = useState(true);
+    const [_loadingPersonal, setLoadingPersonal] = useState(true);
+    const [_totalMarketCount, setTotalMarketCount] = useState(0);
+    const [_totalPersonalCount, setTotalPersonalCount] = useState(0);
     const PAGE_SIZE = 50;
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [scrapeUsageRows, setScrapeUsageRows] = useState<ScrapeUsageRow[]>([]);
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
     const {
         pageMarket,
-        setPageMarket,
         pagePersonal,
-        setPagePersonal,
-        statsSubTab,
-        setStatsSubTab,
         mainTab,
         setMainTab,
-        sortConfig,
-        sortedStats,
-        handleSort,
     } = useAdminEstadisticasController(marketProps, personalProps);
 
     const handleRefresh = async () => {

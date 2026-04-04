@@ -1,12 +1,10 @@
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
-import { Property, PropertyStatus, AgentPubStatus } from "@/types/property";
+import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
-import { ExternalLink, Building2, MessageCircle, Trash2, User, CalendarIcon } from "lucide-react";
+import { ExternalLink, Building2, MessageCircle, User, CalendarIcon } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { StarRating, PropertyRatingBadge } from "@/components/ui/StarRating";
+import { PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
@@ -83,7 +81,6 @@ export function PropertyCard({
   const dialogs = usePropertyCardDialogs(property);
   
   const { toast } = useToast();
-  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
   // Hook de acciones y lógica de negocio especializada (Google Calendar, etc)
   const { openVisitCalendarEntry } = usePropertyStatusActions(property, ownerEmail);

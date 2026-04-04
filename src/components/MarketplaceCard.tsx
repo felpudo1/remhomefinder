@@ -2,13 +2,11 @@ import { MarketplaceProperty } from "@/types/property";
 import { Bookmark, Star, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCardBase } from "@/components/ui/PropertyCardBase";
-import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
 import { MarketplacePropertyDetailModal } from "@/components/MarketplacePropertyDetailModal";
 import { useState } from "react";
 import { MatchiAIBadge } from "@/components/ui/MatchiAIBadge";
 import { StarRating } from "@/components/ui/StarRating";
-import { cn } from "@/lib/utils";
 import { QRCodeModal } from "@/components/marketplace/QRCodeModal";
 
 interface MarketplaceCardProps {
@@ -45,7 +43,6 @@ export function MarketplaceCard({
   forceExpandImages,
   isMatchAIMagicActive = false,
   matchAIRank = 0,
-  userOrgId,
 }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);

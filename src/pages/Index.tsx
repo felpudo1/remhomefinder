@@ -10,7 +10,7 @@ import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Users, SlidersHorizontal, Store, X, ChevronRight, UserPlus } from "lucide-react";
+import { Home, Plus, Users, SlidersHorizontal, Store, UserPlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -22,10 +22,6 @@ import { resolveWelcomeDisplayName, resolveWelcomePhone } from "@/lib/welcomeUse
 import {
   ADD_BUTTON_CONFIG_KEY,
   ADD_BUTTON_DEFAULT,
-  APP_BRAND_NAME_DEFAULT,
-  APP_BRAND_NAME_KEY,
-  SUPPORT_PHONE_CONFIG_KEY,
-  SUPPORT_PHONE_DEFAULT,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
 
@@ -73,7 +69,7 @@ const Index = () => {
   };
 
   // Estado del perfil del usuario
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: profile, isLoading: _profileLoading } = useProfile();
   /** Saludo: perfil en BD; si tarda, cae a user_metadata del JWT (registro) sin queries extra. */
   const welcomeDisplayName = useMemo(
     () => resolveWelcomeDisplayName(profile ?? undefined, authUser ?? null),
@@ -122,15 +118,13 @@ const Index = () => {
 
   // Configuración de botones
   const { value: addButtonConfigRaw } = useSystemConfig(ADD_BUTTON_CONFIG_KEY, ADD_BUTTON_DEFAULT);
-  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
-  const { value: supportPhone } = useSystemConfig(SUPPORT_PHONE_CONFIG_KEY, SUPPORT_PHONE_DEFAULT);
   
   const addButtonConfig = (addButtonConfigRaw as AddButtonConfig) || ADD_BUTTON_DEFAULT;
 
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
-  const [welcomeType, setWelcomeType] = useState<"user" | "agent">("user");
+  const [welcomeType, _setWelcomeType] = useState<"user" | "agent">("user");
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [showAIProfileModal, setShowAIProfileModal] = useState(false);
 
@@ -309,7 +303,6 @@ const Index = () => {
     setIsDetailOpen(true);
   };
 
-  const isRegistered = new URLSearchParams(location.search).get("registered") === "true";
   const listingSummary: IndexHeaderListingSummary = {
     selectedStatuses,
     statusCounts,

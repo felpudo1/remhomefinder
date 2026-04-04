@@ -15,7 +15,6 @@ interface UseIndexOnboardingParams {
  * Mantiene la persistencia actual en localStorage para no cambiar comportamiento.
  */
 export function useIndexOnboarding({
-  locationSearch,
   isPremium,
   profileUserId,
 }: UseIndexOnboardingParams) {

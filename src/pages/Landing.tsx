@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Search, CheckCircle2, ArrowRight, Building2, Store, Shield } from "lucide-react";
+import { Home, Users, Search, CheckCircle2, ArrowRight, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import authBg from "@/assets/auth-bg.jpg";
 import { ROUTES } from "@/lib/constants";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";

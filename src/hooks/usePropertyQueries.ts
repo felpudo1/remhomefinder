@@ -1,5 +1,5 @@
-import { useInfiniteQuery, useQueryClient, InfiniteData } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { Property, PropertyComment, AgentPubStatus } from "@/types/property";

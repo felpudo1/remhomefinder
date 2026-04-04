@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MarketplaceProperty } from "@/types/property";
@@ -15,7 +15,6 @@ export interface SharedMarketplaceProperty extends MarketplaceProperty {
  * En el nuevo esquema, las publicaciones son de la org (agent_publications).
  */
 export function useOrgSharedProperties(orgId: string | null) {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const queryKey = ["agency-shared-properties", orgId];

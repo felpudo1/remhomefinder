@@ -34,7 +34,7 @@ export function GroupsModal({
   canManageTeams = true 
 }: GroupsModalProps) {
   const { 
-    groups, agencyOrg, loading, refetchGroups, createGroup, joinGroup, 
+    groups, agencyOrg, loading, createGroup, joinGroup, 
     leaveGroup, deleteGroup, fetchMembers, removeMember 
   } = useGroups();
   
@@ -79,7 +79,6 @@ export function GroupsModal({
   }, [open, isAgent, agencyOrg?.id]);
 
   const groupLabel = isAgent ? "equipo" : "grupo";
-  const groupLabelPlural = isAgent ? "Equipos" : "Grupos";
   const groupLabelPluralLower = isAgent ? "equipos" : "grupos";
 
   const handleCreate = async () => {

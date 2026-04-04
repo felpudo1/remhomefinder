@@ -71,29 +71,6 @@ export function ActiveSessionsList() {
     }
   };
 
-  const closeSession = async (sessionId: string) => {
-    setClosingId(sessionId);
-    try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(getEdgeFunctionUrl(), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ action: "close_session", session_id: sessionId }),
-      });
-      const result = await res.json();
-      console.log("[closeSession] result:", result);
-      if (result.success) {
-        toast.success("Sesión cerrada");
-        setSessions((prev) => prev?.filter((s) => s.session_id !== sessionId) ?? null);
-      } else {
-        toast.error(result.error || "Error al cerrar sesión");
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "Error de red");
-    } finally {
-      setClosingId(null);
-    }
-  };
 
   const closeUserSessions = async (sessionIds: string[]) => {
     setClosingId(sessionIds[0]);

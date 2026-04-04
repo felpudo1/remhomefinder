@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw, Sparkles, QrCode } from "lucide-react";
 import { QRCodeModal } from "@/components/marketplace/QRCodeModal";
-import { currencySymbol } from "@/lib/currency";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
 import { AGENT_PROPERTY_STATUSES, PROPERTY_STATUS_LABELS } from "@/lib/constants";
@@ -18,7 +17,6 @@ import { MarketplaceProperty } from "@/types/property";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
-import { useGroups } from "@/hooks/useGroups";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
 import type { AgentPubStatus, TableRow } from "@/types/supabase";
 import { MatchLeadsList } from "./MatchLeadsList";
@@ -33,11 +31,10 @@ interface AgentPropertiesProps {
     activeGroupId?: string | null;
 }
 
-export const AgentProperties = ({ agency, profileStatus, activeGroupId }: AgentPropertiesProps) => {
+export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
-    const { groups } = useGroups();
     const [publishOpen, setPublishOpen] = useState(false);
     const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const [propertyToEdit, setPropertyToEdit] = useState<any>(null);

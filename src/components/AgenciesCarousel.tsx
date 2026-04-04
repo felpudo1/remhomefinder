@@ -1,4 +1,4 @@
-import { Building2, Home, Search, Shield, Users } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 const agencies = [
   { name: "ACSA", color: "text-blue-600" },

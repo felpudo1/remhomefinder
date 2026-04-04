@@ -11,7 +11,6 @@ import { toast } from "@/hooks/use-toast";
 import {
     MapPin,
     Maximize2,
-    BedDouble,
     ExternalLink,
     ChevronLeft,
     ChevronRight,

@@ -220,8 +220,6 @@ export function usePropertyMutations() {
             coordinatedDate,
             groupId,
             contactedName,
-            discardedAttributeIds,
-            prosAndCons,
             contactedFeedback,
             coordinatedFeedback,
             discardedSurvey,
@@ -263,7 +261,6 @@ export function usePropertyMutations() {
             metadata?: Record<string, any>;
         }) => {
             if (!authUser) throw new Error("No autenticado");
-            const user = authUser;
 
             // Map old status names to new enum values
             const statusMap: Record<string, string> = {
@@ -326,7 +323,7 @@ export function usePropertyMutations() {
             }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)
-            const { data: insertedLog, error } = await supabase
+            const { data: _insertedLog, error } = await supabase
                 .from("status_history_log")
                 .insert({
                     user_listing_id: id,
@@ -390,7 +387,6 @@ export function usePropertyMutations() {
             comment: Omit<PropertyComment, "id" | "createdAt">;
         }) => {
             if (!authUser) throw new Error("No autenticado");
-            const user = authUser;
 
             const { data, error } = await (supabase.from("family_comments") as any).insert({
                 user_listing_id: propertyId,

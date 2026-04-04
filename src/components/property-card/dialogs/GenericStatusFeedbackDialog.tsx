@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
 import { RatingField } from "./RatingField";
 import { Input } from "@/components/ui/input";
