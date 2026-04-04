@@ -31,16 +31,9 @@ export function AdminEstadisticas() {
     const [loadingScrapeUsage, setLoadingScrapeUsage] = useState(true);
     const {
         pageMarket,
-        _setPageMarket,
         pagePersonal,
-        _setPagePersonal,
-        _statsSubTab,
-        _setStatsSubTab,
         mainTab,
         setMainTab,
-        _sortConfig,
-        _sortedStats,
-        _handleSort,
     } = useAdminEstadisticasController(marketProps, personalProps);
 
     const handleRefresh = async () => {

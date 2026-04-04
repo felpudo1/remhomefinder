@@ -24,7 +24,6 @@ interface AdminHeaderProps {
 export const AdminHeader = ({
     activeSection,
     onNavigate,
-    _onGoBack,
     handleSignOut,
     menuItems,
     userEmail,

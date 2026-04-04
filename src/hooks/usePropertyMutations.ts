@@ -220,8 +220,6 @@ export function usePropertyMutations() {
             coordinatedDate,
             groupId,
             contactedName,
-            _discardedAttributeIds,
-            _prosAndCons,
             contactedFeedback,
             coordinatedFeedback,
             discardedSurvey,

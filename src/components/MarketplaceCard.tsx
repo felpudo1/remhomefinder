@@ -43,7 +43,6 @@ export function MarketplaceCard({
   forceExpandImages,
   isMatchAIMagicActive = false,
   matchAIRank = 0,
-  _userOrgId,
 }: MarketplaceCardProps) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);

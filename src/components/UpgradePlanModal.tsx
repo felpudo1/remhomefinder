@@ -31,7 +31,6 @@ export function UpgradePlanModal({
     _limit = 0, 
     type = "user",
     title,
-    _description 
 }: UpgradePlanModalProps) {
     const isAgent = type === "agent";
     const [showContent, setShowContent] = useState(false);
