@@ -67,7 +67,7 @@ export function PropertyFormManual({
     privateImages,
     setPrivateImages,
     privateFileInputRef,
-    handlePrivateFileUpload,
+    _handlePrivateFileUpload,
     manualImageUrl,
     setManualImageUrl,
     fileInputRef,

@@ -71,7 +71,7 @@ export function ActiveSessionsList() {
     }
   };
 
-  const closeSession = async (sessionId: string) => {
+  const _closeSession = async (sessionId: string) => {
     setClosingId(sessionId);
     try {
       const headers = await getAuthHeaders();

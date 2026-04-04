@@ -5,7 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import { formatDaysAgo, type InAppResult } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
 import { ScraperInput } from "./add-property/ScraperInput";

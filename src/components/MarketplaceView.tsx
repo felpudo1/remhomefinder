@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarketplaceProperties } from "@/hooks/useMarketplaceProperties";
 import { useSaveToList, PlanLimitError } from "@/hooks/useSaveToList";
@@ -14,7 +14,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
-import { Search, Loader2, Store, ImageIcon } from "lucide-react";
+import { Search, Loader2, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -65,7 +65,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
 
   const { properties: userProperties } = useProperties();
   const { data: profile } = useProfile();
-  const { isPremium, canSaveMore, maxSaves } = useSubscription();
+  const { isPremium, maxSaves } = useSubscription();
   const { groups } = useGroups();
   const userOrgId = groups?.[0]?.id || null;
   const referredAgentId = profile?.referredById;

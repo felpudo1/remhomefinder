@@ -28,10 +28,10 @@ interface UpgradePlanModalProps {
 export function UpgradePlanModal({ 
     open, 
     onClose, 
-    limit = 0, 
+    _limit = 0, 
     type = "user",
     title,
-    description 
+    _description 
 }: UpgradePlanModalProps) {
     const isAgent = type === "agent";
     const [showContent, setShowContent] = useState(false);

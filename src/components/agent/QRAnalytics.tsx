@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode, Users, Bookmark, Phone, Calendar, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { QrCode, Bookmark, Phone, Calendar, TrendingUp } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 interface PublicationAnalytics {

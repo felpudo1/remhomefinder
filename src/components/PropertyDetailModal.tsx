@@ -11,8 +11,8 @@ import { useCurrentUser } from "@/contexts/AuthProvider";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
+  _DialogHeader,
+  _DialogTitle,
 } from "@/components/ui/dialog";
 
 import {
@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   MapPin,
   Maximize2,
-  BedDouble,
+  _BedDouble,
   ExternalLink,
   MessageCircle,
   ChevronLeft,
@@ -37,7 +37,7 @@ import {
   Share2,
   Users,
   Building2,
-  X,
+  _X,
   Phone,
   User,
   Copy,

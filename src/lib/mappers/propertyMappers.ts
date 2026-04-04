@@ -1,4 +1,4 @@
-import { Property, PropertyStatus, PropertyComment, MarketplacePropertyStatus, ListingType } from "@/types/property";
+import { Property, PropertyStatus, MarketplacePropertyStatus, ListingType } from "@/types/property";
 
 /**
  * Normaliza URLs de imágenes desde la DB.

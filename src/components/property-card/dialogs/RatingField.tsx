@@ -1,4 +1,3 @@
-import React from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +15,7 @@ interface RatingFieldProps {
  * 
  * @param inline - Si es true, muestra solo las estrellas sin label ni fondo (para layout personalizado)
  */
-export function RatingField({ value, onChange, label, variant = "blue", inline = false }: RatingFieldProps) {
+export function RatingField({ value, onChange, label, _variant = "blue", inline = false }: RatingFieldProps) {
   if (inline) {
     return (
       <div className="flex items-center justify-end gap-px">

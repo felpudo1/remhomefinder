@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-    Building2, Clock, Mail, Phone, Users, Loader2,
+    Building2, Clock, _Mail, Phone, _Users, Loader2,
     CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User, Star, Medal, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ export function AdminAgencias({ toast }: Props) {
                 return;
             }
 
-            const userIds = profiles.map((p: any) => p.user_id);
+            const _userIds = profiles.map((p: any) => p.user_id);
 
             // Get organizations (agency_team type) and publication counts
             const [orgsRes, pubCountsRes, referrersRes] = await Promise.all([

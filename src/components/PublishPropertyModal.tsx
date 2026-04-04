@@ -17,7 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, Sparkles } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { PropertyFormManual } from "./add-property/PropertyFormManual";
 import { ScraperInput } from "./add-property/ScraperInput";
@@ -464,7 +463,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     }
   };
 
-  const checkDuplicateUrl = async (urlToCheck: string) => {
+  const _checkDuplicateUrl = async (urlToCheck: string) => {
     if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     try {
       const existing = await getExistingPropertyByUrl(urlToCheck);

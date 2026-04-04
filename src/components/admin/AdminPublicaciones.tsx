@@ -5,11 +5,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Loader2, Building2, Users, RefreshCw } from "lucide-react";
+import { Building2, Users, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProperty, MktProperty, MarketplaceStatus } from "@/types/admin-publications";
-import type { AgentPubStatus } from "@/types/supabase";
 
 import { MarketplaceTab } from "./publicaciones/MarketplaceTab";
 import { UsuariosTab } from "./publicaciones/UsuariosTab";
@@ -217,7 +216,7 @@ export function AdminPublicaciones({ toast }: Props) {
     if (!deleteUserTarget) return;
     const id = deleteUserTarget.id;
     const title = deleteUserTarget.title;
-    const snapshot = [...userProps];
+    const _snapshot = [...userProps];
     setDeleteUserTarget(null);
 
     // Registrar en auditoría ANTES de borrar
@@ -286,7 +285,7 @@ export function AdminPublicaciones({ toast }: Props) {
     const id = deleteMktTarget.id;
     const title = deleteMktTarget.title;
     const orgName = deleteMktTarget.orgName;
-    const statusBefore = deleteMktTarget.status;
+    const _statusBefore = deleteMktTarget.status;
     setMktProps(p => p.filter(prop => prop.id !== id));
     setDeleteMktTarget(null);
 

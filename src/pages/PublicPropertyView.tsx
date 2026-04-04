@@ -118,7 +118,7 @@ export default function PublicPropertyView() {
     if (!pendingSave) return;
 
     try {
-      const { propertyId, publicationId } = JSON.parse(pendingSave);
+      const { propertyId } = JSON.parse(pendingSave);
       if (propertyId === id) {
         sessionStorage.removeItem(PENDING_SAVE_KEY);
         handleSaveProperty(user.id);

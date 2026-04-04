@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -91,7 +91,7 @@ export const useAuth = () => {
         orgName?: string;
         orgPhone?: string;
     }) => {
-        const { email, password, confirmPassword, accountType, displayName, phone, orgName, orgPhone } = params;
+        const { email, password, accountType, displayName, phone, orgName, orgPhone } = params;
         setLoading(true);
         setIsSigningUp(true);
         try {

@@ -1,7 +1,6 @@
 import { Property, STATUS_CONFIG } from "@/types/property";
-import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { formatDateTime } from "@/lib/date-utils";
-import { Users, CalendarIcon, Building2 } from "lucide-react";
+import { Users, CalendarIcon } from "lucide-react";
 
 const MARKETPLACE_STATUS_BADGE: Record<string, { label: string; className: string }> = {
   disponible: { label: "Disponible", className: "bg-emerald-600/90 text-white" },
@@ -22,7 +21,7 @@ interface PropertyCardHeaderProps {
  */
 export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderProps) {
   const config = STATUS_CONFIG[property.status];
-  const mktBadge = property.marketplaceStatus ? MARKETPLACE_STATUS_BADGE[property.marketplaceStatus] : null;
+  const _mktBadge = property.marketplaceStatus ? MARKETPLACE_STATUS_BADGE[property.marketplaceStatus] : null;
 
   return (
     <>

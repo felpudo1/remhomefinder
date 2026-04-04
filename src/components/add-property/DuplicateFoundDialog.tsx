@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ExternalLink, Home, Users, ArrowRight } from "lucide-react";
+import { AlertTriangle, Home, Users, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 

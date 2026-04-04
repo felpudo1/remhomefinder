@@ -10,7 +10,7 @@ import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Users, SlidersHorizontal, Store, X, ChevronRight, UserPlus } from "lucide-react";
+import { Home, Plus, Users, SlidersHorizontal, Store, UserPlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -130,7 +130,7 @@ const Index = () => {
   const [isGroupsOpen, setIsGroupsOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
-  const [welcomeType, setWelcomeType] = useState<"user" | "agent">("user");
+  const [welcomeType, _setWelcomeType] = useState<"user" | "agent">("user");
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [showAIProfileModal, setShowAIProfileModal] = useState(false);
 
@@ -309,7 +309,7 @@ const Index = () => {
     setIsDetailOpen(true);
   };
 
-  const isRegistered = new URLSearchParams(location.search).get("registered") === "true";
+  const _isRegistered = new URLSearchParams(location.search).get("registered") === "true";
   const listingSummary: IndexHeaderListingSummary = {
     selectedStatuses,
     statusCounts,
