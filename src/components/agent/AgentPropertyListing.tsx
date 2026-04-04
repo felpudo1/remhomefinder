@@ -1,7 +1,11 @@
 import { Loader2, Building2 } from "lucide-react";
+import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useAgentPropertyInsights } from "@/hooks/useAgentPropertyInsights";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Agency } from "./AgentProfile";
 import { AgentPropertyCards } from "./property-listing/AgentPropertyCards";
 import { AgentPropertyChartsPanel } from "./property-listing/AgentPropertyChartsPanel";
@@ -13,9 +17,35 @@ interface AgentPropertyListingProps {
 }
 
 export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
-  const { data: insights = [], isLoading } = useAgentPropertyInsights(agency.id);
+  const { data: insights = [], isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useAgentPropertyInsights(agency.id);
   const { data: discardFields } = useStatusFeedbackConfig("descartado");
   const controller = useAgentPropertyListingController(insights);
+  const queryClient = useQueryClient();
+
+  // Realtime: invalidar cache cuando llega un nuevo status_history_log
+  useEffect(() => {
+    if (!agency.id) return;
+
+    const channelName = `agent_insights_rt_${agency.id}`;
+    // Limpieza pre-emptiva
+    supabase.removeChannel(supabase.channel(channelName));
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "status_history_log" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["agent-property-insights", agency.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [agency.id, queryClient]);
 
   const statusLabel: Record<string, string> = {
     todos: "Todos",
@@ -73,6 +103,26 @@ export function AgentPropertyListing({ agency }: AgentPropertyListingProps) {
         selectedPropertyId={controller.selectedProperty?.publicationId || null}
         onSelectProperty={controller.selectProperty}
       />
+
+      {/* Botón "Cargar más" para paginación */}
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="gap-2"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Cargando...
+              </>
+            ) : (
+              "Cargar más propiedades"
+            )}
+          </Button>
+        </div>
+      )}
 
       {controller.selectedProperty && (
         <div className="space-y-4">

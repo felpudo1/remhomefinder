@@ -17,7 +17,7 @@ export function useGeography() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 60 * 60 * 1000, // 1 hora
+    staleTime: Infinity, // Datos casi estáticos
   });
 
   const citiesQuery = useQuery({
@@ -30,7 +30,7 @@ export function useGeography() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 60 * 60 * 1000, // 1 hora
+    staleTime: Infinity, // Datos casi estáticos
   });
 
   const neighborhoodsQuery = useQuery({
@@ -43,7 +43,7 @@ export function useGeography() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 60 * 60 * 1000, // 1 hora
+    staleTime: Infinity, // Datos casi estáticos
   });
 
   return {
