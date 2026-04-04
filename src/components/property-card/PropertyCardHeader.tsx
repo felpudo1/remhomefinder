@@ -21,7 +21,6 @@ interface PropertyCardHeaderProps {
  */
 export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderProps) {
   const config = STATUS_CONFIG[property.status];
-  const _mktBadge = property.marketplaceStatus ? MARKETPLACE_STATUS_BADGE[property.marketplaceStatus] : null;
 
   return (
     <>

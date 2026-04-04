@@ -33,7 +33,6 @@ const LegalPrivacy = routeLazy(() => import("./pages/LegalPrivacy"));
 const AuthRecoverPassword = routeLazy(() => import("./pages/AuthRecoverPassword"));
 const AuthResetPassword = routeLazy(() => import("./pages/AuthResetPassword"));
 const AuthCallback = routeLazy(() => import("./pages/AuthCallback"));
-const _PaymentStatus = routeLazy(() => import("./pages/PaymentStatus"));
 
 // Caché global: 5 min de staleTime evita refetch en cada mount/window focus.
 // gcTime de 10 min mantiene los datos en memoria limpia por más tiempo.

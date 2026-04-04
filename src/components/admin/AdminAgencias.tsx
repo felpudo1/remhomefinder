@@ -67,7 +67,6 @@ export function AdminAgencias({ toast }: Props) {
                 return;
             }
 
-            const _userIds = profiles.map((p: any) => p.user_id);
 
             // Get organizations (agency_team type) and publication counts
             const [orgsRes, pubCountsRes, referrersRes] = await Promise.all([

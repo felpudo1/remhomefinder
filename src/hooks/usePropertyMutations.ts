@@ -263,7 +263,6 @@ export function usePropertyMutations() {
             metadata?: Record<string, any>;
         }) => {
             if (!authUser) throw new Error("No autenticado");
-            const _user = authUser;
 
             // Map old status names to new enum values
             const statusMap: Record<string, string> = {
@@ -390,7 +389,6 @@ export function usePropertyMutations() {
             comment: Omit<PropertyComment, "id" | "createdAt">;
         }) => {
             if (!authUser) throw new Error("No autenticado");
-            const _user = authUser;
 
             const { data, error } = await (supabase.from("family_comments") as any).insert({
                 user_listing_id: propertyId,

@@ -17,7 +17,6 @@ import { MarketplaceProperty } from "@/types/property";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import { PremiumWelcomeModal } from "@/components/PremiumWelcomeModal";
-import { useGroups } from "@/hooks/useGroups";
 import { resolveImages } from "@/lib/mappers/propertyMappers";
 import type { AgentPubStatus, TableRow } from "@/types/supabase";
 import { MatchLeadsList } from "./MatchLeadsList";
@@ -32,7 +31,7 @@ interface AgentPropertiesProps {
     activeGroupId?: string | null;
 }
 
-export const AgentProperties = ({ agency, profileStatus, _activeGroupId }: AgentPropertiesProps) => {
+export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();

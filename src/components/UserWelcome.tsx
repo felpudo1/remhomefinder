@@ -13,7 +13,7 @@ interface UserWelcomeProps {
     userPhone?: string;
 }
 
-export const UserWelcome = ({ onDismiss, userName, _userPhone }: UserWelcomeProps) => {
+export const UserWelcome = ({ onDismiss, userName }: UserWelcomeProps) => {
     const [dontShowAgain, setDontShowAgain] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 

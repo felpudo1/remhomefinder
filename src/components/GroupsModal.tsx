@@ -79,7 +79,6 @@ export function GroupsModal({
   }, [open, isAgent, agencyOrg?.id]);
 
   const groupLabel = isAgent ? "equipo" : "grupo";
-  const _groupLabelPlural = isAgent ? "Equipos" : "Grupos";
   const groupLabelPluralLower = isAgent ? "equipos" : "grupos";
 
   const handleCreate = async () => {

@@ -216,7 +216,6 @@ export function AdminPublicaciones({ toast }: Props) {
     if (!deleteUserTarget) return;
     const id = deleteUserTarget.id;
     const title = deleteUserTarget.title;
-    const _snapshot = [...userProps];
     setDeleteUserTarget(null);
 
     // Registrar en auditoría ANTES de borrar
@@ -285,7 +284,6 @@ export function AdminPublicaciones({ toast }: Props) {
     const id = deleteMktTarget.id;
     const title = deleteMktTarget.title;
     const orgName = deleteMktTarget.orgName;
-    const _statusBefore = deleteMktTarget.status;
     setMktProps(p => p.filter(prop => prop.id !== id));
     setDeleteMktTarget(null);
 

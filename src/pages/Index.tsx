@@ -309,7 +309,6 @@ const Index = () => {
     setIsDetailOpen(true);
   };
 
-  const _isRegistered = new URLSearchParams(location.search).get("registered") === "true";
   const listingSummary: IndexHeaderListingSummary = {
     selectedStatuses,
     statusCounts,

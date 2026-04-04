@@ -463,7 +463,6 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     }
   };
 
-  const _checkDuplicateUrl = async (urlToCheck: string) => {
     if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
     try {
       const existing = await getExistingPropertyByUrl(urlToCheck);
