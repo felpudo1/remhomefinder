@@ -355,7 +355,7 @@ const Index = () => {
         <>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
             <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
-              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-3 gap-1 h-auto min-h-12">
+              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-4 gap-1 h-auto min-h-12">
                 <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <Home className="w-4 h-4 shrink-0" />
                   <span className="truncate">
@@ -371,6 +371,10 @@ const Index = () => {
                 <TabsTrigger value="referidos" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <UserPlus className="w-4 h-4 shrink-0" />
                   <span className="truncate">Referidos</span>
+                </TabsTrigger>
+                <TabsTrigger value="gold" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                  <Gem className="w-4 h-4 shrink-0 text-amber-500" />
+                  <span className="truncate font-semibold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">GOLD</span>
                 </TabsTrigger>
               </TabsList>
 
