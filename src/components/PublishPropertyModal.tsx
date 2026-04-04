@@ -463,12 +463,6 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     }
   };
 
-    if (!urlToCheck.trim()) { setUrlDuplicated(false); return; }
-    try {
-      const existing = await getExistingPropertyByUrl(urlToCheck);
-      setUrlDuplicated(!!existing);
-    } catch { setUrlDuplicated(false); }
-  };
 
   const handleSubmit = async () => {
     if (!form.title.trim()) return;
