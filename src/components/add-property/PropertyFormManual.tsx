@@ -132,9 +132,9 @@ export function PropertyFormManual({
                             <Sparkles className="w-3.5 h-3.5" /> CARGA DELEGADA (MODO DIOS)
                         </Label>
                         {form.onBehalfOfUserId && (
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-6 text-[10px] hover:text-destructive px-2"
                                 onClick={() => setForm({ ...form, onBehalfOfUserId: undefined, onBehalfOfOrgId: undefined })}
                             >
@@ -142,8 +142,10 @@ export function PropertyFormManual({
                             </Button>
                         )}
                     </div>
-                    
-                    <Popover open={openAgentSelect} onOpenChange={setOpenAgentSelect}>
+
+                    <div className="space-y-1">
+                        <Label className="text-xs font-medium text-foreground">Asignar agente *</Label>
+                        <Popover open={openAgentSelect} onOpenChange={setOpenAgentSelect}>
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
@@ -211,6 +213,7 @@ export function PropertyFormManual({
                             </Command>
                         </PopoverContent>
                     </Popover>
+                    </div>
                     <p className="text-[10px] text-muted-foreground leading-tight italic">
                         * Al seleccionar un agente, la propiedad se publicará como si él mismo la hubiera subido, usando sus datos de contacto en el Marketplace.
                     </p>

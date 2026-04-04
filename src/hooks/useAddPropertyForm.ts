@@ -130,8 +130,9 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
   const hasPrice = String(form.priceRent || "").trim().length > 0;
   const hasLocation = Boolean(form.department_id && form.city_id && form.neighborhood_id);
   const hasUrl = String(url || "").trim().length > 0;
-  
-  const isFormValid = hasTitle && hasPrice && hasLocation && hasUrl && !urlDuplicated && !urlInFamily;
+  const hasAgent = Boolean(form.onBehalfOfUserId);
+
+  const isFormValid = hasTitle && hasPrice && hasLocation && hasUrl && hasAgent && !urlDuplicated && !urlInFamily;
 
   const getManualSubmitBlockers = () => {
     const blockers: string[] = [];
@@ -139,6 +140,7 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     if (!hasLocation) blockers.push("departamento, ciudad y barrio");
     if (!hasTitle) blockers.push("título");
     if (!hasPrice) blockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
+    if (!hasAgent) blockers.push("agente asignado");
     if (urlDuplicated || urlInFamily) blockers.push("esta URL ya está en tu familia");
     return blockers;
   };
