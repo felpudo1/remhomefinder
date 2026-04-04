@@ -129,7 +129,6 @@ export function GenericStatusFeedbackDialog({
                 maxLength={30}
                 className="min-h-[88px] w-full max-w-full resize-y rounded-xl border-border focus-visible:ring-primary"
               />
-              />
             </div>
           );
         }
