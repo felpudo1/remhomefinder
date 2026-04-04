@@ -35,6 +35,7 @@ interface AgentPropertiesProps {
 export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const { openModal: openImporter } = useImportActions();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
     const [publishOpen, setPublishOpen] = useState(false);
     const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
