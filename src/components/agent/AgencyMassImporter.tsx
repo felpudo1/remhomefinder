@@ -36,7 +36,7 @@ interface Props {
 export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
   const isOpen = useImportModalOpen();
   const task = useActiveImportTask();
-  const { closeModal, minimize, setTask, setStatus, reset } = useImportActions();
+  const { closeModal, minimize, setTask, reset } = useImportActions();
 
   const [domainUrl, setDomainUrl] = useState("");
   const [discovering, setDiscovering] = useState(false);
