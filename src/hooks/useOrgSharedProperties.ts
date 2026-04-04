@@ -15,7 +15,6 @@ export interface SharedMarketplaceProperty extends MarketplaceProperty {
  * En el nuevo esquema, las publicaciones son de la org (agent_publications).
  */
 export function useOrgSharedProperties(orgId: string | null) {
-  const _queryClient = useQueryClient();
   const { toast } = useToast();
 
   const queryKey = ["agency-shared-properties", orgId];
