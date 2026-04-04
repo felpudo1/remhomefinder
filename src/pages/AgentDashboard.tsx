@@ -140,6 +140,14 @@ const AgentDashboard = () => {
     init();
   }, [authUser?.id]);
 
+  // Rehidratar estado de importación tras F5
+  useEffect(() => {
+    if (!agency?.id) return;
+    rehydrateImportState(agency.id).then((state) => {
+      if (state) setTask(state);
+    });
+  }, [agency?.id]);
+
   /**
    * Sincroniza displayName y phone del perfil en la agency cuando el perfil carga o cambia.
    * Es un useEffect liviano (sin requests a BD) separado del init() principal.
