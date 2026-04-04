@@ -40,6 +40,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
 
   const [domainUrl, setDomainUrl] = useState("");
   const [discovering, setDiscovering] = useState(false);
+  const [terminating, setTerminating] = useState(false);
   const [links, setLinks] = useState<DiscoveredLink[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
@@ -175,6 +176,61 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
     } catch (err) {
       console.error("Error iniciando importación:", err);
       toast.error("Error al iniciar la importación");
+    }
+  };
+
+  const handleTerminateProcess = async () => {
+    if (!task?.taskId) return;
+
+    setTerminating(true);
+
+    try {
+      const manualStopMessage = "Proceso finalizado manualmente";
+
+      const { error: linksError } = await supabase
+        .from("discovered_links" as any)
+        .update({ status: "failed", error_message: manualStopMessage } as any)
+        .eq("task_id", task.taskId)
+        .in("status", ["queued", "processing"]);
+
+      if (linksError) throw linksError;
+
+      const { data: refreshedLinks, error: refreshedLinksError } = await supabase
+        .from("discovered_links" as any)
+        .select("status")
+        .eq("task_id", task.taskId);
+
+      if (refreshedLinksError) throw refreshedLinksError;
+
+      const completed = (refreshedLinks || []).filter((link: any) => link.status === "completed").length;
+      const failed = (refreshedLinks || []).filter((link: any) => link.status === "failed").length;
+
+      const { error: taskError } = await supabase
+        .from("agency_discovery_tasks" as any)
+        .update({
+          status: "completed",
+          completed_links: completed,
+          failed_links: failed,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq("id", task.taskId);
+
+      if (taskError) throw taskError;
+
+      setTask({
+        ...task,
+        totalLinks: Math.max(task.totalLinks, refreshedLinks?.length || 0),
+        completedLinks: completed,
+        failedLinks: failed,
+        status: "completed",
+      });
+
+      toast.success("Proceso finalizado manualmente");
+    } catch (err) {
+      console.error("Error finalizando importación:", err);
+      toast.error("No se pudo finalizar el proceso");
+    } finally {
+      setTerminating(false);
     }
   };
 
@@ -350,10 +406,20 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
 
             <div className="flex gap-2 justify-end pt-2">
               {isImporting && (
-                <Button variant="outline" onClick={minimize}>
-                  <Minimize2 className="h-4 w-4 mr-2" />
-                  Minimizar al fondo
-                </Button>
+                <>
+                  <Button variant="outline" onClick={minimize} disabled={terminating}>
+                    <Minimize2 className="h-4 w-4 mr-2" />
+                    Minimizar al fondo
+                  </Button>
+                  <Button variant="destructive" onClick={handleTerminateProcess} disabled={terminating}>
+                    {terminating ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <XCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Terminar proceso
+                  </Button>
+                </>
               )}
               {isCompleted && (
                 <Button onClick={reset}>Cerrar</Button>
