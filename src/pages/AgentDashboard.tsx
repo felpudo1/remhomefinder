@@ -17,6 +17,10 @@ import { AgentPropertyListing } from "@/components/agent/AgentPropertyListing";
 import { AgentHeader } from "@/components/AgentHeader";
 import { GroupsModal } from "@/components/GroupsModal";
 import { Footer } from "@/components/Footer";
+import { AgencyMassImporter } from "@/components/agent/AgencyMassImporter";
+import { ImportProgressIndicator } from "@/components/agent/ImportProgressIndicator";
+import { useImportRealtime, rehydrateImportState } from "@/hooks/useImportRealtime";
+import { useImportActions } from "@/store/useImportStore";
 import { UserStatus } from "@/types/property";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -46,12 +50,16 @@ const AgentDashboard = () => {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [showFormarEquipo, setShowFormarEquipo] = useState(false);
   const navigate = useNavigate();
+  const { setTask } = useImportActions();
 
   // Usuario del AuthProvider centralizado: 0 auth requests HTTP adicionales
   const { user: authUser } = useCurrentUser();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
   const profileStatus: UserStatus = profile?.status ?? "pending";
+
+  // Realtime listener para importación masiva (persistente entre tabs)
+  useImportRealtime();
 
   /**
    * Carga inicial de roles y agencia del usuario.
@@ -131,6 +139,14 @@ const AgentDashboard = () => {
     };
     init();
   }, [authUser?.id]);
+
+  // Rehidratar estado de importación tras F5
+  useEffect(() => {
+    if (!agency?.id) return;
+    rehydrateImportState(agency.id).then((state) => {
+      if (state) setTask(state);
+    });
+  }, [agency?.id]);
 
   /**
    * Sincroniza displayName y phone del perfil en la agency cuando el perfil carga o cambia.
@@ -244,6 +260,10 @@ const AgentDashboard = () => {
           canManageTeams={canManageTeams}
         />
       )}
+      {agency && userId && (
+        <AgencyMassImporter orgId={agency.id} userId={userId} />
+      )}
+      <ImportProgressIndicator />
       <Footer showDbStatus />
     </div>
   );

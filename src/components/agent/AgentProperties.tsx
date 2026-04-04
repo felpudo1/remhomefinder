@@ -5,7 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw, Sparkles, QrCode } from "lucide-react";
+import { Home, Plus, Loader2, Edit, ChevronDown, Check, RefreshCw, Sparkles, QrCode, Globe } from "lucide-react";
+import { useImportActions } from "@/store/useImportStore";
 import { QRCodeModal } from "@/components/marketplace/QRCodeModal";
 import { PublishPropertyModal } from "@/components/PublishPropertyModal";
 import { Agency } from "./AgentProfile";
@@ -34,6 +35,7 @@ interface AgentPropertiesProps {
 export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const { openModal: openImporter } = useImportActions();
     const { canAgentPublishMore, maxAgentPublishes, isPremium } = useSubscription();
     const [publishOpen, setPublishOpen] = useState(false);
     const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
@@ -293,9 +295,14 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                         <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
                     </button>
                 </div>
-                <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
-                    <Plus className="w-4 h-4" /> Publicar propiedad
-                </Button>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={openImporter}>
+                        <Globe className="w-4 h-4" /> Importar desde web
+                    </Button>
+                    <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
+                        <Plus className="w-4 h-4" /> Publicar propiedad
+                    </Button>
+                </div>
             </div>
 
             {propsLoading ? (
