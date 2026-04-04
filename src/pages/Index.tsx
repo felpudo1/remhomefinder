@@ -423,6 +423,10 @@ const Index = () => {
               <TabsContent value="referidos">
                 <ReferidosTabPanel />
               </TabsContent>
+
+              <TabsContent value="gold">
+                <GoldOpportunitiesPanel />
+              </TabsContent>
             </Tabs>
           </div>
 
