@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
   Globe, Loader2, Search, Download, Minimize2, CheckCircle2, XCircle,
   ImageIcon, ExternalLink, RotateCw,
@@ -243,7 +243,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
               <Badge variant="secondary">{selectedCount} seleccionadas</Badge>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[50vh] border rounded-lg">
+            <div className="flex-1 max-h-[50vh] overflow-y-auto border rounded-lg">
               <div className="divide-y divide-border">
                 {links.map((link) => (
                   <div
@@ -301,7 +301,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" onClick={() => reset()}>
