@@ -243,7 +243,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
               <Badge variant="secondary">{selectedCount} seleccionadas</Badge>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[50vh] border rounded-lg">
+            <div className="flex-1 max-h-[50vh] overflow-y-auto border rounded-lg">
               <div className="divide-y divide-border">
                 {links.map((link) => (
                   <div
@@ -301,7 +301,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" onClick={() => reset()}>
