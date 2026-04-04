@@ -4,6 +4,7 @@ import { RatingField } from "./RatingField";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
 import { PropertyStatus } from "@/types/property";
 import { Loader2 } from "lucide-react";
@@ -182,6 +183,18 @@ export function GenericStatusFeedbackDialog({
                 {field.placeholder}
               </p>
             ) : null}
+          </div>
+        );
+      case "boolean":
+        return (
+          <div key={field.field_id} className="flex w-full min-w-0 items-center justify-between gap-2">
+            <Label className="min-w-0 flex-1 text-left text-sm font-medium leading-snug text-foreground break-words cursor-pointer">
+              {field.field_label}
+            </Label>
+            <Switch
+              checked={formData[field.field_id] || false}
+              onCheckedChange={(val) => handleFieldChange(field.field_id, val)}
+            />
           </div>
         );
       default:

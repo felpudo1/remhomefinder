@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(taskkill *)",
-      "Bash(npm *)"
+      "Bash(npm *)",
+      "Bash(type *)",
+      "Bash(git checkout *)"
     ]
   },
   "$version": 3

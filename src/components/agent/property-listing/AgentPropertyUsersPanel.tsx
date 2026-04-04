@@ -1,4 +1,4 @@
-import { BarChart3, CalendarPlus, Clock3, Phone, Star, User, Users } from "lucide-react";
+import { BarChart3, CalendarPlus, Check, Clock3, Phone, Star, User, Users, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,13 +69,30 @@ function RatingRow({ label, value }: { label: string; value: number }) {
   );
 }
 
+/**
+ * Renderiza una fila para campos booleanos (Sí/No)
+ */
+function BooleanRow({ label, value }: { label: string; value: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      {value ? (
+        <Check className="h-3.5 w-3.5 text-emerald-500" />
+      ) : (
+        <X className="h-3.5 w-3.5 text-red-500" />
+      )}
+    </div>
+  );
+}
+
 function StatusRatingCard({ status, user }: { status: string; user: UserInsight }) {
   const { data: fields } = useStatusFeedbackConfig(status);
   const metadata = user.ratingsByStatus[status];
 
   if (!metadata || !fields || fields.length === 0) return null;
 
-  const rows = fields
+  // Filtrar campos de tipo rating
+  const ratingRows = fields
     .filter((field) => field.field_type === "rating")
     .map((field) => ({
       label: field.field_label,
@@ -83,7 +100,16 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
     }))
     .filter((row) => row.value > 0);
 
-  if (rows.length === 0) return null;
+  // Filtrar campos de tipo boolean
+  const booleanRows = fields
+    .filter((field) => field.field_type === "boolean")
+    .map((field) => ({
+      label: field.field_label,
+      value: Boolean(metadata[field.field_id]),
+    }));
+
+  // Si no hay datos de ningún tipo, no mostrar la tarjeta
+  if (ratingRows.length === 0 && booleanRows.length === 0) return null;
 
   return (
     <div className="min-w-[200px] shrink-0 space-y-2 rounded-lg border border-border bg-card p-3">
@@ -91,8 +117,11 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
         {status.replace(/_/g, " ")}
       </Badge>
       <div className="space-y-1.5">
-        {rows.map((row) => (
+        {ratingRows.map((row) => (
           <RatingRow key={row.label} label={row.label} value={row.value} />
+        ))}
+        {booleanRows.map((row) => (
+          <BooleanRow key={row.label} label={row.label} value={row.value} />
         ))}
       </div>
     </div>
