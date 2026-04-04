@@ -1,4 +1,3 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
 import { Button } from "./ui/button";
 import { APP_BRAND_NAME_DEFAULT } from "@/lib/config-keys";

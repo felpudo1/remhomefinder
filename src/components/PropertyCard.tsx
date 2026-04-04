@@ -83,7 +83,6 @@ export function PropertyCard({
   const dialogs = usePropertyCardDialogs(property);
   
   const { toast } = useToast();
-  const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
   // Hook de acciones y lógica de negocio especializada (Google Calendar, etc)
   const { openVisitCalendarEntry } = usePropertyStatusActions(property, ownerEmail);

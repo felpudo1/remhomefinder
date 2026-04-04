@@ -2,7 +2,6 @@ import { Property, STATUS_CONFIG } from "@/types/property";
 import { formatDateTime } from "@/lib/date-utils";
 import { Users, CalendarIcon } from "lucide-react";
 
-const MARKETPLACE_STATUS_BADGE: Record<string, { label: string; className: string }> = {
   disponible: { label: "Disponible", className: "bg-emerald-600/90 text-white" },
   pausado: { label: "Pausada", className: "bg-amber-500/90 text-white" },
   reservado: { label: "Reservada", className: "bg-blue-600/90 text-white" },

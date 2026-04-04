@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-    Building2, Clock, _Mail, Phone, _Users, Loader2,
+    Building2, Clock, Phone, Loader2,
     CheckCircle, Ban, Trash2, ChevronUp, ChevronDown, Search, User, Star, Medal, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";

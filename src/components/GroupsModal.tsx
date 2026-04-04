@@ -34,7 +34,7 @@ export function GroupsModal({
   canManageTeams = true 
 }: GroupsModalProps) {
   const { 
-    groups, agencyOrg, loading, _refetchGroups, createGroup, joinGroup, 
+    groups, agencyOrg, loading, createGroup, joinGroup, 
     leaveGroup, deleteGroup, fetchMembers, removeMember 
   } = useGroups();
   
