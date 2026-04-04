@@ -295,10 +295,14 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                         <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
                     </button>
                 </div>
-                <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
-                    <Plus className="w-4 h-4" /> Publicar propiedad
-                </Button>
-            </div>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={openImporter}>
+                        <Globe className="w-4 h-4" /> Importar desde web
+                    </Button>
+                    <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
+                        <Plus className="w-4 h-4" /> Publicar propiedad
+                    </Button>
+                </div>
 
             {propsLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
