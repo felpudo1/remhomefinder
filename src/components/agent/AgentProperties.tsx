@@ -303,6 +303,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                         <Plus className="w-4 h-4" /> Publicar propiedad
                     </Button>
                 </div>
+            </div>
 
             {propsLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
