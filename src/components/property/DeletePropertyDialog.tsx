@@ -44,6 +44,7 @@ export function DeletePropertyDialog({ open, onOpenChange, onConfirm, title }: D
                     placeholder="Motivo de la eliminación..."
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
+                    maxLength={30}
                     className="resize-none text-sm min-h-[80px] rounded-xl"
                 />
                 <AlertDialogFooter>
