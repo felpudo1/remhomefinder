@@ -69,7 +69,7 @@ const Index = () => {
   };
 
   // Estado del perfil del usuario
-  const { data: profile, isLoading: _profileLoading } = useProfile();
+  const { data: profile } = useProfile();
   /** Saludo: perfil en BD; si tarda, cae a user_metadata del JWT (registro) sin queries extra. */
   const welcomeDisplayName = useMemo(
     () => resolveWelcomeDisplayName(profile ?? undefined, authUser ?? null),
