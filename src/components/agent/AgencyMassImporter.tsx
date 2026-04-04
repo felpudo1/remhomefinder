@@ -329,7 +329,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
             </div>
 
             <div className="flex gap-4 text-sm">
-              <div className="flex items-center gap-1.5 text-green-600">
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 {task.completedLinks} exitosas
               </div>

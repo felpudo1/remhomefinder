@@ -28,7 +28,7 @@ export const ImportProgressIndicator: React.FC = () => {
         {task.status === "importing" ? (
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
         ) : (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
         )}
         <span className="text-sm font-medium">
           Importando: {processed}/{task.totalLinks} ({percent}%)
