@@ -367,29 +367,32 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
           matchScore = 0;
           const { operation_weight = 30, budget_weight = 40, neighborhood_weight = 20, rooms_weight = 10 } = matchWeights;
 
-          // Operation matching - necesitamos listing_type del pub (del RPC row)
-          // Lo sacamos del primer row que tenga este publication_id
-          const rpcPub = allInsights.find(p => p.publicationId === pub.publicationId);
-          // No tenemos listing_type en AgentPropertyInsight, pero lo podemos deducir
-          // Para mantener la interfaz, buscamos en las raw pages
-          // Simplificación: usamos la info disponible
+          // Operation matching
           const op = String(userSearch.operation || "").trim().toLowerCase();
           const wantRent = op === "rent" || op === "alquilar";
           const wantBuy = op === "buy" || op === "comprar";
           const wantBoth = op === "all" || op === "ambas" || !op;
+          const isRent = pub._listingType === "rent";
+          const isSale = pub._listingType === "sale";
 
-          // listing_type no está en la interfaz pública, pero podemos agregarlo internamente
-          if (wantBoth) {
+          if (wantBoth || (wantRent && isRent) || (wantBuy && isSale)) {
             matchScore += operation_weight;
           }
-          // Para operation matching completo necesitaríamos listing_type — lo omitimos si wantBoth no aplica
-          // ya que no está en AgentPropertyInsight. Se deja como estaba.
 
           // Budget matching
           const min_b = userSearch.min_budget || 0;
           const max_b = userSearch.max_budget || 999999999;
-          // price no está en AgentPropertyInsight — se pierde. Lo dejamos como 0.
-          // TODO: agregar price a la interfaz si se necesita
+          const pubPrice = Number(pub._price || 0);
+          const userCurrency = userSearch.currency === "$" ? "UYU" : "USD";
+          const pubCurrency = pub._currency || "USD";
+
+          if (pubPrice > 0 && userCurrency === pubCurrency) {
+            if (pubPrice >= min_b && pubPrice <= max_b) {
+              matchScore += budget_weight;
+            } else if (pubPrice >= min_b * 0.85 && pubPrice <= max_b * 1.15) {
+              matchScore += budget_weight * 0.5;
+            }
+          }
 
           // Location matching
           let selectedNeighborhoods: string[] = [];
@@ -408,9 +411,10 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
             matchScore += neighborhood_weight;
           }
 
-          // Rooms matching — rooms no está en AgentPropertyInsight
+          // Rooms matching
           const minRooms = userSearch.min_bedrooms || 0;
-          if (minRooms === 0) {
+          const pubRooms = pub._rooms || 0;
+          if (minRooms === 0 || pubRooms >= minRooms) {
             matchScore += rooms_weight;
           }
 
