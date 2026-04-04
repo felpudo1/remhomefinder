@@ -243,7 +243,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
               <Badge variant="secondary">{selectedCount} seleccionadas</Badge>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[400px] border rounded-lg">
+            <ScrollArea className="flex-1 max-h-[50vh] border rounded-lg">
               <div className="divide-y divide-border">
                 {links.map((link) => (
                   <div
