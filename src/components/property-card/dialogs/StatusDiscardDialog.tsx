@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { StatusChangeConfirmDialog } from "@/components/ui/StatusChangeConfirmDialog";
 import { Textarea } from "@/components/ui/textarea";
 import { RatingField } from "./RatingField";

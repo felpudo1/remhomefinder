@@ -1,7 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { ExternalLink, Building2, MessageCircle, User, CalendarIcon } from "lucide-react";

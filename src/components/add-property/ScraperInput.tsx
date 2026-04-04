@@ -48,7 +48,6 @@ export function ScraperInput({
     url,
     setUrl,
     isLoading,
-    _isAnalyzingUnified = false,
     handleScrape,
     unifiedImageRef: _unifiedImageRef,
     handleUnifiedImageAnalysis: _handleUnifiedImageAnalysis,

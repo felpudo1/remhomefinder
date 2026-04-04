@@ -22,10 +22,6 @@ import { resolveWelcomeDisplayName, resolveWelcomePhone } from "@/lib/welcomeUse
 import {
   ADD_BUTTON_CONFIG_KEY,
   ADD_BUTTON_DEFAULT,
-  APP_BRAND_NAME_DEFAULT,
-  APP_BRAND_NAME_KEY,
-  SUPPORT_PHONE_CONFIG_KEY,
-  SUPPORT_PHONE_DEFAULT,
 } from "@/lib/config-keys";
 import type { AddButtonConfig } from "@/types/property";
 

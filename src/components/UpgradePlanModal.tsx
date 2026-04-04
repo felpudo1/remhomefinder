@@ -28,7 +28,6 @@ interface UpgradePlanModalProps {
 export function UpgradePlanModal({ 
     open, 
     onClose, 
-    _limit = 0, 
     type = "user",
     title,
 }: UpgradePlanModalProps) {
