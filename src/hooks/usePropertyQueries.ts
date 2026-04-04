@@ -40,7 +40,7 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
       contactedName = meta?.contacted_name || undefined;
       contactedBy = log.changed_by ? (changerProfiles[log.changed_by] || undefined) : undefined;
     } else if (log.new_status === "descartado" && !discardedReason) {
-      discardedReason = meta?.reason || undefined;
+      discardedReason = meta?.reason || meta?.descppal || undefined;
       discardedByEmail = log.changed_by ? (changerProfiles[log.changed_by] || undefined) : undefined;
     } else if (log.new_status === "visita_coordinada" && !coordinatedDate) {
       const d = parseCoordinatedVisitDateFromMetadata(meta);
