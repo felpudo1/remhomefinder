@@ -323,7 +323,7 @@ export function usePropertyMutations() {
             }
 
             // Insert into status_history_log (trigger auto-updates user_listings.current_status)
-            const { data: insertedLog, error } = await supabase
+            const { data: _insertedLog, error } = await supabase
                 .from("status_history_log")
                 .insert({
                     user_listing_id: id,
