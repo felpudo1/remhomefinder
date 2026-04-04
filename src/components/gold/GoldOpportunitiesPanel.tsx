@@ -52,7 +52,7 @@ export const GoldOpportunitiesPanel = () => {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
-                Radar de Oportunidades Gold 💎
+                🧈🧈Radar de Oportunidades Gold 🧈🧈
               </h2>
               <p className="text-sm text-gray-400 mt-0.5">
                 Inteligencia de mercado para inversores exigentes
