@@ -109,21 +109,32 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
     }));
 
   // Si no hay datos de ningún tipo, no mostrar la tarjeta
-  if (ratingRows.length === 0 && booleanRows.length === 0) return null;
+  // Excepto si es descartado y tiene motivo
+  const hasReason = status === "descartado" && metadata.reason;
+  if (ratingRows.length === 0 && booleanRows.length === 0 && !hasReason) return null;
 
   return (
     <div className="min-w-[200px] shrink-0 space-y-2 rounded-lg border border-border bg-card p-3">
-      <Badge variant="secondary" className="text-xs capitalize">
-        {status.replace(/_/g, " ")}
-      </Badge>
-      <div className="space-y-1.5">
-        {ratingRows.map((row) => (
-          <RatingRow key={row.label} label={row.label} value={row.value} />
-        ))}
-        {booleanRows.map((row) => (
-          <BooleanRow key={row.label} label={row.label} value={row.value} />
-        ))}
+      <div className="flex items-center gap-2">
+        <Badge variant="secondary" className="text-xs capitalize">
+          {status.replace(/_/g, " ")}
+        </Badge>
+        {status === "descartado" && metadata.reason && (
+          <span className="text-xs text-muted-foreground italic">
+            {metadata.reason}
+          </span>
+        )}
       </div>
+      {(ratingRows.length > 0 || booleanRows.length > 0) && (
+        <div className="space-y-1.5">
+          {ratingRows.map((row) => (
+            <RatingRow key={row.label} label={row.label} value={row.value} />
+          ))}
+          {booleanRows.map((row) => (
+            <BooleanRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -325,17 +336,6 @@ export function AgentPropertyUsersPanel({
                     <Phone className="h-3 w-3" /> {selectedUser.phone || "Sin teléfono"}
                   </p>
                 </div>
-
-                {selectedUser.ratingsByStatus.descartado?.reason && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                    <p className="text-xs font-medium text-destructive">
-                      Motivo de descarte
-                    </p>
-                    <p className="mt-1 text-xs text-foreground">
-                      {selectedUser.ratingsByStatus.descartado.reason}
-                    </p>
-                  </div>
-                )}
 
                 <div className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

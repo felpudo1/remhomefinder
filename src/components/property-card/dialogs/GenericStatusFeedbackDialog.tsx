@@ -224,9 +224,9 @@ export function GenericStatusFeedbackDialog({
     visitado: "Propiedad visitada",
     firme_candidato: "¿Por qué esta propiedad es una de tus favoritas?",
     posible_interes: "Evaluación rápida de puntos clave",
-    descartado: "Sentimos que esta opción no haya cumplido con lo que buscabas. 🏡 Como último favor, nos encantaría saber qué le faltó para que la próxima propiedad sea la definitiva. 💎",
+    descartado: "",
     eliminado: "Propiedad eliminada",
-    meta_conseguida: "¡Objetivo cumplido! 🏆 Estamos felices de haberte acompañado en este camino. Ayudanos con un último feedback para seguir mejorando. 💎",
+    meta_conseguida: "",
     a_analizar: "Propiedad en análisis",
     eliminado_agencia: "Propiedad finalizada por la agencia",
   };

@@ -1,4 +1,4 @@
-import { Home, User, Users, LogOut, Star, Medal, Sparkles } from "lucide-react";
+import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
 import type { IndexHeaderActions, IndexHeaderListingSummary } from "@/types/index-page";
 
 interface HeaderProps {
@@ -35,6 +36,7 @@ export const UserHeader = ({
     const { data: profile } = useProfile();
     const [showStatusBubbles, setShowStatusBubbles] = useState(false);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+    const [isReferidosOpen, setIsReferidosOpen] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     const isReferred = !!profile?.referredById;
@@ -176,12 +178,19 @@ export const UserHeader = ({
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span>Mi Perfil</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 className="cursor-pointer gap-2 py-2"
                                 onClick={actions.onAIProfileClick}
                             >
                                 <Sparkles className="w-4 h-4 text-purple-500" />
                                 <span>Perfil IA</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="cursor-pointer gap-2 py-2"
+                                onClick={() => setIsReferidosOpen(true)}
+                            >
+                                <UserPlus className="w-4 h-4 text-muted-foreground" />
+                                <span>Referidos</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
@@ -197,9 +206,13 @@ export const UserHeader = ({
             </div>
         </header>
 
-        <EditProfileModal 
-            isOpen={isEditProfileOpen} 
-            onClose={() => setIsEditProfileOpen(false)} 
+        <EditProfileModal
+            isOpen={isEditProfileOpen}
+            onClose={() => setIsEditProfileOpen(false)}
+        />
+        <ReferidosTabPanel
+            isOpen={isReferidosOpen}
+            onClose={() => setIsReferidosOpen(false)}
         />
         </>
     );

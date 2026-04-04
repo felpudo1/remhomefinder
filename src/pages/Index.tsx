@@ -10,7 +10,7 @@ import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Users, SlidersHorizontal, Store, UserPlus, Gem } from "lucide-react";
+import { Home, Plus, Users, SlidersHorizontal, Store, Gem } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -28,7 +28,6 @@ import type { AddButtonConfig } from "@/types/property";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
-import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
 import { MiListadoTabPanel } from "@/components/MiListadoTabPanel";
 import { GoldOpportunitiesPanel } from "@/components/gold/GoldOpportunitiesPanel";
 import { useIndexOnboarding } from "@/hooks/useIndexOnboarding";
@@ -355,7 +354,7 @@ const Index = () => {
         <>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
             <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
-              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-4 gap-1 h-auto min-h-12">
+              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-3 gap-1 h-auto min-h-12">
                 <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <Home className="w-4 h-4 shrink-0" />
                   <span className="truncate">
@@ -367,10 +366,6 @@ const Index = () => {
                   <span className="truncate">
                     HFMarket <span className="opacity-70">({marketplaceProperties.length})</span>
                   </span>
-                </TabsTrigger>
-                <TabsTrigger value="referidos" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
-                  <UserPlus className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Referidos</span>
                 </TabsTrigger>
                 <TabsTrigger value="gold" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <Gem className="w-4 h-4 shrink-0 text-amber-500" />
@@ -420,10 +415,6 @@ const Index = () => {
                 />
               </TabsContent>
 
-              <TabsContent value="referidos">
-                <ReferidosTabPanel />
-              </TabsContent>
-
               <TabsContent value="gold">
                 <GoldOpportunitiesPanel />
               </TabsContent>
@@ -435,7 +426,7 @@ const Index = () => {
             type="button"
             onClick={() => setIsMobileFiltersOpen(true)}
             className={`fixed bottom-8 left-8 lg:hidden items-center gap-2 px-4 h-12 bg-card text-foreground border border-border rounded-2xl card-shadow z-30 text-sm font-medium ${
-              activeTab === "referidos" || activeTab === "gold" ? "hidden" : "flex"
+              activeTab === "gold" ? "hidden" : "flex"
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" /> Filtros{" "}

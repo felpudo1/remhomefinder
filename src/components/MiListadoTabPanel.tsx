@@ -116,7 +116,7 @@ export function MiListadoTabPanel({
                   <h1 className="text-2xl font-bold text-foreground tracking-tight">
                     <span className="block">Tus Avisos Guardados</span>
                     <span className="inline-flex items-center">
-                      <span>({filteredCount}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})</span>
+                      <span>({totalCount}/{referralBonus > 0 ? `${maxSaves - referralBonus}+${referralBonus}` : maxSaves})</span>
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>

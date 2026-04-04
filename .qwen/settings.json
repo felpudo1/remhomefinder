@@ -5,7 +5,14 @@
       "Bash(taskkill *)",
       "Bash(npm *)",
       "Bash(type *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(pnpm run *)",
+      "Bash(timeout *)",
+      "Bash(netstat *)",
+      "Bash(findstr *)",
+      "Bash(tasklist *)",
+      "Bash(powershell *)",
+      "Bash(npx *)"
     ]
   },
   "$version": 3
