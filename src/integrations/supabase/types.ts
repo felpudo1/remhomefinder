@@ -113,6 +113,53 @@ export type Database = {
           },
         ]
       }
+      agency_discovery_tasks: {
+        Row: {
+          completed_links: number
+          created_at: string
+          created_by: string
+          domain_url: string
+          failed_links: number
+          id: string
+          org_id: string
+          status: string
+          total_links: number
+          updated_at: string
+        }
+        Insert: {
+          completed_links?: number
+          created_at?: string
+          created_by: string
+          domain_url: string
+          failed_links?: number
+          id?: string
+          org_id: string
+          status?: string
+          total_links?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_links?: number
+          created_at?: string
+          created_by?: string
+          domain_url?: string
+          failed_links?: number
+          id?: string
+          org_id?: string
+          status?: string
+          total_links?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_discovery_tasks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_publications: {
         Row: {
           created_at: string
@@ -428,6 +475,60 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      discovered_links: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          is_selected: boolean
+          property_id: string | null
+          status: string
+          task_id: string
+          thumbnail_url: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_selected?: boolean
+          property_id?: string | null
+          status?: string
+          task_id: string
+          thumbnail_url?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_selected?: boolean
+          property_id?: string | null
+          status?: string
+          task_id?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discovered_links_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovered_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "agency_discovery_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       family_comments: {
         Row: {
