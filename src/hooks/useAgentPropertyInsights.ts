@@ -75,6 +75,11 @@ export interface AgentPropertyInsight {
   avgContactedUrgency: number;
   statusBreakdown: string;
   users: AgentUserInsight[];
+  /** Campos internos para match_score — no usados en UI directamente */
+  _listingType?: string;
+  _price?: number;
+  _currency?: string;
+  _rooms?: number;
 }
 
 function maskEmail(email: string | null): string {
