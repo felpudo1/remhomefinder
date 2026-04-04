@@ -755,6 +755,7 @@ export type Database = {
           details: string
           id: string
           images: string[]
+          is_opportunity: boolean
           lat: number | null
           lng: number | null
           m2_total: number
@@ -782,6 +783,7 @@ export type Database = {
           details?: string
           id?: string
           images?: string[]
+          is_opportunity?: boolean
           lat?: number | null
           lng?: number | null
           m2_total?: number
@@ -809,6 +811,7 @@ export type Database = {
           details?: string
           id?: string
           images?: string[]
+          is_opportunity?: boolean
           lat?: number | null
           lng?: number | null
           m2_total?: number
