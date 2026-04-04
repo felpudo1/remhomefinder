@@ -81,7 +81,7 @@ serve(async (req) => {
 
     if (firecrawlKey) {
       try {
-        // Usar Firecrawl map endpoint para descubrir URLs del sitio
+        // Usar solo Firecrawl map endpoint (rápido, sin scraping individual)
         const mapRes = await fetch("https://api.firecrawl.dev/v1/map", {
           method: "POST",
           headers: {
@@ -98,6 +98,8 @@ serve(async (req) => {
           const mapData = await mapRes.json();
           const discoveredUrls: string[] = mapData?.links || mapData?.urls || [];
 
+          console.log(`Map descubrió ${discoveredUrls.length} URLs`);
+
           // Filtrar URLs que parecen ser listados de propiedades
           const propertyPatterns = [
             /propiedad/i, /inmueble/i, /listing/i, /property/i,
@@ -106,73 +108,26 @@ serve(async (req) => {
             /ficha/i, /detalle/i, /detail/i,
           ];
 
-          const filteredUrls = discoveredUrls.filter((url: string) => {
-            // Excluir páginas genéricas
-            const excludePatterns = [
-              /contact/i, /about/i, /nosotros/i, /blog/i,
-              /privacy/i, /terms/i, /legal/i, /login/i, /register/i,
-              /favicon/i, /\.css$/i, /\.js$/i, /\.png$/i, /\.jpg$/i,
-            ];
-            if (excludePatterns.some((p) => p.test(url))) return false;
+          const excludePatterns = [
+            /contact/i, /about/i, /nosotros/i, /blog/i,
+            /privacy/i, /terms/i, /legal/i, /login/i, /register/i,
+            /favicon/i, /\.css$/i, /\.js$/i, /\.png$/i, /\.jpg$/i,
+          ];
 
-            // Si el dominio tiene muchas URLs, preferir las que parezcan propiedades
+          const filteredUrls = discoveredUrls.filter((url: string) => {
+            if (excludePatterns.some((p) => p.test(url))) return false;
             if (discoveredUrls.length > 20) {
               return propertyPatterns.some((p) => p.test(url));
             }
             return true;
           });
 
-          // Para cada URL, intentar obtener metadata OpenGraph (batch de 5)
-          const batchSize = 5;
-          for (let i = 0; i < filteredUrls.length; i += batchSize) {
-            const batch = filteredUrls.slice(i, i + batchSize);
-            const results = await Promise.allSettled(
-              batch.map(async (url: string) => {
-                try {
-                  const scrapeRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${firecrawlKey}`,
-                    },
-                    body: JSON.stringify({
-                      url,
-                      formats: ["extract"],
-                      extract: {
-                        schema: {
-                          type: "object",
-                          properties: {
-                            title: { type: "string" },
-                            og_image: { type: "string" },
-                          },
-                        },
-                      },
-                      timeout: 15000,
-                    }),
-                  });
-
-                  if (scrapeRes.ok) {
-                    const scrapeData = await scrapeRes.json();
-                    const extracted = scrapeData?.data?.extract || {};
-                    const metadata = scrapeData?.data?.metadata || {};
-                    return {
-                      url,
-                      title: extracted.title || metadata?.title || metadata?.ogTitle || url.split("/").pop() || "",
-                      thumbnail_url: extracted.og_image || metadata?.ogImage || "",
-                    };
-                  }
-                  // Si falla, igual incluir con datos mínimos
-                  return { url, title: url.split("/").pop() || "", thumbnail_url: "" };
-                } catch {
-                  return { url, title: url.split("/").pop() || "", thumbnail_url: "" };
-                }
-              })
-            );
-
-            for (const r of results) {
-              if (r.status === "fulfilled") links.push(r.value);
-            }
-          }
+          // Generar links sin scraping individual (título extraído de la URL)
+          links = filteredUrls.map((url: string) => ({
+            url,
+            title: decodeURIComponent(url.split("/").filter(Boolean).pop() || "").replace(/[-_]/g, " "),
+            thumbnail_url: "",
+          }));
         } else {
           const errText = await mapRes.text();
           console.error("Firecrawl map error:", errText);
