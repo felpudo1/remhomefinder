@@ -116,7 +116,7 @@ export function PropertyFormManual({
 
     const { data: roles = [] } = useUserRoles(userId);
     const isAdmin = roles.includes("admin") || roles.includes("sysadmin");
-    const { data: agents = [], isLoading: loadingAgents } = useAgents();
+    const { data: agents = [], isLoading: _loadingAgents } = useAgents();
     const [openAgentSelect, setOpenAgentSelect] = useState(false);
 
     const selectedAgent = agents.find(a => a.id === form.onBehalfOfUserId);
