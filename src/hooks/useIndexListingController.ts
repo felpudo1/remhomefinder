@@ -30,9 +30,16 @@ export function useIndexListingController({
   }, [searchQuery]);
 
   const handleStatusToggle = (status: PropertyStatus) => {
-    setSelectedStatuses((prev) =>
-      prev.includes(status) ? prev.filter((item) => item !== status) : [...prev, status]
-    );
+    setSelectedStatuses((prev) => {
+      const isRemoving = prev.includes(status);
+      const next = isRemoving ? prev.filter((item) => item !== status) : [...prev, status];
+
+      if (status === "descartado" && !isRemoving) {
+        setHideDiscarded(false);
+      }
+
+      return next;
+    });
   };
 
   const handleClearFilters = () => {
