@@ -30,6 +30,7 @@ import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
 import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
 import { MiListadoTabPanel } from "@/components/MiListadoTabPanel";
+import { GoldOpportunitiesPanel } from "@/components/gold/GoldOpportunitiesPanel";
 import { useIndexOnboarding } from "@/hooks/useIndexOnboarding";
 import { useIndexListingController } from "@/hooks/useIndexListingController";
 import type {
