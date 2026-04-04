@@ -126,7 +126,9 @@ export function GenericStatusFeedbackDialog({
                 placeholder={field.placeholder || ""}
                 value={formData[field.field_id] || ""}
                 onChange={(e) => handleFieldChange(field.field_id, e.target.value)}
+                maxLength={30}
                 className="min-h-[88px] w-full max-w-full resize-y rounded-xl border-border focus-visible:ring-primary"
+              />
               />
             </div>
           );
