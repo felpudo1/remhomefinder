@@ -31,17 +31,21 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Validar identidad via claims del JWT (no depende de que exista la sesión en auth)
+    // Decodificar JWT localmente para extraer el user id (sin llamada de red)
     const token = authHeader.replace("Bearer ", "").trim();
-    const { data: claimsData, error: claimsErr } = await sbUser.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
-      console.error("Auth claims error detail:", claimsErr);
+    let userId: string;
+    try {
+      const payloadB64 = token.split(".")[1];
+      const payload = JSON.parse(atob(payloadB64));
+      if (!payload.sub) throw new Error("Missing sub claim");
+      userId = payload.sub;
+    } catch (e) {
+      console.error("JWT decode error:", e);
       return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
 
     // Parsear body
     const body = await req.json();
