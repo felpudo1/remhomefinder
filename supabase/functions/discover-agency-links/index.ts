@@ -31,16 +31,16 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Validar identidad
+    // Validar identidad via JWT claims (local, no depende de sesión)
     const token = authHeader.replace("Bearer ", "").trim();
-    const { data: userData, error: userErr } = await sbUser.auth.getUser(token);
-    if (userErr || !userData?.user) {
+    const { data: claimsData, error: claimsErr } = await sbUser.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = userData.user.id;
+    const userId = claimsData.claims.sub;
 
     // Parsear body
     const body = await req.json();
