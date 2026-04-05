@@ -1,4 +1,4 @@
-import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus } from "lucide-react";
+import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus, Crown } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
+import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import type { IndexHeaderActions, IndexHeaderListingSummary } from "@/types/index-page";
 
 interface HeaderProps {
@@ -37,6 +38,7 @@ export const UserHeader = ({
     const [showStatusBubbles, setShowStatusBubbles] = useState(false);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [isReferidosOpen, setIsReferidosOpen] = useState(false);
+    const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     const isReferred = !!profile?.referredById;
@@ -213,6 +215,10 @@ export const UserHeader = ({
         <ReferidosTabPanel
             isOpen={isReferidosOpen}
             onClose={() => setIsReferidosOpen(false)}
+        />
+        <UpgradePlanModal
+            open={isUpgradeOpen}
+            onClose={() => setIsUpgradeOpen(false)}
         />
         </>
     );
