@@ -1,4 +1,4 @@
-import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus } from "lucide-react";
+import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus, Crown } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { ReferidosTabPanel } from "@/components/ReferidosTabPanel";
+import { UpgradePlanModal } from "@/components/UpgradePlanModal";
 import type { IndexHeaderActions, IndexHeaderListingSummary } from "@/types/index-page";
 
 interface HeaderProps {
@@ -37,6 +38,7 @@ export const UserHeader = ({
     const [showStatusBubbles, setShowStatusBubbles] = useState(false);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [isReferidosOpen, setIsReferidosOpen] = useState(false);
+    const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     const isReferred = !!profile?.referredById;
@@ -192,6 +194,15 @@ export const UserHeader = ({
                                 <UserPlus className="w-4 h-4 text-muted-foreground" />
                                 <span>Referidos</span>
                             </DropdownMenuItem>
+                            {!isPremium && (
+                                <DropdownMenuItem
+                                    className="cursor-pointer gap-2 py-2"
+                                    onClick={() => setIsUpgradeOpen(true)}
+                                >
+                                    <Crown className="w-4 h-4 text-yellow-500" />
+                                    <span className="text-yellow-600 font-semibold">Ser Premium</span>
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                                 className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 py-2"
@@ -213,6 +224,10 @@ export const UserHeader = ({
         <ReferidosTabPanel
             isOpen={isReferidosOpen}
             onClose={() => setIsReferidosOpen(false)}
+        />
+        <UpgradePlanModal
+            open={isUpgradeOpen}
+            onClose={() => setIsUpgradeOpen(false)}
         />
         </>
     );
