@@ -35,7 +35,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "").trim();
     const { data: claimsData, error: claimsErr } = await sbUser.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims?.sub) {
-      console.error("Auth claims error:", claimsErr?.message);
+      console.error("Auth claims error detail:", claimsErr);
       return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
