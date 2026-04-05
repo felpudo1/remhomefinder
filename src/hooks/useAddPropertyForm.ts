@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useGroups } from "@/hooks/useGroups";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { supabase } from "@/integrations/supabase/client";
 import type { AgentMarketplaceListingForUser } from "@/lib/duplicateCheck";
 
 export type FormState = {
@@ -37,6 +39,14 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
   const [url, setUrl] = useState("");
   const [step, setStep] = useState<"url" | "image-upload" | "manual">("url");
   const [cameFromImage, setCameFromImage] = useState(false);
+  
+  // Roles check for Admin Mode logic
+  const [userId, setUserId] = useState<string | undefined>();
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id));
+  }, []);
+  const { data: roles = [] } = useUserRoles(userId);
+  const isAdminUser = roles.includes("admin") || roles.includes("sysadmin");
   
   // Scraped/Manual Images
   const [scrapedImages, setScrapedImages] = useState<string[]>([]);
@@ -132,7 +142,11 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
   const hasUrl = String(url || "").trim().length > 0;
   const hasAgent = Boolean(form.onBehalfOfUserId);
 
-  const isFormValid = hasTitle && hasPrice && hasLocation && hasUrl && hasAgent && !urlDuplicated && !urlInFamily;
+  // El campo agente (Modo Dios) solo es obligatorio para Admins. 
+  // Para usuarios regulares, es opcional (null).
+  const isAgentRequirementMet = isAdminUser ? hasAgent : true;
+
+  const isFormValid = hasTitle && hasPrice && hasLocation && hasUrl && isAgentRequirementMet && !urlDuplicated && !urlInFamily;
 
   const getManualSubmitBlockers = () => {
     const blockers: string[] = [];
@@ -140,7 +154,12 @@ export function useAddPropertyForm(activeGroupId?: string | null) {
     if (!hasLocation) blockers.push("departamento, ciudad y barrio");
     if (!hasTitle) blockers.push("título");
     if (!hasPrice) blockers.push(listingType === "sale" ? "precio de venta" : "alquiler");
-    if (!hasAgent) blockers.push("agente asignado");
+    
+    // Solo bloquea al Admin si no eligió agente
+    if (isAdminUser && !hasAgent) {
+      blockers.push("agente asignado (Carga Delegada)");
+    }
+
     if (urlDuplicated || urlInFamily) blockers.push("esta URL ya está en tu familia");
     return blockers;
   };

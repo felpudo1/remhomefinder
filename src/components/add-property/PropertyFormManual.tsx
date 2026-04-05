@@ -143,7 +143,7 @@ export function PropertyFormManual({
                     </div>
 
                     <div className="space-y-1">
-                        <Label className="text-xs font-medium text-foreground">Asignar agente *</Label>
+                        <Label className="text-xs font-medium text-foreground">Asignar agente {isAdmin && "*"}</Label>
                         <Popover open={openAgentSelect} onOpenChange={setOpenAgentSelect}>
                         <PopoverTrigger asChild>
                             <Button

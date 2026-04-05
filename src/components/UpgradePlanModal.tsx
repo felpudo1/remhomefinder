@@ -60,7 +60,7 @@ export function UpgradePlanModal({
         { icon: Gem, label: "Sello de Confianza", text: "Distinciones premium para fidelizar clientes y destacar tu agencia." },
         { icon: Shield, label: "Soporte Priority", text: "Atención técnica y comercial preferente de nivel VIP." }
     ] : [
-        { icon: Zap, label: "Poder Ilimitado", text: "Multiplica x10 tu capacidad de guardado de avisos." },
+        { icon: Zap, label: "AUMENTA TU PODER", text: "Multiplica x5 tu capacidad de guardado de avisos." },
         { icon: Sparkles, label: "MatchAI Magic", text: "Olvida el scroll infinito, deja que las propiedades perfectas te encuentren a ti." },
         { icon: Crown, label: "Asistencia VIP", text: "Prioridad absoluta en el contacto con agentes y agencias." },
         { icon: Shield, label: "Soporte Elite", text: "Respaldo técnico 24/7 para una experiencia fluida y profesional." }
@@ -237,25 +237,34 @@ export function UpgradePlanModal({
                             <Button
                                 disabled={isLoading}
                                 onClick={isAgent ? handleAgentSubscription : handleUserPayment}
+                                className="w-full h-20 rounded-2xl relative overflow-hidden group shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex flex-col items-center justify-center gap-1 bg-gradient-to-r from-primary via-blue-600 to-primary border-none shadow-blue-500/20"
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:animate-shimmer" />
-                                {isLoading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <Rocket className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
-                                )}
-                                <span className="relative z-10 uppercase">
-                                    {isLoading 
-                                        ? "PROCESANDO..." 
-                                        : isAgent 
-                                            ? `Suscribirme · ${displayPrice} ${displayCurrency}/${selectedInterval === "yearly" ? "año" : "mes"}`
-                                            : "Activa tu Modo Pro"
-                                    }
-                                </span>
-                                {!isLoading && !isAgent && displayPrice && (
-                                    <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-yellow-400 to-orange-400 text-[#1a1c2c] shadow-[0_0_12px_rgba(250,204,21,0.4)]">
-                                        {displayPrice} $U
+                                <div className="flex items-center gap-3">
+                                    {isLoading ? (
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                    ) : (
+                                        <Rocket className="w-6 h-6 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+                                    )}
+                                    <span className="relative z-10 text-base font-black uppercase tracking-widest text-white leading-none">
+                                        {isLoading 
+                                            ? "PROCESANDO..." 
+                                            : isAgent 
+                                                ? "Suscribirme" 
+                                                : "Activa tu Modo Pro"
+                                        }
                                     </span>
+                                </div>
+                                
+                                {!isLoading && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[10px] text-blue-100/70 font-bold uppercase tracking-widest">
+                                            {isAgent ? "PLAN RECURRENTE" : "ACCESO ÚNICO"}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-yellow-300 via-yellow-500 to-orange-500 text-[#1a1c2c] shadow-[0_4px_15px_rgba(250,204,21,0.4)] transition-transform group-hover:scale-105">
+                                            {displayPrice} UYU {isAgent && `/ ${selectedInterval === "yearly" ? "AÑO" : "MES"}`}
+                                        </span>
+                                    </div>
                                 )}
                             </Button>
 

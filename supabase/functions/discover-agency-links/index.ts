@@ -101,38 +101,34 @@ serve(async (req) => {
 
         if (mapRes.ok) {
           const mapData = await mapRes.json();
-          const discoveredUrls: string[] = mapData?.links || mapData?.urls || [];
+          const rawLinks = mapData.links || [];
 
-          console.log(`Map descubrió ${discoveredUrls.length} URLs`);
+          const { data: excludeSettings } = await sbAdmin
+            .from("app_settings")
+            .select("value")
+            .eq("key", "scraper_exclude_urls")
+            .single();
 
-          // Filtrar URLs que parecen ser listados de propiedades
-          const propertyPatterns = [
-            /propiedad/i, /inmueble/i, /listing/i, /property/i,
-            /venta/i, /alquiler/i, /rent/i, /sale/i,
-            /apartamento/i, /casa/i, /local/i, /terreno/i,
-            /ficha/i, /detalle/i, /detail/i,
-          ];
+          const excludePatterns = excludeSettings?.value
+            ? excludeSettings.value.split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean)
+            : ["/propiedad/nada", "/propiedad/alq", "/propiedad/ven", "/login", "/registro", "/mi-cuenta"];
 
-          const excludePatterns = [
-            /contact/i, /about/i, /nosotros/i, /blog/i,
-            /privacy/i, /terms/i, /legal/i, /login/i, /register/i,
-            /favicon/i, /\.css$/i, /\.js$/i, /\.png$/i, /\.jpg$/i,
-          ];
+          console.log(`Aplicando filtros de exclusión (${excludePatterns.length} patrones):`, excludePatterns);
 
-          const filteredUrls = discoveredUrls.filter((url: string) => {
-            if (excludePatterns.some((p) => p.test(url))) return false;
-            if (discoveredUrls.length > 20) {
-              return propertyPatterns.some((p) => p.test(url));
-            }
-            return true;
+          // Filtrar links basura
+          const filteredUrls = rawLinks.filter((url: string) => {
+            if (!url) return false;
+            const lowUrl = url.toLowerCase();
+            return !excludePatterns.some((pattern: string) => lowUrl.includes(pattern));
           });
 
-          // Generar links sin scraping individual (título extraído de la URL)
-          links = filteredUrls.map((url: string) => ({
-            url,
-            title: decodeURIComponent(url.split("/").filter(Boolean).pop() || "").replace(/[-_]/g, " "),
-            thumbnail_url: "",
-          }));
+          console.log(`Discovery: ${rawLinks.length} encontrados -> ${filteredUrls.length} tras filtrar`);
+
+          links = filteredUrls.map((url: string) => {
+            const slug = url.split("/").filter(Boolean).pop() || "";
+            const title = slug.replace(/-/g, " ").replace(/\d+/g, "").trim();
+            return { url, title: title || "Propiedad", thumbnail_url: "" };
+          });
         } else {
           const errText = await mapRes.text();
           console.error("Firecrawl map error:", errText);

@@ -17,6 +17,16 @@ import { toast } from "sonner";
 import {
   useImportModalOpen, useImportActions, useActiveImportTask,
 } from "@/store/useImportStore";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { User, ShieldCheck } from "lucide-react";
 
 interface DiscoveredLink {
   id: string;
@@ -43,6 +53,48 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
   const [terminating, setTerminating] = useState(false);
   const [links, setLinks] = useState<DiscoveredLink[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+  
+  // Lógica de agentes (Carga Delegada para Admins)
+  const { data: roles = [] } = useUserRoles(userId);
+  const isAdmin = roles.includes("admin") || roles.includes("sysadmin");
+  const [onBehalfOfUserId, setOnBehalfOfUserId] = useState<string>(userId); // Por defecto el usuario actual
+  const [orgMembers, setOrgMembers] = useState<{ user_id: string; display_name: string; email: string }[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  // Cargar miembros si es admin
+  useEffect(() => {
+    if (isAdmin && orgId) {
+      const fetchMembers = async () => {
+        setLoadingMembers(true);
+        try {
+          const { data, error } = await supabase
+            .from("organization_members")
+            .select(`
+              user_id,
+              profiles:user_id (
+                display_name,
+                email
+              )
+            `)
+            .eq("org_id", orgId);
+
+          if (error) throw error;
+
+          const members = (data || []).map((m: any) => ({
+            user_id: m.user_id,
+            display_name: m.profiles?.display_name || m.profiles?.email || "Sin nombre",
+            email: m.profiles?.email || ""
+          }));
+          setOrgMembers(members);
+        } catch (err) {
+          console.error("Error fetching members:", err);
+        } finally {
+          setLoadingMembers(false);
+        }
+      };
+      fetchMembers();
+    }
+  }, [isAdmin, orgId]);
 
   const isImporting = task?.status === "importing";
   const isCompleted = task?.status === "completed";
@@ -81,14 +133,28 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
         .eq("task_id", taskId)
         .order("created_at", { ascending: true });
 
-      const discoveredLinks: DiscoveredLink[] = (dbLinks || []).map((l: any) => ({
-        id: l.id,
-        url: l.url,
-        title: l.title || "",
-        thumbnail_url: l.thumbnail_url || "",
-        is_selected: false,
-        status: l.status,
-      }));
+      // OBTENER FILTROS DE EXCLUSIÓN (Para doble chequeo en frontend)
+      const { data: appSettings } = await supabase
+        .from("app_settings" as any)
+        .select("value")
+        .eq("key", "scraper_exclude_urls")
+        .single();
+      
+      const excludePatterns = (appSettings?.value || "").split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean);
+
+      const discoveredLinks: DiscoveredLink[] = (dbLinks || [])
+        .filter((l: any) => {
+          const lowUrl = l.url.toLowerCase();
+          return !excludePatterns.some(pattern => lowUrl.includes(pattern));
+        })
+        .map((l: any) => ({
+          id: l.id,
+          url: l.url,
+          title: l.title || "",
+          thumbnail_url: l.thumbnail_url || "",
+          is_selected: false,
+          status: l.status,
+        }));
 
       // Marcar duplicados del response original
       const dupeUrls = new Set(
@@ -178,7 +244,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
       const token = sessionData?.session?.access_token;
 
       supabase.functions.invoke("process-import-batch", {
-        body: { task_id: task.taskId, org_id: orgId, user_id: userId },
+        body: { task_id: task.taskId, org_id: orgId, user_id: onBehalfOfUserId },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
@@ -255,7 +321,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" />
-            Importación Mágica de Propiedades
+            Importación Masiva de Propiedades via AI
           </DialogTitle>
           <DialogDescription>
             Escaneá el sitio web de tu agencia para importar propiedades automáticamente.
@@ -369,11 +435,38 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
               </div>
             </div>
 
+            {isAdmin && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-primary font-medium text-sm">
+                  <ShieldCheck className="h-4 w-4" />
+                  Carga Delegada (Modo Admin)
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Asignar este lote de propiedades al agente:</Label>
+                  <Select value={onBehalfOfUserId} onValueChange={setOnBehalfOfUserId}>
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Seleccionar agente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {orgMembers.map((member) => (
+                        <SelectItem key={member.user_id} value={member.user_id}>
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">{member.display_name}</span>
+                            <span className="text-[10px] opacity-70">{member.email}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" onClick={() => reset()}>
                 Cancelar
               </Button>
-              <Button onClick={handleImport} disabled={selectedCount === 0}>
+              <Button onClick={handleImport} disabled={selectedCount === 0 || loadingMembers}>
                 <Download className="h-4 w-4 mr-2" />
                 Importar {selectedCount} seleccionadas
               </Button>

@@ -9,6 +9,104 @@ const corsHeaders = {
 
 const BATCH_SIZE = 5;
 
+// Helper: Extraer imágenes de markdown y html (Copiado de scrape-property)
+function extractImages(markdown: string, html: string, allLinks: string[]): string[] {
+  const imageExtensions = /\.(jpg|jpeg|png|webp|avif)(\?|$)/i;
+  const excludeExtensions = /\.(svg|gif|ico)(\?|$)/i;
+  const imageSet = new Set<string>();
+
+  allLinks.filter((l) => imageExtensions.test(l)).forEach((l) => imageSet.add(l));
+
+  let match;
+  const mdRx = /!\[.*?\]\((https?:\/\/[^\s)]+)\)/g;
+  while ((match = mdRx.exec(markdown)) !== null) imageSet.add(match[1]);
+
+  const imgRx = /(?:src|data-src|data-lazy-src)=["'](https?:\/\/[^"']+)/gi;
+  while ((match = imgRx.exec(html)) !== null) imageSet.add(match[1]);
+
+  const ogRx = /(?:property|name)=["']og:image["']\s+content=["'](https?:\/\/[^"']+)/gi;
+  while ((match = ogRx.exec(html)) !== null) imageSet.add(match[1]);
+
+  return Array.from(imageSet)
+    .filter((url) => {
+      if (excludeExtensions.test(url) || !imageExtensions.test(url)) return false;
+      return !/(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron|pixel|tracking|analytics|agency|assets\/vectorial)/i.test(url)
+        && !/(16x|32x|48x|64x|1x1|2x2|1\.gif|blank\.)/i.test(url);
+    })
+    .slice(0, 15);
+}
+
+// Helper: Extraer datos estructurados con Gemini AI usando el prompt de importación
+async function extractWithAI(markdown: string, supabaseUrl: string, serviceKey: string) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  // Intentar obtener el prompt especializado de importación masiva
+  const { data: settings } = await sb
+    .from("app_settings")
+    .select("value")
+    .eq("key", "scraper_prompt_import")
+    .maybeSingle();
+
+  const systemPrompt = settings?.value || "Sos un experto en extracción de avisos inmobiliarios masivos.";
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Extraé los datos de este aviso inmobiliario:\n\n${markdown.slice(0, 8000)}` },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "extract_property_data",
+          description: "Extract structured property data from a listing",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              listingType: { type: "string", enum: ["sale", "rent"] },
+              priceRent: { type: "number" },
+              priceExpenses: { type: "number" },
+              currency: { type: "string" },
+              department: { type: "string" },
+              neighborhood: { type: "string" },
+              city: { type: "string" },
+              sqMeters: { type: "number" },
+              rooms: { type: "number" },
+              aiSummary: { type: "string" },
+              isUnavailable: { type: "boolean", description: "True si el aviso dice que ya fue vendido, reservado, señalado o no está disponible" },
+              ref: { type: "string" },
+              details: { type: "string" },
+              contactName: { type: "string" },
+              contactPhone: { type: "string" },
+            },
+            required: ["title", "listingType", "currency", "priceRent"],
+            additionalProperties: false,
+          },
+        },
+      }],
+      tool_choice: { type: "function", function: { name: "extract_property_data" } },
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    const errText = await aiResponse.text();
+    throw new Error(`AI Gateway error: ${aiResponse.status} - ${errText}`);
+  }
+
+  const aiData = await aiResponse.json();
+  const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
+  if (!toolCall?.function?.arguments) throw new Error("La IA no pudo extraer los datos");
+  
+  return JSON.parse(toolCall.function.arguments);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -75,6 +173,19 @@ serve(async (req) => {
       );
     }
 
+    // OBTENER FILTROS DINÁMICOS DESDE APP_SETTINGS
+    const { data: settingsData } = await sbAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "scraper_unavailable_tokens")
+      .single();
+    
+    const userTokens = settingsData?.value 
+      ? settingsData.value.split(",").map((t: string) => t.trim().toLowerCase()).filter(Boolean)
+      : ["ya fue señalada", "ups!", "propiedad ya fue", "no disponible", "señalada", "reservada"];
+
+    console.log(`Usando ${userTokens.length} tokens de descarte:`, userTokens);
+
     const linkIds = queuedLinks.map((l: any) => l.id);
     await sbAdmin
       .from("discovered_links")
@@ -90,6 +201,7 @@ serve(async (req) => {
             throw new Error("No hay API key de scraping configurada");
           }
 
+          // PASO 1: SCRAPE "PREMIUM"
           const scrapeRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
             method: "POST",
             headers: {
@@ -98,27 +210,9 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               url: link.url,
-              formats: ["extract"],
-              extract: {
-                schema: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string" },
-                    price: { type: "number" },
-                    currency: { type: "string" },
-                    address: { type: "string" },
-                    neighborhood: { type: "string" },
-                    city: { type: "string" },
-                    department: { type: "string" },
-                    rooms: { type: "number" },
-                    m2: { type: "number" },
-                    description: { type: "string" },
-                    images: { type: "array", items: { type: "string" } },
-                    expenses: { type: "number" },
-                    listing_type: { type: "string", enum: ["rent", "sale"] },
-                  },
-                },
-              },
+              formats: ["markdown", "html"],
+              onlyMainContent: false,
+              waitFor: 2000,
               timeout: 30000,
             }),
           });
@@ -129,31 +223,70 @@ serve(async (req) => {
           }
 
           const scrapeData = await scrapeRes.json();
-          const extracted = scrapeData?.data?.extract || {};
-          const metadata = scrapeData?.data?.metadata || {};
+          
+          // Buscar contenido en todas las ubicaciones posibles
+          const markdown = scrapeData?.data?.markdown || scrapeData?.markdown || "";
+          const html = scrapeData?.data?.html || scrapeData?.html || "";
+          const allLinksFound = scrapeData?.data?.links || scrapeData?.links || [];
+          const combinedText = (markdown + " " + html).toLowerCase();
+
+          if (!markdown && !html) {
+            console.error(`Scrape failed for ${link.url}: No content found`, scrapeData);
+            throw new Error("No se pudo extraer contenido de la página (Markdown/HTML vacío)");
+          }
+
+          // HACHAZO PREVIO DINÁMICO: Si detectamos palabras de no disponibilidad
+          if (userTokens.some((token: string) => combinedText.includes(token))) {
+            console.log(`Propiedad descartada por Filtro Dinámico: ${link.url}`);
+            return {
+              linkId: link.id,
+              success: false,
+              isUnavailable: true,
+              error: "Vendido/Reservado (Filtro)",
+            };
+          }
+
+          // PASO 2: EXTRACCIÓN CON GEMINI IA (Usando nuestro prompt especializado)
+          const extracted = await extractWithAI(markdown || html, supabaseUrl, serviceKey);
+
+          // Si la IA detecta que ya no está disponible (backup por si el hachazo falló)
+          if (extracted.isUnavailable === true) {
+            console.log(`Propiedad descartada por IA: ${link.url}`);
+            return {
+              linkId: link.id,
+              success: false,
+              isUnavailable: true,
+              error: "No disponible (detección IA)",
+            };
+          }
+
+          // PASO 3: EXTRACCIÓN DE IMÁGENES PROFUNDA
+          const imageUrls = extractImages(markdown, html, allLinksFound);
+          console.log(`Found ${imageUrls.length} images for ${link.url}`);
 
           return {
             linkId: link.id,
             success: true,
-            extracted_listing_type: extracted.listing_type === "sale" ? "sale" : "rent",
+            extracted_listing_type: extracted.listingType || "rent",
             property: {
-              title: extracted.title || metadata?.title || link.title || "Sin título",
+              title: extracted.title || link.title || "Sin título",
               source_url: link.url,
-              price_amount: Number(extracted.price) || 0,
+              price_amount: Number(extracted.priceRent) || 0,
               currency: (extracted.currency || "USD").toUpperCase().includes("UY") ? "UYU" : "USD",
               address: extracted.address || "",
               neighborhood: extracted.neighborhood || "",
               city: extracted.city || "",
               department: extracted.department || "",
               rooms: Number(extracted.rooms) || 1,
-              m2_total: Number(extracted.m2) || 0,
-              details: extracted.description || "",
-              images: extracted.images || [],
-              price_expenses: Number(extracted.expenses) || 0,
-              total_cost: (Number(extracted.price) || 0) + (Number(extracted.expenses) || 0),
+              m2_total: Number(extracted.sqMeters) || 0,
+              details: extracted.details || "",
+              images: imageUrls, // Usamos todas las fotos encontradas
+              price_expenses: Number(extracted.priceExpenses) || 0,
+              total_cost: (Number(extracted.priceRent) || 0) + (Number(extracted.priceExpenses) || 0),
             },
           };
         } catch (err) {
+          console.error(`Error procesando link ${link.url}:`, err);
           return {
             linkId: link.id,
             success: false,
@@ -244,11 +377,11 @@ serve(async (req) => {
       }
     }
 
-    // MANEJO DE CONTADORES SEGURO (Try/Catch para que no crashee si no existe el RPC)
+    // MANEJO DE CONTADORES SEGURO
     try {
       await sbAdmin.rpc("update_discovery_task_counters", { _task_id: task_id });
     } catch (e) {
-      console.warn("RPC update_discovery_task_counters no encontrado, usando fallback manual.");
+      console.warn("RPC update_discovery_task_counters falló.");
     }
 
     const { data: counters } = await sbAdmin
