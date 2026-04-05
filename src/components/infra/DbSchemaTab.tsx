@@ -59,6 +59,7 @@ const DB_TABLES: TableInfo[] = [
   { name: "deletion_audit_log", description: "Log de borrado físico de usuarios: quién borró, email/nombre del borrado, motivo.", category: "Auditoría" },
   { name: "publication_deletion_audit_log", description: "Log de borrado de publicaciones del marketplace: pub_id, título, org, motivo, quién borró.", category: "Auditoría" },
   { name: "admin_keys", description: "Claves/datos internos del admin: texto, descripción, cuenta, estado (válido/vencido), fecha, trazabilidad.", category: "Auditoría" },
+  { name: "details_description", description: "Tabla de contenido manual gestionada por el admin desde la BD para mostrar información personalizada en la UI.", category: "Auditoría" },
 
   // --- Scraping ---
   { name: "scrape_usage_log", description: "Log de uso del scraper: usuario, URL, canal (url/image), éxito/fallo, mensaje de error, si se cobró token.", category: "Scraping" },
@@ -102,28 +103,28 @@ export function DbSchemaTab() {
 
       <div className="rounded-xl border border-slate-800 overflow-hidden bg-slate-900/60">
         <Table>
-          <TableHeader>
-            <TableRow className="border-slate-800 hover:bg-transparent">
-              <TableHead className="text-slate-300 font-bold w-[180px]">Tabla</TableHead>
-              <TableHead className="text-slate-300 font-bold w-[120px]">Categoría</TableHead>
-              <TableHead className="text-slate-300 font-bold">Descripción</TableHead>
+          <TableHeader className="bg-slate-900/80">
+            <TableRow className="border-slate-700 hover:bg-transparent">
+              <TableHead className="text-white font-extrabold w-[180px] uppercase text-[10px] tracking-wider">Tabla</TableHead>
+              <TableHead className="text-white font-extrabold w-[120px] uppercase text-[10px] tracking-wider">Categoría</TableHead>
+              <TableHead className="text-white font-extrabold uppercase text-[10px] tracking-wider">Descripción Técnica</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {DB_TABLES.map((t) => (
               <TableRow key={t.name} className="border-slate-800/60 hover:bg-slate-800/40">
-                <TableCell className="font-mono text-xs text-emerald-400 py-2.5">
+                <TableCell className="font-mono text-[11px] text-emerald-400 py-3 font-semibold">
                   <div className="flex items-center gap-1.5">
-                    <Table2 className="w-3 h-3 shrink-0 text-slate-500" />
+                    <Table2 className="w-3.5 h-3.5 shrink-0 text-emerald-500/50" />
                     {t.name}
                   </div>
                 </TableCell>
-                <TableCell className="py-2.5">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[t.category] ?? "bg-slate-700 text-slate-300"}`}>
+                <TableCell className="py-3">
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full border shadow-sm font-bold uppercase tracking-tighter ${CATEGORY_COLORS[t.category] ?? "bg-slate-700 text-slate-100"}`}>
                     {t.category}
                   </span>
                 </TableCell>
-                <TableCell className="text-xs text-slate-300 leading-relaxed py-2.5">
+                <TableCell className="text-xs text-white leading-relaxed py-3 font-medium">
                   {t.description}
                 </TableCell>
               </TableRow>
