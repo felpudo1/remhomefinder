@@ -35,7 +35,7 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
 
     // 2. Parsear request body
-    const { amount = 1, currency = "USD", description = "Suscripción Premium HomeFinder", locationOrigin } = await req.json();
+    const { amount = 1, currency = "UYU", description = "Suscripción Premium HomeFinder", locationOrigin } = await req.json();
 
     if (!locationOrigin) {
       throw new Error("locationOrigin es requerido para redirecciones");

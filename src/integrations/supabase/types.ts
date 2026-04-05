@@ -476,6 +476,33 @@ export type Database = {
         }
         Relationships: []
       }
+      details_description: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       discovered_links: {
         Row: {
           created_at: string
