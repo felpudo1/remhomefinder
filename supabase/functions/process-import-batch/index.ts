@@ -191,10 +191,10 @@ serve(async (req) => {
     let failedCount = failures.length;
 
     if (successes.length > 0) {
-      const propertiesToInsert = successes.map((s) => ({
-        ...s.property,
-        created_by: userId,
-      }));
+      const propertiesToInsert = successes.map((s) => {
+        const { listing_type, ...propertyData } = s.property;
+        return { ...propertyData, created_by: userId };
+      });
 
       const { data: insertedProps, error: propErr } = await sbAdmin
         .from("properties")
