@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,16 +31,17 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Validar identidad (el cliente ya tiene el header de auth configurado)
-    const { data: userData, error: userErr } = await sbUser.auth.getUser();
-    if (userErr || !userData?.user) {
-      console.error("Auth error:", userErr?.message);
+    // Validar identidad via claims del JWT (no depende de que exista la sesión en auth)
+    const token = authHeader.replace("Bearer ", "").trim();
+    const { data: claimsData, error: claimsErr } = await sbUser.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("Auth claims error detail:", claimsErr);
       return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = userData.user.id;
+    const userId = claimsData.claims.sub;
 
     // Parsear body
     const body = await req.json();
