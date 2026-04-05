@@ -194,6 +194,15 @@ export const UserHeader = ({
                                 <UserPlus className="w-4 h-4 text-muted-foreground" />
                                 <span>Referidos</span>
                             </DropdownMenuItem>
+                            {!isPremium && (
+                                <DropdownMenuItem
+                                    className="cursor-pointer gap-2 py-2"
+                                    onClick={() => setIsUpgradeOpen(true)}
+                                >
+                                    <Crown className="w-4 h-4 text-yellow-500" />
+                                    <span className="text-yellow-600 font-semibold">Ser Premium</span>
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                                 className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 py-2"

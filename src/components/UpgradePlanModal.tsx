@@ -252,6 +252,11 @@ export function UpgradePlanModal({
                                             : "Activa tu Modo Pro"
                                     }
                                 </span>
+                                {!isLoading && !isAgent && displayPrice && (
+                                    <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-yellow-400 to-orange-400 text-[#1a1c2c] shadow-[0_0_12px_rgba(250,204,21,0.4)]">
+                                        {displayPrice} $U
+                                    </span>
+                                )}
                             </Button>
 
                             <button
