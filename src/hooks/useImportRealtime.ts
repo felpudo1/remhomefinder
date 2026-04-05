@@ -38,7 +38,8 @@ export function useImportRealtime() {
           const { data } = await supabase
             .from("discovered_links" as any)
             .select("status")
-            .eq("task_id", task.taskId);
+            .eq("task_id", task.taskId)
+            .eq("is_selected", true);
 
           if (data) {
             const completed = (data as any[]).filter((d) => d.status === "completed").length;
@@ -101,7 +102,8 @@ export async function rehydrateImportState(orgId: string) {
     const { data: links } = await supabase
       .from("discovered_links" as any)
       .select("status")
-      .eq("task_id", t.id);
+      .eq("task_id", t.id)
+      .eq("is_selected", true);
 
     const completed = links?.filter((l: any) => l.status === "completed").length || 0;
     const failed = links?.filter((l: any) => l.status === "failed").length || 0;

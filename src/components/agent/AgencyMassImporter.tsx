@@ -156,7 +156,17 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
         .update({ is_selected: true, status: "queued" } as any)
         .in("id", selectedIds);
 
-      // Actualizar store
+      // Actualizar la tarea en la BD con el nuevo total real (solo seleccionados)
+      await supabase
+        .from("agency_discovery_tasks" as any)
+        .update({ 
+          total_links: selectedCount,
+          status: "processing",
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq("id", task.taskId);
+
+      // Actualizar store local
       setTask({
         ...task,
         totalLinks: selectedCount,

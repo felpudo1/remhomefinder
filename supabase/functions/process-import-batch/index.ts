@@ -20,14 +20,12 @@ serve(async (req) => {
   const sbAdmin = createClient(supabaseUrl, serviceKey);
 
   try {
-    // Autenticación — aceptar tanto user token como service-role (auto-invocación)
     const authHeader = req.headers.get("Authorization");
     const body = await req.clone().json();
     const { task_id, org_id, user_id: bodyUserId } = body;
 
     let userId = bodyUserId;
 
-    // Si viene con user token, validar
     if (authHeader?.startsWith("Bearer ") && !bodyUserId) {
       const sbUser = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
@@ -50,7 +48,6 @@ serve(async (req) => {
       });
     }
 
-    // Obtener batch de links en estado 'queued'
     const { data: queuedLinks, error: fetchErr } = await sbAdmin
       .from("discovered_links")
       .select("id, url, title, thumbnail_url")
@@ -67,7 +64,6 @@ serve(async (req) => {
     }
 
     if (!queuedLinks || queuedLinks.length === 0) {
-      // No hay más pendientes — marcar tarea como completada
       await sbAdmin
         .from("agency_discovery_tasks")
         .update({ status: "completed", updated_at: new Date().toISOString() })
@@ -79,14 +75,12 @@ serve(async (req) => {
       );
     }
 
-    // Marcar como 'processing' para evitar procesamiento duplicado
     const linkIds = queuedLinks.map((l: any) => l.id);
     await sbAdmin
       .from("discovered_links")
       .update({ status: "processing" })
       .in("id", linkIds);
 
-    // Scraping concurrente controlado con Promise.allSettled
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || Deno.env.get("FIRECRAWL_API_KEY_1");
 
     const results = await Promise.allSettled(
@@ -141,22 +135,22 @@ serve(async (req) => {
           return {
             linkId: link.id,
             success: true,
+            extracted_listing_type: extracted.listing_type === "sale" ? "sale" : "rent",
             property: {
               title: extracted.title || metadata?.title || link.title || "Sin título",
               source_url: link.url,
-              price_amount: extracted.price || 0,
+              price_amount: Number(extracted.price) || 0,
               currency: (extracted.currency || "USD").toUpperCase().includes("UY") ? "UYU" : "USD",
               address: extracted.address || "",
               neighborhood: extracted.neighborhood || "",
               city: extracted.city || "",
               department: extracted.department || "",
-              rooms: extracted.rooms || 1,
-              m2_total: extracted.m2 || 0,
+              rooms: Number(extracted.rooms) || 1,
+              m2_total: Number(extracted.m2) || 0,
               details: extracted.description || "",
               images: extracted.images || [],
-              price_expenses: extracted.expenses || 0,
-              total_cost: (extracted.price || 0) + (extracted.expenses || 0),
-              listing_type: extracted.listing_type === "sale" ? "sale" : "rent",
+              price_expenses: Number(extracted.expenses) || 0,
+              total_cost: (Number(extracted.price) || 0) + (Number(extracted.expenses) || 0),
             },
           };
         } catch (err) {
@@ -169,7 +163,6 @@ serve(async (req) => {
       })
     );
 
-    // Separar éxitos y fallos
     const successes: any[] = [];
     const failures: any[] = [];
 
@@ -181,20 +174,18 @@ serve(async (req) => {
           failures.push(r.value);
         }
       } else {
-        // rejected promise
         failures.push({ linkId: "unknown", error: r.reason?.message || "Error" });
       }
     }
 
-    // BULK INSERT de propiedades exitosas
     let completedCount = 0;
     let failedCount = failures.length;
 
     if (successes.length > 0) {
-      const propertiesToInsert = successes.map((s) => {
-        const { listing_type, ...propertyData } = s.property;
-        return { ...propertyData, created_by: userId };
-      });
+      const propertiesToInsert = successes.map((s) => ({
+        ...s.property,
+        created_by: userId,
+      }));
 
       const { data: insertedProps, error: propErr } = await sbAdmin
         .from("properties")
@@ -203,7 +194,6 @@ serve(async (req) => {
 
       if (propErr) {
         console.error("Error bulk insert properties:", propErr);
-        // Marcar todos como failed
         const failedIds = successes.map((s) => s.linkId);
         await sbAdmin
           .from("discovered_links")
@@ -211,14 +201,13 @@ serve(async (req) => {
           .in("id", failedIds);
         failedCount += successes.length;
       } else if (insertedProps) {
-        // Crear agent_publications para cada propiedad
         const publications = insertedProps.map((p: any) => ({
           property_id: p.id,
           org_id,
           published_by: userId,
           listing_type: successes.find(
             (s) => s.property.source_url === p.source_url
-          )?.property.listing_type || "rent",
+          )?.extracted_listing_type || "rent",
         }));
 
         const { error: pubErr } = await sbAdmin
@@ -229,7 +218,6 @@ serve(async (req) => {
           console.error("Error creando publicaciones:", pubErr);
         }
 
-        // BULK UPDATE de discovered_links exitosos
         for (const prop of insertedProps) {
           const matchingSuccess = successes.find(
             (s) => s.property.source_url === (prop as any).source_url
@@ -245,7 +233,6 @@ serve(async (req) => {
       }
     }
 
-    // BULK UPDATE de discovered_links fallidos
     if (failures.length > 0) {
       for (const f of failures) {
         if (f.linkId && f.linkId !== "unknown") {
@@ -257,9 +244,13 @@ serve(async (req) => {
       }
     }
 
-    // Actualizar contadores en la tarea
-    await sbAdmin.rpc("update_discovery_task_counters" as any, { _task_id: task_id });
-    // Fallback manual si la RPC no existe
+    // MANEJO DE CONTADORES SEGURO (Try/Catch para que no crashee si no existe el RPC)
+    try {
+      await sbAdmin.rpc("update_discovery_task_counters", { _task_id: task_id });
+    } catch (e) {
+      console.warn("RPC update_discovery_task_counters no encontrado, usando fallback manual.");
+    }
+
     const { data: counters } = await sbAdmin
       .from("discovered_links")
       .select("status")
@@ -278,16 +269,13 @@ serve(async (req) => {
         .eq("id", task_id);
     }
 
-    // Verificar si quedan más links en 'queued'
     const { count: remaining } = await sbAdmin
       .from("discovered_links")
       .select("id", { count: "exact", head: true })
       .eq("task_id", task_id)
       .eq("status", "queued");
 
-    // AUTO-INVOCACIÓN: Si quedan links, programar el siguiente batch
     if (remaining && remaining > 0) {
-      // Fire-and-forget: invocar la misma función sin esperar respuesta
       const selfUrl = `${supabaseUrl}/functions/v1/process-import-batch`;
       fetch(selfUrl, {
         method: "POST",
@@ -298,7 +286,6 @@ serve(async (req) => {
         body: JSON.stringify({ task_id, org_id, user_id: userId }),
       }).catch((err) => console.error("Error auto-invocación:", err));
     } else {
-      // Marcar tarea como completada
       await sbAdmin
         .from("agency_discovery_tasks")
         .update({ status: "completed", updated_at: new Date().toISOString() })
@@ -317,7 +304,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("Error general process-import-batch:", err);
     return new Response(
-      JSON.stringify({ error: "Error interno del servidor" }),
+      JSON.stringify({ error: "Error interno del servidor", details: err.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
