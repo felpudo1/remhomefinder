@@ -72,7 +72,7 @@ export function UpgradePlanModal({
             const { data, error } = await supabase.functions.invoke("mp-create-preference", {
                 body: { 
                     amount: Number(configPrice) || 1, 
-                    currency: configCurrency || "USD",
+                    currency: configCurrency || "UYU",
                     description: "Upgrade Elite Member",
                     locationOrigin: window.location.origin
                 }
@@ -99,7 +99,7 @@ export function UpgradePlanModal({
             const { data, error } = await supabase.functions.invoke("mp-create-subscription", {
                 body: {
                     amount: Number(price) || 15,
-                    currency: agentCurrency || "USD",
+                    currency: agentCurrency || "UYU",
                     interval: selectedInterval,
                     description: selectedInterval === "yearly" 
                         ? "Suscripción Anual Agente Premium" 

@@ -35,7 +35,7 @@ serve(async (req) => {
     // 2. Parsear body
     const {
       amount = 15,
-      currency = "USD",
+      currency = "UYU",
       interval = "monthly",
       description = "Suscripción Agente Premium",
       locationOrigin,

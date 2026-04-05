@@ -57,7 +57,7 @@ export const PREMIUM_PLAN_PRICE_DEFAULT = "1";
 
 // Moneda del plan premium para MercadoPago
 export const PREMIUM_PLAN_CURRENCY_KEY = "premium_plan_currency";
-export const PREMIUM_PLAN_CURRENCY_DEFAULT = "USD";
+export const PREMIUM_PLAN_CURRENCY_DEFAULT = "UYU";
 
 // Precio mensual de suscripción para agentes
 export const AGENT_MONTHLY_PRICE_KEY = "agent_monthly_price";
@@ -69,4 +69,4 @@ export const AGENT_ANNUAL_PRICE_DEFAULT = "120";
 
 // Moneda de suscripción para agentes
 export const AGENT_SUB_CURRENCY_KEY = "agent_sub_currency";
-export const AGENT_SUB_CURRENCY_DEFAULT = "USD";
+export const AGENT_SUB_CURRENCY_DEFAULT = "UYU";
