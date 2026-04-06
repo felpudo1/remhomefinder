@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
+import { useDiscardQuickReasons } from "@/hooks/useDiscardQuickReasons";
 import { PropertyStatus } from "@/types/property";
 import { Loader2 } from "lucide-react";
 
@@ -31,13 +33,19 @@ export function GenericStatusFeedbackDialog({
 }: GenericStatusFeedbackDialogProps) {
   // Leer configuración dinámica desde Supabase
   const { data: fields, isLoading } = useStatusFeedbackConfig(status);
+  const isDescartado = status === "descartado";
+  const { data: quickReasons } = useDiscardQuickReasons();
   
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [useQuickReason, setUseQuickReason] = useState(false);
+  const [selectedQuickReasonId, setSelectedQuickReasonId] = useState<string>("");
 
   // Resetear estado cuando cambia el status o se cierra el modal
   useEffect(() => {
     if (!open) {
       setFormData({});
+      setUseQuickReason(false);
+      setSelectedQuickReasonId("");
     }
   }, [open, status]);
 
@@ -78,17 +86,29 @@ export function GenericStatusFeedbackDialog({
   };
 
   const handleConfirm = () => {
-    onConfirm(formData);
+    const finalData = { ...formData };
+    if (isDescartado && useQuickReason && selectedQuickReasonId) {
+      const reason = quickReasons?.find((r) => r.id === selectedQuickReasonId);
+      if (reason) {
+        finalData.quick_reason_id = reason.id;
+        finalData.quick_reason_label = reason.label;
+      }
+    }
+    onConfirm(finalData);
   };
 
-  // Validar campos requeridos
-  const isConfirmDisabled = fields.some((field) => {
-    if (!field.is_required) return false;
-    const val = formData[field.field_id];
-    if (field.field_type === "rating") return !val || val === 0;
-    if (field.field_type === "text" || field.field_type === "date") return !val || String(val).trim() === "";
-    return !val;
-  });
+  // Validar campos requeridos — si se usa quick reason, las estrellas/texto no son obligatorios
+  const quickReasonActive = isDescartado && useQuickReason && !!selectedQuickReasonId;
+
+  const isConfirmDisabled = quickReasonActive
+    ? false
+    : fields.some((field) => {
+        if (!field.is_required) return false;
+        const val = formData[field.field_id];
+        if (field.field_type === "rating") return !val || val === 0;
+        if (field.field_type === "text" || field.field_type === "date") return !val || String(val).trim() === "";
+        return !val;
+      });
 
   const renderField = (field: typeof fields[0]) => {
     switch (field.field_type) {
@@ -256,6 +276,42 @@ export function GenericStatusFeedbackDialog({
         }
       >
         {fields.map((field) => renderField(field))}
+
+        {/* Motivo rápido de descarte */}
+        {isDescartado && quickReasons && quickReasons.length > 0 && (
+          <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="quick-reason-toggle"
+                checked={useQuickReason}
+                onCheckedChange={(checked) => {
+                  setUseQuickReason(checked);
+                  if (!checked) setSelectedQuickReasonId("");
+                }}
+              />
+              <Label htmlFor="quick-reason-toggle" className="text-sm font-medium cursor-pointer">
+                ⚡ Otro motivo
+              </Label>
+            </div>
+            {useQuickReason && (
+              <Select
+                value={selectedQuickReasonId}
+                onValueChange={setSelectedQuickReasonId}
+              >
+                <SelectTrigger className="w-full rounded-xl">
+                  <SelectValue placeholder="Seleccioná un motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {quickReasons.map((reason) => (
+                    <SelectItem key={reason.id} value={reason.id}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
       </div>
     </StatusChangeConfirmDialog>
   );

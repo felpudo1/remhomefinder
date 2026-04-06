@@ -132,7 +132,8 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
     .filter((row) => row.value.trim() !== "");
 
   // Si no hay datos de ningún tipo, no mostrar la tarjeta
-  if (ratingRows.length === 0 && booleanRows.length === 0 && textRows.length === 0) return null;
+  const quickReasonLabel = metadata?.quick_reason_label as string | undefined;
+  if (ratingRows.length === 0 && booleanRows.length === 0 && textRows.length === 0 && !quickReasonLabel) return null;
 
   return (
     <div className="min-w-[240px] shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 shadow-sm lg:min-w-[280px]">
@@ -158,6 +159,13 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
           {textRows.map((row) => (
             <TextRow key={row.label} label={row.label} value={row.value} />
           ))}
+        </div>
+      )}
+
+      {quickReasonLabel && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 p-2 space-y-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700/70">⚡ Motivo rápido</p>
+          <p className="text-xs font-medium text-amber-900">{quickReasonLabel}</p>
         </div>
       )}
     </div>
