@@ -353,13 +353,15 @@ serve(async (req) => {
         created_by: userId,
       }));
 
+      console.log("Inserting properties. Service key valid:", !!serviceKey, "URL:", supabaseUrl, "Count:", propertiesToInsert.length);
+
       const { data: insertedProps, error: propErr } = await sbAdmin
         .from("properties")
         .insert(propertiesToInsert)
         .select("id, source_url");
 
       if (propErr) {
-        console.error("Error bulk insert properties:", propErr);
+        console.error("ERROR DETAILS for properties insert:", JSON.stringify(propErr, null, 2));
         const failedIds = successes.map((s) => s.linkId);
         await sbAdmin
           .from("discovered_links")
@@ -376,12 +378,13 @@ serve(async (req) => {
           )?.extracted_listing_type || "rent",
         }));
 
+        console.log("Inserting agent publications. Count:", publications.length);
         const { error: pubErr } = await sbAdmin
           .from("agent_publications")
           .insert(publications);
 
         if (pubErr) {
-          console.error("Error creando publicaciones:", pubErr);
+          console.error("ERROR DETAILS for agent_publications insert:", JSON.stringify(pubErr, null, 2));
         }
 
         for (const prop of insertedProps) {
@@ -448,6 +451,7 @@ serve(async (req) => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${serviceKey}`,
+          apikey: anonKey,
         },
         body: JSON.stringify({ task_id, org_id, user_id: userId }),
       }).catch((err) => console.error("Error auto-invocación:", err));

@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 
 import {
   Globe, Loader2, Search, Download, Minimize2, CheckCircle2, XCircle,
-  ImageIcon, ExternalLink, RotateCw, Settings2, ChevronDown, ChevronUp, Eraser,
-  Filter, Zap
+  ImageIcon, ExternalLink, RotateCw, Settings2,
+  Filter, Zap, Save
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 interface DiscoveredLink {
   id: string;
