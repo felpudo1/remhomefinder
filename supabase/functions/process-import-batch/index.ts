@@ -37,7 +37,7 @@ function extractImages(markdown: string, html: string, allLinks: string[]): stri
 }
 
 // Helper: Extraer datos estructurados con Gemini AI usando el prompt de importación
-async function extractWithAI(markdown: string, supabaseUrl: string, serviceKey: string) {
+async function extractWithAI(markdown: string, supabaseUrl: string, serviceKey: string, customInstructions?: string) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -50,16 +50,21 @@ async function extractWithAI(markdown: string, supabaseUrl: string, serviceKey: 
     .eq("key", "scraper_prompt_import")
     .maybeSingle();
 
-  const systemPrompt = settings?.value || "Sos un experto en extracción de avisos inmobiliarios masivos.";
+  let systemPrompt = settings?.value || "Sos un experto en extracción de avisos inmobiliarios masivos.";
+  
+  // INYECCIÓN DE EL SANTO GRIAL: Instrucciones específicas por dominio
+  if (customInstructions) {
+    systemPrompt += `\n\nREGLAS ESPECÍFICAS PARA ESTA WEB:\n${customInstructions}\n\nRespetá estas reglas por sobre las generales si hay conflicto.`;
+  }
 
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-2.0-flash", // Usando modelo de última generación estable
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Extraé los datos de este aviso inmobiliario:\n\n${markdown.slice(0, 8000)}` },
+        { role: "user", content: `Extraé los datos de este aviso inmobiliario:\n\n${markdown.slice(0, 12000)}` },
       ],
       tools: [{
         type: "function",
@@ -186,6 +191,25 @@ serve(async (req) => {
 
     console.log(`Usando ${userTokens.length} tokens de descarte:`, userTokens);
 
+    // CACHE DE PERFILES DE DOMINIO PARA ESTE LOTE (Smart Rule Engine)
+    const domainProfiles: Record<string, any> = {};
+    for (const link of queuedLinks) {
+      try {
+        const urlObj = new URL(link.url);
+        const pureDomain = urlObj.hostname.replace('www.', '');
+        if (!domainProfiles[pureDomain]) {
+          const { data } = await sbAdmin
+            .from("scraping_domain_profiles")
+            .select("*")
+            .eq("domain", pureDomain)
+            .maybeSingle();
+          domainProfiles[pureDomain] = data || { none: true };
+        }
+      } catch (e) {
+        console.error("Error parsing profile for link:", link.url, e);
+      }
+    }
+    
     const linkIds = queuedLinks.map((l: any) => l.id);
     await sbAdmin
       .from("discovered_links")
@@ -246,8 +270,17 @@ serve(async (req) => {
             };
           }
 
-          // PASO 2: EXTRACCIÓN CON GEMINI IA (Usando nuestro prompt especializado)
-          const extracted = await extractWithAI(markdown || html, supabaseUrl, serviceKey);
+          // PASO 2: EXTRACCIÓN CON GEMINI IA (Usando nuestro prompt especializado + Perfiles)
+          const urlObj = new URL(link.url);
+          const pureDomain = urlObj.hostname.replace('www.', '');
+          const profile = domainProfiles[pureDomain];
+
+          const extracted = await extractWithAI(
+            markdown || html, 
+            supabaseUrl, 
+            serviceKey, 
+            profile?.none ? undefined : profile?.custom_instructions
+          );
 
           // Si la IA detecta que ya no está disponible (backup por si el hachazo falló)
           if (extracted.isUnavailable === true) {

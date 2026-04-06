@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 
 import {
   Globe, Loader2, Search, Download, Minimize2, CheckCircle2, XCircle,
-  ImageIcon, ExternalLink, RotateCw,
+  ImageIcon, ExternalLink, RotateCw, Settings2, ChevronDown, ChevronUp, Eraser,
+  Filter, Zap
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import {
 } from "@/store/useImportStore";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -54,10 +56,52 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
   const [links, setLinks] = useState<DiscoveredLink[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   
+  // FILTROS AVANZADOS (Discovery Pro)
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [filters, setFilters] = useState({
+    excludeExtensions: ".pdf, .jpg, .png, .jpeg, .docx",
+    minUrlLength: 30,
+    blockBrokenEnds: true
+  });
+
+  const resetFilters = () => {
+    setFilters({
+      excludeExtensions: ".pdf, .jpg, .png, .jpeg, .docx",
+      minUrlLength: 30,
+      blockBrokenEnds: true
+    });
+    toast.info("Valores por defecto aplicados ⚡");
+  };
+
+  const handleSaveAsProfile = async () => {
+    if (!domainUrl.trim()) return;
+    
+    const pureDomain = domainUrl.toLowerCase().trim().replace(/^https?:\/\//, '').replace('www.', '').split('/')[0];
+    
+    const payload = {
+      domain: pureDomain,
+      discovery_config: {
+        minUrlLength: filters.minUrlLength,
+        excludeExtensions: filters.excludeExtensions.split(",").map(e => e.trim()).filter(Boolean),
+        blockBrokenEnds: filters.blockBrokenEnds,
+      }
+    };
+
+    const { error } = await supabase
+      .from("scraping_domain_profiles" as any)
+      .upsert(payload as any, { onConflict: 'domain' });
+
+    if (error) {
+      toast.error("Error al guardar perfil: " + error.message);
+    } else {
+      toast.success(`Perfil de ${pureDomain} actualizado 💎`);
+    }
+  };
+
   // Lógica de agentes (Carga Delegada para Admins)
   const { data: roles = [] } = useUserRoles(userId);
   const isAdmin = roles.includes("admin") || roles.includes("sysadmin");
-  const [onBehalfOfUserId, setOnBehalfOfUserId] = useState<string>(userId); // Por defecto el usuario actual
+  const [onBehalfOfUserId, setOnBehalfOfUserId] = useState<string>(userId); 
   const [orgMembers, setOrgMembers] = useState<{ user_id: string; display_name: string; email: string }[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
@@ -113,8 +157,14 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
+      // Limpiar y empaquetar filtros
+      const apiFilters = {
+        ...filters,
+        excludeExtensions: filters.excludeExtensions.split(",").map(e => e.trim()).filter(Boolean)
+      };
+
       const res = await supabase.functions.invoke("discover-agency-links", {
-        body: { domain_url: domainUrl.trim(), org_id: orgId },
+        body: { domain_url: domainUrl.trim(), org_id: orgId, filters: apiFilters },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
@@ -145,6 +195,11 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
       const discoveredLinks: DiscoveredLink[] = (dbLinks || [])
         .filter((l: any) => {
           const lowUrl = l.url.toLowerCase();
+          
+          // Aplicar filtros locales de nuevo por seguridad
+          if (lowUrl.length < filters.minUrlLength) return false;
+          if (filters.blockBrokenEnds && (lowUrl.endsWith('-') || lowUrl.endsWith('_'))) return false;
+          
           return !excludePatterns.some(pattern => lowUrl.includes(pattern));
         })
         .map((l: any) => ({
@@ -330,29 +385,132 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
 
         {/* Paso 1: Ingresar dominio */}
         {!task || task.status === "discovering" ? (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="https://www.tuagencia.com"
-                value={domainUrl}
-                onChange={(e) => setDomainUrl(e.target.value)}
-                disabled={discovering}
-                onKeyDown={(e) => e.key === "Enter" && handleDiscover()}
-              />
-              <Button onClick={handleDiscover} disabled={discovering}>
-                {discovering ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                {discovering ? "Escaneando..." : "Escanear"}
-              </Button>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="https://www.acsa.com.uy"
+                    className="pl-9 h-11 rounded-xl"
+                    value={domainUrl}
+                    onChange={(e) => setDomainUrl(e.target.value)}
+                    disabled={discovering}
+                    onKeyDown={(e) => e.key === "Enter" && handleDiscover()}
+                  />
+                </div>
+                <Button onClick={handleDiscover} disabled={discovering} className="h-11 rounded-xl px-6 gap-2">
+                  {discovering ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  {discovering ? "Escaneando..." : "Descubrir Propiedades"}
+                </Button>
+              </div>
+
+              {/* Botones de Presets (Chips) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground mr-2 tracking-wider shrink-0">Presets Pro:</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={resetFilters}
+                  className="rounded-full h-7 text-xs gap-1.5 shrink-0 hover:bg-primary/5 hover:text-primary transition-all border-dashed"
+                >
+                  <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  Restaurar Valores
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="rounded-full h-7 text-xs gap-1.5 ml-auto text-muted-foreground hover:text-foreground"
+                >
+                  <Settings2 className="w-3 h-3" />
+                  {showAdvanced ? "Ocultar Avanzado" : "Ajustes Avanzados"}
+                </Button>
+              </div>
             </div>
+
+            {/* Panel de Filtros Avanzados */}
+            {showAdvanced && (
+              <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-semibold">Configuración Técnica de Escaneo</h3>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-mono opacity-60">Filtros Activos</Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="min-len" className="text-xs font-medium text-muted-foreground">Largo Mínimo URL</Label>
+                      <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 rounded">{filters.minUrlLength} ch</span>
+                    </div>
+                    <Input 
+                      id="min-len"
+                      type="number" 
+                      value={filters.minUrlLength}
+                      onChange={(e) => setFilters(prev => ({ ...prev, minUrlLength: parseInt(e.target.value) || 0 }))}
+                      className="h-10 rounded-lg text-sm"
+                      placeholder="Ej: 30"
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-tight italic">
+                      Las propiedades reales suelen tener URLs largas ({">"}30). ACSA usa ({">"}45).
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-medium text-muted-foreground">Ignorar Extensiones</Label>
+                    <Input 
+                      value={filters.excludeExtensions}
+                      onChange={(e) => setFilters(prev => ({ ...prev, excludeExtensions: e.target.value }))}
+                      className="h-10 rounded-lg text-sm font-mono"
+                      placeholder=".pdf, .jpg, .png"
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-tight italic">
+                      Separadas por coma. Evita procesar archivos estáticos.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                  <div className="space-y-0.5">
+                    <Label className="text-xs font-medium">Bloquear URLs rotas</Label>
+                    <p className="text-[10px] text-muted-foreground">Descarta links que terminan en guión o guión bajo.</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {isAdmin && domainUrl && (
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        onClick={handleSaveAsProfile}
+                        className="text-[10px] text-primary h-auto p-0 hover:no-underline font-bold"
+                      >
+                        <Save className="w-3 h-3 mr-1" />
+                        Guardar para {domainUrl.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0]}
+                      </Button>
+                    )}
+                    <Switch 
+                      checked={filters.blockBrokenEnds}
+                      onCheckedChange={(v) => setFilters(prev => ({ ...prev, blockBrokenEnds: v }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {discovering && (
-              <div className="text-center py-8 space-y-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                <p className="text-sm text-muted-foreground">
-                  Descubriendo propiedades en el sitio...
+              <div className="text-center py-10 space-y-4">
+                <div className="relative inline-flex">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  <div className="absolute inset-0 m-auto h-4 w-4 bg-primary/20 rounded-full animate-ping" />
+                </div>
+                <p className="text-sm font-medium animate-pulse">
+                  Escaneando arquitectura de {domainUrl.replace(/^https?:\/\//, '').split('/')[0]}...
                 </p>
               </div>
             )}

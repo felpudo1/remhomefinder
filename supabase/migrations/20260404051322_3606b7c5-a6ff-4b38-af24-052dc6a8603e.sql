@@ -54,13 +54,13 @@ AS $$
       ul.updated_at AS user_updated_at,
       ul.org_id AS user_org_id
     FROM paginated_pubs pp
-    LEFT JOIN public.user_listings ul ON ul.source_publication_id = pp.pub_id
+    LEFT JOIN public.user_listings ul ON (ul.source_publication_id = pp.pub_id OR ul.property_id = pp.property_id)
   ),
   latest_logs AS (
     SELECT DISTINCT ON (shl.user_listing_id, shl.new_status)
       shl.user_listing_id,
       shl.new_status,
-      shl.event_metadata
+      COALESCE(shl.event_metadata, '{}'::jsonb) AS event_metadata
     FROM public.status_history_log shl
     WHERE shl.user_listing_id IN (SELECT l.user_listing_id FROM listings l WHERE l.user_listing_id IS NOT NULL)
     ORDER BY shl.user_listing_id, shl.new_status, shl.created_at DESC

@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Save, RotateCcw, Info, Loader2, Globe } from "lucide-react";
+import { Bot, Save, RotateCcw, Info, Loader2, Globe, Sparkles, MessageSquareCode } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminScrapingProfiles } from "./AdminScrapingProfiles";
 
-// Prompts base por defecto: uno para usuarios y otro para agentes
+// Prompts base por defecto
 const DEFAULT_PROMPT_USER = `Sos un extractor de avisos inmobiliarios de Uruguay y Argentina. Reglas estrictas:
 - TIPO DE OPERACIÓN (PRIORIDAD MÁXIMA): Determiná si el aviso es alquiler o venta.
   → Palabras clave de VENTA: "venta", "en venta", "se vende", "precio de venta", "compra". Retorná listingType: "sale"
@@ -53,7 +55,6 @@ Instrucciones estrictas para esta importación por lotes:
 const DEFAULT_UNAVAILABLE_TOKENS = "ya fue señalada, Ups!, propiedad ya fue, no disponible, señalada, reservada";
 const DEFAULT_EXCLUDE_URLS = "/propiedad/nada, /propiedad/alq, /propiedad/ven, /login, /registro, /mi-cuenta";
 
-// Claves en la tabla app_settings de Supabase
 const SETTINGS_KEYS = {
   user: "scraper_prompt_user",
   agent: "scraper_prompt_agent",
@@ -67,11 +68,6 @@ interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
 }
 
-/**
- * Sección de administración de Prompts del scraper IA.
- * Maneja cuatro prompts independientes: usuario, agente, rrss e importación masiva.
- * Lee y escribe directamente en la tabla app_settings de Supabase.
- */
 export function AdminPrompt({ toast }: Props) {
   const [promptUser, setPromptUser] = useState(DEFAULT_PROMPT_USER);
   const [promptAgent, setPromptAgent] = useState(DEFAULT_PROMPT_AGENT);
@@ -79,12 +75,10 @@ export function AdminPrompt({ toast }: Props) {
   const [promptImport, setPromptImport] = useState(DEFAULT_PROMPT_IMPORT);
   const [tokens, setTokens] = useState(DEFAULT_UNAVAILABLE_TOKENS);
   const [excludeUrls, setExcludeUrls] = useState(DEFAULT_EXCLUDE_URLS);
-  const [savedUser, setSavedUser] = useState(true);
-  const [savedAgent, setSavedAgent] = useState(true);
-  const [savedImage, setSavedImage] = useState(true);
-  const [savedImport, setSavedImport] = useState(true);
-  const [savedTokens, setSavedTokens] = useState(true);
-  const [savedExclude, setSavedExclude] = useState(true);
+  
+  const [savedStatus, setSavedStatus] = useState<Record<string, boolean>>({
+    user: true, agent: true, image: true, import: true, tokens: true, excludeUrls: true
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -92,31 +86,24 @@ export function AdminPrompt({ toast }: Props) {
       const { data } = await supabase
         .from("app_settings")
         .select("key, value")
-        .in("key", [
-          SETTINGS_KEYS.user, 
-          SETTINGS_KEYS.agent, 
-          SETTINGS_KEYS.image, 
-          SETTINGS_KEYS.import,
-          SETTINGS_KEYS.tokens,
-          SETTINGS_KEYS.excludeUrls
-        ]);
+        .in("key", Object.values(SETTINGS_KEYS));
 
       if (data) {
-        for (const row of data) {
+        data.forEach(row => {
           if (row.key === SETTINGS_KEYS.user) setPromptUser(row.value);
           if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
           if (row.key === SETTINGS_KEYS.image) setPromptImage(row.value);
           if (row.key === SETTINGS_KEYS.import) setPromptImport(row.value);
           if (row.key === SETTINGS_KEYS.tokens) setTokens(row.value);
           if (row.key === SETTINGS_KEYS.excludeUrls) setExcludeUrls(row.value);
-        }
+        });
       }
       setLoading(false);
     };
     load();
   }, []);
 
-  const handleSave = async (type: "user" | "agent" | "image" | "import" | "tokens" | "excludeUrls") => {
+  const handleSave = async (type: keyof typeof SETTINGS_KEYS) => {
     const key = SETTINGS_KEYS[type];
     const value = 
       type === "user" ? promptUser : 
@@ -125,234 +112,186 @@ export function AdminPrompt({ toast }: Props) {
       type === "import" ? promptImport :
       type === "tokens" ? tokens :
       excludeUrls;
-    
-    const labels = { 
-      user: "usuarios", 
-      agent: "agentes", 
-      image: "extracción de imágenes",
-      import: "importación masiva",
-      tokens: "filtros de descarte",
-      excludeUrls: "filtros de URL"
-    };
 
     const { error } = await supabase
       .from("app_settings")
-      .upsert({ key, value, description: `Prompt para ${labels[type]}` }, { onConflict: "key" });
+      .upsert({ key, value }, { onConflict: "key" });
 
     if (error) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
-      return;
+    } else {
+      setSavedStatus(prev => ({ ...prev, [type]: true }));
+      toast({ title: "Configuración guardada 💎" });
     }
-
-    if (type === "user") setSavedUser(true);
-    else if (type === "agent") setSavedAgent(true);
-    else if (type === "image") setSavedImage(true);
-    else if (type === "import") setSavedImport(true);
-    else if (type === "tokens") setSavedTokens(true);
-    else setSavedExclude(true);
-
-    toast({
-      title: "Configuración guardada",
-      description: `El valor de ${labels[type]} se actualizó correctamente.`,
-    });
   };
 
-  const handleReset = (type: "user" | "agent" | "image" | "import" | "tokens" | "excludeUrls") => {
-    if (type === "user") { setPromptUser(DEFAULT_PROMPT_USER); setSavedUser(false); }
-    else if (type === "agent") { setPromptAgent(DEFAULT_PROMPT_AGENT); setSavedAgent(false); }
-    else if (type === "image") { setPromptImage(DEFAULT_PROMPT_IMAGE); setSavedImage(false); }
-    else if (type === "import") { setPromptImport(DEFAULT_PROMPT_IMPORT); setSavedImport(false); }
-    else if (type === "tokens") { setTokens(DEFAULT_UNAVAILABLE_TOKENS); setSavedTokens(false); }
-    else { setExcludeUrls(DEFAULT_EXCLUDE_URLS); setSavedExclude(false); }
-    toast({ title: "Reset completado", description: "Volvió a los valores originales. Guardá para confirmar." });
+  const handleReset = (type: keyof typeof SETTINGS_KEYS) => {
+    if (type === "user") setPromptUser(DEFAULT_PROMPT_USER);
+    if (type === "agent") setPromptAgent(DEFAULT_PROMPT_AGENT);
+    if (type === "image") setPromptImage(DEFAULT_PROMPT_IMAGE);
+    if (type === "import") setPromptImport(DEFAULT_PROMPT_IMPORT);
+    if (type === "tokens") setTokens(DEFAULT_UNAVAILABLE_TOKENS);
+    if (type === "excludeUrls") setExcludeUrls(DEFAULT_EXCLUDE_URLS);
+    setSavedStatus(prev => ({ ...prev, [type]: false }));
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Info Banner */}
-      <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl text-sm text-muted-foreground">
-        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="font-medium text-foreground mb-1">¿Qué son los Prompts del Scraper?</p>
-          <p>
-            Son las instrucciones que le damos a la IA para interpretar avisos inmobiliarios en distintos contextos.
-            Modificalos para ajustar qué datos extrae el sistema y cómo los presenta.
-          </p>
+          <h2 className="text-2xl font-bold tracking-tight">Inteligencia de Datos & Scraping</h2>
+          <p className="text-muted-foreground italic text-sm">Gestioná los prompts globales y las reglas específicas por inmobiliaria.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Editor de Prompt para Usuarios */}
-        <PromptEditor
-          label="Prompt Usuarios"
-          value={promptUser}
-          saved={savedUser}
-          onChange={(v) => { setPromptUser(v); setSavedUser(false); }}
-          onSave={() => handleSave("user")}
-          onReset={() => handleReset("user")}
-        />
+      <Tabs defaultValue="prompts" className="w-full">
+        <TabsList className="bg-slate-900 border-2 border-slate-700 mb-6 p-1 h-12">
+          <TabsTrigger 
+            value="prompts" 
+            className="gap-2 px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all"
+          >
+            <MessageSquareCode className="w-4 h-4" />
+            Prompts Globales
+          </TabsTrigger>
+          <TabsTrigger 
+            value="profiles" 
+            className="gap-2 px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            Perfiles Agencias Pro
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Editor de Prompt para Agentes */}
-        <PromptEditor
-          label="Prompt Agentes"
-          value={promptAgent}
-          saved={savedAgent}
-          onChange={(v) => { setPromptAgent(v); setSavedAgent(false); }}
-          onSave={() => handleSave("agent")}
-          onReset={() => handleReset("agent")}
-        />
-
-        {/* Editor de Prompt para Extracción de Imágenes */}
-        <PromptEditor
-          label="Prompt Extracción Imágenes (RRSS)"
-          value={promptImage}
-          saved={savedImage}
-          onChange={(v) => { setPromptImage(v); setSavedImage(false); }}
-          onSave={() => handleSave("image")}
-          onReset={() => handleReset("image")}
-        />
-
-        {/* Editor de Prompt para Importación Masiva */}
-        <PromptEditor
-          label="Prompt Importación Masiva"
-          value={promptImport}
-          saved={savedImport}
-          onChange={(v) => { setPromptImport(v); setSavedImport(false); }}
-          onSave={() => handleSave("import")}
-          onReset={() => handleReset("import")}
-        />
-      </div>
-
-      {/* SECCIÓN SEPARADA: FILTROS DE IMPORTACIÓN */}
-      <div className="pt-6 border-t space-y-6">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Globe className="w-5 h-5 text-primary" />
-          Filtros de Importación Pro
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* FILTRO DE DESCARTE (No Disponible) */}
-          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Bot className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <h3 className="font-semibold text-lg text-amber-900 dark:text-amber-100">Filtro de Descarte Automático</h3>
+        <TabsContent value="prompts" className="space-y-8 animate-in slide-in-from-left-2 duration-300">
+          <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl text-sm text-muted-foreground">
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-foreground mb-1">¿Qué son los Prompts del Scraper?</p>
+              <p>Son las instrucciones que le damos a la IA para interpretar avisos inmobiliarios en distintos contextos.</p>
             </div>
-            <p className="text-sm text-amber-800/80 dark:text-amber-200/60 mb-4 leading-relaxed">
-              Palabras que cancelan la importación (ej: ya fue señalada, Ups!). 
-              <strong> Separá con coma (,).</strong>
-            </p>
-            <div className="space-y-4">
-              <Textarea
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <PromptCard 
+              title="Prompt para Usuarios" 
+              value={promptUser} 
+              onValueChange={(v) => { setPromptUser(v); setSavedStatus(prev => ({ ...prev, user: false })); }}
+              onSave={() => handleSave("user")}
+              onReset={() => handleReset("user")}
+              saved={savedStatus.user}
+              description="Extracción desde RRSS para usuarios finales"
+            />
+            <PromptCard 
+              title="Prompt para Agentes" 
+              value={promptAgent} 
+              onValueChange={(v) => { setPromptAgent(v); setSavedStatus(prev => ({ ...prev, agent: false })); }}
+              onSave={() => handleSave("agent")}
+              onReset={() => handleReset("agent")}
+              saved={savedStatus.agent}
+              description="Extracción desde Marketplace para el CRM"
+            />
+            <PromptCard 
+              title="Prompt para Imágenes" 
+              value={promptImage} 
+              onValueChange={(v) => { setPromptImage(v); setSavedStatus(prev => ({ ...prev, image: false })); }}
+              onSave={() => handleSave("image")}
+              onReset={() => handleReset("image")}
+              saved={savedStatus.image}
+              description="Análisis de capturas de pantalla (OCR + AI)"
+            />
+            <PromptCard 
+              title="Prompt para Importación Masiva" 
+              value={promptImport} 
+              onValueChange={(v) => { setPromptImport(v); setSavedStatus(prev => ({ ...prev, import: false })); }}
+              onSave={() => handleSave("import")}
+              onReset={() => handleReset("import")}
+              saved={savedStatus.import}
+              description="Extractor especializado para barrido de agencias"
+            />
+
+            <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Bot className="w-5 h-5" />
+                <h3 className="font-bold">Tokens de Descarte</h3>
+              </div>
+              <Textarea 
                 value={tokens}
-                onChange={(e) => { setTokens(e.target.value); setSavedTokens(false); }}
-                placeholder="ya fue señalada, Ups!, propiedad ya fue"
-                className="min-h-[100px] border-amber-200 dark:border-amber-900 bg-background/50 rounded-xl"
+                onChange={(e) => { setTokens(e.target.value); setSavedStatus(prev => ({ ...prev, tokens: false })); }}
+                className="min-h-[100px] bg-muted/30 border-primary/10 rounded-xl text-xs"
               />
-              <div className="flex items-center justify-between">
-                <Button 
-                  onClick={() => handleSave("tokens")} 
-                  size="sm" 
-                  className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
-                  disabled={savedTokens}
-                >
-                  <Save className="w-4 h-4" />
-                  {savedTokens ? "Guardado" : "Guardar Filtros"}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleReset("tokens")} className="text-amber-700 dark:text-amber-400 gap-2">
-                  <RotateCcw className="w-4 h-4" />
-                  Resetear
-                </Button>
-              </div>
+              <Button onClick={() => handleSave("tokens")} size="sm" className="w-full gap-2 rounded-lg" disabled={savedStatus.tokens}>
+                <Save className="w-4 h-4" />
+                {savedStatus.tokens ? "Guardado" : "Guardar Tokens"}
+              </Button>
             </div>
-          </div>
 
-          {/* FILTRO DE URLS (Discovery) */}
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="font-semibold text-lg text-blue-900 dark:text-blue-100">Filtro de URLs Excluidas</h3>
-            </div>
-            <p className="text-sm text-blue-800/80 dark:text-blue-200/60 mb-4 leading-relaxed">
-              Patrones de URL que el sistema ignorará al escanear (ej: /login, /nada). 
-              <strong> Separá con coma (,).</strong>
-            </p>
-            <div className="space-y-4">
-              <Textarea
-                value={excludeUrls}
-                onChange={(e) => { setExcludeUrls(e.target.value); setSavedExclude(false); }}
-                placeholder="/propiedad/nada, /login, /registro"
-                className="min-h-[100px] border-blue-200 dark:border-blue-900 bg-background/50 rounded-xl"
-              />
-              <div className="flex items-center justify-between">
-                <Button 
-                  onClick={() => handleSave("excludeUrls")} 
-                  size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                  disabled={savedExclude}
-                >
-                  <Save className="w-4 h-4" />
-                  {savedExclude ? "Guardado" : "Guardar URLs"}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleReset("excludeUrls")} className="text-blue-700 dark:text-blue-400 gap-2">
-                  <RotateCcw className="w-4 h-4" />
-                  Resetear
-                </Button>
+            <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Globe className="w-5 h-5" />
+                <h3 className="font-bold">Filtro Global URLs</h3>
               </div>
+              <Textarea 
+                value={excludeUrls}
+                onChange={(e) => { setExcludeUrls(e.target.value); setSavedStatus(prev => ({ ...prev, excludeUrls: false })); }}
+                className="min-h-[100px] bg-muted/30 border-primary/10 rounded-xl text-xs"
+              />
+              <Button onClick={() => handleSave("excludeUrls")} size="sm" className="w-full gap-2 rounded-lg" disabled={savedStatus.excludeUrls}>
+                <Save className="w-4 h-4" />
+                {savedStatus.excludeUrls ? "Guardado" : "Guardar Filtros"}
+              </Button>
             </div>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="profiles" className="animate-in slide-in-from-right-2 duration-300">
+          <AdminScrapingProfiles />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-/**
- * Componente reutilizable para editar un prompt individual.
- * Siguiendo la Regla 2 (Arquitectura Profesional).
- */
-function PromptEditor({
-  label, value, saved, onChange, onSave, onReset,
-}: {
-  label: string;
+interface PromptCardProps {
+  title: string;
   value: string;
-  saved: boolean;
-  onChange: (v: string) => void;
+  onValueChange: (v: string) => void;
   onSave: () => void;
   onReset: () => void;
-}) {
+  saved: boolean;
+  description: string;
+}
+
+function PromptCard({ title, value, onValueChange, onSave, onReset, saved, description }: PromptCardProps) {
   return (
-    <div className="space-y-2">
+    <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4 flex flex-col transition-all hover:border-primary/30 group">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Bot className="w-4 h-4 text-primary" />
-          {label}
-        </label>
-        {!saved && (
-          <span className="text-xs text-amber-600 font-medium">Sin guardar</span>
-        )}
+        <div className="flex items-center gap-2 text-primary">
+          <Bot className="w-5 h-5" />
+          <h3 className="font-bold">{title}</h3>
+        </div>
       </div>
-      <Textarea
+      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{description}</p>
+      <Textarea 
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="min-h-[200px] font-mono text-xs resize-y rounded-xl leading-relaxed"
+        onChange={(e) => onValueChange(e.target.value)}
+        className="flex-grow min-h-[200px] bg-muted/30 border-primary/10 rounded-xl text-xs"
       />
-      <p className="text-xs text-muted-foreground">{value.length} caracteres</p>
-      <div className="flex items-center gap-3">
-        <Button onClick={onSave} size="sm" className="gap-2" disabled={saved}>
+      <div className="flex items-center gap-3 pt-2">
+        <Button onClick={onSave} size="sm" className="flex-1 gap-2 rounded-lg" disabled={saved}>
           <Save className="w-4 h-4" />
           {saved ? "Guardado" : "Guardar"}
         </Button>
-        <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
+        <Button variant="outline" size="sm" onClick={onReset} className="gap-2 rounded-lg">
           <RotateCcw className="w-4 h-4" />
-          Resetear
+          Reset
         </Button>
       </div>
     </div>

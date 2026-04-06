@@ -49,7 +49,7 @@ serve(async (req) => {
 
     // Parsear body
     const body = await req.json();
-    const { domain_url, org_id, task_id } = body;
+    const { domain_url, org_id, task_id, filters = {} } = body;
 
     if (!domain_url || !org_id) {
       return new Response(JSON.stringify({ error: "domain_url y org_id son requeridos" }), {
@@ -58,8 +58,32 @@ serve(async (req) => {
       });
     }
 
-    // Cliente service role para inserciones masivas
+    // Cliente service role para consultas administrativas
     const sbAdmin = createClient(supabaseUrl, serviceKey);
+
+    // MOTOR DE REGLAS INTELIGENTES (SMART RULE ENGINE)
+    const urlObj = new URL(domain_url.startsWith('http') ? domain_url : `https://${domain_url}`);
+    const pureDomain = urlObj.hostname.replace('www.', '');
+
+    const { data: profile } = await sbAdmin
+      .from("scraping_domain_profiles")
+      .select("*")
+      .eq("domain", pureDomain)
+      .or(`domain.eq.www.${pureDomain}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Fusión de reglas (Prioridad: Request Manual > Perfil de Agencia > Defaults del Sistema)
+    const activeFilters = {
+      excludeExtensions: filters.excludeExtensions?.length > 0 
+        ? filters.excludeExtensions 
+        : (profile?.discovery_config as any)?.excludeExtensions || [".pdf", ".jpg", ".png", ".jpeg", ".docx"],
+      minUrlLength: filters.minUrlLength || (profile?.discovery_config as any)?.minUrlLength || 30,
+      blockBrokenEnds: filters.blockBrokenEnds ?? (profile?.discovery_config as any)?.blockBrokenEnds ?? true
+    };
+
+    const { excludeExtensions, minUrlLength, blockBrokenEnds } = activeFilters;
 
     // Crear o reusar task
     let taskId = task_id;
@@ -101,28 +125,42 @@ serve(async (req) => {
 
         if (mapRes.ok) {
           const mapData = await mapRes.json();
-          const rawLinks = mapData.links || [];
-
+          const rawLinks: string[] = mapData.data || mapData.links || [];
+          
+          // OBTENER FILTROS GLOBALES
           const { data: excludeSettings } = await sbAdmin
             .from("app_settings")
             .select("value")
             .eq("key", "scraper_exclude_urls")
             .single();
 
-          const excludePatterns = excludeSettings?.value
+          const globalExcludePatterns = excludeSettings?.value
             ? excludeSettings.value.split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean)
-            : ["/propiedad/nada", "/propiedad/alq", "/propiedad/ven", "/login", "/registro", "/mi-cuenta"];
+            : [];
 
-          console.log(`Aplicando filtros de exclusión (${excludePatterns.length} patrones):`, excludePatterns);
+          console.log(`Motor Pro: minLen=${minUrlLength}, ext=${excludeExtensions.length}, broken=${blockBrokenEnds}`);
 
-          // Filtrar links basura
+          // FILTRADO MULTI-CAPA
           const filteredUrls = rawLinks.filter((url: string) => {
             if (!url) return false;
             const lowUrl = url.toLowerCase();
-            return !excludePatterns.some((pattern: string) => lowUrl.includes(pattern));
+
+            // 1. Largo mínimo
+            if (lowUrl.length < minUrlLength) return false;
+
+            // 2. Extensiones prohibidas
+            if (excludeExtensions.some((ext: string) => lowUrl.endsWith(ext))) return false;
+
+            // 3. Terminaciones rotas
+            if (blockBrokenEnds && (lowUrl.endsWith('-') || lowUrl.endsWith('_'))) return false;
+
+            // 4. Filtros globales del administrador
+            if (globalExcludePatterns.some((pattern: string) => lowUrl.includes(pattern))) return false;
+
+            return true;
           });
 
-          console.log(`Discovery: ${rawLinks.length} encontrados -> ${filteredUrls.length} tras filtrar`);
+          console.log(`Exploración de Links: ${rawLinks.length} encontrados -> ${filteredUrls.length} tras limpieza pro`);
 
           links = filteredUrls.map((url: string) => {
             const slug = url.split("/").filter(Boolean).pop() || "";

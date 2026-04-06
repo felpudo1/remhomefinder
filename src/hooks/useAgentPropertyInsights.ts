@@ -73,8 +73,16 @@ export interface AgentPropertyInsight {
   publishedAtRelative: string;
   avgContactedInterest: number;
   avgContactedUrgency: number;
+  /** Sentiment Analytics */
+  avgEstructural: number;
+  avgEntorno: number;
+  avgSeguridad: number;
+  avgEspacios: number;
+  avgPrecio: number;
+  totalVotes: number;
   statusBreakdown: string;
   users: AgentUserInsight[];
+  debug_keys?: string[];
   /** Campos internos para match_score — no usados en UI directamente */
   _listingType?: string;
   _price?: number;
@@ -121,6 +129,17 @@ interface RpcRow {
   ratings_by_status: Record<string, any>;
 }
 
+function parseJsonIfNeeded(val: any): Record<string, any> {
+  if (typeof val === "string") {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return {};
+    }
+  }
+  return val || {};
+}
+
 /**
  * Agrupa filas planas de la RPC en la estructura jerárquica AgentPropertyInsight[].
  */
@@ -149,6 +168,12 @@ function groupRpcRows(rows: RpcRow[]): AgentPropertyInsight[] {
         publishedAtRelative,
         avgContactedInterest: 0,
         avgContactedUrgency: 0,
+        avgEstructural: 0,
+        avgEntorno: 0,
+        avgSeguridad: 0,
+        avgEspacios: 0,
+        avgPrecio: 0,
+        totalVotes: 0,
         statusBreakdown: "",
         users: [],
         _listingType: row.listing_type,
@@ -162,7 +187,8 @@ function groupRpcRows(rows: RpcRow[]): AgentPropertyInsight[] {
 
     // Si hay user_listing_id, agregar el usuario
     if (row.user_listing_id && row.user_id) {
-      const ratingsByStatus = row.ratings_by_status || {};
+      // Asegurar que parseamos los ratings si vienen como string
+      const ratingsByStatus = parseJsonIfNeeded(row.ratings_by_status);
 
       // Fecha de visita desde metadata
       const visitaMeta = ratingsByStatus["visita_coordinada"];
@@ -197,22 +223,70 @@ function groupRpcRows(rows: RpcRow[]): AgentPropertyInsight[] {
   for (const pub of pubMap.values()) {
     pub.usersSaved = pub.users.length;
 
-    // Promedios de contactado
+    // Promedios y Sentiment
     let totalInterest = 0, totalUrgency = 0, interestCount = 0;
+    let t_est = 0, c_est = 0;
+    let t_ent = 0, c_ent = 0;
+    let t_seg = 0, c_seg = 0;
+    let t_esp = 0, c_esp = 0;
+    let t_pre = 0, c_pre = 0;
+    const distinctVoters = new Set<string>();
+
     const statusCounts: Record<string, number> = {};
 
     pub.users.forEach((user) => {
       statusCounts[user.currentStatus] = (statusCounts[user.currentStatus] || 0) + 1;
-      const contactadoMeta = user.ratingsByStatus["contactado"];
+      const allRatings = user.ratingsByStatus || {};
+
+      Object.keys(allRatings).forEach(statusName => {
+        const meta = allRatings[statusName];
+        if (!meta || typeof meta !== 'object') return;
+
+        // 1. Estructura (🏗️)
+        const est = safeNum(meta.altaPrioridad || meta['posib inter estruc'] || meta.descateestriculta);
+        if (est > 0) { t_est += est; c_est++; }
+
+        // 2. Entorno (🌳)
+        const ent = safeNum(meta.altaPrioridadEntorno || meta['pos inte enton'] || meta.descatado);
+        if (ent > 0) { t_ent += ent; c_ent++; }
+
+        // 3. Seguridad (🛡️)
+        const seg = safeNum(meta.AltaPrioSegurudad || meta['pos int seg'] || meta.desc_seg);
+        if (seg > 0) { t_seg += seg; c_seg++; }
+
+        // 4. Espacios (📐)
+        const esp = safeNum(meta.PrioridadTamano || meta['pod inter'] || meta['desc espeaios']);
+        if (esp > 0) { t_esp += esp; c_esp++; }
+
+        // 5. Precio (💰)
+        const pre = safeNum(meta['Alta´PriorPrecio'] || meta['pos int precio'] || meta['desc precio']);
+        if (pre > 0) { t_pre += pre; c_pre++; }
+
+        // Identificar si este usuario emitió algún voto válido
+        const values = Object.values(meta);
+        if (values.some(v => typeof v === 'number' && v >= 1 && v <= 5)) {
+          distinctVoters.add(user.userId);
+        }
+      });
+
+      // Contactado original (para compatibilidad)
+      const contactadoMeta = allRatings["contactado"];
       if (contactadoMeta) {
-        totalInterest += safeNum(contactadoMeta.contacted_interest);
-        totalUrgency += safeNum(contactadoMeta.contacted_urgency);
-        if (safeNum(contactadoMeta.contacted_interest) > 0) interestCount++;
+        totalInterest += safeNum(contactadoMeta.contacted_interest || contactadoMeta.contact_price);
+        totalUrgency += safeNum(contactadoMeta.contacted_urgency || contactadoMeta.contact_urgency);
+        if (safeNum(contactadoMeta.contacted_interest || contactadoMeta.contact_price) > 0) interestCount++;
       }
     });
 
     pub.avgContactedInterest = interestCount > 0 ? totalInterest / interestCount : 0;
     pub.avgContactedUrgency = interestCount > 0 ? totalUrgency / interestCount : 0;
+    
+    // Asignar Sentiment analytics
+    pub.avgEstructural = c_est > 0 ? t_est / c_est : 0;
+    pub.avgEntorno = c_ent > 0 ? t_ent / c_ent : 0;
+    pub.avgEspacios = c_esp > 0 ? t_esp / c_esp : 0;
+    pub.avgPrecio = c_pre > 0 ? t_pre / c_pre : 0;
+    pub.totalVotes = distinctVoters.size;
 
     const breakdownParts = Object.entries(statusCounts)
       .sort((a, b) => b[1] - a[1])
@@ -245,21 +319,17 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
       return groupRpcRows((data as unknown as RpcRow[]) || []);
     },
     getNextPageParam: (lastPage, allPages) => {
-      // Si la última página trajo menos propiedades que PAGE_SIZE, no hay más
       if (lastPage.length < PAGE_SIZE) return undefined;
-      // El offset es el total de propiedades cargadas hasta ahora
       return allPages.reduce((acc, page) => acc + page.length, 0);
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  // Flatten all pages into a single array
   const allInsights = useMemo(() => {
     if (!infiniteQuery.data?.pages) return [];
     return infiniteQuery.data.pages.flat();
   }, [infiniteQuery.data?.pages]);
 
-  // Fetch supplementary data for match_score and ratings (only for loaded items)
   const userIds = useMemo(() => {
     const ids = new Set<string>();
     allInsights.forEach((pub) => pub.users.forEach((u) => ids.add(u.userId)));
@@ -270,7 +340,6 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
     return [...new Set(allInsights.map((pub) => pub.propertyId))];
   }, [allInsights]);
 
-  // Fetch property reviews
   const { data: reviews } = useQuery({
     queryKey: ["agent-insights-reviews", propertyIds],
     enabled: propertyIds.length > 0,
@@ -284,7 +353,6 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch search profiles for match_score
   const { data: searchProfiles } = useQuery({
     queryKey: ["agent-insights-search-profiles", userIds],
     enabled: userIds.length > 0,
@@ -298,7 +366,6 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch match weights
   const { data: matchWeightsConfig } = useQuery({
     queryKey: ["agent-insights-match-weights"],
     queryFn: async () => {
@@ -315,7 +382,6 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
     staleTime: Infinity,
   });
 
-  // Fetch neighborhoods for match_score
   const { data: neighborhoods } = useQuery({
     queryKey: ["geography", "neighborhoods"],
     queryFn: async () => {
@@ -329,7 +395,6 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
     staleTime: Infinity,
   });
 
-  // Enrich insights with match_score, personalRating, familyRating
   const enrichedInsights = useMemo(() => {
     if (!allInsights.length) return allInsights;
 
@@ -354,79 +419,52 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
     return allInsights.map((pub) => ({
       ...pub,
       users: pub.users.map((user) => {
-        // Personal rating
         const personalRating = userReviewMap[`${pub.propertyId}_${user.userId}`];
-        // Family rating
         const famRev = familyReviewAcc[`${pub.propertyId}_${user.orgId}`];
         const familyRating = famRev && famRev.count > 0 ? famRev.sum / famRev.count : undefined;
 
-        // Match score
         let matchScore: number | undefined = undefined;
         const userSearch = searchProfileMap[user.userId];
         if (userSearch) {
           matchScore = 0;
           const { operation_weight = 30, budget_weight = 40, neighborhood_weight = 20, rooms_weight = 10 } = matchWeights;
-
-          // Operation matching
           const op = String(userSearch.operation || "").trim().toLowerCase();
           const wantRent = op === "rent" || op === "alquilar";
           const wantBuy = op === "buy" || op === "comprar";
           const wantBoth = op === "all" || op === "ambas" || !op;
           const isRent = pub._listingType === "rent";
           const isSale = pub._listingType === "sale";
+          if (wantBoth || (wantRent && isRent) || (wantBuy && isSale)) matchScore += operation_weight;
 
-          if (wantBoth || (wantRent && isRent) || (wantBuy && isSale)) {
-            matchScore += operation_weight;
-          }
-
-          // Budget matching
           const min_b = userSearch.min_budget || 0;
           const max_b = userSearch.max_budget || 999999999;
           const pubPrice = Number(pub._price || 0);
           const userCurrency = userSearch.currency === "$" ? "UYU" : "USD";
           const pubCurrency = pub._currency || "USD";
-
           if (pubPrice > 0 && userCurrency === pubCurrency) {
-            if (pubPrice >= min_b && pubPrice <= max_b) {
-              matchScore += budget_weight;
-            } else if (pubPrice >= min_b * 0.85 && pubPrice <= max_b * 1.15) {
-              matchScore += budget_weight * 0.5;
-            }
+            if (pubPrice >= min_b && pubPrice <= max_b) matchScore += budget_weight;
+            else if (pubPrice >= min_b * 0.85 && pubPrice <= max_b * 1.15) matchScore += budget_weight * 0.5;
           }
 
-          // Location matching
-          let selectedNeighborhoods: string[] = [];
-          if (Array.isArray(userSearch.neighborhood_ids)) {
-            selectedNeighborhoods = userSearch.neighborhood_ids;
-          } else if (typeof userSearch.neighborhood_ids === "string") {
-            selectedNeighborhoods = [userSearch.neighborhood_ids as string];
-          }
+          let selectedIdList: string[] = [];
+          if (Array.isArray(userSearch.neighborhood_ids)) selectedIdList = userSearch.neighborhood_ids;
+          else if (typeof userSearch.neighborhood_ids === "string") selectedIdList = [userSearch.neighborhood_ids];
           const pubNeighborhood = pub.neighborhood;
-          let hasNeighborhoodMatch = selectedNeighborhoods.length === 0;
-          if (!hasNeighborhoodMatch) {
-            const selectedNames = selectedNeighborhoods.map((id: string) => neighborhoodMap[id] || "");
-            hasNeighborhoodMatch = selectedNames.includes(pubNeighborhood);
+          let hasMatch = selectedIdList.length === 0;
+          if (!hasMatch) {
+            const selectedNames = selectedIdList.map((id: string) => neighborhoodMap[id] || "");
+            hasMatch = selectedNames.includes(pubNeighborhood);
           }
-          if (hasNeighborhoodMatch) {
-            matchScore += neighborhood_weight;
-          }
+          if (hasMatch) matchScore += neighborhood_weight;
 
-          // Rooms matching
           const minRooms = userSearch.min_bedrooms || 0;
           const pubRooms = pub._rooms || 0;
-          if (minRooms === 0 || pubRooms >= minRooms) {
-            matchScore += rooms_weight;
-          }
+          if (minRooms === 0 || pubRooms >= minRooms) matchScore += rooms_weight;
 
           matchScore = Math.floor(Math.min(100, Math.max(0, matchScore)));
         }
 
-        return {
-          ...user,
-          personalRating,
-          familyRating,
-          matchScore,
-        };
+        return { ...user, personalRating, familyRating, matchScore };
       }),
     }));
   }, [allInsights, reviews, searchProfiles, matchWeightsConfig, neighborhoods]);
