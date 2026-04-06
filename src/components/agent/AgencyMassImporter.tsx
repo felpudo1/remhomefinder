@@ -54,6 +54,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
   const [discovering, setDiscovering] = useState(false);
   const [terminating, setTerminating] = useState(false);
   const [links, setLinks] = useState<DiscoveredLink[]>([]);
+  const [failedDetails, setFailedDetails] = useState<{url: string; error: string}[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   
   // FILTROS AVANZADOS (Discovery Pro)
@@ -190,7 +191,7 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
         .eq("key", "scraper_exclude_urls")
         .single();
       
-      const excludePatterns = (appSettings?.value || "").split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean);
+      const excludePatterns = ((appSettings as any)?.value || "").split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean);
 
       const discoveredLinks: DiscoveredLink[] = (dbLinks || [])
         .filter((l: any) => {
@@ -651,12 +652,33 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
                 {task.completedLinks} exitosas
               </div>
               {task.failedLinks > 0 && (
-                <div className="flex items-center gap-1.5 text-destructive">
+                <div className="flex items-center gap-1.5 text-destructive cursor-pointer" onClick={async () => {
+                  if (failedDetails.length > 0) { setFailedDetails([]); return; }
+                  const { data } = await supabase
+                    .from("discovered_links" as any)
+                    .select("url, error_message")
+                    .eq("task_id", task.taskId)
+                    .eq("status", "failed")
+                    .limit(20);
+                  setFailedDetails((data || []).map((d: any) => ({ url: d.url, error: d.error_message || "Error desconocido" })));
+                }}>
                   <XCircle className="h-4 w-4" />
                   {task.failedLinks} fallidas
+                  <span className="text-[10px] underline ml-1">{failedDetails.length > 0 ? "ocultar" : "ver detalle"}</span>
                 </div>
               )}
             </div>
+
+            {failedDetails.length > 0 && (
+              <div className="max-h-32 overflow-y-auto rounded-md border border-destructive/20 bg-destructive/5 p-2 space-y-1">
+                {failedDetails.map((f, i) => (
+                  <div key={i} className="text-[10px] text-destructive">
+                    <span className="font-mono break-all">{f.url.slice(0, 60)}...</span>
+                    <span className="ml-1 text-muted-foreground">→ {f.error}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {isImporting && (
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
