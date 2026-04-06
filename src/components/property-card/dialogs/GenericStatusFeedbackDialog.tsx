@@ -294,8 +294,7 @@ export function GenericStatusFeedbackDialog({
                     });
                     setFormData(clearedData);
                   }
-                }}
-                }}
+                }
               />
               <Label htmlFor="quick-reason-toggle" className="text-sm font-medium cursor-pointer">
                 ⚡ Otro motivo
