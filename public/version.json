@@ -1,21 +1,21 @@
 {
   "version": "0.0.0",
   "git": {
-    "commitHash": "c7b8fa27",
-    "commitHashFull": "c7b8fa27813f5ec65c004a0fb87bb2906ba8432b",
-    "branch": "edit/edt-af046a8d-6af2-4329-8e29-9c510a5b8b02",
-    "commitDate": "2026-04-04 05:30:58 +0000",
+    "commitHash": "35e17200",
+    "commitHashFull": "35e172009904725f7bbb378b77cb813044564634",
+    "branch": "edit/edt-b71189c6-6fd6-4ae4-99cf-a4a3eb7e6a18",
+    "commitDate": "2026-04-06 19:42:51 +0000",
     "isDirty": false
   },
   "build": {
-    "timestamp": "2026-04-04T05:31:03.243Z",
-    "timestampUnix": 1775280663243,
+    "timestamp": "2026-04-06T19:48:51.764Z",
+    "timestampUnix": 1775504931764,
     "environment": "development",
     "environmentLabel": "Desarrollo",
     "nodeVersion": "v22.22.0"
   },
   "meta": {
     "name": "vite_react_shadcn_ts",
-    "deployedAt": "2026-04-04T05:31:03.243Z"
+    "deployedAt": "2026-04-06T19:48:51.764Z"
   }
 }
