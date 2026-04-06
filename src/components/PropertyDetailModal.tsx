@@ -42,6 +42,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { currencySymbol } from "@/lib/currency";
 import { useGroups } from "@/hooks/useGroups";
 import { FullScreenGallery } from "@/components/ui/FullScreenGallery";
+import { CommentsSection } from "@/components/ui/CommentsSection";
 
 interface PropertyDetailModalProps {
   property: Property | null;
@@ -101,7 +102,6 @@ export function PropertyDetailModal({
   const [activeImg, setActiveImg] = useState(0);
   const allImages = property ? [...(property.images || []), ...(property.privateImages || [])] : [];
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [commentText, setCommentText] = useState("");
 
   /**
    * EFECTO DE VISTAS: 
@@ -176,35 +176,9 @@ export function PropertyDetailModal({
     markCommentsAsRead();
   }, [open, property?.id, property?.comments.length]);
 
-  // Manejo de teclado para la galería (AHORA GESTIONADO POR FullScreenGallery)
-
   if (!property) return null;
 
   const config = STATUS_CONFIG[property.status];
-
-  /**
-   * FUNCIÓN: handleAddComment
-   * Sirve para que el usuario guarde su opinión o una nota sobre la casa/apartamento.
-   */
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
-    const author = currentUserDisplayName || currentUserEmail || "Me";
-    onAddComment(property.id, {
-      author,
-      avatar: author[0],
-      text: commentText.trim(),
-    });
-    setCommentText("");
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("es-AR", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -457,64 +431,12 @@ export function PropertyDetailModal({
             )}
           </div>
 
-          {/* Comments Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">
-                Comentarios ({property.comments.length})
-              </span>
-            </div>
-
-            {property.comments.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Sin comentarios aún. ¡Sé el primero en compartir tu opinión!
-              </p>
-            )}
-
-            <div className="space-y-3">
-              {[...property.comments]
-                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                .map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
-                      {comment.avatar}
-                    </div>
-                    <div className="flex-1 bg-muted rounded-xl px-3 py-2.5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-foreground">{comment.author}</span>
-                        <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            {/* Add comment */}
-            <div className="space-y-2 pt-2 border-t border-border">
-              <Textarea
-                placeholder="Compartí tu opinión sobre esta propiedad..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="resize-none text-sm min-h-[80px] rounded-xl"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddComment();
-                }}
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">⌘+Enter para enviar</span>
-                <Button
-                  size="sm"
-                  onClick={handleAddComment}
-                  disabled={!commentText.trim()}
-                  className="rounded-lg"
-                >
-                  Agregar comentario
-                </Button>
-              </div>
-            </div>
-          </div>
+          <CommentsSection
+            comments={property.comments}
+            onAddComment={(comment) => onAddComment(property.id, comment)}
+            currentUserDisplayName={currentUserDisplayName}
+            currentUserEmail={currentUserEmail}
+          />
         </div>
 
         {/* Full Screen Gallery Overlay (MODULARIZADO) */}
