@@ -1,114 +1,101 @@
 
 
-# Plan: Optimización de useAgentPropertyInsights con RPC + Paginación
+## Plan: "Otro motivo" con motivos rápidos administrables en el diálogo de descarte
 
-## Resumen
+### Resumen
 
-Migrar las 4 consultas secuenciales del hook a una sola RPC en Postgres con paginación por propiedad, índices compuestos, y suscripción Realtime para invalidación de caché.
+Agregar un checkbox "Otro motivo" al final del formulario de descarte que, al activarse, muestra un dropdown con motivos predefinidos (administrables por el admin). Cuando se selecciona un motivo rápido, las estrellas dejan de ser obligatorias. Los datos se guardan en `event_metadata` como JSON igual que el resto del feedback.
 
-## Paso 1 — Migración: Índices compuestos
+### Cambios
 
-Archivo: `supabase/migrations/20260404000000_add_agent_insights_indexes.sql`
+#### 1. Base de datos — Nueva tabla `discard_quick_reasons`
+
+Crear una tabla simple para los motivos rápidos administrables:
 
 ```sql
-CREATE INDEX IF NOT EXISTS idx_status_history_listing_lookup 
-  ON status_history_log(user_listing_id, created_at DESC);
+CREATE TABLE public.discard_quick_reasons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  label text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-CREATE INDEX IF NOT EXISTS idx_agent_pubs_org_filter 
-  ON agent_publications(org_id, status);
+ALTER TABLE public.discard_quick_reasons ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX IF NOT EXISTS idx_user_listings_source_lookup 
-  ON user_listings(source_publication_id);
+-- Todos pueden leer, solo admins pueden gestionar
+CREATE POLICY "Auth can read" ON public.discard_quick_reasons
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Admins can manage" ON public.discard_quick_reasons
+  FOR ALL TO authenticated
+  USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+
+-- Datos iniciales
+INSERT INTO public.discard_quick_reasons (label, sort_order) VALUES
+  ('Incompatible garantía', 1),
+  ('No mascotas', 2),
+  ('Sin lugar moto', 3),
+  ('Sin lugar auto', 4);
 ```
 
-## Paso 2 — Migración: RPC `get_agent_property_insights`
+#### 2. Hook nuevo — `useDiscardQuickReasons`
 
-Archivo: `supabase/migrations/20260404000001_create_get_agent_property_insights.sql`
+Hook simple que lee los motivos activos de la tabla `discard_quick_reasons` ordenados por `sort_order`. Se usa en el diálogo de descarte.
 
-Correcciones aplicadas vs. el documento original:
-- **JOIN corregido**: `ul.source_publication_id = ap.id` (no `ap.property_id`)
-- **Paginación por propiedad**: Se pagina sobre `agent_publications` con LIMIT/OFFSET, luego se traen TODOS los users de esas propiedades paginadas
-- **Sin JOIN redundante** a `agent_publications` en el SELECT final
-- `SECURITY INVOKER` para respetar RLS
-- `DISTINCT ON (user_listing_id, new_status)` para último feedback por etapa
+Archivo: `src/hooks/useDiscardQuickReasons.ts`
 
-Estructura de CTEs:
-1. `paginated_pubs` — publicaciones del org paginadas
-2. `listings` — user_listings de esas publicaciones
-3. `latest_logs` — último log por listing+status con DISTINCT ON
-4. `ratings_agg` — `jsonb_object_agg` de ratings por listing
-5. `status_counts_agg` — conteo de estados por publicación
-6. Query final con JOINs a `properties`, `profiles`
+#### 3. Modificar `GenericStatusFeedbackDialog.tsx`
 
-Columnas retornadas: `publication_id, property_id, property_title, property_ref, property_neighborhood, property_price, property_currency, property_rooms, listing_type, pub_status, pub_created_at, user_listing_id, user_id, user_display_name, user_email, user_phone, current_status, user_updated_at, org_id, status_counts (jsonb), ratings_by_status (jsonb)`
+Solo para el estado `descartado`:
 
-## Paso 3 — Migración: RPC `get_user_status_history`
+- Agregar al final del formulario un checkbox "Otro motivo" (con un icono tipo ⚡).
+- Al activarlo, mostrar un `<Select>` con los motivos cargados del hook.
+- **Lógica de validación**: si "Otro motivo" está activado y hay un motivo seleccionado del dropdown, los campos de rating dejan de ser requeridos (se pueden dejar en 0). El motivo de texto libre (`descppal`) también deja de ser obligatorio.
+- Al confirmar, se agrega `quick_reason_id` y `quick_reason_label` al `formData` que se pasa a `onConfirm`.
 
-Archivo: mismo migration o separado.
+#### 4. Almacenamiento en `event_metadata` (sin cambios en la estructura)
 
-RPC simple para carga on-demand del historial completo de un user_listing:
-```sql
-CREATE FUNCTION get_user_status_history(p_user_listing_id uuid)
-RETURNS TABLE(new_status text, event_metadata jsonb, changed_by uuid, created_at timestamptz)
-```
-`SECURITY INVOKER`, `STABLE`. Sin paginación (es un solo listing).
+Los datos ya se guardan como JSONB en `status_history_log.event_metadata`. Se agregarán dos campos al JSON:
+- `quick_reason_id`: UUID del motivo seleccionado
+- `quick_reason_label`: texto del motivo (para referencia rápida sin join)
 
-## Paso 4 — Frontend: Refactorizar `useAgentPropertyInsights.ts`
+No requiere migración adicional porque `event_metadata` es JSONB libre.
 
-- Reemplazar las 4 queries por `supabase.rpc('get_agent_property_insights', { p_org_id, p_limit: 30, p_offset: 0 })`
-- Usar `useInfiniteQuery` con `getNextPageParam` basado en offset
-- Mantener la misma interfaz `AgentPropertyInsight[]` y `AgentUserInsight[]`
-- **match_score** se calcula en `useMemo` solo para los items de la página actual, usando `useGeography` (extendido con `staleTime: Infinity`) para el mapa de neighborhoods
-- **property_reviews** y **search_profiles** se fetchean en paralelo con `Promise.all` solo para los IDs de la página
-- `staleTime: 5 * 60 * 1000` como fallback
+#### 5. Panel Admin — CRUD de motivos rápidos
 
-## Paso 5 — Frontend: Extender `useGeography.ts`
+Agregar una sección en el admin (dentro de `AdminStatusFeedbackConfig` o como sub-sección) para que el admin pueda:
+- Ver la lista de motivos rápidos
+- Agregar nuevos motivos
+- Editar/desactivar motivos existentes
+- Reordenar
 
-- Cambiar `staleTime` de 1 hora a `Infinity` (datos casi estáticos)
-- Exportar un mapa `Record<string, string>` de neighborhoods para evitar crear un hook nuevo (Regla 5)
+#### 6. Estadísticas del agente
 
-## Paso 6 — Frontend: Paginación en `AgentPropertyListing.tsx`
+En el panel de estadísticas del agente (`AgentPropertyListing` / insights), donde ya se muestra el `event_metadata` del descarte, se mostrará el `quick_reason_label` si existe, permitiendo al agente ver el motivo puntual de descarte.
 
-- Botón "Cargar más" al final de `AgentPropertyCards` que llama `fetchNextPage()`
-- Mostrar indicador de carga mientras se obtienen más propiedades
-
-## Paso 7 — Frontend: Historial on-demand en `AgentPropertyUsersPanel.tsx`
-
-- Al hacer click en un usuario, fetchear `get_user_status_history(user_listing_id)` para obtener el historial COMPLETO
-- Mostrar los logs cronológicamente en el panel lateral (actualmente solo muestra ratings del último log por status — eso se mantiene igual del RPC principal)
-
-## Paso 8 — Realtime: Suscripción e invalidación
-
-- En `AgentPropertyListing.tsx`, suscribirse al canal `status_history_log` con filtro `postgres_changes` INSERT
-- Al recibir evento, `queryClient.invalidateQueries(['agent-property-insights'])`
-- Eliminar el polling de 5 min (se mantiene `staleTime` como fallback pero sin refetch automático)
-
-## Archivos a modificar/crear
+### Archivos a modificar/crear
 
 | Archivo | Acción |
 |---------|--------|
-| `supabase/migrations/20260404000000_*.sql` | Crear (índices) |
-| `supabase/migrations/20260404000001_*.sql` | Crear (RPC insights + history) |
-| `src/hooks/useAgentPropertyInsights.ts` | Refactorizar (RPC + useInfiniteQuery) |
-| `src/hooks/useGeography.ts` | Modificar (staleTime: Infinity) |
-| `src/components/agent/AgentPropertyListing.tsx` | Modificar (paginación + realtime) |
-| `src/components/agent/property-listing/AgentPropertyUsersPanel.tsx` | Modificar (historial on-demand) |
-| `src/components/agent/property-listing/agentPropertyListingTypes.ts` | Modificar (tipos para RPC) |
-| `src/components/agent/property-listing/useAgentPropertyListingController.ts` | Ajustar (soporte paginación) |
+| Migración SQL | Crear tabla `discard_quick_reasons` + datos iniciales |
+| `src/hooks/useDiscardQuickReasons.ts` | Crear — hook para leer motivos |
+| `src/components/property-card/dialogs/GenericStatusFeedbackDialog.tsx` | Modificar — agregar checkbox + dropdown para descartado |
+| `src/components/admin/status-feedback/AdminStatusFeedbackConfig.tsx` | Modificar — agregar sección CRUD de motivos rápidos |
+| Panel agente (donde muestra insights de descarte) | Modificar — mostrar `quick_reason_label` |
 
-## Resultado esperado
+### Flujo del usuario
 
-| Métrica | Antes | Después |
-|---------|-------|---------|
-| Consultas por mount | 4 secuenciales + 2 paralelas | 1 RPC + 2 paralelas (reviews/search profiles paginados) |
-| Filas transferidas | ~50.000 potenciales | ~30 propiedades + sus users |
-| Latencia | 3-8s | <400ms |
-| Refetch | Cada 5 min | Solo por Realtime |
-
-## Restricciones respetadas
-
-- Interfaz pública del hook se mantiene (Regla 1 y 3)
-- `SECURITY INVOKER` respeta RLS
-- No se crea `useNeighborhoods.ts` — se extiende `useGeography.ts` (Regla 5)
-- match_score en cliente con `useMemo` (evita cross-join en BD)
+```text
+User descarta propiedad
+  → Se abre GenericStatusFeedbackDialog (status=descartado)
+  → Ve los campos de rating y texto como siempre
+  → Al final ve un checkbox "⚡ Otro motivo"
+  → Si lo activa:
+      → Aparece dropdown con motivos del admin
+      → Las estrellas y texto libre ya NO son obligatorios
+      → Puede guardar solo con el motivo rápido seleccionado
+  → Al confirmar: todo va a event_metadata como JSON
+```
 
