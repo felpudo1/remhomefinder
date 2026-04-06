@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAllStatusFeedbackConfigs, useStatusFeedbackConfigMutation } from "@/hooks/useStatusFeedbackConfig";
+import { useAllDiscardQuickReasons, useDiscardQuickReasonsMutation } from "@/hooks/useDiscardQuickReasons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2, ChevronUp, ChevronDown, Copy, Info } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, ChevronUp, ChevronDown, Copy, Info, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { FeedbackFieldType } from "@/lib/status-feedback-config";
 
