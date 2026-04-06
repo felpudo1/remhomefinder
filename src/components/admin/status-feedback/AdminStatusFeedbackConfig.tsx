@@ -398,7 +398,110 @@ export function AdminStatusFeedbackConfig() {
         </CardContent>
       </Card>
 
-      {/* Emojis para copiar */}
+      {/* Motivos Rápidos de Descarte */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            Motivos Rápidos de Descarte
+          </CardTitle>
+          <CardDescription>
+            Motivos predefinidos que los usuarios pueden seleccionar al descartar una propiedad (sin necesidad de puntuar)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingReasons ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(quickReasons || []).map((reason) => (
+                <div
+                  key={reason.id}
+                  className="flex items-center justify-between gap-3 p-3 border rounded-lg bg-card"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge variant={reason.is_active ? "default" : "secondary"} className="text-xs">
+                      {reason.is_active ? "Activo" : "Inactivo"}
+                    </Badge>
+                    <span className="font-medium text-sm">{reason.label}</span>
+                    <span className="text-xs text-muted-foreground">#{reason.sort_order}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        const newLabel = prompt("Nuevo texto del motivo:", reason.label);
+                        if (newLabel && newLabel.trim()) {
+                          try {
+                            await updateReason(reason.id, { label: newLabel.trim() });
+                            toast.success("Motivo actualizado");
+                          } catch (e: any) { toast.error(e.message); }
+                        }
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        if (!confirm(`¿Desactivar "${reason.label}"?`)) return;
+                        try {
+                          await deleteReason(reason.id);
+                          toast.success("Motivo desactivado");
+                        } catch (e: any) { toast.error(e.message); }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Agregar nuevo */}
+              <div className="flex gap-2 pt-2">
+                <Input
+                  id="new-quick-reason"
+                  placeholder="Nuevo motivo rápido..."
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter") {
+                      const input = e.currentTarget;
+                      const label = input.value.trim();
+                      if (!label) return;
+                      try {
+                        await createReason(label, (quickReasons?.length || 0) + 1);
+                        input.value = "";
+                        toast.success("Motivo creado");
+                      } catch (err: any) { toast.error(err.message); }
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const input = document.getElementById("new-quick-reason") as HTMLInputElement;
+                    const label = input?.value.trim();
+                    if (!label) return;
+                    try {
+                      await createReason(label, (quickReasons?.length || 0) + 1);
+                      input.value = "";
+                      toast.success("Motivo creado");
+                    } catch (err: any) { toast.error(err.message); }
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Agregar
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
