@@ -64,7 +64,6 @@ serve(async (req) => {
             title: description,
             quantity: 1,
             unit_price: Number(amount),
-            currency_id: currency,
           },
         ],
         back_urls: {
