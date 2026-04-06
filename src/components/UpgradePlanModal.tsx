@@ -125,7 +125,7 @@ export function UpgradePlanModal({
     const displayPrice = isAgent
         ? (selectedInterval === "yearly" ? agentAnnualPrice : agentMonthlyPrice)
         : configPrice;
-    const displayCurrency = isAgent ? agentCurrency : configCurrency;
+    void (isAgent ? agentCurrency : configCurrency); // displayCurrency reserved
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
