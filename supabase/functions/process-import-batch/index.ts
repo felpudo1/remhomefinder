@@ -61,7 +61,7 @@ async function extractWithAI(markdown: string, supabaseUrl: string, serviceKey: 
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.0-flash", // Usando modelo de última generación estable
+      model: "google/gemini-2.5-flash", // Modelo actualizado
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Extraé los datos de este aviso inmobiliario:\n\n${markdown.slice(0, 12000)}` },
