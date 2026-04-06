@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
 import { useDiscardQuickReasons } from "@/hooks/useDiscardQuickReasons";
@@ -277,6 +276,42 @@ export function GenericStatusFeedbackDialog({
         }
       >
         {fields.map((field) => renderField(field))}
+
+        {/* Motivo rápido de descarte */}
+        {isDescartado && quickReasons && quickReasons.length > 0 && (
+          <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="quick-reason-toggle"
+                checked={useQuickReason}
+                onCheckedChange={(checked) => {
+                  setUseQuickReason(checked);
+                  if (!checked) setSelectedQuickReasonId("");
+                }}
+              />
+              <Label htmlFor="quick-reason-toggle" className="text-sm font-medium cursor-pointer">
+                ⚡ Otro motivo
+              </Label>
+            </div>
+            {useQuickReason && (
+              <Select
+                value={selectedQuickReasonId}
+                onValueChange={setSelectedQuickReasonId}
+              >
+                <SelectTrigger className="w-full rounded-xl">
+                  <SelectValue placeholder="Seleccioná un motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {quickReasons.map((reason) => (
+                    <SelectItem key={reason.id} value={reason.id}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
       </div>
     </StatusChangeConfirmDialog>
   );
