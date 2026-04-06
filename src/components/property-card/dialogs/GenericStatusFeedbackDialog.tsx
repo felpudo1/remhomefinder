@@ -112,29 +112,27 @@ export function GenericStatusFeedbackDialog({
 
   const renderField = (field: typeof fields[0]) => {
     switch (field.field_type) {
-      case "rating":
+      case "rating": {
+        const ratingsDisabled = isDescartado && useQuickReason;
         return (
           <div
             key={field.field_id}
-            className="grid w-full grid-cols-[80%_20%] items-start gap-0 py-2"
+            className={`grid w-full grid-cols-[80%_20%] items-start gap-0 py-2 ${ratingsDisabled ? "opacity-40 pointer-events-none" : ""}`}
           >
-            {/* 
-              4/5 del ancho para el texto (80%)
-              1/5 del ancho para las estrellas (20%)
-            */}
             <Label className="min-w-0 text-left text-sm font-medium leading-snug text-foreground break-words pr-3 pt-0.5 cursor-pointer">
               {field.field_label}
             </Label>
             <div className="flex min-w-0 justify-end">
               <RatingField
-                value={formData[field.field_id] || 0}
-                onChange={(val) => handleFieldChange(field.field_id, val)}
+                value={ratingsDisabled ? 0 : (formData[field.field_id] || 0)}
+                onChange={(val) => { if (!ratingsDisabled) handleFieldChange(field.field_id, val); }}
                 label=""
                 inline={true}
               />
             </div>
           </div>
         );
+      }
       case "text":
         // Motivo de descarte (y similares): texto largo en bloque, no una sola línea
         if (field.field_id === "reason") {
