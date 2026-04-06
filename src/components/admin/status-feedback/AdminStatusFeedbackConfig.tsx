@@ -34,6 +34,8 @@ interface FieldFormData {
 export function AdminStatusFeedbackConfig() {
   const { data: configsByStatus, isLoading } = useAllStatusFeedbackConfigs();
   const { createField, updateField, deleteField } = useStatusFeedbackConfigMutation();
+  const { data: quickReasons, isLoading: isLoadingReasons } = useAllDiscardQuickReasons();
+  const { createReason, updateReason, deleteReason } = useDiscardQuickReasonsMutation();
   
   const [selectedStatus, setSelectedStatus] = useState<string>("contactado");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
