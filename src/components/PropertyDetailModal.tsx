@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   MapPin,
   Maximize2,
   ExternalLink,
-  MessageCircle,
+  
   ChevronLeft,
   ChevronRight,
   Sparkles,
