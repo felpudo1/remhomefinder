@@ -1141,6 +1141,36 @@ export type Database = {
           },
         ]
       }
+      scraping_domain_profiles: {
+        Row: {
+          created_at: string | null
+          custom_instructions: string | null
+          discovery_config: Json | null
+          domain: string
+          extraction_config: Json | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_instructions?: string | null
+          discovery_config?: Json | null
+          domain: string
+          extraction_config?: Json | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_instructions?: string | null
+          discovery_config?: Json | null
+          domain?: string
+          extraction_config?: Json | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       status_feedback_configs: {
         Row: {
           created_at: string | null
