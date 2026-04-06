@@ -284,7 +284,17 @@ export function GenericStatusFeedbackDialog({
                 checked={useQuickReason}
                 onCheckedChange={(checked) => {
                   setUseQuickReason(checked);
-                  if (!checked) setSelectedQuickReasonId("");
+                  if (!checked) {
+                    setSelectedQuickReasonId("");
+                  } else {
+                    // Limpiar estrellas al activar motivo rápido
+                    const clearedData = { ...formData };
+                    fields?.forEach((f) => {
+                      if (f.field_type === "rating") clearedData[f.field_id] = 0;
+                    });
+                    setFormData(clearedData);
+                  }
+                }}
                 }}
               />
               <Label htmlFor="quick-reason-toggle" className="text-sm font-medium cursor-pointer">
