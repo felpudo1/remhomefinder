@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { MaintenanceShield } from "@/components/MaintenanceShield";
 import { AnnouncementOverlay } from "@/components/AnnouncementOverlay";
+import { PhoneRequirementOverlay } from "@/components/PhoneRequirementOverlay";
 import Index from "./pages/Index";
 
 const routeLazy = (importer: Parameters<typeof lazyWithRetry>[0]) => lazy(lazyWithRetry(importer));
@@ -64,6 +65,7 @@ const App = () => (
         <BrowserRouter>
           <MaintenanceShield />
           <AnnouncementOverlay />
+          <PhoneRequirementOverlay />
           <ReferralTracker />
           <Suspense fallback={<LoadingPage />}>
             <ErrorBoundary>
