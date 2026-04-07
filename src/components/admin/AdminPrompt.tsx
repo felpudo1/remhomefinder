@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Save, RotateCcw, Info, Loader2, Globe, Sparkles, MessageSquareCode } from "lucide-react";
+import { Bot, Save, RotateCcw, Info, Loader2, Globe, Sparkles, MessageSquareCode, FileCode } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminScrapingProfiles } from "./AdminScrapingProfiles";
 
@@ -62,6 +62,7 @@ const SETTINGS_KEYS = {
   import: "scraper_prompt_import",
   tokens: "scraper_unavailable_tokens",
   excludeUrls: "scraper_exclude_urls",
+  forbiddenExtensions: "scraper_forbidden_extensions",
 } as const;
 
 interface Props {
@@ -73,32 +74,41 @@ export function AdminPrompt({ toast }: Props) {
   const [promptAgent, setPromptAgent] = useState(DEFAULT_PROMPT_AGENT);
   const [promptImage, setPromptImage] = useState(DEFAULT_PROMPT_IMAGE);
   const [promptImport, setPromptImport] = useState(DEFAULT_PROMPT_IMPORT);
+  const [forbiddenExtensions, setForbiddenExtensions] = useState(".pdf, .jpg, .png, .jpeg, .docx, .xml");
   const [tokens, setTokens] = useState(DEFAULT_UNAVAILABLE_TOKENS);
   const [excludeUrls, setExcludeUrls] = useState(DEFAULT_EXCLUDE_URLS);
   
   const [savedStatus, setSavedStatus] = useState<Record<string, boolean>>({
-    user: true, agent: true, image: true, import: true, tokens: true, excludeUrls: true
+    user: true, agent: true, image: true, import: true, tokens: true, excludeUrls: true, forbiddenExtensions: true
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("key, value")
-        .in("key", Object.values(SETTINGS_KEYS));
+      try {
+        const { data, error } = await supabase
+          .from("app_settings")
+          .select("key, value")
+          .in("key", Object.values(SETTINGS_KEYS));
 
-      if (data) {
-        data.forEach(row => {
-          if (row.key === SETTINGS_KEYS.user) setPromptUser(row.value);
-          if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
-          if (row.key === SETTINGS_KEYS.image) setPromptImage(row.value);
-          if (row.key === SETTINGS_KEYS.import) setPromptImport(row.value);
-          if (row.key === SETTINGS_KEYS.tokens) setTokens(row.value);
-          if (row.key === SETTINGS_KEYS.excludeUrls) setExcludeUrls(row.value);
-        });
+        if (error) throw error;
+
+        if (data) {
+          data.forEach(row => {
+            if (row.key === SETTINGS_KEYS.user) setPromptUser(row.value);
+            if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
+            if (row.key === SETTINGS_KEYS.image) setPromptImage(row.value);
+            if (row.key === SETTINGS_KEYS.import) setPromptImport(row.value);
+            if (row.key === SETTINGS_KEYS.tokens) setTokens(row.value);
+            if (row.key === SETTINGS_KEYS.excludeUrls) setExcludeUrls(row.value);
+            if (row.key === SETTINGS_KEYS.forbiddenExtensions) setForbiddenExtensions(row.value);
+          });
+        }
+      } catch (err) {
+        console.error("Error loading settings:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     load();
   }, []);
@@ -111,7 +121,8 @@ export function AdminPrompt({ toast }: Props) {
       type === "image" ? promptImage : 
       type === "import" ? promptImport :
       type === "tokens" ? tokens :
-      excludeUrls;
+      type === "excludeUrls" ? excludeUrls :
+      forbiddenExtensions;
 
     const { error } = await supabase
       .from("app_settings")
@@ -132,6 +143,7 @@ export function AdminPrompt({ toast }: Props) {
     if (type === "import") setPromptImport(DEFAULT_PROMPT_IMPORT);
     if (type === "tokens") setTokens(DEFAULT_UNAVAILABLE_TOKENS);
     if (type === "excludeUrls") setExcludeUrls(DEFAULT_EXCLUDE_URLS);
+    if (type === "forbiddenExtensions") setForbiddenExtensions(".pdf, .jpg, .png, .jpeg, .docx, .xml");
     setSavedStatus(prev => ({ ...prev, [type]: false }));
   };
 
@@ -233,11 +245,12 @@ export function AdminPrompt({ toast }: Props) {
               </Button>
             </div>
 
-            <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4">
+            <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4 transition-all hover:border-primary/30">
               <div className="flex items-center gap-2 text-primary">
                 <Globe className="w-5 h-5" />
                 <h3 className="font-bold">Filtro Global URLs</h3>
               </div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Ej: /login, /registro, /mi-cuenta</p>
               <Textarea 
                 value={excludeUrls}
                 onChange={(e) => { setExcludeUrls(e.target.value); setSavedStatus(prev => ({ ...prev, excludeUrls: false })); }}
@@ -246,6 +259,23 @@ export function AdminPrompt({ toast }: Props) {
               <Button onClick={() => handleSave("excludeUrls")} size="sm" className="w-full gap-2 rounded-lg" disabled={savedStatus.excludeUrls}>
                 <Save className="w-4 h-4" />
                 {savedStatus.excludeUrls ? "Guardado" : "Guardar Filtros"}
+              </Button>
+            </div>
+
+            <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4 transition-all hover:border-primary/30">
+              <div className="flex items-center gap-2 text-primary">
+                <FileCode className="w-5 h-5" />
+                <h3 className="font-bold">Extensiones Prohibidas Globales</h3>
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Ej: .pdf, .jpg, .xml, .docx</p>
+              <Textarea 
+                value={forbiddenExtensions}
+                onChange={(e) => { setForbiddenExtensions(e.target.value); setSavedStatus(prev => ({ ...prev, forbiddenExtensions: false })); }}
+                className="min-h-[100px] bg-muted/30 border-primary/10 rounded-xl text-xs"
+              />
+              <Button onClick={() => handleSave("forbiddenExtensions")} size="sm" className="w-full gap-2 rounded-lg" disabled={savedStatus.forbiddenExtensions}>
+                <Save className="w-4 h-4" />
+                {savedStatus.forbiddenExtensions ? "Guardado" : "Guardar Extensiones"}
               </Button>
             </div>
           </div>

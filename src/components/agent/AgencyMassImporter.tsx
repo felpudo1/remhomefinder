@@ -82,9 +82,9 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
     const payload = {
       domain: pureDomain,
       discovery_config: {
-        minUrlLength: filters.minUrlLength,
-        excludeExtensions: filters.excludeExtensions.split(",").map(e => e.trim()).filter(Boolean),
-        blockBrokenEnds: filters.blockBrokenEnds,
+        minUrlLength: filters.minUrlLength || 30,
+        excludeExtensions: (filters.excludeExtensions || "").split(",").map(e => e.trim()).filter(Boolean),
+        blockBrokenEnds: filters.blockBrokenEnds ?? true,
       }
     };
 
@@ -106,12 +106,13 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
   const [orgMembers, setOrgMembers] = useState<{ user_id: string; display_name: string; email: string }[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
-  // Cargar miembros si es admin
+  // Cargar miembros y configuración global si es admin
   useEffect(() => {
-    if (isAdmin && orgId) {
-      const fetchMembers = async () => {
-        setLoadingMembers(true);
-        try {
+    const fetchData = async () => {
+      setLoadingMembers(true);
+      try {
+        // Cargar miembros de la organización
+        if (isAdmin && orgId) {
           const { data, error } = await supabase
             .from("organization_members")
             .select(`
@@ -123,22 +124,37 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
             `)
             .eq("org_id", orgId);
 
-          if (error) throw error;
-
-          const members = (data || []).map((m: any) => ({
-            user_id: m.user_id,
-            display_name: m.profiles?.display_name || m.profiles?.email || "Sin nombre",
-            email: m.profiles?.email || ""
-          }));
-          setOrgMembers(members);
-        } catch (err) {
-          console.error("Error fetching members:", err);
-        } finally {
-          setLoadingMembers(false);
+          if (!error && data) {
+            const members = data.map((m: any) => ({
+              user_id: m.user_id,
+              display_name: m.profiles?.display_name || m.profiles?.email || "Sin nombre",
+              email: m.profiles?.email || ""
+            }));
+            setOrgMembers(members);
+          }
         }
-      };
-      fetchMembers();
-    }
+
+        // CARGAR CONFIGURACIÓN GLOBAL DE SCRAPING
+        const { data: globalSettings } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "scraper_forbidden_extensions")
+          .maybeSingle();
+        
+        if (globalSettings?.value) {
+          setFilters(prev => ({
+            ...prev,
+            excludeExtensions: globalSettings.value
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching initial data:", err);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+    
+    fetchData();
   }, [isAdmin, orgId]);
 
   const isImporting = task?.status === "importing";

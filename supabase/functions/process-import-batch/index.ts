@@ -15,25 +15,30 @@ function extractImages(markdown: string, html: string, allLinks: string[]): stri
   const excludeExtensions = /\.(svg|gif|ico)(\?|$)/i;
   const imageSet = new Set<string>();
 
+  // 1. De los links detectados por Firecrawl
   allLinks.filter((l) => imageExtensions.test(l)).forEach((l) => imageSet.add(l));
 
   let match;
+  // 2. Del markdown (links de imagen estándar)
   const mdRx = /!\[.*?\]\((https?:\/\/[^\s)]+)\)/g;
   while ((match = mdRx.exec(markdown)) !== null) imageSet.add(match[1]);
 
-  const imgRx = /(?:src|data-src|data-lazy-src)=["'](https?:\/\/[^"']+)/gi;
+  // 3. Del HTML (búsqueda agresiva de atributos de imagen y lazy-loading)
+  const imgRx = /(?:src|data-src|data-lazy-src|data-original|data-source|data-lazy|data-flickity-lazyload-src|data-zoom-image|data-main-image)=["'](https?:\/\/[^"']+)/gi;
   while ((match = imgRx.exec(html)) !== null) imageSet.add(match[1]);
 
+  // 4. De etiquetas OpenGraph
   const ogRx = /(?:property|name)=["']og:image["']\s+content=["'](https?:\/\/[^"']+)/gi;
   while ((match = ogRx.exec(html)) !== null) imageSet.add(match[1]);
 
   return Array.from(imageSet)
     .filter((url) => {
       if (excludeExtensions.test(url) || !imageExtensions.test(url)) return false;
-      return !/(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron|pixel|tracking|analytics|agency|assets\/vectorial)/i.test(url)
+      // Quitamos 'agency' de la lista negra porque muchas inmobiliarias tienen fotos en subdominios agency.*
+      return !/(icon|logo|avatar|favicon|sprite|badge|button|arrow|chevron|pixel|tracking|analytics|assets\/vectorial)/i.test(url)
         && !/(16x|32x|48x|64x|1x1|2x2|1\.gif|blank\.)/i.test(url);
     })
-    .slice(0, 15);
+    .slice(0, 15); // Límite de 15 fotos por base de datos
 }
 
 // Helper: Extraer datos estructurados con Gemini AI usando el prompt de importación
@@ -355,19 +360,17 @@ serve(async (req) => {
 
       console.log("Inserting properties. Service key valid:", !!serviceKey, "URL:", supabaseUrl, "Count:", propertiesToInsert.length);
 
+      // Logueamos antes del insert para diagnóstico (según RCA de JP)
+      console.log(`Intentando insertar ${propertiesToInsert.length} propiedades en Supabase. URL: ${supabaseUrl}`);
+
       const { data: insertedProps, error: propErr } = await sbAdmin
         .from("properties")
         .insert(propertiesToInsert)
         .select("id, source_url");
 
       if (propErr) {
-        console.error("ERROR DETAILS for properties insert:", JSON.stringify(propErr, null, 2));
-        const failedIds = successes.map((s) => s.linkId);
-        await sbAdmin
-          .from("discovered_links")
-          .update({ status: "failed", error_message: "Error insertando propiedad: " + propErr.message })
-          .in("id", failedIds);
-        failedCount += successes.length;
+        console.error("ERROR CRÍTICO AL INSERTAR PROPIEDADES:", JSON.stringify(propErr, null, 2));
+        throw propErr;
       } else if (insertedProps) {
         const publications = insertedProps.map((p: any) => ({
           property_id: p.id,

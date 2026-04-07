@@ -128,28 +128,39 @@ serve(async (req) => {
           const rawLinks: string[] = mapData.data || mapData.links || [];
           
           // OBTENER FILTROS GLOBALES
-          const { data: excludeSettings } = await sbAdmin
+          const { data: globalConfig } = await sbAdmin
             .from("app_settings")
-            .select("value")
-            .eq("key", "scraper_exclude_urls")
-            .single();
+            .select("key, value")
+            .in("key", ["scraper_exclude_urls", "scraper_forbidden_extensions"]);
 
-          const globalExcludePatterns = excludeSettings?.value
-            ? excludeSettings.value.split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean)
+          const globalExcludePatterns = globalConfig?.find(c => c.key === "scraper_exclude_urls")?.value
+            ? globalConfig.find(c => c.key === "scraper_exclude_urls").value.split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean)
             : [];
 
-          console.log(`Motor Pro: minLen=${minUrlLength}, ext=${excludeExtensions.length}, broken=${blockBrokenEnds}`);
+          const globalForbiddenExt = globalConfig?.find(c => c.key === "scraper_forbidden_extensions")?.value
+            ? globalConfig.find(c => c.key === "scraper_forbidden_extensions").value.split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean)
+            : [];
+
+          // Combinar extensiones prohibidas (Locales + Globales)
+          const allForbiddenExt = Array.from(new Set([
+            ...excludeExtensions.map((e: string) => e.trim().toLowerCase()),
+            ...globalForbiddenExt
+          ])).filter(Boolean);
+
+          console.log(`Motor Pro: minLen=${minUrlLength}, extTotal=${allForbiddenExt.length}, broken=${blockBrokenEnds}`);
 
           // FILTRADO MULTI-CAPA
           const filteredUrls = rawLinks.filter((url: string) => {
             if (!url) return false;
             const lowUrl = url.toLowerCase();
+            // Normalizar URL para chequeo de extensión (quitar parámetros y barra final)
+            const cleanUrl = lowUrl.split('?')[0].split('#')[0].replace(/\/$/, "");
 
             // 1. Largo mínimo
             if (lowUrl.length < minUrlLength) return false;
 
-            // 2. Extensiones prohibidas
-            if (excludeExtensions.some((ext: string) => lowUrl.endsWith(ext))) return false;
+            // 2. Extensiones prohibidas (Locales + Globales) - Usamos cleanUrl
+            if (allForbiddenExt.some((ext: string) => cleanUrl.endsWith(ext.toLowerCase().trim()))) return false;
 
             // 3. Terminaciones rotas
             if (blockBrokenEnds && (lowUrl.endsWith('-') || lowUrl.endsWith('_'))) return false;

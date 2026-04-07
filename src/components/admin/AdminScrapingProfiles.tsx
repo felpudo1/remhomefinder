@@ -66,14 +66,21 @@ export const AdminScrapingProfiles = () => {
       return;
     }
 
+    const pureDomain = formData.domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace('www.', '');
+    const filters = {
+      minUrlLength: formData.minUrlLength,
+      excludeExtensions: formData.excludeExtensions,
+      blockBrokenEnds: formData.blockBrokenEnds
+    };
+
     const payload = {
-      domain: formData.domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace('www.', ''),
+      domain: pureDomain,
       discovery_config: {
-        minUrlLength: formData.minUrlLength,
-        excludeExtensions: formData.excludeExtensions.split(",").map(e => e.trim()).filter(Boolean),
-        blockBrokenEnds: formData.blockBrokenEnds,
+        minUrlLength: filters.minUrlLength || 30,
+        excludeExtensions: (filters.excludeExtensions || "").split(",").map(e => e.trim()).filter(Boolean),
+        blockBrokenEnds: filters.blockBrokenEnds ?? true,
       },
-      custom_instructions: formData.customInstructions,
+      custom_instructions: formData.customInstructions || "",
     };
 
     try {
@@ -103,9 +110,9 @@ export const AdminScrapingProfiles = () => {
     setEditingId(profile.id);
     setFormData({
       domain: profile.domain,
-      minUrlLength: profile.discovery_config.minUrlLength || 30,
-      excludeExtensions: (profile.discovery_config.excludeExtensions || []).join(", "),
-      blockBrokenEnds: profile.discovery_config.blockBrokenEnds ?? true,
+      minUrlLength: profile.discovery_config?.minUrlLength || 30,
+      excludeExtensions: (profile.discovery_config?.excludeExtensions || []).join(", "),
+      blockBrokenEnds: profile.discovery_config?.blockBrokenEnds ?? true,
       customInstructions: profile.custom_instructions || "",
     });
   };
@@ -154,9 +161,9 @@ export const AdminScrapingProfiles = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Editor de Perfil */}
-        <Card className="lg:col-span-1 border-primary/20 shadow-lg h-fit sticky top-4 rounded-2xl overflow-hidden">
+        <Card className="lg:col-span-1 border-primary/20 shadow-xl h-fit lg:sticky lg:top-6 rounded-3xl overflow-hidden bg-card/50 backdrop-blur-sm">
           <CardHeader className="bg-primary/5 pb-6">
             <CardTitle className="flex items-center gap-2">
               <Settings2 className="w-5 h-5 text-primary" />
@@ -230,12 +237,12 @@ export const AdminScrapingProfiles = () => {
               />
             </div>
 
-            <Button onClick={handleSave} className="w-full h-11 rounded-xl gap-2 font-bold shadow-lg shadow-primary/20">
+            <Button onClick={handleSave} className="w-full h-11 rounded-xl gap-2 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
               <Save className="w-4 h-4" />
               {editingId ? "Actualizar Perfil" : "Guardar Perfil Maestro"}
             </Button>
             {editingId && (
-              <Button onClick={resetForm} variant="ghost" className="w-full text-xs text-muted-foreground uppercase">
+              <Button onClick={resetForm} variant="ghost" className="w-full text-xs text-muted-foreground uppercase hover:bg-destructive/5 hover:text-destructive transition-colors">
                 Cancelar Edición
               </Button>
             )}
@@ -243,15 +250,18 @@ export const AdminScrapingProfiles = () => {
         </Card>
 
         {/* Lista de Perfiles */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar por dominio..." 
-              className="pl-9 rounded-2xl h-11 border-primary/10"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="lg:col-span-2 space-y-6">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/5 rounded-2xl blur-xl group-hover:bg-primary/10 transition-all duration-500" />
+            <div className="relative">
+              <Search className="absolute left-4 top-3.5 h-5 w-5 text-primary/40" />
+              <Input 
+                placeholder="Buscar por dominio (ej: acsa.com.uy)..." 
+                className="pl-12 rounded-2xl h-12 border-primary/10 bg-card shadow-sm text-sm focus-visible:ring-primary/20 transition-all"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
