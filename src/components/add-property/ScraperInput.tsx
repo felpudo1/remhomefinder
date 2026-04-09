@@ -91,13 +91,8 @@ export function ScraperInput({
     const [qrOpen, setQrOpen] = useState(false);
     const isUrlActionsLocked =
         isFamilyLocked || isInAppLocked || isAgentOwnDupLocked || isUserAgentMarketplaceLocked;
-    const _formattedFirstAddedAt = urlInApp?.firstAddedAt
-        ? new Date(urlInApp.firstAddedAt).toLocaleDateString("es-UY", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        })
-        : "";
+    // formattedFirstAddedAt disponible si se necesita en el futuro
+    const _unusedUrlInApp = urlInApp;
 
     if (step === "url") {
         return (
