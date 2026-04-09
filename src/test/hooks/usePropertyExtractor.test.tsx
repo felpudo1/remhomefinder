@@ -16,8 +16,8 @@ vi.mock("@/contexts/AuthProvider", () => ({
   useCurrentUser: () => ({ user: { id: "user-123", email: "test@test.com" } }),
 }));
 
-vi.mock("@/lib/duplicateCheck", () => ({
-  checkUrlStatus: vi.fn(),
+vi.mock("@/lib/duplicateRouter", () => ({
+  fetchDuplicateData: vi.fn().mockResolvedValue({ duplicateCase: { case: "none" } }),
 }));
 
 vi.mock("@/lib/resolveGeoIds", () => ({
@@ -46,9 +46,9 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { supabase } from "@/integrations/supabase/client";
-import { checkUrlStatus } from "@/lib/duplicateCheck";
+import { fetchDuplicateData } from "@/lib/duplicateRouter";
 const mockedSupabase = supabase as any;
-const mockedCheckUrlStatus = checkUrlStatus as any;
+const mockedFetchDuplicateData = fetchDuplicateData as any;
 
 describe("usePropertyExtractor", () => {
   beforeEach(() => {
@@ -58,21 +58,23 @@ describe("usePropertyExtractor", () => {
 
   describe("handleScrape", () => {
     it("should return duplicate result when URL is duplicate", async () => {
-      mockedCheckUrlStatus.mockResolvedValue({
-        case: "duplicate",
-        listingId: "listing-123",
+      mockedFetchDuplicateData.mockResolvedValue({
+        duplicateCase: { case: "C3", addedByName: "Test", addedAt: "2024-01-01", status: "ingresado", userListingId: "listing-123" },
       });
 
       const { result } = renderHook(() => usePropertyExtractor());
 
       const response = await result.current.handleScrape("https://example.com/property", null);
 
-      expect(response?.duplicateResult).toBeDefined();
-      expect(response?.duplicateResult.case).toBe("duplicate");
+      expect(response).toBeDefined();
+      expect("duplicateCase" in response!).toBe(true);
+      if ("duplicateCase" in response!) {
+        expect(response.duplicateCase.case).toBe("C3");
+      }
     });
 
     it("should return property data on successful scrape", async () => {
-      mockedCheckUrlStatus.mockResolvedValue({ case: "none" });
+      mockedFetchDuplicateData.mockResolvedValue({ duplicateCase: { case: "none" } });
       mockedSupabase.functions.invoke.mockResolvedValue({
         data: {
           success: true,
@@ -100,13 +102,16 @@ describe("usePropertyExtractor", () => {
 
       const response = await result.current.handleScrape("https://example.com/property", null);
 
-      expect(response?.data).toBeDefined();
-      expect(response?.data?.title).toBe("Casa de prueba");
-      expect(response?.data?.currency).toBe("USD");
+      expect(response).toBeDefined();
+      expect("data" in response!).toBe(true);
+      if ("data" in response!) {
+        expect(response.data.title).toBe("Casa de prueba");
+        expect(response.data.currency).toBe("USD");
+      }
     });
 
     it("should handle scrape errors gracefully", async () => {
-      mockedCheckUrlStatus.mockResolvedValue({ case: "none" });
+      mockedFetchDuplicateData.mockResolvedValue({ duplicateCase: { case: "none" } });
       mockedSupabase.functions.invoke.mockResolvedValue({
         data: { success: false, error: "MARKETPLACE_MANUAL", message: "URL de marketplace detectada" },
         error: null,
@@ -116,13 +121,13 @@ describe("usePropertyExtractor", () => {
 
       const response = await result.current.handleScrape("https://facebook.com/marketplace", null);
 
-      expect(response?.error).toBeDefined();
+      expect(response).toBeDefined();
+      expect("error" in response!).toBe(true);
     });
   });
 
   describe("handleImagesExtractor", () => {
     it("should require authenticated user", async () => {
-      // Override the mock temporarily
       vi.doMock("@/contexts/AuthProvider", () => ({
         useCurrentUser: () => ({ user: null }),
       }));
@@ -146,7 +151,7 @@ describe("usePropertyExtractor", () => {
 
   describe("loading states", () => {
     it("should track loading state during scrape", async () => {
-      mockedCheckUrlStatus.mockResolvedValue({ case: "none" });
+      mockedFetchDuplicateData.mockResolvedValue({ duplicateCase: { case: "none" } });
       mockedSupabase.functions.invoke.mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve({
           data: {

@@ -5,7 +5,6 @@ import { useCurrentUser } from "@/contexts/AuthProvider";
 import {
   normalizeUrl,
   getExistingPropertyByUrl,
-  checkUrlStatus,
   hasActiveAgentPublicationForOrg,
   getActiveAgentPublicationForOrg,
   type ActiveAgentPublicationSummary,

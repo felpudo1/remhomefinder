@@ -72,7 +72,7 @@ export function ScraperInput({
     setUrlInFamily,
     urlInApp,
     setUrlInApp,
-    isAgent = false,
+    isAgent: _isAgent = false,
     agentOwnDuplicate = null,
     setAgentOwnDuplicate,
     onOpenExistingAgentPublication,
@@ -91,7 +91,7 @@ export function ScraperInput({
     const [qrOpen, setQrOpen] = useState(false);
     const isUrlActionsLocked =
         isFamilyLocked || isInAppLocked || isAgentOwnDupLocked || isUserAgentMarketplaceLocked;
-    const formattedFirstAddedAt = urlInApp?.firstAddedAt
+    const _formattedFirstAddedAt = urlInApp?.firstAddedAt
         ? new Date(urlInApp.firstAddedAt).toLocaleDateString("es-UY", {
             day: "2-digit",
             month: "2-digit",
