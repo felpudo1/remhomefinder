@@ -21,7 +21,9 @@
       "Bash(out-string)",
       "Bash(set *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(dir *)",
+      "Bash(bun *)"
     ]
   },
   "$version": 3
