@@ -18,7 +18,10 @@
       "Bash(del *)",
       "Bash(select-object *)",
       "Bash(sed *)",
-      "Bash(out-string)"
+      "Bash(out-string)",
+      "Bash(set *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   },
   "$version": 3
