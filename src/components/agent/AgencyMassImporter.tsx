@@ -406,138 +406,338 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Paso 1: Ingresar dominio */}
+        {/* Paso 1: Ingresar dominio o archivo */}
         {!task || task.status === "discovering" ? (
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="https://www.acsa.com.uy"
-                    className="pl-9 h-11 rounded-xl"
-                    value={domainUrl}
-                    onChange={(e) => setDomainUrl(e.target.value)}
-                    disabled={discovering}
-                    onKeyDown={(e) => e.key === "Enter" && handleDiscover()}
-                  />
-                </div>
-                <Button onClick={handleDiscover} disabled={discovering} className="h-11 rounded-xl px-6 gap-2">
-                  {discovering ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                  {discovering ? "Escaneando..." : "Descubrir Propiedades"}
-                </Button>
-              </div>
+          <Tabs defaultValue="web" className="w-full">
+            <TabsList className="w-full mb-4">
+              <TabsTrigger value="web" className="flex-1 gap-2">
+                <Globe className="h-4 w-4" />
+                Desde Web
+              </TabsTrigger>
+              <TabsTrigger value="file" className="flex-1 gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                Desde Archivo
+              </TabsTrigger>
+            </TabsList>
 
-              {/* Botones de Presets (Chips) */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground mr-2 tracking-wider shrink-0">Presets Pro:</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={resetFilters}
-                  className="rounded-full h-7 text-xs gap-1.5 shrink-0 hover:bg-primary/5 hover:text-primary transition-all border-dashed"
-                >
-                  <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
-                  Restaurar Valores
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="rounded-full h-7 text-xs gap-1.5 ml-auto text-muted-foreground hover:text-foreground"
-                >
-                  <Settings2 className="w-3 h-3" />
-                  {showAdvanced ? "Ocultar Avanzado" : "Ajustes Avanzados"}
-                </Button>
-              </div>
-            </div>
-
-            {/* Panel de Filtros Avanzados */}
-            {showAdvanced && (
-              <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-primary" />
-                    <h3 className="text-sm font-semibold">Configuración Técnica de Escaneo</h3>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] font-mono opacity-60">Filtros Activos</Badge>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="min-len" className="text-xs font-medium text-muted-foreground">Largo Mínimo URL</Label>
-                      <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 rounded">{filters.minUrlLength} ch</span>
+            {/* ====== TAB: Desde Web (flujo existente) ====== */}
+            <TabsContent value="web">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="https://www.acsa.com.uy"
+                        className="pl-9 h-11 rounded-xl"
+                        value={domainUrl}
+                        onChange={(e) => setDomainUrl(e.target.value)}
+                        disabled={discovering}
+                        onKeyDown={(e) => e.key === "Enter" && handleDiscover()}
+                      />
                     </div>
-                    <Input 
-                      id="min-len"
-                      type="number" 
-                      value={filters.minUrlLength}
-                      onChange={(e) => setFilters(prev => ({ ...prev, minUrlLength: parseInt(e.target.value) || 0 }))}
-                      className="h-10 rounded-lg text-sm"
-                      placeholder="Ej: 30"
-                    />
-                    <p className="text-[10px] text-muted-foreground leading-tight italic">
-                      Las propiedades reales suelen tener URLs largas ({">"}30). ACSA usa ({">"}45).
-                    </p>
+                    <Button onClick={handleDiscover} disabled={discovering} className="h-11 rounded-xl px-6 gap-2">
+                      {discovering ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      {discovering ? "Escaneando..." : "Descubrir Propiedades"}
+                    </Button>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-xs font-medium text-muted-foreground">Ignorar Extensiones</Label>
-                    <Input 
-                      value={filters.excludeExtensions}
-                      onChange={(e) => setFilters(prev => ({ ...prev, excludeExtensions: e.target.value }))}
-                      className="h-10 rounded-lg text-sm font-mono"
-                      placeholder=".pdf, .jpg, .png"
-                    />
-                    <p className="text-[10px] text-muted-foreground leading-tight italic">
-                      Separadas por coma. Evita procesar archivos estáticos.
-                    </p>
+                  {/* Botones de Presets (Chips) */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground mr-2 tracking-wider shrink-0">Presets Pro:</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={resetFilters}
+                      className="rounded-full h-7 text-xs gap-1.5 shrink-0 hover:bg-primary/5 hover:text-primary transition-all border-dashed"
+                    >
+                      <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      Restaurar Valores
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="rounded-full h-7 text-xs gap-1.5 ml-auto text-muted-foreground hover:text-foreground"
+                    >
+                      <Settings2 className="w-3 h-3" />
+                      {showAdvanced ? "Ocultar Avanzado" : "Ajustes Avanzados"}
+                    </Button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                  <div className="space-y-0.5">
-                    <Label className="text-xs font-medium">Bloquear URLs rotas</Label>
-                    <p className="text-[10px] text-muted-foreground">Descarta links que terminan en guión o guión bajo.</p>
+                {/* Panel de Filtros Avanzados */}
+                {showAdvanced && (
+                  <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-primary" />
+                        <h3 className="text-sm font-semibold">Configuración Técnica de Escaneo</h3>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono opacity-60">Filtros Activos</Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="min-len" className="text-xs font-medium text-muted-foreground">Largo Mínimo URL</Label>
+                          <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 rounded">{filters.minUrlLength} ch</span>
+                        </div>
+                        <Input 
+                          id="min-len"
+                          type="number" 
+                          value={filters.minUrlLength}
+                          onChange={(e) => setFilters(prev => ({ ...prev, minUrlLength: parseInt(e.target.value) || 0 }))}
+                          className="h-10 rounded-lg text-sm"
+                          placeholder="Ej: 30"
+                        />
+                        <p className="text-[10px] text-muted-foreground leading-tight italic">
+                          Las propiedades reales suelen tener URLs largas ({">"}30). ACSA usa ({">"}45).
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-xs font-medium text-muted-foreground">Ignorar Extensiones</Label>
+                        <Input 
+                          value={filters.excludeExtensions}
+                          onChange={(e) => setFilters(prev => ({ ...prev, excludeExtensions: e.target.value }))}
+                          className="h-10 rounded-lg text-sm font-mono"
+                          placeholder=".pdf, .jpg, .png"
+                        />
+                        <p className="text-[10px] text-muted-foreground leading-tight italic">
+                          Separadas por coma. Evita procesar archivos estáticos.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs font-medium">Bloquear URLs rotas</Label>
+                        <p className="text-[10px] text-muted-foreground">Descarta links que terminan en guión o guión bajo.</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {isAdmin && domainUrl && (
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            onClick={handleSaveAsProfile}
+                            className="text-[10px] text-primary h-auto p-0 hover:no-underline font-bold"
+                          >
+                            <Save className="w-3 h-3 mr-1" />
+                            Guardar para {domainUrl.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0]}
+                          </Button>
+                        )}
+                        <Switch 
+                          checked={filters.blockBrokenEnds}
+                          onCheckedChange={(v) => setFilters(prev => ({ ...prev, blockBrokenEnds: v }))}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {isAdmin && domainUrl && (
-                      <Button 
-                        variant="link" 
-                        size="sm" 
-                        onClick={handleSaveAsProfile}
-                        className="text-[10px] text-primary h-auto p-0 hover:no-underline font-bold"
-                      >
-                        <Save className="w-3 h-3 mr-1" />
-                        Guardar para {domainUrl.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0]}
+                )}
+
+                {discovering && (
+                  <div className="text-center py-10 space-y-4">
+                    <div className="relative inline-flex">
+                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                      <div className="absolute inset-0 m-auto h-4 w-4 bg-primary/20 rounded-full animate-ping" />
+                    </div>
+                    <p className="text-sm font-medium animate-pulse">
+                      Escaneando arquitectura de {domainUrl.replace(/^https?:\/\//, '').split('/')[0]}...
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* ====== TAB: Desde Archivo ====== */}
+            <TabsContent value="file">
+              <div className="space-y-6">
+                <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center space-y-4">
+                  <Upload className="h-10 w-10 text-muted-foreground mx-auto" />
+                  <div>
+                    <p className="text-sm font-medium">Subí un archivo Excel o CSV con URLs de propiedades</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Formatos soportados: .xlsx, .xls, .csv — Se detectan automáticamente todas las URLs del archivo
+                    </p>
+                  </div>
+                  <label className="inline-block cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      className="hidden"
+                      disabled={fileParsing}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        setFileParsing(true);
+                        setFileName(file.name);
+                        setFileUrls([]);
+
+                        try {
+                          const arrayBuffer = await file.arrayBuffer();
+                          const workbook = XLSX.read(arrayBuffer, { type: "array" });
+                          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                          const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                          const urlRegex = /https?:\/\/[^\s"',<>]+/gi;
+                          const rawUrls: string[] = [];
+
+                          rows.forEach((row) => {
+                            row.forEach((cell) => {
+                              const match = String(cell).match(urlRegex);
+                              if (match) rawUrls.push(...match);
+                            });
+                          });
+
+                          // Deduplicación local + limpieza
+                          const uniqueCleanUrls = [...new Set(rawUrls.map((url) => url.trim()))];
+                          setFileUrls(uniqueCleanUrls);
+
+                          if (uniqueCleanUrls.length === 0) {
+                            toast.warning("No se encontraron URLs en el archivo");
+                          } else {
+                            toast.success(`${uniqueCleanUrls.length} URLs únicas detectadas`);
+                          }
+                        } catch (err) {
+                          console.error("Error parseando archivo:", err);
+                          toast.error("Error al leer el archivo. Verificá que sea un Excel o CSV válido.");
+                        } finally {
+                          setFileParsing(false);
+                          // Reset del input para poder re-seleccionar el mismo archivo
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                    <Button variant="outline" className="gap-2 rounded-xl" disabled={fileParsing} asChild>
+                      <span>
+                        {fileParsing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileSpreadsheet className="h-4 w-4" />
+                        )}
+                        {fileParsing ? "Procesando..." : "Seleccionar Archivo"}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+
+                {/* Preview de URLs encontradas */}
+                {fileUrls.length > 0 && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        {fileUrls.length} URLs encontradas en <span className="font-mono text-xs text-muted-foreground">{fileName}</span>
+                      </p>
+                      <Badge variant="secondary">{fileUrls.length} únicas</Badge>
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto border rounded-lg divide-y divide-border">
+                      {fileUrls.map((url, i) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-2 text-xs font-mono hover:bg-muted/20">
+                          <span className="text-muted-foreground w-6 text-right shrink-0">{i + 1}</span>
+                          <span className="truncate flex-1">{url}</span>
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground shrink-0">
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                      <Button variant="outline" onClick={() => { setFileUrls([]); setFileName(""); }}>
+                        Cancelar
                       </Button>
-                    )}
-                    <Switch 
-                      checked={filters.blockBrokenEnds}
-                      onCheckedChange={(v) => setFilters(prev => ({ ...prev, blockBrokenEnds: v }))}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+                      <Button
+                        disabled={fileParsing}
+                        onClick={async () => {
+                          setFileParsing(true);
+                          try {
+                            // 1. Crear task
+                            const { data: newTask, error: taskError } = await supabase
+                              .from("agency_discovery_tasks")
+                              .insert({
+                                org_id: orgId,
+                                domain_url: fileName,
+                                status: "selecting",
+                                total_links: fileUrls.length,
+                                created_by: userId,
+                              } as any)
+                              .select("id")
+                              .single();
 
-            {discovering && (
-              <div className="text-center py-10 space-y-4">
-                <div className="relative inline-flex">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                  <div className="absolute inset-0 m-auto h-4 w-4 bg-primary/20 rounded-full animate-ping" />
-                </div>
-                <p className="text-sm font-medium animate-pulse">
-                  Escaneando arquitectura de {domainUrl.replace(/^https?:\/\//, '').split('/')[0]}...
-                </p>
+                            if (taskError || !newTask) {
+                              toast.error("Error al crear tarea: " + (taskError?.message || ""));
+                              return;
+                            }
+
+                            const taskId = (newTask as any).id;
+
+                            // 2. Bulk Insert estricto — un solo .insert()
+                            const { error: linksError } = await supabase
+                              .from("discovered_links")
+                              .insert(
+                                fileUrls.map((url) => ({ task_id: taskId, url })) as any
+                              );
+
+                            if (linksError) {
+                              toast.error("Error al insertar links: " + linksError.message);
+                              return;
+                            }
+
+                            // 3. Cargar links desde BD para la grilla de selección
+                            const { data: dbLinks } = await supabase
+                              .from("discovered_links")
+                              .select("*")
+                              .eq("task_id", taskId)
+                              .order("created_at", { ascending: true });
+
+                            const discoveredLinks: DiscoveredLink[] = (dbLinks || []).map((l: any) => ({
+                              id: l.id,
+                              url: l.url,
+                              title: l.title || "",
+                              thumbnail_url: l.thumbnail_url || "",
+                              is_selected: false,
+                              status: l.status,
+                            }));
+
+                            setLinks(discoveredLinks);
+                            setFileUrls([]);
+                            setFileName("");
+                            setTask({
+                              taskId,
+                              orgId,
+                              domainUrl: fileName,
+                              totalLinks: discoveredLinks.length,
+                              completedLinks: 0,
+                              failedLinks: 0,
+                              status: "selecting",
+                            });
+
+                            toast.success("URLs cargadas. Seleccioná las que querés importar.");
+                          } catch (err) {
+                            console.error("Error creando tarea desde archivo:", err);
+                            toast.error("Error inesperado al procesar el archivo");
+                          } finally {
+                            setFileParsing(false);
+                          }
+                        }}
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Continuar con {fileUrls.length} URLs
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </TabsContent>
+          </Tabs>
         ) : null}
 
         {/* Paso 2: Seleccionar links */}
