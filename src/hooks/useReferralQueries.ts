@@ -45,3 +45,29 @@ export function useReferrerDisplayName(
     enabled: !!referredById && !!currentUserId,
   });
 }
+
+/**
+ * Info completa del referidor: nombre, agencia y logo.
+ * Usa la RPC get_my_referrer_full_info (SECURITY DEFINER).
+ */
+export function useReferrerFullInfo(
+  referredById: string | null | undefined,
+  currentUserId: string | null | undefined
+) {
+  return useQuery({
+    queryKey: ["my-referrer-full-info", currentUserId, referredById],
+    staleTime: Infinity,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_my_referrer_full_info" as any);
+      if (error) throw error;
+      if (!data) return null;
+      const d = data as Record<string, unknown>;
+      return {
+        referrerDisplayName: (d.referrer_display_name as string) || null,
+        agencyName: (d.agency_name as string) || null,
+        agencyLogoUrl: (d.agency_logo_url as string) || null,
+      };
+    },
+    enabled: !!referredById && !!currentUserId,
+  });
+}
