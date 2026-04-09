@@ -8,6 +8,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
+    port: 3000,
     allowedHosts: ["three-bees-design.loca.lt", ".loca.lt"],
   },
   plugins: [

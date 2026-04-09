@@ -12,7 +12,13 @@
       "Bash(findstr *)",
       "Bash(tasklist *)",
       "Bash(powershell *)",
-      "Bash(npx *)"
+      "Bash(npx *)",
+      "Bash(curl *)",
+      "Bash(supabase *)",
+      "Bash(del *)",
+      "Bash(select-object *)",
+      "Bash(sed *)",
+      "Bash(out-string)"
     ]
   },
   "$version": 3

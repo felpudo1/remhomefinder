@@ -386,6 +386,47 @@ Como mencionaste en la REGLA 5, quiero evitar duplicar funcionalidad.
 
 
 
+---
+
+## 🗄️ REGLA 6 - OPTIMIZACIÓN DE BASE DE DATOS (Supabase/Postgres)
+
+### Principio Fundamental
+**Cada interacción con la BD tiene costo** (latencia, RLS, límites de Supabase, concurrencia). Minimizar round-trips y reutilizar datos ya obtenidos.
+
+### Lecturas Eficientes
+1. **Un solo `select`** con lo necesario, no varios queries redundantes
+2. **Totales y contadores en el mismo request**: usar `count: "exact"` junto al `select` de filas
+3. **Datos en memoria = no volver a consultar**: si ya tenés la lista, el total es `length` — NO hacer otro `COUNT(*)`
+4. **Paginación inteligente**: el total global viene del metadata del primer request paginado
+5. **Evitar N+1**: usar `in()` batch si hace falta, nunca loops de queries individuales
+6. **TanStack Query**: `queryKey` estable, `staleTime` razonable, invalidar solo lo afectado tras mutaciones
+
+### Escrituras Eficientes
+1. **Batch**: `upsert` múltiple o RPC transaccional en vez de bucles de `update` uno a uno
+2. **Invalidación acotada**: `invalidateQueries` solo al dominio afectado, no barrer toda la caché
+
+### Cuándo sumar capa en BD
+- Agregados pesados o que no deben exponer filas por RLS → **RPC `SECURITY DEFINER` acotada** o vista materializada
+- Si el listado admin no carga todo en memoria → **paginar** y usar `count` del request paginado
+
+### Regla de Oro
+Al proponer código nuevo que toque Supabase, **justificar brevemente cuántos round-trips hay y si se puede reducir**.
+
+### Formato de Alerta
+```
+🗄️ OPTIMIZACIÓN BD DETECTADA
+
+Ubicación: [archivo:línea]
+Problema: [queries redundantes / N+1 / count innecesario]
+Round-trips actuales: [número]
+Round-trips optimizados: [número]
+
+Solución sugerida:
+[código optimizado]
+```
+
+---
+
 ## ✅ CHECKLIST DE CUMPLIMIENTO
 
 Antes de cada respuesta, verificar:
@@ -397,6 +438,7 @@ Antes de cada respuesta, verificar:
 - [ ] ¿Pensé en reutilización? (REGLA 2)
 - [ ] ¿Comenté el código básicamente? (REGLA 2)
 - [ ] ¿Revisé código existente? (REGLA 5)
+- [ ] ¿Optimicé queries de BD? (REGLA 6)
 - [ ] ¿Terminaré con "Soy [modelo], [apodo]"?
 
 ---

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { UserWithListing } from "@/types/duplicate-cases";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import {
   normalizeUrl,
@@ -9,6 +10,7 @@ import {
   getActiveAgentPublicationForOrg,
   type ActiveAgentPublicationSummary,
 } from "@/lib/duplicateCheck";
+import { fetchDuplicateData } from "@/lib/duplicateRouter";
 import { useToast } from "@/hooks/use-toast";
 import { resolveGeoIds } from "@/lib/resolveGeoIds";
 import {
@@ -55,7 +57,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
   const [manualImageUrl, setManualImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [urlDuplicated, setUrlDuplicated] = useState(false);
-  const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number } | null>(null);
+  const [urlInApp, setUrlInApp] = useState<{ firstAddedAt: string; usersCount: number; users?: UserWithListing[] } | null>(null);
   /** Duplicado en la misma agencia: mostrar cartel azul y abrir edición sin insertar otra fila */
   const [agentOwnDuplicate, setAgentOwnDuplicate] = useState<ActiveAgentPublicationSummary | null>(null);
   const [isAddingExistingFromApp, setIsAddingExistingFromApp] = useState(false);
@@ -150,25 +152,34 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
     setUrlInApp(null);
     setAgentOwnDuplicate(null);
     try {
-      // Antes del scraping: URL en app y duplicado en agent_publications de esta org
-      const urlStatus = await checkUrlStatus(url.trim(), orgId);
-      if (urlStatus.case === "in_app") {
-        const existingForInApp = await getExistingPropertyByUrl(url.trim());
-        if (existingForInApp) {
-          if (await hasActiveAgentPublicationForOrg(existingForInApp.id, orgId)) {
-            const summary = await getActiveAgentPublicationForOrg(existingForInApp.id, orgId);
-            if (summary) setAgentOwnDuplicate(summary);
-            else sonnerToast.info("Esta publicación ya está en tu listado de agencia.");
+      // Usar el router para detectar duplicados (incluye C4 con datos de usuarios)
+      const { duplicateCase } = await fetchDuplicateData(url.trim(), orgId, true);
+      
+      if (duplicateCase.case !== "none") {
+        // Procesar según el caso
+        switch (duplicateCase.case) {
+          case "C1":
+            // Agente repite su propia publicación
+            setAgentOwnDuplicate({
+              id: duplicateCase.agentPublicationId,
+              publishedByName: duplicateCase.publishedByName,
+              createdAt: duplicateCase.createdAt,
+            });
             setIsLoading(false);
             return;
-          }
+          case "C4":
+            // Usuarios ya tienen este aviso
+            setUrlInApp({
+              firstAddedAt: new Date().toISOString(),
+              usersCount: duplicateCase.usersCount,
+              users: duplicateCase.users,
+            });
+            setIsLoading(false);
+            return;
+          default:
+            // Otros casos no aplican para agentes aquí
+            break;
         }
-        setUrlInApp({
-          firstAddedAt: urlStatus.firstAddedAt,
-          usersCount: urlStatus.usersCount,
-        });
-        setIsLoading(false);
-        return;
       }
 
       // Si existe en properties pero no en user_listings (ej. solo agent_publications), reutilizar
@@ -643,7 +654,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           isAgent={true}
           agentOwnDuplicate={
             agentOwnDuplicate
-              ? { publishedByName: agentOwnDuplicate.publishedByName, createdAt: agentOwnDuplicate.createdAt }
+              ? { publishedByName: agentOwnDuplicate.publishedByName, createdAt: agentOwnDuplicate.createdAt, id: agentOwnDuplicate.id }
               : null
           }
           onOpenExistingAgentPublication={
@@ -655,6 +666,7 @@ export function PublishPropertyModal({ open, onClose, orgId, onPublished, proper
           }
           onAddExistingFromApp={handleAddExistingFromApp}
           isAddingExistingFromApp={isAddingExistingFromApp}
+          onCloseParent={handleClose}
         />
 
         {step === "manual" && (

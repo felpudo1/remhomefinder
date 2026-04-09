@@ -13,6 +13,8 @@ import { DuplicateAlert } from "./add-property/DuplicateAlert";
 import { usePropertyExtractor } from "@/hooks/usePropertyExtractor";
 import { useImageUploader } from "@/hooks/useImageUploader";
 import { useAddPropertyForm, type FormState } from "@/hooks/useAddPropertyForm";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT } from "@/lib/config-keys";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, ImageIcon, X } from "lucide-react";
@@ -45,11 +47,14 @@ interface AddPropertyModalProps {
   activeGroupId?: string | null;
   scraper?: "firecrawl" | "zenrows";
   onOpenExisting?: (userListingId: string) => void;
+  /** Si el usuario es un agente (para detectar C1/C4) */
+  isAgent?: boolean;
 }
 
-export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl", onOpenExisting }: AddPropertyModalProps) {
+export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper = "firecrawl", onOpenExisting, isAgent = false }: AddPropertyModalProps) {
   const { isLoading, isAnalyzingUnified, handleScrape, handleImagesExtractor } = usePropertyExtractor();
   const { isUploading, resetUploader, uploadFiles } = useImageUploader();
+  const { value: appName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
   const {
     form,
     setForm,
@@ -134,29 +139,67 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
   /** Flujo de scraping: éxito → detalles con link fijo; fallo → mismo paso con bloque de capturas */
   const onHandleScrape = async () => {
-    const result = await handleScrape(url, selectedGroupId, scraper);
+    const result = await handleScrape(url, selectedGroupId, scraper, isAgent);
     if (!result) return;
-    if (result.duplicateResult) {
-      if (result.duplicateResult.case === "in_family") {
-        const fam = result.duplicateResult;
-        setUrlInFamily({
-          addedByName: fam.addedByName,
-          addedAt: fam.addedAt,
-          status: fam.status,
-          userListingId: fam.userListingId,
-        });
-        return;
-      } else if (result.duplicateResult.case === "in_app") {
-        const dr = result.duplicateResult as InAppResult;
-        if (dr.agentMarketplace) {
-          setUserAgentMarketplace(dr.agentMarketplace);
-          return;
-        }
-        setUrlInApp(result.duplicateResult as any);
+
+    // Si hay caso de duplicado, procesar según el tipo
+    if ("duplicateCase" in result && result.duplicateCase.case !== "none") {
+      const dc = result.duplicateCase;
+
+      switch (dc.case) {
+        case "C1":
+          // Agente repite su propia publicación
+          setAgentOwnDuplicate({
+            publishedByName: dc.publishedByName,
+            createdAt: dc.createdAt,
+            id: dc.agentPublicationId,
+          });
+          break;
+        case "C2a":
+          // Usuario tiene en su listado + está en marketplace
+          setUserAgentMarketplace({
+            agencyName: dc.agencyName,
+            agentName: dc.agentName,
+            whatsappDigits: dc.whatsappDigits,
+          });
+          setUrlInFamily({
+            addedByName: dc.addedByName,
+            addedAt: dc.addedAt,
+            status: dc.status,
+            userListingId: dc.userListingId,
+          });
+          break;
+        case "C2b":
+          // Usuario NO tiene en su listado + está en marketplace
+          setUserAgentMarketplace({
+            agencyName: dc.agencyName,
+            agentName: dc.agentName,
+            whatsappDigits: dc.whatsappDigits,
+          });
+          break;
+        case "C3":
+          // Usuario tiene en su listado (sin marketplace)
+          setUrlInFamily({
+            addedByName: dc.addedByName,
+            addedAt: dc.addedAt,
+            status: dc.status,
+            userListingId: dc.userListingId,
+          });
+          break;
+        case "C4":
+          // Property en app pero no en marketplace ni en listado propio
+          setUrlInApp({
+            firstAddedAt: new Date().toISOString(),
+            usersCount: dc.usersCount,
+          });
+          break;
       }
+
       return;
     }
-    if (result.data) {
+
+    // Si hay datos de la propiedad, continuar con el formulario
+    if ("data" in result) {
       setShowImageFallback(false);
       updateForm(result.data);
       if (result.data.listingType) setListingType(result.data.listingType);
@@ -165,7 +208,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       setStep("manual");
       return;
     }
-    if ("error" in result && result.error) {
+
+    // Si hay error, mostrar fallback
+    if ("error" in result) {
       setForm(EMPTY_FORM);
       setScrapedImages([]);
       setCameFromImage(false);
@@ -288,8 +333,11 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             }}
             isLoading={isLoading}
             urlInFamily={urlInFamily}
+            setUrlInFamily={setUrlInFamily}
             urlInApp={urlInApp}
+            setUrlInApp={setUrlInApp}
             userAgentMarketplace={userAgentMarketplace}
+            setUserAgentMarketplace={setUserAgentMarketplace}
             onOpenExisting={onOpenExisting}
             handleScrape={onHandleScrape}
             setStep={setStep}
@@ -307,6 +355,8 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               handleClose();
             }}
             isAddingExistingFromApp={isAddingFromApp}
+            onCloseParent={handleClose}
+            appName={appName || APP_BRAND_NAME_DEFAULT}
           />
         )}
 

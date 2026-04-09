@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeWhatsAppPhone } from "@/lib/whatsapp";
+import type { UserWithListing } from "@/types/duplicate-cases";
 
 /**
  * Normaliza una URL para comparación (evitar duplicados por trailing slash, etc.)
@@ -9,14 +10,7 @@ export function normalizeUrl(url: string): string {
   return url.trim().replace(/\/+$/, "");
 }
 
-/** Resultado cuando la URL ya está en la familia del usuario (Caso 1 - bloquear) */
-export type InFamilyResult = {
-  case: "in_family";
-  addedByName: string;
-  addedAt: string;
-  status: string;
-  userListingId: string;
-};
+/** Resultado cuando la URL ya está en la familia del usuario (Caso 3 - bloquear) */
 
 /** Publicación marketplace principal (para usuario: contactar agencia/agente) */
 export type AgentMarketplaceListingForUser = {
@@ -26,11 +20,23 @@ export type AgentMarketplaceListingForUser = {
   whatsappDigits: string | null;
 };
 
-/** Resultado cuando la URL existe en la app pero no en la familia (Caso 2) */
+export type InFamilyResult = {
+  case: "in_family";
+  addedByName: string;
+  addedAt: string;
+  status: string;
+  userListingId: string;
+  /** Si también está en marketplace, incluir datos */
+  agentMarketplace?: AgentMarketplaceListingForUser;
+};
+
+/** Resultado cuando la URL existe en la app pero no en la familia (Caso 2/4) */
 export type InAppResult = {
   case: "in_app";
   firstAddedAt: string;
   usersCount: number;
+  /** Lista de usuarios que tienen esta property en su listing (para caso C4) */
+  users?: UserWithListing[];
   /** Si hay publicación de agente, datos para cartel + WhatsApp */
   agentMarketplace?: AgentMarketplaceListingForUser;
 };
@@ -114,6 +120,7 @@ export async function checkUrlStatus(
   }
   if (!resolvedOrgId) return { case: "none" };
 
+  // ── Buscar property por source_url normalizado ──
   const { data: prop, error: propErr } = await supabase
     .from("properties")
     .select("id")
@@ -121,16 +128,68 @@ export async function checkUrlStatus(
     .limit(1)
     .maybeSingle();
 
-  if (propErr || !prop) return { case: "none" };
+  // ── Fallback: Si no encuentra por source_url exacto, buscar properties de la org que tengan URLs similares ──
+  let resolvedProp: { id: string } | null = prop;
+  if (!prop) {
+    // Obtener TODAS las properties de la org y comparar URLs
+    const { data: orgListings } = await supabase
+      .from("user_listings")
+      .select("id, property_id, added_by, created_at, current_status")
+      .eq("org_id", resolvedOrgId)
+      .limit(100);
 
-  // Ver si está en nuestra org (Caso 1)
+    if (orgListings && orgListings.length > 0) {
+      const propIds = orgListings.map(l => l.property_id);
+      const { data: orgProperties } = await supabase
+        .from("properties")
+        .select("id, source_url")
+        .in("id", propIds);
+
+      // Comparar URLs normalizadas
+      for (const p of (orgProperties || [])) {
+        const storedNormalized = normalizeUrl(p.source_url || "");
+        const searchNormalized = normalizeUrl(url);
+        if (storedNormalized === searchNormalized) {
+          resolvedProp = { id: p.id };
+          // Also find the matching listing
+          const matchingListing = orgListings.find(l => l.property_id === p.id);
+          if (matchingListing) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("display_name, email")
+              .eq("user_id", matchingListing.added_by)
+              .maybeSingle();
+            const addedByName =
+              (profile?.display_name?.trim() && profile.display_name) ||
+              profile?.email ||
+              "Un miembro de tu familia";
+            const statusLabel = getStatusLabel(matchingListing.current_status);
+            return {
+              case: "in_family",
+              addedByName,
+              addedAt: matchingListing.created_at,
+              status: statusLabel,
+              userListingId: matchingListing.id,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  if (!resolvedProp) return { case: "none" };
+
+  // Ver si está en nuestra org (Caso 3 / Caso 2a)
   const { data: listing, error: listErr } = await supabase
     .from("user_listings")
     .select("id, added_by, created_at, current_status")
     .eq("org_id", resolvedOrgId)
-    .eq("property_id", prop.id)
+    .eq("property_id", resolvedProp.id)
     .limit(1)
     .maybeSingle();
+
+  // SIEMPRE verificar marketplace (necesario para C2a vs C3)
+  const agentMarketplace = await getPrimaryMarketplaceListingForUser(resolvedProp.id);
 
   if (!listErr && listing) {
     const { data: profile } = await supabase
@@ -149,28 +208,31 @@ export async function checkUrlStatus(
       addedAt: listing.created_at,
       status: statusLabel,
       userListingId: listing.id,
+      ...(agentMarketplace ? { agentMarketplace } : {}),
     };
   }
 
-  // Caso 2: existe en la app, no en nuestra org.
+  // Caso 2/4: existe en la app, no en nuestra org.
   const { data: propMeta } = await supabase
     .from("properties")
     .select("created_at, created_by")
-    .eq("id", prop.id)
+    .eq("id", resolvedProp.id)
     .single();
 
   // Contar cuántos usuarios (distintos) guardaron esta property en toda la app.
   // Se usa RPC para evitar limitaciones de visibilidad por RLS entre organizaciones.
   const { data: rpcUsersCount } = await supabase.rpc("count_property_listing_users" as any, {
-    _property_id: prop.id,
+    _property_id: resolvedProp.id,
   });
 
-  const agentMarketplace = await getPrimaryMarketplaceListingForUser(prop.id);
+  // Obtener datos de los usuarios que tienen esta property (para caso C4)
+  const users = await getUsersWithPropertyListing(resolvedProp.id);
 
   return {
     case: "in_app",
     firstAddedAt: propMeta?.created_at ?? new Date().toISOString(),
     usersCount: Math.max(typeof rpcUsersCount === "number" ? rpcUsersCount : 0, 1),
+    users,
     ...(agentMarketplace ? { agentMarketplace } : {}),
   };
 }
@@ -296,4 +358,49 @@ export async function getActiveAgentPublicationForOrg(
     publishedByName,
     createdAt: pub.created_at,
   };
+}
+
+/**
+ * Obtiene los usuarios que tienen una property en su user_listings.
+ * Usado para el caso C4: agente necesita contactar a usuarios que ya tienen el aviso.
+ */
+export async function getUsersWithPropertyListing(propertyId: string): Promise<UserWithListing[]> {
+  // Obtener todos los user_listings para esta property
+  const { data: listings, error } = await supabase
+    .from("user_listings")
+    .select("id, added_by, created_at, current_status")
+    .eq("property_id", propertyId)
+    .limit(50);
+
+  if (error || !listings || listings.length === 0) {
+    if (error) console.warn("getUsersWithPropertyListing", error);
+    return [];
+  }
+
+  // Obtener perfiles de todos los usuarios
+  const userIds = listings.map(l => l.added_by);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, email, phone")
+    .in("user_id", userIds);
+
+  const profileMap = new Map();
+  for (const p of (profiles || [])) {
+    profileMap.set(p.user_id, p);
+  }
+
+  return listings.map(listing => {
+    const profile = profileMap.get(listing.added_by);
+    const name =
+      (profile?.display_name?.trim() && profile.display_name) ||
+      profile?.email ||
+      "Usuario";
+    return {
+      userListingId: listing.id,
+      name,
+      phone: profile?.phone || null,
+      status: getStatusLabel(listing.current_status),
+      addedAt: listing.created_at,
+    };
+  });
 }

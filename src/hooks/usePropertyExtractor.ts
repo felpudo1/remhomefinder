@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { checkUrlStatus } from "@/lib/duplicateCheck";
+import { fetchDuplicateData } from "@/lib/duplicateRouter";
 import { resolveGeoIds } from "@/lib/resolveGeoIds";
 import { useCurrentUser } from "@/contexts/AuthProvider";
+import type { DuplicateRoutedResult } from "@/lib/duplicateRouter";
 
 /** Genera un UUID compatible con contextos no seguros (HTTP en red local) */
 function safeUUID(): string {
@@ -46,6 +47,12 @@ export type PropertyData = {
   contactPhone?: string;
 };
 
+/** Resultado del scraping con caso de duplicado */
+export type ScrapeResult =
+  | { duplicateCase: DuplicateRoutedResult }
+  | { data: PropertyData }
+  | { error: string };
+
 export function usePropertyExtractor() {
   const { user: authUser } = useCurrentUser();
   const [isLoading, setIsLoading] = useState(false);
@@ -53,23 +60,34 @@ export function usePropertyExtractor() {
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false);
 
   /**
-   * Scrapea una URL o verifica duplicados.
+   * Scrapea una URL o verifica duplicados usando el router.
    */
   const handleScrape = async (
     url: string,
     selectedGroupId: string | null,
-    scraper: "firecrawl" | "zenrows" = "firecrawl"
-  ) => {
+    scraper: "firecrawl" | "zenrows" = "firecrawl",
+    isAgent: boolean = false
+  ): Promise<ScrapeResult | null> => {
     if (!url.trim()) return null;
 
     setIsLoading(true);
     try {
       const orgId = selectedGroupId || null;
-      const result = await checkUrlStatus(url.trim(), orgId);
 
-      if (result.case !== "none") {
+      // Usar el router para determinar el caso de duplicado
+      // Si falla la verificación, proceder con el scrape igual
+      let duplicateCase = { case: "none" as const };
+      try {
+        const result = await fetchDuplicateData(url.trim(), orgId, isAgent);
+        duplicateCase = result.duplicateCase;
+      } catch (dupErr) {
+        console.warn("Error verificando duplicados, procediendo con scrape:", dupErr);
+        // Si falla la verificación, continuar con el scrape
+      }
+
+      if (duplicateCase.case !== "none") {
         setIsLoading(false);
-        return { duplicateResult: result };
+        return { duplicateCase };
       }
 
       const { data, error } = await supabase.functions.invoke("scrape-property", {
