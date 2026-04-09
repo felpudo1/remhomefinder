@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Users, Copy, Check } from "lucide-react";
+import { Users, Copy, Check, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import { ProfileReferralStatsBlock } from "@/components/ProfileReferralStatsBlock";
+import { ReferralQRModal } from "@/components/ReferralQRModal";
 
 interface UserReferralSectionProps {
   /** En el filtro lateral va separado con línea; en la pestaña dedicada no hace falta */
@@ -13,6 +14,7 @@ interface UserReferralSectionProps {
 export function UserReferralSection({ showTopDivider = true }: UserReferralSectionProps) {
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
+    const [qrOpen, setQrOpen] = useState(false);
     const { data: profile } = useProfile();
 
     const referralLink = profile?.userId
@@ -104,7 +106,24 @@ export function UserReferralSection({ showTopDivider = true }: UserReferralSecti
                         </>
                     )}
                 </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQrOpen(true)}
+                    disabled={!referralLink}
+                    className="w-full gap-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-muted/30 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                >
+                    <QrCode className="w-4 h-4" />
+                    Ver Código QR
+                </Button>
             </div>
+
+            <ReferralQRModal
+                open={qrOpen}
+                onClose={() => setQrOpen(false)}
+                referralLink={referralLink}
+                displayName={profile?.displayName || undefined}
+            />
         </div>
     );
 }
