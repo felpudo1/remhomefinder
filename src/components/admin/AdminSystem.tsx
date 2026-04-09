@@ -9,6 +9,7 @@ import { AdminMarketplaceTips } from "./system/AdminMarketplaceTips";
 import { AdminBranding } from "./system/AdminBranding";
 import { AdminMatchScore } from "./system/AdminMatchScore";
 import { AdminDetailsDescription } from "./system/AdminDetailsDescription";
+import { AdminSystemAlerts } from "./system/AdminSystemAlerts";
 import { DbSchemaTab } from "@/components/infra/DbSchemaTab";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
