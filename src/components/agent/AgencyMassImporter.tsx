@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -7,13 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import {
   Globe, Loader2, Search, Download, Minimize2, CheckCircle2, XCircle,
   ImageIcon, ExternalLink, RotateCw, Settings2,
-  Filter, Zap, Save
+  Filter, Zap, Save, FileSpreadsheet, Upload
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import {
   useImportModalOpen, useImportActions, useActiveImportTask,
