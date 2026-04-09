@@ -1,27 +1,17 @@
 import { Users, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useReferralCountForUser, useReferrerDisplayName } from "@/hooks/useReferralQueries";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useReferralCountForUser, useReferrerFullInfo } from "@/hooks/useReferralQueries";
 import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 
 interface ProfileReferralStatsBlockProps {
-  /**
-   * user_id bajo el cual se cuentan referidos (referred_by_id = este valor).
-   * Usuarios: tu propio userId. Agencia: suele ser created_by del dueño (mismo link de invitación).
-   */
   countForUserId: string | null | undefined;
-  /** Tu referred_by_id: quién te refirió a vos. */
   referredById: string | null | undefined;
-  /** Estilo visual */
   variant?: "compact" | "card";
-  /** Texto encima del número (opcional) */
   countLabel?: string;
 }
 
-/**
- * Muestra cantidad de personas referidas y el nombre de quien te refirió (solo lectura).
- * Usado en modal de perfil y perfil de agencia.
- */
 export function ProfileReferralStatsBlock({
   countForUserId,
   referredById,
@@ -30,7 +20,7 @@ export function ProfileReferralStatsBlock({
 }: ProfileReferralStatsBlockProps) {
   const { data: viewerProfile } = useProfile();
   const { data: referralCount = 0, isLoading: countLoading } = useReferralCountForUser(countForUserId);
-  const { data: referrerName, isLoading: nameLoading } = useReferrerDisplayName(
+  const { data: referrerInfo, isLoading: infoLoading } = useReferrerFullInfo(
     referredById,
     viewerProfile?.userId
   );
@@ -38,11 +28,23 @@ export function ProfileReferralStatsBlock({
   const referredByLine =
     !referredById
       ? "No tenés un referidor registrado."
-      : nameLoading
+      : infoLoading
         ? "Cargando…"
-        : referrerName
-          ? `Referido por: ${referrerName}`
+        : referrerInfo?.referrerDisplayName
+          ? `Referido por: ${referrerInfo.referrerDisplayName}`
           : "Referidor no disponible (dato antiguo o eliminado).";
+
+  const agencyBlock = referrerInfo?.agencyName ? (
+    <div className="flex items-center gap-1.5 mt-1 ml-0.5">
+      {referrerInfo.agencyLogoUrl ? (
+        <Avatar className="w-5 h-5">
+          <AvatarImage src={referrerInfo.agencyLogoUrl} alt={referrerInfo.agencyName} />
+          <AvatarFallback className="text-[8px]">{referrerInfo.agencyName.charAt(0)}</AvatarFallback>
+        </Avatar>
+      ) : null}
+      <span className="text-xs text-muted-foreground">{referrerInfo.agencyName}</span>
+    </div>
+  ) : null;
 
   if (variant === "card") {
     return (
@@ -57,10 +59,13 @@ export function ProfileReferralStatsBlock({
             {countLoading ? "…" : referralCount}
           </Badge>
         </div>
-        <p className="text-sm text-foreground/90 flex items-start gap-2">
-          <UserPlus className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
-          <span>{referredByLine}</span>
-        </p>
+        <div className="text-sm text-foreground/90 flex flex-col">
+          <div className="flex items-start gap-2">
+            <UserPlus className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+            <span>{referredByLine}</span>
+          </div>
+          {agencyBlock}
+        </div>
       </div>
     );
   }
@@ -79,6 +84,7 @@ export function ProfileReferralStatsBlock({
         </Badge>
       </div>
       <p className="text-muted-foreground leading-snug">{referredByLine}</p>
+      {agencyBlock}
     </div>
   );
 }

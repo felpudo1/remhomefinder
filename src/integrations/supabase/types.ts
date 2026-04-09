@@ -1832,6 +1832,7 @@ export type Database = {
         Returns: Json
       }
       get_my_referrer_display_name: { Args: never; Returns: string }
+      get_my_referrer_full_info: { Args: never; Returns: Json }
       get_pending_announcements: {
         Args: { p_user_id: string; p_user_roles: string[] }
         Returns: {
