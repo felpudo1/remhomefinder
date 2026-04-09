@@ -55,6 +55,10 @@ export const AgencyMassImporter: React.FC<Props> = ({ orgId, userId }) => {
   const [domainUrl, setDomainUrl] = useState("");
   const [discovering, setDiscovering] = useState(false);
   const [terminating, setTerminating] = useState(false);
+  // Estado para importación desde archivo
+  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const [fileParsing, setFileParsing] = useState(false);
+  const [fileName, setFileName] = useState("");
   const [links, setLinks] = useState<DiscoveredLink[]>([]);
   const [failedDetails, setFailedDetails] = useState<{url: string; error: string}[]>([]);
   const [selectAll, setSelectAll] = useState(false);
