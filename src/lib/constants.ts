@@ -37,6 +37,8 @@ export const ROUTES = {
     TERMS: "/terminos",
     /** Política de privacidad (página pública) */
     PRIVACY: "/privacidad",
+    /** Estado de pago después de redirección de MercadoPago */
+    PAYMENT_STATUS: "/payments/:status",
     ADMIN: "/admin",
     ADMIN_INFRA: "/admin/infra",
     ADMIN_SECTION: (section: string) => `/admin/${section}`,

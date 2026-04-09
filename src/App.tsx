@@ -34,6 +34,7 @@ const LegalPrivacy = routeLazy(() => import("./pages/LegalPrivacy"));
 const AuthRecoverPassword = routeLazy(() => import("./pages/AuthRecoverPassword"));
 const AuthResetPassword = routeLazy(() => import("./pages/AuthResetPassword"));
 const AuthCallback = routeLazy(() => import("./pages/AuthCallback"));
+const PaymentStatus = routeLazy(() => import("./pages/PaymentStatus"));
 
 // Caché global: 5 min de staleTime evita refetch en cada mount/window focus.
 // gcTime de 10 min mantiene los datos en memoria limpia por más tiempo.
@@ -79,7 +80,10 @@ const App = () => (
                 <Route path={ROUTES.PRIVACY} element={<LegalPrivacy />} />
                 <Route path={ROUTES.PUBLIC_PROPERTY_PATH} element={<PublicPropertyView />} />
                 <Route path={ROUTES.REFERRAL_PATH} element={<Referral />} />
-                
+
+                {/* Estado de pago (redirección desde MercadoPago) */}
+                <Route path={ROUTES.PAYMENT_STATUS} element={<PaymentStatus />} />
+
                 {/* Rutas Protegidas Simples (Solo requieren estar logeado) */}
                 <Route
                   path={ROUTES.DASHBOARD_AI_PROFILE}
