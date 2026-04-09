@@ -60,34 +60,66 @@ async function logScrapeUsage(params: {
   }
 }
 
-// ── Scraping helpers ── (v2 - redeploy trigger)
+// ── Scraping helpers ── (v3 - fallback API key on insufficient credits)
+
+/**
+ * Intenta scrapear con una API key de Firecrawl.
+ * Retorna el resultado o lanza error.
+ */
+async function _firecrawlRequest(apiKey: string, formattedUrl: string) {
+  const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ url: formattedUrl, formats: ["markdown", "html"], onlyMainContent: true, waitFor: 2000 }),
+  });
+
+  const d = await res.json();
+  if (!res.ok) {
+    const errMsg = d?.error || "No se pudo acceder a la página";
+    throw new Error(`Firecrawl: ${errMsg}`);
+  }
+
+  const markdown = d?.data?.markdown || d?.markdown || "";
+  const html = d?.data?.html || d?.html || "";
+  const allLinks: string[] = d?.data?.links || d?.links || [];
+  return { markdown, html, imageUrls: extractImages(markdown, html, allLinks) };
+}
 
 async function scrapeWithFirecrawl(formattedUrl: string) {
-  // Try all possible secret names from connectors
-  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY") 
-    || Deno.env.get("FIRECRAWL_API_KEY_1")
-    || Deno.env.get("FIRECRAWL_API_KEY_2");
-  if (!FIRECRAWL_API_KEY) {
-    // Log available env keys for debugging (no values)
+  // Recopilar todas las keys disponibles en orden de prioridad
+  const keyNames = ["FIRECRAWL_API_KEY", "FIRECRAWL_API_KEY_1", "FIRECRAWL_API_KEY_2"];
+  const keys: string[] = [];
+  for (const name of keyNames) {
+    const val = Deno.env.get(name);
+    if (val) keys.push(val);
+  }
+  // Deduplicar (por si el conector y el secreto manual tienen el mismo valor)
+  const uniqueKeys = [...new Set(keys)];
+
+  if (uniqueKeys.length === 0) {
     const envObj = Deno.env.toObject();
     console.error("FIRECRAWL_API_KEY not found. Available env keys containing 'FIRE':", 
       Object.keys(envObj).filter(k => k.includes("FIRE")));
     throw new Error("FIRECRAWL_API_KEY not configured");
   }
 
-  const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ url: formattedUrl, formats: ["markdown", "html"], onlyMainContent: true, waitFor: 2000 }),
-  });
+  // Intentar con cada key; si falla por créditos insuficientes, probar la siguiente
+  for (let i = 0; i < uniqueKeys.length; i++) {
+    try {
+      return await _firecrawlRequest(uniqueKeys[i], formattedUrl);
+    } catch (err: any) {
+      const isCreditsError = err?.message?.toLowerCase().includes("insufficient credits");
+      const isLastKey = i === uniqueKeys.length - 1;
+      if (isCreditsError && !isLastKey) {
+        console.warn(`Firecrawl key #${i + 1} sin créditos, intentando con key #${i + 2}...`);
+        continue;
+      }
+      throw err; // Re-lanzar si no es error de créditos o es la última key
+    }
+  }
 
-  const d = await res.json();
-  if (!res.ok) throw new Error(`Firecrawl: ${d?.error || "No se pudo acceder a la página"}`);
-
-  const markdown = d?.data?.markdown || d?.markdown || "";
-  const html = d?.data?.html || d?.html || "";
-  const allLinks: string[] = d?.data?.links || d?.links || [];
-  return { markdown, html, imageUrls: extractImages(markdown, html, allLinks) };
+  // Nunca debería llegar acá, pero por seguridad
+  throw new Error("Firecrawl: todas las API keys fallaron");
 }
 
 async function scrapeWithZenRows(formattedUrl: string) {
