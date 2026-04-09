@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.mp-create-subscription]
 verify_jwt = false
+
+[functions.scrape-property]
+verify_jwt = false
