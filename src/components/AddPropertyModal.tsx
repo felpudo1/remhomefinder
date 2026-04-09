@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatDaysAgo, type InAppResult } from "@/lib/duplicateCheck";
+import { formatDaysAgo } from "@/lib/duplicateCheck";
 import { toast } from "sonner";
 import { ScraperInput } from "./add-property/ScraperInput";
 import { PropertyFormManual } from "./add-property/PropertyFormManual";
@@ -148,12 +148,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
       switch (dc.case) {
         case "C1":
-          // Agente repite su propia publicación
-          setAgentOwnDuplicate({
-            publishedByName: dc.publishedByName,
-            createdAt: dc.createdAt,
-            id: dc.agentPublicationId,
-          });
+          // Agente repite su propia publicación — no hay estado local para esto en AddPropertyModal
           break;
         case "C2a":
           // Usuario tiene en su listado + está en marketplace
@@ -163,9 +158,9 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             whatsappDigits: dc.whatsappDigits,
           });
           setUrlInFamily({
-            addedByName: dc.addedByName,
-            addedAt: dc.addedAt,
-            status: dc.status,
+            addedByName: "Tu familia",
+            addedAt: new Date().toISOString(),
+            status: "ingresado",
             userListingId: dc.userListingId,
           });
           break;

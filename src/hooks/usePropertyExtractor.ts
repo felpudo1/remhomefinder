@@ -76,7 +76,7 @@ export function usePropertyExtractor() {
 
       // Usar el router para determinar el caso de duplicado
       // Si falla la verificación, proceder con el scrape igual
-      let duplicateCase = { case: "none" as const };
+      let duplicateCase: DuplicateRoutedResult = { case: "none" };
       try {
         const result = await fetchDuplicateData(url.trim(), orgId, isAgent);
         duplicateCase = result.duplicateCase;

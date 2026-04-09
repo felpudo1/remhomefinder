@@ -121,7 +121,7 @@ export async function checkUrlStatus(
   if (!resolvedOrgId) return { case: "none" };
 
   // ── Buscar property por source_url normalizado ──
-  const { data: prop, error: propErr } = await supabase
+  const { data: prop } = await supabase
     .from("properties")
     .select("id")
     .eq("source_url", normalized)

@@ -1,6 +1,5 @@
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -12,14 +11,12 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, MessageCircle, Loader2 } from "lucide-react";
 import { normalizeWhatsAppPhone } from "@/lib/whatsapp";
 import type {
-  DuplicateCase,
   DuplicateCase1,
   DuplicateCase2a,
   DuplicateCase2b,
   DuplicateCase3,
   DuplicateCase4,
   DuplicateCase5,
-  DUPLICATE_MESSAGES,
 } from "@/types/duplicate-cases";
 import { DUPLICATE_MESSAGES } from "@/types/duplicate-cases";
 
@@ -134,7 +131,7 @@ export function DuplicateAlertDialog({
 
       /** ── CASO 2A: Usuario ya tiene el aviso en su listado + está en marketplace ── */
       case "C2a": {
-        const { agencyName, agentName, whatsappDigits, listingUrl, userListingId, agentPublicationId } =
+        const { agencyName, agentName, whatsappDigits, listingUrl } =
           props as DuplicateCase2a;
         const msgs = DUPLICATE_MESSAGES.C2a;
         const whatsappUrl = buildWhatsAppUrl(whatsappDigits, listingUrl);
@@ -188,7 +185,7 @@ export function DuplicateAlertDialog({
 
       /** ── CASO 2B: Usuario NO tiene el aviso en su listado + está en marketplace ── */
       case "C2b": {
-        const { agencyName, agentName, whatsappDigits, listingUrl, agentPublicationId, onSaveToListing, isSaving } =
+        const { agencyName, agentName, whatsappDigits, listingUrl, onSaveToListing, isSaving } =
           props as DuplicateCase2b;
         const msgs = DUPLICATE_MESSAGES.C2b;
         const whatsappUrl = buildWhatsAppUrl(whatsappDigits, listingUrl);
@@ -330,7 +327,7 @@ export function DuplicateAlertDialog({
               <p className="text-sm font-medium">{msgs.subtitle}</p>
               {/* Lista de usuarios */}
               <div className="max-h-48 overflow-y-auto space-y-2 border rounded-lg p-3 bg-muted/50">
-                {users.map((user, idx) => (
+                {users.map((user) => (
                   <div key={user.userListingId} className="flex items-start justify-between gap-2 text-sm">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{user.name}</p>
