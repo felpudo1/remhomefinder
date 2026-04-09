@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gift, Copy, Check, Users, UserPlus } from "lucide-react";
+import { Gift, Copy, Check, Users, UserPlus, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Agency } from "./AgentProfile";
@@ -7,6 +7,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { useReferralCountForUser, useReferrerDisplayName } from "@/hooks/useReferralQueries";
 import { useProfile } from "@/hooks/useProfile";
+import { ReferralQRModal } from "@/components/ReferralQRModal";
 
 interface AgentReferralSectionProps {
   agency: Agency;
@@ -19,6 +20,7 @@ interface AgentReferralSectionProps {
 export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
   const { data: profile } = useProfile();
   const { data: referralCount = 0 } = useReferralCountForUser(agency.created_by);
@@ -113,6 +115,15 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
           >
             <Users className="w-4 h-4" /> WhatsApp
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl gap-2 h-28 sm:h-10 transition-all hover:scale-[1.02] flex-1 sm:flex-none text-base sm:text-sm"
+            onClick={() => setQrOpen(true)}
+            disabled={!referralLink}
+          >
+            <QrCode className="w-4 h-4" /> Código QR
+          </Button>
         </div>
         <p className="text-xs text-muted-foreground">
           Los clientes que se registren con tu link quedarán vinculados a tu agencia.
@@ -122,6 +133,13 @@ export function AgentReferralSection({ agency }: AgentReferralSectionProps) {
           <span>{referredByLine}</span>
         </div>
       </div>
+
+      <ReferralQRModal
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        referralLink={referralLink}
+        displayName={agency?.name || appBrandName}
+      />
     </div>
   );
 }
