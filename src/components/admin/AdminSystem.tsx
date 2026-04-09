@@ -53,6 +53,9 @@ export function AdminSystem() {
         </TabsList>
 
         <TabsContent value="config" className="space-y-8 animate-in slide-in-from-left-2 duration-300">
+          {/* Alertas del sistema (fallback de API keys, etc.) */}
+          <AdminSystemAlerts />
+
           {/* Escudo de Mantenimiento / Kill Switch */}
           <AdminMaintenance />
 
