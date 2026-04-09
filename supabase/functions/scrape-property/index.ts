@@ -111,7 +111,29 @@ async function scrapeWithFirecrawl(formattedUrl: string) {
       const isCreditsError = err?.message?.toLowerCase().includes("insufficient credits");
       const isLastKey = i === uniqueKeys.length - 1;
       if (isCreditsError && !isLastKey) {
-        console.warn(`Firecrawl key #${i + 1} sin créditos, intentando con key #${i + 2}...`);
+        const keyLabel = keyNames[i] || `key #${i + 1}`;
+        const nextKeyLabel = keyNames[i + 1] || `key #${i + 2}`;
+        console.warn(`⚠️ FALLBACK: ${keyLabel} sin créditos, cambiando a ${nextKeyLabel}...`);
+
+        // Registrar alerta en BD para visibilidad admin
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const sb = createClient(supabaseUrl, serviceKey);
+          await sb.from("system_alerts").insert({
+            alert_type: "firecrawl_fallback",
+            message: `API key primaria (${keyLabel}) sin créditos. Se activó respaldo ${nextKeyLabel}.`,
+            metadata: {
+              failed_key: keyLabel,
+              fallback_key: nextKeyLabel,
+              url: formattedUrl,
+              timestamp: new Date().toISOString(),
+            },
+          });
+        } catch (alertErr) {
+          console.error("Error registrando alerta de fallback:", alertErr);
+        }
+
         continue;
       }
       throw err; // Re-lanzar si no es error de créditos o es la última key
