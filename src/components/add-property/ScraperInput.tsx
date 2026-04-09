@@ -91,8 +91,7 @@ export function ScraperInput({
     const [qrOpen, setQrOpen] = useState(false);
     const isUrlActionsLocked =
         isFamilyLocked || isInAppLocked || isAgentOwnDupLocked || isUserAgentMarketplaceLocked;
-    // formattedFirstAddedAt disponible si se necesita en el futuro
-    const _unusedUrlInApp = urlInApp;
+    // urlInApp data used in DuplicateAlertDialog below via props
 
     if (step === "url") {
         return (
