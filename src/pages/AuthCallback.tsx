@@ -29,19 +29,38 @@ const AuthCallback = () => {
           const referralId = sessionStorage.getItem("hf_referral_id");
           if (referralId && referralId !== session.user.id) {
             try {
-              const { data: profile } = await (supabase
-                .from("profiles") as any)
-                .select("referred_by_id")
-                .eq("user_id", session.user.id)
-                .maybeSingle();
+              // Retry: el trigger handle_new_user_profile puede no haber creado el perfil aún
+              const linkReferral = async (retries = 5, delayMs = 600) => {
+                for (let i = 0; i < retries; i++) {
+                  const { data: profile } = await (supabase
+                    .from("profiles") as any)
+                    .select("referred_by_id")
+                    .eq("user_id", session.user.id)
+                    .maybeSingle();
 
-              if (profile && !profile.referred_by_id) {
-                await (supabase
-                  .from("profiles") as any)
-                  .update({ referred_by_id: referralId })
-                  .eq("user_id", session.user.id);
-                console.log("💎 AuthCallback: Referido vinculado:", referralId);
-              }
+                  if (!profile) {
+                    console.log(`💎 AuthCallback: Perfil aún no existe, reintento ${i + 1}/${retries}...`);
+                    await new Promise(r => setTimeout(r, delayMs));
+                    continue;
+                  }
+
+                  if (!profile.referred_by_id) {
+                    const { error: updErr } = await (supabase
+                      .from("profiles") as any)
+                      .update({ referred_by_id: referralId })
+                      .eq("user_id", session.user.id);
+                    if (updErr) {
+                      console.error("💎 AuthCallback: Error update referido:", updErr);
+                    } else {
+                      console.log("💎 AuthCallback: Referido vinculado:", referralId);
+                    }
+                  } else {
+                    console.log("💎 AuthCallback: Perfil ya tiene referido, omitiendo.");
+                  }
+                  break;
+                }
+              };
+              await linkReferral();
               sessionStorage.removeItem("hf_referral_id");
             } catch (refErr) {
               console.error("💎 AuthCallback: Error al vincular referido:", refErr);
