@@ -139,18 +139,27 @@ export default function PublicPropertyView() {
           await claimAnonymousEvents(userId, id, pubId);
         }
 
-        // Get user's org
-        const { data: membership } = await supabase
-          .from("organization_members")
-          .select("org_id")
-          .eq("user_id", userId)
-          .limit(1)
-          .maybeSingle();
+        // Get user's org — retry a few times for new signups (trigger may still be running)
+        let orgId: string | null = null;
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const { data: membership } = await supabase
+            .from("organization_members")
+            .select("org_id")
+            .eq("user_id", userId)
+            .limit(1)
+            .maybeSingle();
+          if (membership?.org_id) {
+            orgId = membership.org_id;
+            break;
+          }
+          // Wait before retrying (500ms, 1s, 2s)
+          await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
+        }
 
-        if (!membership?.org_id) {
+        if (!orgId) {
           toast({
             title: "Error",
-            description: "No se encontró una organización asociada a tu cuenta.",
+            description: "No se encontró una organización asociada a tu cuenta. Intentá nuevamente en unos segundos.",
             variant: "destructive",
           });
           setSaving(false);
@@ -173,7 +182,7 @@ export default function PublicPropertyView() {
           .from("user_listings")
           .select("id")
           .eq("property_id", propertyId)
-          .eq("org_id", membership.org_id)
+          .eq("org_id", orgId)
           .maybeSingle();
 
         if (existing) {
@@ -188,7 +197,7 @@ export default function PublicPropertyView() {
           .from("user_listings")
           .insert({
             property_id: propertyId,
-            org_id: membership.org_id,
+            org_id: orgId,
             listing_type: "rent",
             source_publication_id: pubId || null,
             added_by: userId,
@@ -202,7 +211,7 @@ export default function PublicPropertyView() {
           propertyId: propertyId,
           sourcePublicationId: pubId,
           userId,
-          orgId: membership.org_id,
+          orgId: orgId,
         });
 
         setSaved(true);
