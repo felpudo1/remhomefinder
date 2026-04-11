@@ -78,20 +78,23 @@ export function MarketplaceCard({
         autoRotateImages
         imageTransitionMode="push"
         topOverlay={
-          <div className="flex flex-col gap-1.5 items-start">
+          <div className="relative z-10 flex flex-col gap-1.5 items-start">
             {property.orgLogoUrl && (
-              <img
-                src={property.orgLogoUrl}
-                alt={property.orgName}
-                className="w-[52px] h-[52px] rounded-lg object-contain bg-white/90 shadow-md p-0.5"
-                onError={(e) => {
-                  console.log(`❌ Failed to load logo for ${property.orgName}: ${property.orgLogoUrl}`);
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-                onLoad={() => {
-                  console.log(`✅ Logo loaded successfully for ${property.orgName}`);
-                }}
-              />
+              <div className="rounded-xl bg-background/90 p-1 shadow-lg ring-1 ring-border/70 backdrop-blur-sm">
+                <img
+                  src={property.orgLogoUrl}
+                  alt={property.orgName}
+                  loading="lazy"
+                  className="block w-[52px] h-[52px] rounded-lg object-contain bg-white/90 p-0.5"
+                  onError={(e) => {
+                    console.log(`❌ Failed to load logo for ${property.orgName}: ${property.orgLogoUrl}`);
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log(`✅ Logo loaded successfully for ${property.orgName}`);
+                  }}
+                />
+              </div>
             )}
             {isReferred && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-yellow-500 text-black shadow-lg animate-pulse">
