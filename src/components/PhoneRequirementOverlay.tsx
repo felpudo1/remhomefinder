@@ -26,9 +26,7 @@ export function PhoneRequirementOverlay() {
   // Determinar si debemos mostrar el modal
   useEffect(() => {
     const isGoogleUser = user?.app_metadata?.provider === "google";
-    // No mostrar el overlay si hay un guardado pendiente (flujo QR) para no bloquear el save
-    const hasPendingSave = !!sessionStorage.getItem("pending_property_save");
-    if (!isProfileLoading && user && profile && !profile.phone && isGoogleUser && !hasPendingSave) {
+    if (!isProfileLoading && user && profile && !profile.phone && isGoogleUser) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
