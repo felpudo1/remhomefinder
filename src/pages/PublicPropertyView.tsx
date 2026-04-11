@@ -45,6 +45,7 @@ export default function PublicPropertyView() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [requiresSaveConfirmation, setRequiresSaveConfirmation] = useState(false);
+  const [isPreparingAccount, setIsPreparingAccount] = useState(false);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
@@ -54,6 +55,20 @@ export default function PublicPropertyView() {
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
+
+  const cachePublicationReferrer = useCallback(async () => {
+    if (!pubId || sessionStorage.getItem("hf_referral_id")) return;
+
+    const { data: publication } = await supabase
+      .from("agent_publications")
+      .select("published_by")
+      .eq("id", pubId)
+      .maybeSingle();
+
+    if (publication?.published_by) {
+      sessionStorage.setItem("hf_referral_id", publication.published_by);
+    }
+  }, [pubId]);
 
   // Fetch property data
   useEffect(() => {
@@ -120,33 +135,48 @@ export default function PublicPropertyView() {
     const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
     if (!pendingSave) {
       setRequiresSaveConfirmation(false);
+      setIsPreparingAccount(false);
       return;
     }
 
     let cancelled = false;
 
     const restorePendingSave = async () => {
+      setIsPreparingAccount(true);
+
       try {
         const { propertyId } = JSON.parse(pendingSave);
-        if (propertyId !== id) return;
-
-        const needsConfirmation = sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY) === "1";
-        if (needsConfirmation) {
-          const orgId = await getUserOrgIdWithRetry(user.id);
-          if (!cancelled && orgId) {
-            setRequiresSaveConfirmation(true);
+        if (propertyId !== id) {
+          if (!cancelled) {
+            setIsPreparingAccount(false);
           }
           return;
         }
 
-        if (!cancelled) {
-          void handleSaveProperty(user.id);
+        const needsConfirmation = sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY) === "1";
+        const orgId = await getUserOrgIdWithRetry(user.id, 7);
+
+        if (cancelled) return;
+
+        if (!orgId) {
+          setIsPreparingAccount(false);
+          return;
         }
+
+        if (needsConfirmation) {
+          setRequiresSaveConfirmation(true);
+          setIsPreparingAccount(false);
+          return;
+        }
+
+        setIsPreparingAccount(false);
+        void handleSaveProperty(user.id, orgId);
       } catch {
         sessionStorage.removeItem(PENDING_SAVE_KEY);
         sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
         if (!cancelled) {
           setRequiresSaveConfirmation(false);
+          setIsPreparingAccount(false);
         }
       }
     };
@@ -159,7 +189,7 @@ export default function PublicPropertyView() {
   }, [user?.id, id]);
 
   const handleSaveProperty = useCallback(
-    async (userId: string) => {
+    async (userId: string, preloadedOrgId?: string | null) => {
       if (!id || saving || saved) return false;
       setSaving(true);
 
@@ -170,7 +200,7 @@ export default function PublicPropertyView() {
         }
 
         // Get user's org — retry a few times for new signups (trigger may still be running)
-        const orgId = await getUserOrgIdWithRetry(userId);
+        const orgId = preloadedOrgId ?? await getUserOrgIdWithRetry(userId, 7);
 
         if (!orgId) {
           toast({
@@ -260,13 +290,19 @@ export default function PublicPropertyView() {
     [id, pubId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents]
   );
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (user?.id) {
       if (requiresSaveConfirmation) {
         setRequiresSaveConfirmation(false);
       }
-      handleSaveProperty(user.id);
+      void handleSaveProperty(user.id);
     } else {
+      try {
+        await cachePublicationReferrer();
+      } catch (error) {
+        console.error("Error caching publication referrer:", error);
+      }
+
       // Store pending save state
       sessionStorage.setItem(
         PENDING_SAVE_KEY,
@@ -432,6 +468,18 @@ export default function PublicPropertyView() {
           )}
 
           {/* Actions */}
+          {isPreparingAccount && (
+            <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                Estamos preparando tu cuenta.
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Esperá unos segundos mientras se crea tu espacio para guardar la propiedad.
+              </p>
+            </div>
+          )}
+
           {requiresSaveConfirmation && (
             <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
               <p className="text-sm font-semibold text-foreground">Tu cuenta ya fue creada.</p>
@@ -446,14 +494,22 @@ export default function PublicPropertyView() {
               className="flex-1 gap-2"
               size="lg"
               onClick={handleSaveClick}
-              disabled={saving || saved}
+              disabled={saving || saved || isPreparingAccount}
             >
               {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isPreparingAccount ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
               )}
-              {saved ? "Guardada" : requiresSaveConfirmation ? "Aceptar" : "Guardar en mi listado"}
+              {saved
+                ? "Guardada"
+                : isPreparingAccount
+                  ? "Preparando cuenta..."
+                  : requiresSaveConfirmation
+                    ? "Aceptar"
+                    : "Guardar en mi listado"}
             </Button>
             <Button variant="outline" size="lg" onClick={handleShare}>
               <Share2 className="w-4 h-4" />

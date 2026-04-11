@@ -29,16 +29,21 @@ const AuthCallback = () => {
       try {
         if (session?.user) {
           const isGoogleUser = session.user.app_metadata?.provider === "google";
-          const createdAt = Date.parse(session.user.created_at ?? "");
-          const lastSignInAt = Date.parse(session.user.last_sign_in_at ?? "");
-          const isFirstGoogleSignIn =
-            isGoogleUser &&
-            Number.isFinite(createdAt) &&
-            Number.isFinite(lastSignInAt) &&
-            Math.abs(lastSignInAt - createdAt) < 2 * 60 * 1000;
+          const hasPendingSave = !!sessionStorage.getItem(PENDING_SAVE_KEY);
 
-          if (sessionStorage.getItem(PENDING_SAVE_KEY) && isFirstGoogleSignIn) {
-            sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
+          if (hasPendingSave && isGoogleUser) {
+            const { data: membership } = await supabase
+              .from("organization_members")
+              .select("org_id")
+              .eq("user_id", session.user.id)
+              .limit(1)
+              .maybeSingle();
+
+            if (membership?.org_id) {
+              sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+            } else {
+              sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
+            }
           } else {
             sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
           }
