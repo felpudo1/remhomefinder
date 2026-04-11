@@ -139,53 +139,22 @@ export default function PublicPropertyView() {
       return;
     }
 
-    let cancelled = false;
-
-    const restorePendingSave = async () => {
-      setIsPreparingAccount(true);
-
-      try {
-        const { propertyId } = JSON.parse(pendingSave);
-        if (propertyId !== id) {
-          if (!cancelled) {
-            setIsPreparingAccount(false);
-          }
-          return;
-        }
-
-        const needsConfirmation = sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY) === "1";
-        const orgId = await getUserOrgIdWithRetry(user.id, 7);
-
-        if (cancelled) return;
-
-        if (!orgId) {
-          setIsPreparingAccount(false);
-          return;
-        }
-
-        if (needsConfirmation) {
-          setRequiresSaveConfirmation(true);
-          setIsPreparingAccount(false);
-          return;
-        }
-
+    try {
+      const { propertyId } = JSON.parse(pendingSave);
+      if (propertyId !== id) {
         setIsPreparingAccount(false);
-        void handleSaveProperty(user.id, orgId);
-      } catch {
-        sessionStorage.removeItem(PENDING_SAVE_KEY);
-        sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
-        if (!cancelled) {
-          setRequiresSaveConfirmation(false);
-          setIsPreparingAccount(false);
-        }
+        return;
       }
-    };
 
-    void restorePendingSave();
-
-    return () => {
-      cancelled = true;
-    };
+      // Show confirmation banner immediately — orgId will be resolved at save time
+      setRequiresSaveConfirmation(true);
+      setIsPreparingAccount(false);
+    } catch {
+      sessionStorage.removeItem(PENDING_SAVE_KEY);
+      sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+      setRequiresSaveConfirmation(false);
+      setIsPreparingAccount(false);
+    }
   }, [user?.id, id]);
 
   const handleSaveProperty = useCallback(
