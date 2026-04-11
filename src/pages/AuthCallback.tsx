@@ -38,7 +38,32 @@ const AuthCallback = () => {
           }
 
           // Vincular referido desde sessionStorage (OAuth no pasa metadata custom)
-          const referralId = sessionStorage.getItem("hf_referral_id");
+          let referralId = sessionStorage.getItem("hf_referral_id");
+
+          // Si no hay referral cacheado, intentar resolverlo desde la publicación pendiente
+          // (cachePublicationReferrer pudo fallar porque el usuario era anónimo y RLS lo bloqueó)
+          if (!referralId) {
+            try {
+              const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
+              if (pendingSave) {
+                const { publicationId } = JSON.parse(pendingSave);
+                if (publicationId) {
+                  const { data: pub } = await supabase
+                    .from("agent_publications")
+                    .select("published_by")
+                    .eq("id", publicationId)
+                    .maybeSingle();
+                  if (pub?.published_by && pub.published_by !== session.user.id) {
+                    referralId = pub.published_by;
+                    console.log("💎 AuthCallback: Referral resuelto desde publicación pendiente:", referralId);
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("💎 AuthCallback: Error resolviendo referral desde publicación:", e);
+            }
+          }
+
           if (referralId && referralId !== session.user.id) {
             try {
               // Retry: el trigger handle_new_user_profile puede no haber creado el perfil aún
