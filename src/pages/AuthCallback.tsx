@@ -68,8 +68,11 @@ const AuthCallback = () => {
           }
 
           // Check for returnTo param (from QR flow)
-          const returnTo = searchParams.get("returnTo");
+          // Fallback: si Supabase/Google droppeó el query param, intentar sessionStorage
+          const returnTo = searchParams.get("returnTo")
+            || sessionStorage.getItem("pending_save_url");
           if (returnTo && returnTo.startsWith("/p/")) {
+            sessionStorage.removeItem("pending_save_url");
             navigate(returnTo, { replace: true });
             return;
           }
