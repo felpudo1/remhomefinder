@@ -390,8 +390,8 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button size="sm" variant="outline" className="gap-1 rounded-lg text-xs flex-1">
-                                                    Estado <ChevronDown className="w-3 h-3" />
-                                                </Button>
+                                                     {PROPERTY_STATUS_LABELS[p.status] || p.status} <ChevronDown className="w-3 h-3" />
+                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 {availableStatuses.map(status => (
