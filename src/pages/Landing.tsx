@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Home, Users, Search, CheckCircle2, ArrowRight, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, ROLES } from "@/lib/constants";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { APP_BRAND_NAME_DEFAULT, APP_BRAND_NAME_KEY } from "@/lib/config-keys";
 import { Footer } from "@/components/Footer";
@@ -12,13 +12,36 @@ import { AgenciesCarousel } from "@/components/AgenciesCarousel";
 const Landing = () => {
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsLoggedIn(!!session);
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            if (session?.user) {
+                // Obtener roles para redirigir a la página correcta
+                const { data: rolesData } = await supabase
+                    .from("user_roles")
+                    .select("role")
+                    .eq("user_id", session.user.id);
+                const roles = rolesData?.map(r => r.role) || [];
+
+                if (roles.includes(ROLES.SYSADMIN)) {
+                    navigate(ROUTES.ADMIN_INFRA, { replace: true });
+                } else if (roles.includes(ROLES.ADMIN)) {
+                    navigate(ROUTES.ADMIN, { replace: true });
+                } else if (roles.includes(ROLES.AGENCY) || roles.includes(ROLES.AGENCY_MEMBER)) {
+                    navigate(ROUTES.AGENCY, { replace: true });
+                } else {
+                    navigate(ROUTES.DASHBOARD, { replace: true });
+                }
+                return;
+            }
+            setIsCheckingAuth(false);
+            setIsLoggedIn(false);
         });
-    }, []);
+    }, [navigate]);
+
+    if (isCheckingAuth) return null;
 
     return (
         <div className="min-h-screen selection:bg-primary/20">
