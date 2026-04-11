@@ -308,6 +308,7 @@ export default function PublicPropertyView() {
         PENDING_SAVE_KEY,
         JSON.stringify({ propertyId: id, publicationId: pubId })
       );
+      sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
       setShowAuthModal(true);
     }
   };
