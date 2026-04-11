@@ -5,6 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+const PENDING_SAVE_KEY = "pending_property_save";
+const PENDING_SAVE_CONFIRM_KEY = "pending_property_save_require_accept";
+
 /**
  * Página de callback de OAuth.
  * Procesa el intercambio de sesión, vincula referidos y redirige al dashboard por rol.
@@ -25,6 +28,21 @@ const AuthCallback = () => {
 
       try {
         if (session?.user) {
+          const isGoogleUser = session.user.app_metadata?.provider === "google";
+          const createdAt = Date.parse(session.user.created_at ?? "");
+          const lastSignInAt = Date.parse(session.user.last_sign_in_at ?? "");
+          const isFirstGoogleSignIn =
+            isGoogleUser &&
+            Number.isFinite(createdAt) &&
+            Number.isFinite(lastSignInAt) &&
+            Math.abs(lastSignInAt - createdAt) < 2 * 60 * 1000;
+
+          if (sessionStorage.getItem(PENDING_SAVE_KEY) && isFirstGoogleSignIn) {
+            sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
+          } else {
+            sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+          }
+
           // Vincular referido desde sessionStorage (OAuth no pasa metadata custom)
           const referralId = sessionStorage.getItem("hf_referral_id");
           if (referralId && referralId !== session.user.id) {
