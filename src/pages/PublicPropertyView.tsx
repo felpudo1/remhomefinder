@@ -9,6 +9,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 import { ROUTES } from "@/lib/constants";
+import { getUserOrgIdWithRetry } from "@/lib/organizationMembership";
 
 interface PublicProperty {
   id: string;
@@ -27,6 +28,7 @@ interface PublicProperty {
 }
 
 const PENDING_SAVE_KEY = "pending_property_save";
+const PENDING_SAVE_CONFIRM_KEY = "pending_property_save_require_accept";
 
 export default function PublicPropertyView() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +44,7 @@ export default function PublicPropertyView() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [requiresSaveConfirmation, setRequiresSaveConfirmation] = useState(false);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
@@ -113,18 +116,46 @@ export default function PublicPropertyView() {
 
   // Check for pending save after OAuth redirect
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !id) return;
     const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
-    if (!pendingSave) return;
-
-    try {
-      const { propertyId } = JSON.parse(pendingSave);
-      if (propertyId === id) {
-        void handleSaveProperty(user.id);
-      }
-    } catch {
-      sessionStorage.removeItem(PENDING_SAVE_KEY);
+    if (!pendingSave) {
+      setRequiresSaveConfirmation(false);
+      return;
     }
+
+    let cancelled = false;
+
+    const restorePendingSave = async () => {
+      try {
+        const { propertyId } = JSON.parse(pendingSave);
+        if (propertyId !== id) return;
+
+        const needsConfirmation = sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY) === "1";
+        if (needsConfirmation) {
+          const orgId = await getUserOrgIdWithRetry(user.id);
+          if (!cancelled && orgId) {
+            setRequiresSaveConfirmation(true);
+          }
+          return;
+        }
+
+        if (!cancelled) {
+          void handleSaveProperty(user.id);
+        }
+      } catch {
+        sessionStorage.removeItem(PENDING_SAVE_KEY);
+        sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+        if (!cancelled) {
+          setRequiresSaveConfirmation(false);
+        }
+      }
+    };
+
+    void restorePendingSave();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, id]);
 
   const handleSaveProperty = useCallback(
@@ -139,21 +170,7 @@ export default function PublicPropertyView() {
         }
 
         // Get user's org — retry a few times for new signups (trigger may still be running)
-        let orgId: string | null = null;
-        for (let attempt = 0; attempt < 6; attempt++) {
-          const { data: membership } = await supabase
-            .from("organization_members")
-            .select("org_id")
-            .eq("user_id", userId)
-            .limit(1)
-            .maybeSingle();
-          if (membership?.org_id) {
-            orgId = membership.org_id;
-            break;
-          }
-          // Wait before retrying (500ms, 1s, 2s, 4s, 8s)
-          await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
-        }
+        const orgId = await getUserOrgIdWithRetry(userId);
 
         if (!orgId) {
           toast({
@@ -186,7 +203,9 @@ export default function PublicPropertyView() {
 
         if (existing) {
           setSaved(true);
+          setRequiresSaveConfirmation(false);
           sessionStorage.removeItem(PENDING_SAVE_KEY);
+          sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
           toast({ title: "Ya tenés esta propiedad guardada" });
           setSaving(false);
           return true;
@@ -215,7 +234,9 @@ export default function PublicPropertyView() {
         });
 
         setSaved(true);
+        setRequiresSaveConfirmation(false);
         sessionStorage.removeItem(PENDING_SAVE_KEY);
+        sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
         toast({
           title: "¡Propiedad guardada!",
           description: "La encontrarás en tu listado personal.",
@@ -241,6 +262,9 @@ export default function PublicPropertyView() {
 
   const handleSaveClick = () => {
     if (user?.id) {
+      if (requiresSaveConfirmation) {
+        setRequiresSaveConfirmation(false);
+      }
       handleSaveProperty(user.id);
     } else {
       // Store pending save state
@@ -408,6 +432,15 @@ export default function PublicPropertyView() {
           )}
 
           {/* Actions */}
+          {requiresSaveConfirmation && (
+            <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
+              <p className="text-sm font-semibold text-foreground">Tu cuenta ya fue creada.</p>
+              <p className="text-sm text-muted-foreground">
+                Tocá <span className="text-foreground font-medium">Aceptar</span> para guardar esta propiedad en tu listado.
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Button
               className="flex-1 gap-2"
@@ -420,7 +453,7 @@ export default function PublicPropertyView() {
               ) : (
                 <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
               )}
-              {saved ? "Guardada" : "Guardar en mi listado"}
+              {saved ? "Guardada" : requiresSaveConfirmation ? "Aceptar" : "Guardar en mi listado"}
             </Button>
             <Button variant="outline" size="lg" onClick={handleShare}>
               <Share2 className="w-4 h-4" />
