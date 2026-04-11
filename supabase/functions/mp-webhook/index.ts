@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { MercadoPagoConfig, Payment } from "npm:mercadopago";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 serve(async (req) => {
@@ -155,12 +154,17 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-    const paymentApi = new Payment(client);
-
     console.log(`Consultando API de MP por ID de pago: ${paymentId}`);
-    const paymentInfo = await paymentApi.get({ id: paymentId });
+    const paymentRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: { "Authorization": `Bearer ${mpAccessToken}` },
+    });
 
+    if (!paymentRes.ok) {
+      console.error("Error al consultar pago:", paymentRes.status);
+      return new Response("OK", { status: 200 });
+    }
+
+    const paymentInfo = await paymentRes.json();
     console.log(`Estado del pago ${paymentId}: ${paymentInfo.status}`);
 
     if (paymentInfo.status === "approved") {
