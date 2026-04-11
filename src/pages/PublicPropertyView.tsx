@@ -120,8 +120,7 @@ export default function PublicPropertyView() {
     try {
       const { propertyId } = JSON.parse(pendingSave);
       if (propertyId === id) {
-        sessionStorage.removeItem(PENDING_SAVE_KEY);
-        handleSaveProperty(user.id);
+        void handleSaveProperty(user.id);
       }
     } catch {
       sessionStorage.removeItem(PENDING_SAVE_KEY);
@@ -130,7 +129,7 @@ export default function PublicPropertyView() {
 
   const handleSaveProperty = useCallback(
     async (userId: string) => {
-      if (!id || saving || saved) return;
+      if (!id || saving || saved) return false;
       setSaving(true);
 
       try {
@@ -141,7 +140,7 @@ export default function PublicPropertyView() {
 
         // Get user's org — retry a few times for new signups (trigger may still be running)
         let orgId: string | null = null;
-        for (let attempt = 0; attempt < 4; attempt++) {
+        for (let attempt = 0; attempt < 6; attempt++) {
           const { data: membership } = await supabase
             .from("organization_members")
             .select("org_id")
@@ -152,7 +151,7 @@ export default function PublicPropertyView() {
             orgId = membership.org_id;
             break;
           }
-          // Wait before retrying (500ms, 1s, 2s)
+          // Wait before retrying (500ms, 1s, 2s, 4s, 8s)
           await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
         }
 
@@ -163,7 +162,7 @@ export default function PublicPropertyView() {
             variant: "destructive",
           });
           setSaving(false);
-          return;
+          return false;
         }
 
         // Get property_id from publication if available
@@ -187,9 +186,10 @@ export default function PublicPropertyView() {
 
         if (existing) {
           setSaved(true);
+          sessionStorage.removeItem(PENDING_SAVE_KEY);
           toast({ title: "Ya tenés esta propiedad guardada" });
           setSaving(false);
-          return;
+          return true;
         }
 
         // Insert user listing with status 'ingresado'
@@ -215,6 +215,7 @@ export default function PublicPropertyView() {
         });
 
         setSaved(true);
+        sessionStorage.removeItem(PENDING_SAVE_KEY);
         toast({
           title: "¡Propiedad guardada!",
           description: "La encontrarás en tu listado personal.",
@@ -222,6 +223,7 @@ export default function PublicPropertyView() {
 
         // Redirect to dashboard after short delay
         setTimeout(() => navigate(ROUTES.DASHBOARD), 1500);
+        return true;
       } catch (err: any) {
         console.error("Save error:", err);
         toast({
@@ -229,6 +231,7 @@ export default function PublicPropertyView() {
           description: err?.message || "Intentá nuevamente.",
           variant: "destructive",
         });
+        return false;
       } finally {
         setSaving(false);
       }
