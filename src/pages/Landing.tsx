@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Search, CheckCircle2, ArrowRight, Store, Loader2 } from "lucide-react";
+import { Home, Users, Search, CheckCircle2, ArrowRight, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ROUTES, ROLES } from "@/lib/constants";
@@ -40,6 +40,8 @@ const Landing = () => {
             setIsLoggedIn(false);
         });
     }, [navigate]);
+
+    if (isCheckingAuth) return null;
 
     return (
         <div className="min-h-screen selection:bg-primary/20">
