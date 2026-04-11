@@ -32,18 +32,7 @@ const AuthCallback = () => {
           const hasPendingSave = !!sessionStorage.getItem(PENDING_SAVE_KEY);
 
           if (hasPendingSave && isGoogleUser) {
-            const { data: membership } = await supabase
-              .from("organization_members")
-              .select("org_id")
-              .eq("user_id", session.user.id)
-              .limit(1)
-              .maybeSingle();
-
-            if (membership?.org_id) {
-              sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
-            } else {
-              sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
-            }
+            sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
           } else {
             sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
           }
@@ -94,7 +83,10 @@ const AuthCallback = () => {
           // Fallback: si Supabase/Google droppeó el query param, intentar sessionStorage
           const returnTo = searchParams.get("returnTo")
             || sessionStorage.getItem("pending_save_url");
-          if (returnTo && returnTo.startsWith("/p/")) {
+          const isPublicPropertyRoute =
+            returnTo?.startsWith("/p/") || returnTo?.startsWith("/property/");
+
+          if (returnTo && isPublicPropertyRoute) {
             sessionStorage.removeItem("pending_save_url");
             navigate(returnTo, { replace: true });
             return;
