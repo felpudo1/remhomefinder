@@ -508,9 +508,7 @@ export default function PublicPropertyView() {
                 ? "Guardada"
                 : isPreparingAccount
                   ? "Preparando cuenta..."
-                  : requiresSaveConfirmation
-                    ? "Aceptar"
-                    : "Guardar en mi listado"}
+                  : "Guardar en mi listado"}
             </Button>
             <Button variant="outline" size="lg" onClick={handleShare}>
               <Share2 className="w-4 h-4" />
