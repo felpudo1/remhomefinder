@@ -37,6 +37,13 @@ export function useMarketplaceProperties() {
 
       return items.map((pub: any): MarketplaceProperty => {
         const p = pub.property || {};
+        
+        // Debug: verificar URLs de logos
+        if (pub.org_logo_url) {
+          console.log(`🔵 Property: ${p.title || pub.description}`);
+          console.log(`📋 Logo URL from DB: ${pub.org_logo_url}`);
+        }
+        
         return {
           id: pub.id,
           propertyId: pub.property_id,

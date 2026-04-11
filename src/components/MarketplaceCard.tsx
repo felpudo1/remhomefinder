@@ -84,6 +84,13 @@ export function MarketplaceCard({
                 src={property.orgLogoUrl}
                 alt={property.orgName}
                 className="w-[52px] h-[52px] rounded-lg object-contain bg-white/90 shadow-md p-0.5"
+                onError={(e) => {
+                  console.log(`❌ Failed to load logo for ${property.orgName}: ${property.orgLogoUrl}`);
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+                onLoad={() => {
+                  console.log(`✅ Logo loaded successfully for ${property.orgName}`);
+                }}
               />
             )}
             {isReferred && (
