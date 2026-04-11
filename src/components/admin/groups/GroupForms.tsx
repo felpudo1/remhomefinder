@@ -107,7 +107,7 @@ export function JoinGroupForm({
             placeholder="Pegá el código acá"
             value={inviteCode}
             onChange={(e) => setInviteCode(e.target.value)}
-            onPaste={(e) => {
+            onPaste={() => {
               console.log("📋 Evento paste detectado");
               // Dejar que el navegador maneje el paste normalmente
             }}
