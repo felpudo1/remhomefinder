@@ -182,7 +182,7 @@ export default function PublicPropertyView() {
           .from("user_listings")
           .select("id")
           .eq("property_id", propertyId)
-          .eq("org_id", membership.org_id)
+          .eq("org_id", orgId)
           .maybeSingle();
 
         if (existing) {
@@ -197,7 +197,7 @@ export default function PublicPropertyView() {
           .from("user_listings")
           .insert({
             property_id: propertyId,
-            org_id: membership.org_id,
+            org_id: orgId,
             listing_type: "rent",
             source_publication_id: pubId || null,
             added_by: userId,
@@ -211,7 +211,7 @@ export default function PublicPropertyView() {
           propertyId: propertyId,
           sourcePublicationId: pubId,
           userId,
-          orgId: membership.org_id,
+          orgId: orgId,
         });
 
         setSaved(true);
