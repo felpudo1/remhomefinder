@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, UserPlus } from "lucide-react";
+import { Loader2, Plus, UserPlus, ClipboardPaste } from "lucide-react";
 
 interface CreateGroupFormProps {
   newName: string;
@@ -79,26 +79,55 @@ export function JoinGroupForm({
   groupLabel,
   isAgent
 }: JoinGroupFormProps) {
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setInviteCode(text.trim());
+      }
+    } catch (e) {
+      console.log("Clipboard API no disponible - usar Ctrl+V");
+      // En HTTP (localhost) no funciona, el usuario debe usar Ctrl+V
+    }
+  };
+
   return (
     <div className="space-y-4 mt-4">
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          {isAgent 
+          {isAgent
             ? "Pegá el código que te pasó el owner de tu agencia para unirte."
             : "Pegá el código que te enviaron para unirte al grupo familiar."
           }
         </p>
         <Label>Código de invitación</Label>
-        <Input
-          placeholder="Pegá el código acá"
-          value={inviteCode}
-          onChange={(e) => setInviteCode(e.target.value)}
-          className="rounded-xl font-mono tracking-wider"
-        />
+        <div className="flex gap-2">
+          <Input
+            placeholder="Pegá el código acá"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            onPaste={(e) => {
+              console.log("📋 Evento paste detectado");
+              // Dejar que el navegador maneje el paste normalmente
+            }}
+            className="rounded-xl font-mono tracking-wider flex-1"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={handlePaste}
+            className="shrink-0 rounded-xl"
+            title="Pegar código desde el portapapeles"
+          >
+            <ClipboardPaste className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
-      <Button 
-        onClick={onJoin} 
-        disabled={joining || !inviteCode.trim()} 
+      <Button
+        onClick={onJoin}
+        disabled={joining || !inviteCode.trim()}
         className="w-full rounded-xl"
       >
         {joining ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}

@@ -131,35 +131,96 @@ export function GroupsModal({
     const text = String(code ?? "").trim();
     if (!text) return;
 
-    // Intento 1: Clipboard API (contextos seguros)
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        toast({ title: "Código copiado" });
-        return;
-      }
-    } catch { /* fallthrough */ }
+    console.log("🔵 Intentando copiar código:", text);
 
-    // Intento 2: execCommand (HTTP / webviews)
+    // Intento 1: execCommand (funciona en HTTP y HTTPS)
     try {
+      console.log("🟡 Intentando execCommand...");
       const ta = document.createElement("textarea");
       ta.value = text;
-      Object.assign(ta.style, { position: "fixed", left: "-9999px", top: "0", opacity: "0" });
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "-9999px";
+      ta.style.opacity = "0";
       document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      ta.setSelectionRange(0, text.length); // iOS Safari
+      
+      // Para iOS Safari
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        const range = document.createRange();
+        range.selectNodeContents(ta);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+      }
+      
       const ok = document.execCommand("copy");
       document.body.removeChild(ta);
+      
       if (ok) {
-        toast({ title: "Código copiado" });
+        console.log("✅ Copiado con execCommand");
+        // Verificar qué se copió realmente
+        try {
+          const clipboardText = await navigator.clipboard.readText();
+          console.log("📋 Contenido del clipboard:", clipboardText);
+          if (clipboardText === text) {
+            toast({ title: "¡Código copiado al portapapeles!" });
+          } else {
+            console.error("⚠️ MISMATCH: clipboard tiene:", clipboardText, "pero debería ser:", text);
+            toast({ title: "¡Código copiado!", description: `Verificado: ${clipboardText}` });
+          }
+        } catch {
+          toast({ title: "¡Código copiado al portapapeles!" });
+        }
         return;
       }
-    } catch { /* fallthrough */ }
+      console.log("⚠️ execCommand retornó false");
+    } catch (e) {
+      console.error("❌ execCommand falló:", e);
+    }
 
-    // Intento 3: prompt manual
-    window.prompt("Copiá este código de invitación:", text);
-    toast({ title: "Copialo manualmente", description: "Seleccioná y copiá el código del cuadro." });
+    // Intento 2: Clipboard API (solo HTTPS)
+    try {
+      console.log("🟡 Intentando Clipboard API...");
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        console.log("✅ Copiado con Clipboard API");
+        toast({ title: "¡Código copiado al portapapeles!" });
+        return;
+      }
+      console.log("⚠️ Clipboard API no disponible (no es secure context)");
+    } catch (e) {
+      console.error("❌ Clipboard API falló:", e);
+    }
+
+    // Intento 3: prompt manual como último recurso
+    try {
+      console.log("🟡 Mostrando prompt manual...");
+      const result = window.prompt("Copiá este código de invitación (Ctrl+C):", text);
+      if (result !== null) {
+        console.log("✅ Usuario copió del prompt");
+        toast({ title: "¡Código copiado al portapapeles!" });
+        return;
+      }
+      console.log("⚠️ Usuario canceló el prompt");
+    } catch (e) {
+      console.error("❌ Prompt falló:", e);
+    }
+
+    // Si todo falla
+    console.error("❌ Todos los métodos de copia fallaron");
+    toast({ 
+      title: "No se pudo copiar automáticamente", 
+      description: "El código está seleccionado. Presioná Ctrl+C para copiarlo.",
+      variant: "destructive",
+      duration: 5000
+    });
   };
 
   const handleRemoveMember = async (userId: string) => {
