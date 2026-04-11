@@ -485,7 +485,7 @@ export default function PublicPropertyView() {
             <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
               <p className="text-sm font-semibold text-foreground">Tu cuenta ya fue creada.</p>
               <p className="text-sm text-muted-foreground">
-                Tocá <span className="text-foreground font-medium">Aceptar</span> para guardar esta propiedad en tu listado.
+                Tocá <span className="text-foreground font-medium">Guardar en mi listado</span> para guardar esta propiedad en tu listado.
               </p>
             </div>
           )}
