@@ -129,6 +129,15 @@ export default function PublicPropertyView() {
     });
   }, [id, pubId, user?.id, trackEvent]);
 
+  // Cache referral from publication as soon as the page loads (not just on save click)
+  useEffect(() => {
+    if (pubId) {
+      cachePublicationReferrer().catch((err) =>
+        console.error("Error caching publication referrer on load:", err)
+      );
+    }
+  }, [pubId, cachePublicationReferrer]);
+
   // Check for pending save after OAuth redirect
   useEffect(() => {
     if (!user?.id || !id) return;
