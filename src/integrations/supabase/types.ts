@@ -626,6 +626,39 @@ export type Database = {
           },
         ]
       }
+      landing_agencies: {
+        Row: {
+          carousel_row: number
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          carousel_row?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          carousel_row?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       neighborhoods: {
         Row: {
           city_id: string
