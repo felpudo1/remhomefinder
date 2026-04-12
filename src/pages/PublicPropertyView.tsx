@@ -220,7 +220,7 @@ export default function PublicPropertyView() {
           setRequiresSaveConfirmation(false);
           sessionStorage.removeItem(PENDING_SAVE_KEY);
           sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
-          toast({ title: "Ya tenés esta propiedad guardada" });
+          toast({ title: "Ya tenés esta propiedad guardada", description: "Podés verla en tu listado personal." });
           setSaving(false);
           return true;
         }
@@ -457,6 +457,23 @@ export default function PublicPropertyView() {
               <p className="text-sm text-muted-foreground">
                 Tocá <span className="text-foreground font-medium">Guardar en mi listado</span> para guardar esta propiedad en tu listado.
               </p>
+            </div>
+          )}
+
+          {saved && (
+            <div className="rounded-xl border border-border bg-green-50 dark:bg-green-950/30 p-4 space-y-3">
+              <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                ✓ Ya tenés esta propiedad guardada en tu listado.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => navigate(ROUTES.DASHBOARD)}
+                  className="flex-1 gap-2"
+                  variant="secondary"
+                >
+                  Ir a Mi Listado
+                </Button>
+              </div>
             </div>
           )}
 
