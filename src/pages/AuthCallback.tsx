@@ -20,14 +20,23 @@ const AuthCallback = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("💎 AuthCallback: useEffect montado. URL actual:", window.location.href);
+    console.log("💎 AuthCallback: searchParams:", searchParams.toString());
+    console.log("💎 AuthCallback: localStorage hf_referral_id =", localStorage.getItem("hf_referral_id"));
     let handled = false;
 
     const processSession = async (session: any) => {
-      if (handled) return;
+      console.log("💎 AuthCallback: processSession llamada con session =", !!session);
+      if (handled) {
+        console.log("💎 AuthCallback: ya fue handled, saliendo.");
+        return;
+      }
       handled = true;
 
       try {
         if (session?.user) {
+          console.log("💎 AuthCallback: user_id =", session.user.id);
+          console.log("💎 AuthCallback: provider =", session.user.app_metadata?.provider);
           const isGoogleUser = session.user.app_metadata?.provider === "google";
           const hasPendingSave = !!sessionStorage.getItem(PENDING_SAVE_KEY);
 
@@ -37,8 +46,22 @@ const AuthCallback = () => {
             sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
           }
 
-          // Vincular referido desde sessionStorage (OAuth no pasa metadata custom)
-          let referralId = sessionStorage.getItem("hf_referral_id");
+          // Vincular referido: priorizar query param ?ref= (viene de GoogleSignInButton)
+          // fallback a localStorage (sobrevive redirects de OAuth)
+          const refParam = searchParams.get("ref") || searchParams.get("agente");
+          const refStorage = localStorage.getItem("hf_referral_id");
+          let referralId = refParam || refStorage;
+
+          console.log("💎 AuthCallback: ref en URL params =", refParam);
+          console.log("💎 AuthCallback: ref en localStorage =", refStorage);
+          console.log("💎 AuthCallback: referralId final =", referralId);
+          console.log("💎 AuthCallback: user_id =", session.user.id);
+          console.log("💎 AuthCallback: provider =", session.user.app_metadata?.provider);
+
+          // Si hay referral en URL pero no en localStorage, guardar para consistencia
+          if (refParam && !refStorage) {
+            localStorage.setItem("hf_referral_id", refParam);
+          }
 
           // Si no hay referral cacheado, intentar resolverlo desde la publicación pendiente
           // (cachePublicationReferrer pudo fallar porque el usuario era anónimo y RLS lo bloqueó)
@@ -65,15 +88,20 @@ const AuthCallback = () => {
           }
 
           if (referralId && referralId !== session.user.id) {
+            console.log("💎 AuthCallback: Iniciando vinculación de referido:", referralId);
             try {
               // Retry: el trigger handle_new_user_profile puede no haber creado el perfil aún
               const linkReferral = async (retries = 5, delayMs = 600) => {
                 for (let i = 0; i < retries; i++) {
-                  const { data: profile } = await (supabase
+                  console.log(`💎 AuthCallback: Intento ${i + 1}/${retries} - buscando perfil...`);
+                  const { data: profile, error: selectErr } = await (supabase
                     .from("profiles") as any)
                     .select("referred_by_id")
                     .eq("user_id", session.user.id)
                     .maybeSingle();
+
+                  console.log("💎 AuthCallback: profile =", profile);
+                  console.log("💎 AuthCallback: selectErr =", selectErr);
 
                   if (!profile) {
                     console.log(`💎 AuthCallback: Perfil aún no existe, reintento ${i + 1}/${retries}...`);
@@ -81,15 +109,21 @@ const AuthCallback = () => {
                     continue;
                   }
 
+                  console.log("💎 AuthCallback: referred_by_id actual =", profile.referred_by_id);
+
                   if (!profile.referred_by_id) {
-                    const { error: updErr } = await (supabase
+                    console.log("💎 AuthCallback: Ejecutando update referred_by_id =", referralId);
+                    const { data: updateData, error: updErr } = await (supabase
                       .from("profiles") as any)
                       .update({ referred_by_id: referralId })
-                      .eq("user_id", session.user.id);
+                      .eq("user_id", session.user.id)
+                      .select();
                     if (updErr) {
-                      console.error("💎 AuthCallback: Error update referido:", updErr);
+                      console.error("💎 AuthCallback: ❌ Error update referido:", updErr);
+                      console.error("💎 AuthCallback: updateData =", updateData);
                     } else {
-                      console.log("💎 AuthCallback: Referido vinculado:", referralId);
+                      console.log("💎 AuthCallback: ✅ Referido vinculado exitosamente:", referralId);
+                      console.log("💎 AuthCallback: update result =", updateData);
                     }
                   } else {
                     console.log("💎 AuthCallback: Perfil ya tiene referido, omitiendo.");
@@ -98,10 +132,14 @@ const AuthCallback = () => {
                 }
               };
               await linkReferral();
-              sessionStorage.removeItem("hf_referral_id");
+              localStorage.removeItem("hf_referral_id");
             } catch (refErr) {
               console.error("💎 AuthCallback: Error al vincular referido:", refErr);
             }
+          } else if (!referralId) {
+            console.log("💎 AuthCallback: ❌ No hay referral ID disponible, omitiendo vinculación.");
+          } else if (referralId === session.user.id) {
+            console.log("💎 AuthCallback: Referral ID es el mismo usuario, evitando auto-referencia.");
           }
 
           // Check for returnTo param (from QR flow)

@@ -57,7 +57,7 @@ export default function PublicPropertyView() {
   const { user } = useCurrentUser();
 
   const cachePublicationReferrer = useCallback(async () => {
-    if (!pubId || sessionStorage.getItem("hf_referral_id")) return;
+    if (!pubId || localStorage.getItem("hf_referral_id")) return;
 
     const { data: publication } = await supabase
       .from("agent_publications")
@@ -66,7 +66,7 @@ export default function PublicPropertyView() {
       .maybeSingle();
 
     if (publication?.published_by) {
-      sessionStorage.setItem("hf_referral_id", publication.published_by);
+      localStorage.setItem("hf_referral_id", publication.published_by);
     }
   }, [pubId]);
 

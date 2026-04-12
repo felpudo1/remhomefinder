@@ -91,10 +91,18 @@ export function RequireAuthModal({
     // Guardar estado pendiente para post-OAuth
     sessionStorage.setItem("pending_save_url", returnUrl);
 
+    // Preservar referral ID en la URL de redirect
+    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+    redirectUrl.searchParams.set("returnTo", returnUrl);
+    const existingReferral = localStorage.getItem("hf_referral_id");
+    if (existingReferral) {
+      redirectUrl.searchParams.set("ref", existingReferral);
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnUrl)}`,
+        redirectTo: redirectUrl.toString(),
       },
     });
 

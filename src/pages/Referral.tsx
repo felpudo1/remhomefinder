@@ -11,7 +11,7 @@ const Referral = () => {
 
   useEffect(() => {
     if (userId) {
-      sessionStorage.setItem("hf_referral_id", userId);
+      localStorage.setItem("hf_referral_id", userId);
     }
   }, [userId]);
 

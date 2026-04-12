@@ -23,7 +23,8 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(dir *)",
-      "Bash(bun *)"
+      "Bash(bun *)",
+      "Bash(vercel *)"
     ]
   },
   "$version": 3

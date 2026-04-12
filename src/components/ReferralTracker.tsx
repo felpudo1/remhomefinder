@@ -21,8 +21,8 @@ export const ReferralTracker = () => {
         if (refId) {
             console.log("💎 ReferralTracker: Capturado ID de referido:", refId);
 
-            // 1. Guardar en sesión para futuros registros
-            sessionStorage.setItem("hf_referral_id", refId);
+            // 1. Guardar en localStorage para futuros registros (sobrevive redirects de OAuth)
+            localStorage.setItem("hf_referral_id", refId);
 
             // 2. Si ya está logueado y no tiene referido, vincularlo ahora (evitar auto-referencia)
             if (profile && !profile.referredById && refId !== profile.userId) {

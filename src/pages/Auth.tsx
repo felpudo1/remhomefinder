@@ -61,17 +61,15 @@ const Auth = () => {
   );
 
   useEffect(() => {
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && !isSigningUp) redirectByRole(session.user.id);
-    });
-
+    // Solo redirigir usuarios YA logueados que visitan /auth directamente.
+    // NO redirigir si viene de OAuth (Supabase redirige a /auth/callback, no a /auth).
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && !isSigningUp) redirectByRole(session.user.id);
     });
 
-    return () => subscription.unsubscribe();
+    // NO usar onAuthStateChange aquí: OAuth redirige a /auth/callback,
+    // y este listener podría interceptar el evento antes de que AuthCallback lo procese.
+    return () => {};
   }, [navigate, redirectByRole, isSigningUp]);
 
   /** Vuelta desde /terminos o /privacidad: abrir registro y limpiar ?register=1 de la URL */
@@ -468,7 +466,16 @@ const Auth = () => {
                   <span className="text-xs text-muted-foreground">o</span>
                   <div className="flex-1 border-t border-border/60" />
                 </div>
-                <GoogleSignInButton />
+                <GoogleSignInButton
+                  referralId={(() => {
+                    const refId = searchParams.get("ref") || searchParams.get("agente") || localStorage.getItem("hf_referral_id");
+                    console.log("💎 Auth.tsx: referralId para GoogleSignInButton =", refId);
+                    console.log("💎 Auth.tsx: searchParams ref =", searchParams.get("ref"));
+                    console.log("💎 Auth.tsx: searchParams agente =", searchParams.get("agente"));
+                    console.log("💎 Auth.tsx: localStorage hf_referral_id =", localStorage.getItem("hf_referral_id"));
+                    return refId;
+                  })()}
+                />
               </>
             )}
 

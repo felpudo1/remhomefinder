@@ -115,7 +115,7 @@ export const useAuth = () => {
                         account_type: accountType,
                         agency_name: orgName?.trim() || '',
                         agency_phone: orgPhone?.trim() || '',
-                        referral_id: sessionStorage.getItem("hf_referral_id") || undefined,
+                        referral_id: localStorage.getItem("hf_referral_id") || undefined,
                     }
                 }
             });
@@ -138,8 +138,8 @@ export const useAuth = () => {
 
                 // Intentar guardar perfil con reintentos para evitar race conditions
                 const upsertProfile = async (retries = 3) => {
-                    // Leer referral de sessionStorage y también del query param ?ref= como fallback
-                    const referralId = sessionStorage.getItem("hf_referral_id") || null;
+                    // Leer referral de localStorage (sobrevive redirects de OAuth)
+                    const referralId = localStorage.getItem("hf_referral_id") || null;
                     // Evitar auto-referencia
                     const safeReferralId = (referralId && referralId !== data.user!.id) ? referralId : null;
                     let lastError: unknown = null;
@@ -164,8 +164,8 @@ export const useAuth = () => {
 
                 try {
                     await upsertProfile();
-                    // Limpiar referral de sessionStorage tras registro exitoso
-                    sessionStorage.removeItem("hf_referral_id");
+                    // Limpiar referral de localStorage tras registro exitoso
+                    localStorage.removeItem("hf_referral_id");
                 } catch (e) {
                     console.error("Profile upsert error:", e);
                 }

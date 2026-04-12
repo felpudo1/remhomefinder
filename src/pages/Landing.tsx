@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Home, Users, Search, CheckCircle2, ArrowRight, Store } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import { AgenciesCarousel } from "@/components/AgenciesCarousel";
 
 const Landing = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
@@ -61,7 +62,13 @@ const Landing = () => {
                                 <ArrowRight className="ml-2 w-4 h-4" />
                             </Button> :
 
-                            <Button onClick={() => navigate(ROUTES.AUTH)} className="rounded-xl">
+                            <Button
+                                onClick={() => {
+                                    const ref = searchParams.get("ref") || searchParams.get("agente");
+                                    navigate(ref ? `${ROUTES.AUTH}?ref=${ref}` : ROUTES.AUTH);
+                                }}
+                                className="rounded-xl"
+                            >
                                 Iniciar Sesión
                             </Button>
                         }

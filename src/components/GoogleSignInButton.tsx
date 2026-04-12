@@ -4,21 +4,44 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface GoogleSignInButtonProps {
+  /** Referral ID opcional para persistir a través del redirect de OAuth */
+  referralId?: string | null;
+}
+
 /**
  * Botón "Continuar con Google" que inicia OAuth con Supabase.
  * Muestra spinner mientras redirige al proveedor.
+ * Si se pasa un referralId, lo incluye en la URL de redirect para recuperarlo en AuthCallback.
  */
-export function GoogleSignInButton() {
+export function GoogleSignInButton({ referralId }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
+      // Construir URL de redirect con referral_id como query param
+      // para que AuthCallback pueda recuperarlo después del OAuth
+      const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+      if (referralId) {
+        redirectUrl.searchParams.set("ref", referralId);
+        console.log("💎 GoogleSignInButton: ref agregado al redirect URL:", referralId);
+      } else {
+        console.log("💎 GoogleSignInButton: SIN referralId, redirect URL sin ref");
+      }
+      console.log("💎 GoogleSignInButton: redirectUrl completa =", redirectUrl.toString());
+      console.log("💎 GoogleSignInButton: localStorage hf_referral_id ANTES de OAuth =", localStorage.getItem("hf_referral_id"));
+
+      // Guardar referral en localStorage ANTES del redirect (por si Supabase lo borra)
+      if (referralId) {
+        localStorage.setItem("hf_referral_id", referralId);
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl.toString(),
         },
       });
       if (error) throw error;
