@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
   Building2, Users, Bot, BarChart3,
-  Settings, FileText, KeyRound, MapPin, MessageSquare
+  Settings, FileText, KeyRound, MapPin, MessageSquare, LayoutDashboard
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
@@ -46,6 +46,7 @@ const MENU_ITEMS: {
     { id: "mensajes", label: "Mensajes", icon: MessageSquare, description: "Enviar novedades y anuncios a usuarios y agentes" },
     { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
     { id: "datos-admin", label: "Datos Admin", icon: KeyRound, description: "Datos privados del administrador (cuentas, claves, notas)" },
+    { id: "landing", label: "Landing", icon: LayoutDashboard, description: "Gestión de agencias del carrusel de la landing page" },
   ];
 
 /**
@@ -123,6 +124,7 @@ const Admin = () => {
       case "estadisticas": return <AdminEstadisticas />;
       case "sistema": return <AdminSystem />;
       case "datos-admin": return <AdminDatosAdmin />;
+      case "landing": return <AdminLanding />;
       default: return null;
     }
   };
