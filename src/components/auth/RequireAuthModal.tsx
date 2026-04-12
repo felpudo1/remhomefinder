@@ -49,6 +49,54 @@ export function RequireAuthModal({
   const { toast } = useToast();
 
   /**
+   * Verifica que el trigger guardó referred_by_id. Si no, hace update manual.
+   * Incluye retry para esperar que el trigger cree el perfil.
+   */
+  const verifyAndLinkReferral = async (userId: string, referralId: string) => {
+    try {
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        const { data: profile, error: selErr } = await (supabase
+          .from("profiles") as any)
+          .select("referred_by_id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (selErr) {
+          console.error("RequireAuthModal: Error leyendo perfil post-signup:", selErr);
+          break;
+        }
+
+        if (!profile) {
+          console.log(`RequireAuthModal: Perfil aún no existe, reintento ${attempt}/5...`);
+          await new Promise(r => setTimeout(r, 800));
+          continue;
+        }
+
+        if (profile.referred_by_id) {
+          console.log("RequireAuthModal: ✅ Trigger guardó referred_by_id:", profile.referred_by_id);
+          break;
+        }
+
+        // Trigger no guardó el referral → update manual
+        console.log("RequireAuthModal: Trigger no guardó referral, update manual con:", referralId);
+        const { error: updErr } = await (supabase
+          .from("profiles") as any)
+          .update({ referred_by_id: referralId })
+          .eq("user_id", userId);
+
+        if (updErr) {
+          console.error("RequireAuthModal: ❌ Error en update manual de referral:", updErr);
+        } else {
+          console.log("RequireAuthModal: ✅ Referral vinculado manualmente.");
+        }
+        break;
+      }
+    } catch (err) {
+      console.error("RequireAuthModal: Error verificando referral:", err);
+    }
+  };
+
+  /**
    * Maneja login o registro con email/password.
    * En modo registro: valida confirmPassword, datos requeridos y términos aceptados.
    */
@@ -104,9 +152,11 @@ export function RequireAuthModal({
         if (error) throw error;
         if (data.user) {
           if (data.session) {
-            // El trigger handle_new_user_profile ya procesó el referral_id
-            // del metadata y actualizó profiles.referred_by_id automáticamente.
-            // Solo limpiamos el localStorage y continuamos.
+            // Verificar que el trigger guardó el referral correctamente
+            // Si no lo hizo, hacer update manual como fallback
+            if (referralId) {
+              await verifyAndLinkReferral(data.user.id, referralId);
+            }
             localStorage.removeItem("hf_referral_id");
             onAuthenticated(data.user.id);
           } else {
