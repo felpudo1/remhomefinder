@@ -139,7 +139,7 @@ export function RequireAuthModal({
             // Verificar que el trigger guardó el referral correctamente
             // Si no lo hizo, hacer update manual como fallback
             if (referralId) {
-              await verifyAndLinkReferral(data.user.id, referralId);
+              await ensureReferralLinked(data.user.id, referralId);
             }
             localStorage.removeItem("hf_referral_id");
             onAuthenticated(data.user.id);
