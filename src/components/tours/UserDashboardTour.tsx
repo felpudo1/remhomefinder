@@ -16,7 +16,7 @@ const TOUR_SEEN_KEY = "user-dashboard-tour-seen";
  * Instancia del driver de tour.
  * Se crea una vez y se reutiliza para mostrar el tour cuando sea necesario.
  */
-let tourInstance: Driver | null = null;
+let tourInstance: ReturnType<typeof driver> | null = null;
 
 /**
  * Helper para hacer scroll al top de la página
@@ -37,7 +37,7 @@ const waitAndExecute = (ms: number, fn: () => void) => {
  *
  * @returns La instancia del driver configurada
  */
-export function createDashboardTour(): Driver {
+export function createDashboardTour(): ReturnType<typeof driver> {
   // Overlay personalizado para el botón de agregar propiedad
   let customOverlay: HTMLElement | null = null;
   let customPopover: HTMLElement | null = null;
@@ -164,7 +164,7 @@ export function createDashboardTour(): Driver {
 
     prevBtn?.addEventListener("click", () => {
       cleanupStep4();
-      tourInstance?.setActiveStep(2); // Ir al paso 3
+      (tourInstance as any)?.moveTo?.(2); // Ir al paso 3
     });
 
     nextBtn?.addEventListener("click", () => {
@@ -174,7 +174,7 @@ export function createDashboardTour(): Driver {
   };
 
   // Definimos los pasos del tour con funciones onStart para asegurar visibilidad
-  const steps: Step[] = [
+  const steps: any[] = [
     // Paso 1: Tu Perfil (avatar en header)
     {
       element: "#user-header-avatar",
@@ -270,15 +270,14 @@ export function createDashboardTour(): Driver {
     allowClose: true,
     overlayOpacity: 0.7,
     smoothScroll: false,
-    showButtons: true,
+    showButtons: ["next", "previous", "close"],
     nextBtnText: "Siguiente",
     prevBtnText: "Anterior",
     doneBtnText: "Listo",
     popoverClass: "driver-popover-custom",
     popoverOffset: 10,
     // Botón de Skip personalizado
-    onHighlightStarted: (_element, step) => {
-      // Ejecutar onStart del paso si existe
+    onHighlightStarted: (_element: any, step: any) => {
       if (step.onStart) {
         step.onStart();
       }
