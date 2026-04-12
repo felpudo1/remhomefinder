@@ -104,9 +104,11 @@ export function RequireAuthModal({
         if (error) throw error;
         if (data.user) {
           if (data.session) {
-            // El trigger handle_new_user_profile ya procesó el referral_id
-            // del metadata y actualizó profiles.referred_by_id automáticamente.
-            // Solo limpiamos el localStorage y continuamos.
+            // Verificar que el trigger guardó el referral correctamente
+            // Si no lo hizo, hacer update manual como fallback
+            if (referralId) {
+              await verifyAndLinkReferral(data.user.id, referralId);
+            }
             localStorage.removeItem("hf_referral_id");
             onAuthenticated(data.user.id);
           } else {
