@@ -6,7 +6,7 @@
  * El usuario puede repetirlo desde el botón de ayuda (?) en el header.
  */
 
-import { driver, Driver, Step } from "driver.js";
+import { driver, type DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
 
 /** Clave para guardar en localStorage si el usuario ya vio el tour */
