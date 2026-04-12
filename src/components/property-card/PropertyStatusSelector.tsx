@@ -1,4 +1,4 @@
-import { PropertyStatus, STATUS_CONFIG } from "@/types/property";
+import { PropertyStatus, STATUS_CONFIG, AgentPubStatus } from "@/types/property";
 import {
   Select,
   SelectContent,
@@ -12,27 +12,36 @@ interface PropertyStatusSelectorProps {
   currentStatus: PropertyStatus;
   onStatusChange: (status: string) => void;
   disabled?: boolean;
+  /** Estado de la publicación del agente en el marketplace */
+  marketplaceStatus?: AgentPubStatus | null;
 }
 
 /**
  * Componente para seleccionar y cambiar el estado de una propiedad.
  * Encapsula las reglas de transición permitidas y el diseño del selector.
  */
-export function PropertyStatusSelector({ 
-  currentStatus, 
-  onStatusChange, 
-  disabled 
+export function PropertyStatusSelector({
+  currentStatus,
+  onStatusChange,
+  disabled,
+  marketplaceStatus
 }: PropertyStatusSelectorProps) {
-  
+
   const statusOptions: PropertyStatus[] = [
-    "ingresado", 
-    "contactado", 
-    "visita_coordinada", 
-    "posible_interes", 
-    "firme_candidato", 
-    "meta_conseguida", 
+    "ingresado",
+    "contactado",
+    "visita_coordinada",
+    "posible_interes",
+    "firme_candidato",
+    "meta_conseguida",
     "descartado"
   ];
+
+  /**
+   * Si el agente puso la publicación como no disponible (pausado/reservado/vendido/alquilado/eliminado),
+   * solo permitimos que el usuario la descarte. No puede avanzar por el pipeline normal.
+   */
+  const isMarketplaceUnavailable = marketplaceStatus && marketplaceStatus !== "disponible";
 
   // Reglas de negocio: transiciones permitidas según el estado actual
   const statusTransitionsByOrigin: Partial<Record<PropertyStatus, Set<PropertyStatus>>> = {
@@ -41,11 +50,19 @@ export function PropertyStatusSelector({
     visita_coordinada: new Set<PropertyStatus>(["firme_candidato", "posible_interes", "descartado"]),
     posible_interes: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
     firme_candidato: new Set<PropertyStatus>(["meta_conseguida", "descartado"]),
-    /** Estado terminal: no se puede salir de descartado; el Set solo incluye el mismo valor para bloquear el resto en el Select */
-    descartado: new Set<PropertyStatus>(["descartado"]),
+    /** Desde descartado se puede volver a ingresado (revivir propiedad) o mantener descartado */
+    descartado: new Set<PropertyStatus>(["ingresado", "descartado"]),
   };
 
-  const allowedNextStatuses = statusTransitionsByOrigin[currentStatus];
+  const baseAllowed = statusTransitionsByOrigin[currentStatus];
+
+  /**
+   * Si la publicación del marketplace no está disponible,
+   * solo habilitamos "descartado" sin importar el estado actual.
+   */
+  const allowedNextStatuses = isMarketplaceUnavailable
+    ? new Set<PropertyStatus>(["descartado"])
+    : baseAllowed;
 
   return (
     <Select

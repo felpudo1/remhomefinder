@@ -117,6 +117,15 @@ export function PropertyCard({
   const isEliminated = property.status === "eliminado";
   const isDiscarded = property.status === "descartado";
   const isAgentDeleted = property.status === "eliminado_agencia";
+  
+  /**
+   * La propiedad aparece en gris (opacity-60) cuando:
+   * - El usuario la eliminó/descartó de su listado
+   * - El agente cambió el estado de la publicación a pausado/reservado/vendido/alquilado/eliminado
+   */
+  const isMarketplaceUnavailable = property.marketplaceStatus 
+    && property.marketplaceStatus !== "disponible";
+  const isGrayedOut = isEliminated || isDiscarded || isAgentDeleted || !!isMarketplaceUnavailable;
 
   return (
     <>
@@ -139,7 +148,7 @@ export function PropertyCard({
           dialogs.setIsGalleryOpen(true);
         }}
         collapsibleImages={!forceExpandImages}
-        className={isEliminated || isDiscarded || isAgentDeleted ? "opacity-60" : ""}
+        className={isGrayedOut ? "opacity-60" : ""}
         statusOverlay={undefined}
         topOverlay={
           <PropertyCardHeader
@@ -315,10 +324,11 @@ export function PropertyCard({
         }
         actions={
           <>
-            <PropertyStatusSelector 
-              currentStatus={property.status} 
-              onStatusChange={handleStatusChangeRequest} 
-              disabled={isAgentDeleted} 
+            <PropertyStatusSelector
+              currentStatus={property.status}
+              onStatusChange={handleStatusChangeRequest}
+              disabled={isAgentDeleted}
+              marketplaceStatus={property.marketplaceStatus}
             />
 
             <StatusChangeConfirmDialog
