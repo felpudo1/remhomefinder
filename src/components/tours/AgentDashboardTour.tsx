@@ -15,7 +15,7 @@ const TOUR_SEEN_KEY = "agent-dashboard-tour-seen";
 /**
  * Instancia del driver de tour.
  */
-let tourInstance: Driver | null = null;
+let tourInstance: ReturnType<typeof driver> | null = null;
 
 /**
  * Helper para hacer scroll al top de la página
@@ -34,7 +34,7 @@ const waitAndExecute = (ms: number, fn: () => void) => {
 /**
  * Crea y configura la instancia del tour guiado para agente.
  */
-export function createAgentDashboardTour(): Driver {
+export function createAgentDashboardTour(): ReturnType<typeof driver> {
   // Overlay y popover custom para el paso 4 (Importar desde web - botón fixed flotante)
   let customOverlay: HTMLElement | null = null;
   let customPopover: HTMLElement | null = null;
@@ -149,7 +149,7 @@ export function createAgentDashboardTour(): Driver {
   };
 
   // Definimos los 10 pasos del tour
-  const steps: Step[] = [
+  const steps: any[] = [
     // Paso 1: Tu Agencia (logo de agencia)
     {
       element: "#agent-agency-logo",
@@ -277,14 +277,14 @@ export function createAgentDashboardTour(): Driver {
     allowClose: true,
     overlayOpacity: 0.7,
     smoothScroll: false,
-    showButtons: true,
+    showButtons: ["next", "previous", "close"],
     nextBtnText: "Siguiente",
     prevBtnText: "Anterior",
     doneBtnText: "Listo",
     popoverClass: "driver-popover-custom",
     popoverOffset: 10,
     // Botón de Skip personalizado
-    onHighlightStarted: (_element, step) => {
+    onHighlightStarted: (_element: any, step: any) => {
       // Ejecutar onStart del paso si existe
       if (step.onStart) {
         step.onStart();
