@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +16,7 @@ const PENDING_SAVE_CONFIRM_KEY = "pending_property_save_require_accept";
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { redirectByRole } = useAuth();
   const { toast } = useToast();
@@ -132,6 +134,7 @@ const AuthCallback = () => {
                 }
               };
               await linkReferral();
+              await queryClient.invalidateQueries({ queryKey: ["profile", "current", session.user.id] });
               localStorage.removeItem("hf_referral_id");
             } catch (refErr) {
               console.error("💎 AuthCallback: Error al vincular referido:", refErr);
@@ -195,7 +198,7 @@ const AuthCallback = () => {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [navigate, searchParams, redirectByRole, toast]);
+  }, [navigate, searchParams, redirectByRole, toast, queryClient]);
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background gap-4">

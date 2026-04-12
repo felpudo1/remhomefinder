@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export function RequireAuthModal({
   onAuthenticated,
   returnUrl,
 }: RequireAuthModalProps) {
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -68,6 +70,7 @@ export function RequireAuthModal({
 
         if (!upsertErr) {
           console.log("RequireAuthModal: ✅ Referral vinculado via upsert.");
+          await queryClient.invalidateQueries({ queryKey: ["profile", "current", userId] });
           return;
         }
 

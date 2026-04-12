@@ -194,7 +194,7 @@ export function MarketplaceCard({
         propertyTitle={property.title}
         propertyId={property.propertyId || property.id}
         publicationId={property.id}
-        publishedBy={property.agentId}
+        publishedBy={property.referrerId || property.agentId}
       />
     </>
   );

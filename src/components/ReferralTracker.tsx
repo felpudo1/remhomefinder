@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
@@ -16,6 +17,7 @@ const REFERRAL_KEY = "hf_referral_id";
  * Regla 2: Arquitectura pro centralizada.
  */
 export const ReferralTracker = () => {
+  const queryClient = useQueryClient();
   const location = useLocation();
   const { user } = useCurrentUser();
   const linkingRef = useRef(false);
@@ -88,6 +90,7 @@ export const ReferralTracker = () => {
             console.error("💎 ReferralTracker: ❌ Error al vincular referido:", updErr);
           } else {
             console.log("💎 ReferralTracker: ✅ Referido vinculado exitosamente.");
+            await queryClient.invalidateQueries({ queryKey: ["profile", "current", user.id] });
             localStorage.removeItem(REFERRAL_KEY);
           }
           break;
@@ -100,7 +103,7 @@ export const ReferralTracker = () => {
     };
 
     linkReferral();
-  }, [user]);
+  }, [user, queryClient]);
 
   return null;
 };
