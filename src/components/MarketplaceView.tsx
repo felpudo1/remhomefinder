@@ -283,8 +283,8 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
       if (aSaved !== bSaved) return aSaved - bSaved;
 
       if (referredAgentId) {
-        const aIsReferred = a.agentId === referredAgentId ? 0 : 1;
-        const bIsReferred = b.agentId === referredAgentId ? 0 : 1;
+        const aIsReferred = (a.referrerId || a.agentId) === referredAgentId ? 0 : 1;
+        const bIsReferred = (b.referrerId || b.agentId) === referredAgentId ? 0 : 1;
         if (aIsReferred !== bIsReferred) return aIsReferred - bIsReferred;
       }
 
@@ -569,7 +569,7 @@ export function MarketplaceView({ mobileFiltersOpen = false, onMobileFiltersClos
                       onSave={handleSave}
                       isSaving={savingId === property.id}
                       alreadySaved={savedMarketplaceIds.has(property.id)}
-                      isReferred={referredAgentId === property.agentId}
+                      isReferred={referredAgentId === (property.referrerId || property.agentId)}
                       forceExpandImages={expandPhotos}
                       isMatchAIMagicActive={isMatchAIMagicActive && !isInactive}
                       matchAIRank={i}

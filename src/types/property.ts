@@ -90,6 +90,7 @@ export interface MarketplaceProperty {
   orgName: string;
   orgLogoUrl?: string;
   agentId: string;
+  referrerId?: string;
   title: string;
   description: string;
   url: string;

@@ -51,6 +51,7 @@ export function useMarketplaceProperties() {
           orgName: pub.org_name || "Organización",
           orgLogoUrl: pub.org_logo_url || undefined,
           agentId: pub.published_by || pub.org_created_by || "",
+          referrerId: pub.org_created_by || pub.published_by || "",
           title: p.title || pub.description || "",
           description: pub.description || "",
           url: p.source_url || "",
