@@ -297,17 +297,9 @@ export function PropertyDetailModal({
           </div>
 
           {/* Price Breakdown */}
-          <div className="bg-muted rounded-xl p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Alquiler mensual</span>
-              <span className="font-medium">{currencySymbol(property.currency)} {property.priceRent.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Gastos comunes</span>
-              <span className="font-medium">{currencySymbol(property.currency)} {property.priceExpenses.toLocaleString()}</span>
-            </div>
-            <div className="border-t border-border pt-2 flex justify-between">
-              <span className="font-semibold text-foreground">Costo mensual total</span>
+          <div className="bg-muted rounded-xl p-4">
+            <div className="flex justify-between">
+              <span className="font-semibold text-foreground">Costo</span>
               <span className="font-bold text-foreground text-lg">
                 {currencySymbol(property.currency)} {property.totalCost.toLocaleString()}
               </span>

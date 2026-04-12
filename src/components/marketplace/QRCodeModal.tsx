@@ -6,8 +6,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, QrCode } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { Download, Copy, Check, QrCode } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface QRCodeModalProps {
   open: boolean;
@@ -15,6 +16,8 @@ interface QRCodeModalProps {
   propertyTitle: string;
   propertyId: string;
   publicationId: string;
+  /** Agent user ID who published this property — included in QR URL as referral */
+  publishedBy?: string;
 }
 
 /**
@@ -28,10 +31,15 @@ export function QRCodeModal({
   propertyTitle,
   propertyId,
   publicationId,
+  publishedBy,
 }: QRCodeModalProps) {
   const qrRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
-  const qrUrl = `${window.location.origin}/p/${propertyId}?source=qr&pub_id=${publicationId}`;
+  // Incluir ref en el URL del QR para que ReferralTracker pueda capturarlo
+  // sin necesidad de consultar agent_publications (evita RLS de anónimos)
+  const qrUrl = `${window.location.origin}/p/${propertyId}?source=qr&pub_id=${publicationId}${publishedBy ? `&ref=${publishedBy}` : ''}`;
 
   const handleDownload = useCallback(() => {
     if (!qrRef.current) return;
@@ -60,6 +68,63 @@ export function QRCodeModal({
     };
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   }, [propertyTitle]);
+
+  /**
+   * Copia la URL del QR al portapapeles para pegarla en otra ventana.
+   * Usa navigator.clipboard (HTTPS) con fallback a execCommand (HTTP).
+   */
+  const handleCopyUrl = useCallback(async () => {
+    try {
+      // Intento 1: API moderna (requiere HTTPS o localhost)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(qrUrl);
+      } else {
+        // Intento 2: Fallback para HTTP (crea un textarea temporal)
+        const textArea = document.createElement("textarea");
+        textArea.value = qrUrl;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+      }
+      setCopied(true);
+      toast({
+        title: "URL copiada al portapapeles",
+        description: "Podés pegarla en otra pestaña o ventana.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Intento 3: Último recurso - mostrar URL en un prompt para copiar manualmente
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = qrUrl;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const success = document.execCommand("copy");
+        textArea.remove();
+        if (success) {
+          setCopied(true);
+          toast({
+            title: "URL copiada al portapapeles",
+            description: "Podés pegarla en otra pestaña o ventana.",
+          });
+          setTimeout(() => setCopied(false), 2000);
+          return;
+        }
+      } catch (_) {
+        // Si todo falla, mostrar la URL en un prompt
+        prompt("Copiá la URL manualmente:", qrUrl);
+      }
+    }
+  }, [qrUrl, toast]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -94,14 +159,34 @@ export function QRCodeModal({
             Los usuarios pueden escanear este QR para ver la propiedad sin necesidad de cuenta.
           </p>
 
-          <Button
-            onClick={handleDownload}
-            className="w-full gap-2"
-            variant="outline"
-          >
-            <Download className="w-4 h-4" />
-            Descargar PNG (para imprimir)
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleCopyUrl}
+              className="flex-1 gap-2"
+              variant="secondary"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 text-green-600" />
+                  Copiado
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  Copiar URL
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleDownload}
+              className="flex-1 gap-2"
+              variant="outline"
+            >
+              <Download className="w-4 h-4" />
+              Descargar PNG
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

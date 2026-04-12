@@ -224,7 +224,7 @@ export function MiListadoTabPanel({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProperties.map((property) => (
+                {filteredProperties.map((property, index) => (
                   <PropertyCard
                     key={property.id}
                     property={property}
@@ -232,6 +232,7 @@ export function MiListadoTabPanel({
                     onStatusChange={onStatusChange}
                     onClick={() => onCardClick(property)}
                     ownerEmail={property.createdByEmail || null}
+                    isFirstCard={index === 0}
                   />
                 ))}
               </div>

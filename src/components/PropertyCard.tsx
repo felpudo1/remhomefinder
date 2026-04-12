@@ -29,7 +29,7 @@ export interface ProsAndConsAttributeIds {
 
 interface PropertyCardProps {
   property: Property;
-  /** Si true, las fotos se muestran expandidas (como HFMarket con “Mostrar fotos”). Si false, modo colapsable. */
+  /** Si true, las fotos se muestran expandidas (como HFMarket con "Mostrar fotos"). Si false, modo colapsable. */
   forceExpandImages?: boolean;
   onStatusChange: (
     id: string,
@@ -55,6 +55,8 @@ interface PropertyCardProps {
   ) => void;
   onClick: () => void;
   ownerEmail?: string | null;
+  /** Si true, agrega un ID especial para el tour guiado */
+  isFirstCard?: boolean;
 }
 
 const MARKETPLACE_STATUS_OVERLAY: Record<string, { label: string; className: string } | null> = {
@@ -76,6 +78,7 @@ export function PropertyCard({
   onStatusChange,
   onClick,
   ownerEmail,
+  isFirstCard = false,
 }: PropertyCardProps) {
   // Hook centralizado para estados de diálogos y galería
   const dialogs = usePropertyCardDialogs(property);
@@ -118,6 +121,7 @@ export function PropertyCard({
   return (
     <>
       <PropertyCardBase
+        id={isFirstCard ? "property-card-first" : undefined}
         title={property.title}
         neighborhood={property.neighborhood}
         city={property.city}

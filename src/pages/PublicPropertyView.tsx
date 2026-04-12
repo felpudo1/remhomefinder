@@ -52,12 +52,27 @@ export default function PublicPropertyView() {
 
   const source = searchParams.get("source");
   const pubId = searchParams.get("pub_id");
+  const refParam = searchParams.get("ref");
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
 
+  /**
+   * Guarda el referral ID en localStorage para que el modal de registro lo use.
+   * Prioridad: 1) parámetro ?ref= de la URL (viene del QR), 2) consulta a BD.
+   */
   const cachePublicationReferrer = useCallback(async () => {
-    if (!pubId || localStorage.getItem("hf_referral_id")) return;
+    // Si ya hay un referral cacheado, no sobreescribir
+    if (localStorage.getItem("hf_referral_id")) return;
+
+    // Prioridad 1: usar ?ref= de la URL (viene directo del QR, no necesita BD)
+    if (refParam) {
+      localStorage.setItem("hf_referral_id", refParam);
+      return;
+    }
+
+    // Prioridad 2: fallback a consulta BD (si no vino ?ref= en la URL)
+    if (!pubId) return;
 
     const { data: publication } = await supabase
       .from("agent_publications")
@@ -68,7 +83,7 @@ export default function PublicPropertyView() {
     if (publication?.published_by) {
       localStorage.setItem("hf_referral_id", publication.published_by);
     }
-  }, [pubId]);
+  }, [pubId, refParam]);
 
   // Fetch property data
   useEffect(() => {
@@ -406,23 +421,9 @@ export default function PublicPropertyView() {
           </div>
 
           {/* Price breakdown */}
-          <div className="bg-muted rounded-xl p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Alquiler mensual</span>
-              <span className="font-medium text-foreground">
-                {currencySymbol(property.currency)}{" "}
-                {property.price_rent.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">G/C</span>
-              <span className="font-medium text-foreground">
-                {currencySymbol(property.currency)}{" "}
-                {property.price_expenses.toLocaleString()}
-              </span>
-            </div>
-            <div className="border-t border-border pt-2 flex justify-between">
-              <span className="font-semibold text-foreground">Costo mensual total</span>
+          <div className="bg-muted rounded-xl p-4">
+            <div className="flex justify-between">
+              <span className="font-semibold text-foreground">Costo</span>
               <span className="font-bold text-foreground text-lg">
                 {currencySymbol(property.currency)}{" "}
                 {property.total_cost.toLocaleString()}

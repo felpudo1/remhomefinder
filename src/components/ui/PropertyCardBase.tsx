@@ -32,6 +32,8 @@ interface PropertyCardBaseProps {
     collapsibleImages?: boolean;
     autoRotateImages?: boolean;
     imageTransitionMode?: "fade" | "flip" | "kenburns" | "push";
+    /** ID personalizado para el tour guiado */
+    id?: string;
 }
 
 /**
@@ -66,6 +68,7 @@ export function PropertyCardBase({
     collapsibleImages = false,
     autoRotateImages = false,
     imageTransitionMode = "fade",
+    id,
 }: PropertyCardBaseProps) {
     const [currentImg, setCurrentImg] = useState(0);
     const [imagesExpanded, setImagesExpanded] = useState(!collapsibleImages);
@@ -111,6 +114,7 @@ export function PropertyCardBase({
 
     return (
         <div
+            id={id}
             className={`bg-card rounded-2xl overflow-hidden border-[4px] border-foreground/40 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-fade-in flex flex-col h-full min-h-0 ${className}`}
             onClick={onClick}
         >

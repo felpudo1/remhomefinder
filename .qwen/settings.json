@@ -24,7 +24,8 @@
       "Bash(git commit *)",
       "Bash(dir *)",
       "Bash(bun *)",
-      "Bash(vercel *)"
+      "Bash(vercel *)",
+      "Bash(pnpm add *)"
     ]
   },
   "$version": 3

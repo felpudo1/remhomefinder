@@ -9,7 +9,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { InputPhone } from "@/components/ui/InputPhone";
+import { Loader2, Mail, Lock, Eye, EyeOff, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,9 +25,11 @@ interface RequireAuthModalProps {
 }
 
 /**
- * Modal de autenticación liviano para la vista pública de propiedad.
- * Soporta Google OAuth con redirectTo y email/password.
+ * Modal de autenticación para la vista pública de propiedad.
+ * Soporta Google OAuth con redirectTo y email/password con registro completo.
  * Guarda estado pendiente en sessionStorage para recuperar post-OAuth.
+ * 
+ * Registro completo incluye: nombre, teléfono, confirmación de password y aceptación de términos.
  */
 export function RequireAuthModal({
   open,
@@ -35,37 +39,75 @@ export function RequireAuthModal({
 }: RequireAuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [familyName, setFamilyName] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  /**
+   * Maneja login o registro con email/password.
+   * En modo registro: valida confirmPassword, datos requeridos y términos aceptados.
+   */
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isLogin) {
+        // Login: solo necesita email y password
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (data.user) onAuthenticated(data.user.id);
       } else {
+        // Registro: validaciones completas
         if (password.length < 6) {
           toast({ title: "La contraseña debe tener al menos 6 caracteres", variant: "destructive" });
           setLoading(false);
           return;
         }
+
+        if (password !== confirmPassword) {
+          toast({ title: "Las contraseñas no coinciden", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+
+        if (!acceptedTerms) {
+          toast({ title: "Aceptá los términos", description: "Marcá la casilla para continuar con el registro.", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+
+        // Crear cuenta con metadata completa
+        // El referral_id se pasa en metadata y el trigger handle_new_user_profile
+        // lo lee automáticamente y actualiza profiles.referred_by_id
+        const referralId = localStorage.getItem("hf_referral_id") || null;
+        
+        console.log("RequireAuthModal: signUp con referral_id =", referralId);
+        
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { account_type: "user" },
+            data: {
+              account_type: "user",
+              display_name: familyName.trim(),
+              phone: userPhone.trim(),
+              referral_id: referralId || undefined,
+            },
           },
         });
         if (error) throw error;
         if (data.user) {
           if (data.session) {
-            // Auto-confirm: proceder directamente
+            // El trigger handle_new_user_profile ya procesó el referral_id
+            // del metadata y actualizó profiles.referred_by_id automáticamente.
+            // Solo limpiamos el localStorage y continuamos.
+            localStorage.removeItem("hf_referral_id");
             onAuthenticated(data.user.id);
           } else {
             toast({
@@ -117,7 +159,7 @@ export function RequireAuthModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isLogin ? "Iniciar sesión" : "Crear cuenta"}</DialogTitle>
           <DialogDescription>
@@ -155,6 +197,38 @@ export function RequireAuthModal({
 
           {/* Email/Password form */}
           <form onSubmit={handleEmailAuth} className="space-y-3">
+            {/* Nombre de contacto (solo en registro) */}
+            {!isLogin && (
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-familyName">Nombre de contacto</Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="auth-familyName"
+                    type="text"
+                    placeholder="Tu nombre"
+                    value={familyName}
+                    onChange={(e) => setFamilyName(e.target.value)}
+                    className="pl-9 h-11 rounded-xl"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Teléfono de contacto (solo en registro) */}
+            {!isLogin && (
+              <InputPhone
+                id="auth-userPhone"
+                label="Teléfono de contacto"
+                countryCode="+598"
+                placeholder="99 123 456"
+                value={userPhone}
+                onChange={(e) => setUserPhone(e.target.value)}
+              />
+            )}
+
+            {/* Email */}
             <div className="space-y-1.5">
               <Label htmlFor="auth-email">Email</Label>
               <div className="relative">
@@ -165,11 +239,13 @@ export function RequireAuthModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
-                  className="pl-9"
+                  className="pl-9 h-11 rounded-xl"
                   required
                 />
               </div>
             </div>
+
+            {/* Contraseña */}
             <div className="space-y-1.5">
               <Label htmlFor="auth-password">Contraseña</Label>
               <div className="relative">
@@ -180,7 +256,7 @@ export function RequireAuthModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••"
-                  className="pl-9 pr-9"
+                  className="pl-9 pr-9 h-11 rounded-xl"
                   required
                   minLength={6}
                 />
@@ -194,7 +270,66 @@ export function RequireAuthModal({
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            {/* Confirmar contraseña (solo en registro) */}
+            {!isLogin && (
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-confirmPassword">Repetir contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="auth-confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••"
+                    className="pl-9 h-11 rounded-xl"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Aceptar términos (solo en registro) */}
+            {!isLogin && (
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="auth-accept-terms"
+                    checked={acceptedTerms}
+                    onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="auth-accept-terms" className="text-sm leading-snug text-foreground font-medium cursor-pointer select-none">
+                    Acepto los{" "}
+                    <a
+                      href="/terminos"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-foreground underline underline-offset-2 decoration-primary decoration-2 hover:text-primary"
+                    >
+                      Términos y condiciones
+                    </a>{" "}
+                    y la{" "}
+                    <a
+                      href="/privacidad"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-foreground underline underline-offset-2 decoration-primary decoration-2 hover:text-primary"
+                    >
+                      Política de privacidad
+                    </a>
+                    .
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-11 rounded-xl"
+              disabled={loading || (!isLogin && !acceptedTerms)}
+            >
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {isLogin ? "Iniciar sesión" : "Crear cuenta"}
             </Button>

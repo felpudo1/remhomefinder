@@ -32,6 +32,7 @@ import { MiListadoTabPanel } from "@/components/MiListadoTabPanel";
 import { GoldOpportunitiesPanel } from "@/components/gold/GoldOpportunitiesPanel";
 import { useIndexOnboarding } from "@/hooks/useIndexOnboarding";
 import { useIndexListingController } from "@/hooks/useIndexListingController";
+import { runDashboardTour } from "@/components/tours/UserDashboardTour";
 import type {
   IndexDetailModalState,
   IndexGroupContext,
@@ -129,6 +130,17 @@ const Index = () => {
   const [showAIProfileModal, setShowAIProfileModal] = useState(false);
 
   const { canSaveMore, maxSaves, isPremium, referralBonus } = useSubscription();
+
+  // Ejecutar tour guiado la primera vez que el usuario entra
+  useEffect(() => {
+    runDashboardTour();
+  }, []);
+
+  // Función para repetir el tour desde el botón de ayuda
+  const handleRestartTour = () => {
+    runDashboardTour(true); // force = true para ejecutar aunque ya se haya visto
+  };
+
   const {
     showWelcome,
     isPremiumWelcomeOpen,
@@ -312,6 +324,7 @@ const Index = () => {
     onOpenGroups: () => setIsGroupsOpen(true),
     onAIProfileClick: () => setShowAIProfileModal(true),
     onLogout: handleLogout,
+    onRestartTour: handleRestartTour,
   };
   const detailModal: IndexDetailModalState = {
     selectedProperty,
@@ -353,7 +366,12 @@ const Index = () => {
       ) : (
         <>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-            <Tabs defaultValue="mi-listado" className="w-full" onValueChange={(v) => setActiveTab(v)}>
+            <Tabs 
+              defaultValue="mi-listado" 
+              className="w-full" 
+              onValueChange={(v) => setActiveTab(v)}
+              id="dashboard-tabs"
+            >
               <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-3 gap-1 h-auto min-h-12">
                 <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <Home className="w-4 h-4 shrink-0" />
@@ -438,7 +456,11 @@ const Index = () => {
           </button>
 
           {(addButtonConfig === "white" || addButtonConfig === "both") && (
-            <button onClick={() => canSaveMore(properties.length) ? setIsAddZenRowsOpen(true) : setIsUpgradeOpen(true)} className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow z-30">
+            <button
+              onClick={() => canSaveMore(properties.length) ? setIsAddZenRowsOpen(true) : setIsUpgradeOpen(true)}
+              className="fixed bottom-[6.5rem] right-8 w-14 h-14 bg-card text-foreground border border-border rounded-2xl flex items-center justify-center card-shadow z-30 tour-highlight-target"
+              id="add-property-button"
+            >
               <Plus className="w-6 h-6" />
             </button>
           )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [isPremiumWelcomeOpen, setIsPremiumWelcomeOpen] = useState(false);
     const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
-    const [qrProperty, setQrProperty] = useState<{ id: string; propertyId: string; title: string } | null>(null);
+    const [qrProperty, setQrProperty] = useState<{ id: string; propertyId: string; title: string; publishedBy: string } | null>(null);
 
     const isActive = profileStatus === "active";
 
@@ -62,7 +62,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         }
     }, [isPremium, agency.created_by]);
 
-    // Nuevo: Fetch para perfiles de búsqueda de usuarios (Matchmaking)
+    // Nuevo: Fetch para perfiles de bÃºsqueda de usuarios (Matchmaking)
     const { data: searchProfiles = [], isFetched: searchProfilesFetched } = useQuery<SearchProfileWithLead[]>({
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
@@ -70,7 +70,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 .from("user_search_profiles")
                 .select("id, user_id, operation, currency, min_budget, max_budget, min_bedrooms, city_id, neighborhood_ids, is_private, updated_at, created_at");
             if (error) {
-                console.error("🔴 AI MATCHMAKER: Error de Supabase (RLS):", error);
+                console.error("ðŸ”´ AI MATCHMAKER: Error de Supabase (RLS):", error);
                 throw error;
             }
 
@@ -83,7 +83,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                     .rpc("get_search_profile_contacts", { _user_ids: userIds });
 
                 if (contactsError) {
-                    console.warn("🟠 AI MATCHMAKER: No se pudieron cargar datos de contacto de perfiles:", contactsError.message);
+                    console.warn("ðŸŸ  AI MATCHMAKER: No se pudieron cargar datos de contacto de perfiles:", contactsError.message);
                 } else {
                     contactByUserId = (contactsData || []).reduce<Record<string, LeadProfileContact>>((acc, contact: any) => {
                         acc[contact.user_id] = { user_id: contact.user_id, display_name: contact.display_name, phone: contact.phone };
@@ -97,7 +97,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 leadProfile: contactByUserId[profile.user_id],
             }));
 
-            console.log("🔵 AI MATCHMAKER: Perfiles obtenidos de Supabase:", enrichedProfiles);
+            console.log("ðŸ”µ AI MATCHMAKER: Perfiles obtenidos de Supabase:", enrichedProfiles);
             return enrichedProfiles;
         },
         enabled: isActive,
@@ -114,7 +114,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("agent_publications")
-                // Proyectar columnas específicas — excluye raw_ai_data y status_history (~50 KB/fila)
+                // Proyectar columnas especÃ­ficas â€” excluye raw_ai_data y status_history (~50 KB/fila)
                 .select(`
                     id, property_id, org_id, published_by, status, listing_type, description, created_at, updated_at,
                     properties (
@@ -179,7 +179,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                     const userDorms = Number(s.min_bedrooms || 1);
                     const roomsOk = propRooms >= userDorms;
 
-                    // Geografía
+                    // GeografÃ­a
                     let geoOk = true;
                     const pCityId = p.city_id;
                     const pNeighId = p.neighborhood_id;
@@ -203,7 +203,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                     const isMatch = priceOk && roomsOk && opOk && curOk && geoOk;
                     
                     if (searchProfiles.length > 0) {
-                        console.log(`🟡 EVALUANDO PROPIEDAD: ${p.title}`, {
+                        console.log(`ðŸŸ¡ EVALUANDO PROPIEDAD: ${p.title}`, {
                             perfilUser: s,
                             propiedadValores: { operacion: opMatch, precio: propPrice, moneda: p.currency, ambientes: propRooms, cityId: p.city_id, neighId: p.neighborhood_id },
                             resultados: { opOk, curOk, priceOk, roomsOk, geoOk, isMatch }
@@ -271,7 +271,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         const { error } = await (supabase.from("agent_publications") as any).update({ status: newStatus as AgentPubStatus }).eq("id", id);
         if (error) { toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" }); }
         else {
-            toast({ title: "Estado actualizado", description: `La propiedad ahora está ${PROPERTY_STATUS_LABELS[newStatus] || newStatus}` });
+            toast({ title: "Estado actualizado", description: `La propiedad ahora estÃ¡ ${PROPERTY_STATUS_LABELS[newStatus] || newStatus}` });
             queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] });
         }
     };
@@ -296,10 +296,10 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                     </button>
                 </div>
                 <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={openImporter}>
+                    <Button id="agent-import-web-btn" size="sm" variant="outline" className="gap-1.5" onClick={openImporter}>
                         <Globe className="w-4 h-4" /> Importar desde web
                     </Button>
-                    <Button size="sm" className="gap-1.5" onClick={handleOpenPublish}>
+                    <Button id="agent-publish-property-btn" size="sm" className="gap-1.5" onClick={handleOpenPublish}>
                         <Plus className="w-4 h-4" /> Publicar propiedad
                     </Button>
                 </div>
@@ -309,10 +309,10 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : agencyProperties.length === 0 ? (
                 <div className="border border-border rounded-2xl bg-card p-8 text-center bg-card/50">
-                    <p className="text-muted-foreground text-sm">Todavía no publicaste ninguna propiedad. ¡Empezá ahora!</p>
+                    <p className="text-muted-foreground text-sm">TodavÃ­a no publicaste ninguna propiedad. Â¡EmpezÃ¡ ahora!</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div id="agent-properties-section" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {agencyProperties.map((p: any) => {
                         const availableStatuses = p.listingType === 'sale'
                             ? AGENT_PROPERTY_STATUSES.SALE
@@ -381,7 +381,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                             className="gap-1 rounded-lg px-2 text-xs"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setQrProperty({ id: p.id, propertyId: p.propertyId, title: p.title });
+                                                setQrProperty({ id: p.id, propertyId: p.propertyId, title: p.title, publishedBy: p.published_by });
                                             }}
                                             title="Generar QR"
                                         >
@@ -437,8 +437,8 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                         setIsDetailOpen(true);
                     } else {
                         toast({
-                            title: "No encontramos la publicación",
-                            description: "Refrescá el listado e intentá de nuevo.",
+                            title: "No encontramos la publicaciÃ³n",
+                            description: "RefrescÃ¡ el listado e intentÃ¡ de nuevo.",
                             variant: "destructive",
                         });
                     }
@@ -470,6 +470,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                     propertyTitle={qrProperty.title}
                     propertyId={qrProperty.propertyId}
                     publicationId={qrProperty.id}
+                    publishedBy={qrProperty.publishedBy}
                 />
             )}
 

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Home, LogOut, Users, Star, User, Building2, Loader2, Camera } from "lucide-react";
+import { Home, LogOut, Users, Star, User, Building2, Loader2, Camera, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -49,6 +49,8 @@ interface AgentHeaderProps {
     /** Para el diálogo "Perfil de agencia" (antes pestaña Perfil) */
     agency?: Agency | null;
     profileStatus?: UserStatus;
+    /** Reiniciar el tour guiado del dashboard */
+    onRestartTour?: () => void;
 }
 
 /**
@@ -153,6 +155,7 @@ export const AgentHeader = ({
     onAgencyLogoUpdated,
     agency = null,
     profileStatus = "active",
+    onRestartTour,
 }: AgentHeaderProps) => {
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -175,11 +178,13 @@ export const AgentHeader = ({
         <header className="border-b border-border bg-card sticky top-0 z-40 card-shadow">
             <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex items-start justify-between gap-2 md:gap-4">
                 <div className="flex items-center gap-2 md:gap-3 min-w-0 pt-0.5">
-                    <AgencyLogoSlot
-                        agencyId={agencyId}
-                        logoUrl={agencyLogoUrl}
-                        onUploaded={onAgencyLogoUpdated}
-                    />
+                    <div id="agent-agency-logo">
+                        <AgencyLogoSlot
+                            agencyId={agencyId}
+                            logoUrl={agencyLogoUrl}
+                            onUploaded={onAgencyLogoUpdated}
+                        />
+                    </div>
                     <div className="w-7 h-7 md:w-14 md:h-14 bg-primary rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">
                         <Home className="w-3.5 h-3.5 md:w-8 md:h-8 text-primary-foreground" />
                     </div>
@@ -208,6 +213,19 @@ export const AgentHeader = ({
                             >
                                 <Users className="w-4 h-4" />
                                 <span className="hidden sm:inline">Formar equipo</span>
+                            </Button>
+                        )}
+
+                        {/* Botón de ayuda para repetir el tour guiado */}
+                        {onRestartTour && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground"
+                                onClick={onRestartTour}
+                                title="Ver tour guiado"
+                            >
+                                <HelpCircle className="w-4 h-4" />
                             </Button>
                         )}
 
@@ -275,13 +293,21 @@ export const AgentHeader = ({
 
             {agencyStatus === "approved" && (
                 <div className="max-w-7xl mx-auto px-4 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-                    <nav className="flex gap-0 min-w-max border-t border-border/50 mt-1">
+                    <nav id="agent-tabs" className="flex gap-0 min-w-max border-t border-border/50 mt-1">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
+                            const tabIdMap: Record<string, string> = {
+                                listado: "agent-listado-tab",
+                                estadisticas: "agent-estadisticas-tab",
+                                indicadores: "agent-indicadores-tab",
+                                qr_analytics: "agent-qr-leads-tab",
+                                referencias: "agent-referencias-tab",
+                            };
                             return (
                                 <button
                                     key={tab.id}
+                                    id={tabIdMap[tab.id]}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive
                                         ? "border-primary text-primary bg-primary/5"

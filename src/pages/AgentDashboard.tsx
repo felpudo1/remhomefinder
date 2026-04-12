@@ -26,6 +26,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ROLES } from "@/lib/constants";
 import { useCurrentUser } from "@/contexts/AuthProvider";
+import { runAgentDashboardTour } from "@/components/tours/AgentDashboardTour";
 
 type AgentTab = "propiedades" | "listado" | "equipo" | "estadisticas" | "indicadores" | "referencias" | "qr_analytics";
 
@@ -172,6 +173,16 @@ const AgentDashboard = () => {
     }
   }, [canManageTeams, activeTab]);
 
+  // Ejecutar tour guiado la primera vez que el agente entra al dashboard
+  useEffect(() => {
+    runAgentDashboardTour();
+  }, []);
+
+  // Función para repetir el tour desde el botón de ayuda
+  const handleRestartAgentTour = () => {
+    runAgentDashboardTour(true);
+  };
+
   const handleLogout = async () => { await supabase.auth.signOut(); navigate(ROUTES.AUTH); };
 
   if (loading) {
@@ -209,6 +220,7 @@ const AgentDashboard = () => {
         }
         agency={agency}
         profileStatus={profileStatus}
+        onRestartTour={handleRestartAgentTour}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">

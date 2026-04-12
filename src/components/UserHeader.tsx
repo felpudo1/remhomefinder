@@ -1,4 +1,4 @@
-import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus, Crown } from "lucide-react";
+import { Home, User, Users, LogOut, Star, Medal, Sparkles, UserPlus, Crown, HelpCircle } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -140,12 +140,23 @@ export const UserHeader = ({
                         className="h-9 md:h-10 px-2 md:px-3 gap-1 md:gap-2 rounded-xl text-sm font-medium whitespace-normal"
                         onClick={actions.onOpenGroups}
                         title="Grupos familiares"
+                        id="share-family-button"
                     >
                         <Users className="w-4 h-4 shrink-0" />
                         <span className="hidden md:inline">Compartir en familia</span>
                         <span className="md:hidden text-[10px] leading-[1.1] text-left max-w-[65px]">
                             Compartir<br />en familia
                         </span>
+                    </Button>
+                    {/* Botón de ayuda para repetir el tour guiado */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground"
+                        onClick={actions.onRestartTour}
+                        title="Ver tour guiado"
+                    >
+                        <HelpCircle className="w-4 h-4" />
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -154,6 +165,7 @@ export const UserHeader = ({
                                 size="icon"
                                 className="h-[43px] w-[43px] rounded-full ml-1 md:ml-2"
                                 title="Menú de usuario"
+                                id="user-header-avatar"
                             >
                                 <Avatar className="h-[38px] w-[38px] hover:opacity-80 transition-opacity">
                                     <AvatarImage src={profile?.avatarUrl} alt={profile?.displayName || "Usuario"} />
@@ -183,6 +195,7 @@ export const UserHeader = ({
                             <DropdownMenuItem
                                 className="cursor-pointer gap-2 py-2"
                                 onClick={actions.onAIProfileClick}
+                                id="ai-profile-button"
                             >
                                 <Sparkles className="w-4 h-4 text-purple-500" />
                                 <span>Perfil IA</span>

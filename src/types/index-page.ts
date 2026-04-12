@@ -71,6 +71,8 @@ export interface IndexHeaderActions {
   onOpenGroups: () => void;
   onAIProfileClick: () => void;
   onLogout: () => void;
+  /** Reiniciar el tour guiado del dashboard */
+  onRestartTour?: () => void;
 }
 
 /**
