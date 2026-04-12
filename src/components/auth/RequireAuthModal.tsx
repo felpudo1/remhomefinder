@@ -49,50 +49,34 @@ export function RequireAuthModal({
   const { toast } = useToast();
 
   /**
-   * Verifica que el trigger guardó referred_by_id. Si no, hace update manual.
-   * Incluye retry para esperar que el trigger cree el perfil.
+   * Asegura que referred_by_id se guarde en el perfil post-signup.
+   * Usa upsert explícito (mismo patrón que useAuth.ts) en lugar de depender
+   * solo del trigger, para evitar race conditions.
    */
-  const verifyAndLinkReferral = async (userId: string, referralId: string) => {
+  const ensureReferralLinked = async (userId: string, referralId: string) => {
+    // Evitar auto-referencia
+    if (referralId === userId) return;
+
     try {
       for (let attempt = 1; attempt <= 5; attempt++) {
-        const { data: profile, error: selErr } = await (supabase
+        const { error: upsertErr } = await (supabase
           .from("profiles") as any)
-          .select("referred_by_id")
-          .eq("user_id", userId)
-          .maybeSingle();
+          .upsert(
+            { user_id: userId, referred_by_id: referralId },
+            { onConflict: "user_id", ignoreDuplicates: false }
+          );
 
-        if (selErr) {
-          console.error("RequireAuthModal: Error leyendo perfil post-signup:", selErr);
-          break;
+        if (!upsertErr) {
+          console.log("RequireAuthModal: ✅ Referral vinculado via upsert.");
+          return;
         }
 
-        if (!profile) {
-          console.log(`RequireAuthModal: Perfil aún no existe, reintento ${attempt}/5...`);
-          await new Promise(r => setTimeout(r, 800));
-          continue;
-        }
-
-        if (profile.referred_by_id) {
-          console.log("RequireAuthModal: ✅ Trigger guardó referred_by_id:", profile.referred_by_id);
-          break;
-        }
-
-        // Trigger no guardó el referral → update manual
-        console.log("RequireAuthModal: Trigger no guardó referral, update manual con:", referralId);
-        const { error: updErr } = await (supabase
-          .from("profiles") as any)
-          .update({ referred_by_id: referralId })
-          .eq("user_id", userId);
-
-        if (updErr) {
-          console.error("RequireAuthModal: ❌ Error en update manual de referral:", updErr);
-        } else {
-          console.log("RequireAuthModal: ✅ Referral vinculado manualmente.");
-        }
-        break;
+        // Si el error es por perfil no existente aún (trigger pendiente), reintentar
+        console.warn(`RequireAuthModal: Upsert intento ${attempt}/5 falló:`, upsertErr.message);
+        await new Promise(r => setTimeout(r, 800));
       }
     } catch (err) {
-      console.error("RequireAuthModal: Error verificando referral:", err);
+      console.error("RequireAuthModal: Error vinculando referral:", err);
     }
   };
 
@@ -155,7 +139,7 @@ export function RequireAuthModal({
             // Verificar que el trigger guardó el referral correctamente
             // Si no lo hizo, hacer update manual como fallback
             if (referralId) {
-              await verifyAndLinkReferral(data.user.id, referralId);
+              await ensureReferralLinked(data.user.id, referralId);
             }
             localStorage.removeItem("hf_referral_id");
             onAuthenticated(data.user.id);
