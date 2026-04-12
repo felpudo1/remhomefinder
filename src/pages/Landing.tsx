@@ -132,7 +132,7 @@ const Landing = () => {
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-16 space-y-4">
                         <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Herramientas profesionales para tu búsqueda</h2>
-                        <p className="text-muted-foreground max-w-xl mx-auto">Cada funcionalidad está pensada para que vos y tu grupo tomen decisiones más rápidas y con mejor información.</p>
+                        <p className="text-muted-foreground max-w-xl mx-auto">Cada funcionalidad está pensada para que vos y tu familia tomen decisiones más rápidas y con mejor información.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
