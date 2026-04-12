@@ -19,6 +19,7 @@ import { AdminDatosAdmin } from "@/components/admin/AdminDatosAdmin";
 import { AdminGeografia } from "@/components/admin/AdminGeografia";
 import { AdminStatusFeedbackConfig } from "@/components/admin/status-feedback/AdminStatusFeedbackConfig";
 import { AdminAnnouncements } from "@/components/admin/AdminAnnouncements";
+import { AdminLanding } from "@/components/admin/AdminLanding";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
