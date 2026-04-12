@@ -63,7 +63,7 @@ export function AdminUsuariosTable({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[160px]">
+              <TableHead className="w-[200px]">
                 <SortableHead
                   label={`Usuario (${totalCount})`}
                   field="display_name"
@@ -71,6 +71,9 @@ export function AdminUsuariosTable({
                   sortDirection={sortDirection}
                   onSort={onSort}
                 />
+              </TableHead>
+              <TableHead className="w-[160px]">
+                <span className="text-[10px] font-bold uppercase tracking-wider">Email</span>
               </TableHead>
               <TableHead className="w-[120px]">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Organización/Origen</span>
@@ -234,6 +237,17 @@ function AdminUsuariosTableRow({
     <TableRow className="group">
       <TableCell className="py-2 px-3">
         <div className="flex items-center gap-1.5 min-w-0">
+          {!isAdmin && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-5 w-5 p-0 rounded shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50"
+              title="Borrar físicamente"
+              onClick={() => onDelete(user)}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
           <User className="w-3.5 h-3.5 text-primary/60 shrink-0" />
           <span className="truncate text-sm font-medium">{user.display_name}</span>
           <div className="flex items-center gap-1 shrink-0">
@@ -253,6 +267,12 @@ function AdminUsuariosTableRow({
             )}
           </div>
         </div>
+      </TableCell>
+
+      <TableCell className="py-2 px-3">
+        <span className="truncate text-xs text-muted-foreground" title={user.email}>
+          {user.email || "-"}
+        </span>
       </TableCell>
 
       <TableCell className="py-2 px-3">
@@ -406,16 +426,6 @@ function AdminUsuariosTableRow({
                   <SelectItem value="user">User</SelectItem>
                 </SelectContent>
               </Select>
-
-              <Button
-                size="sm"
-                variant="destructive"
-                className="h-6 w-6 p-0 rounded-lg"
-                title="Borrar físicamente"
-                onClick={() => onDelete(user)}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
             </>
           )}
         </div>
