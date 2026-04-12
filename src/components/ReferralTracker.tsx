@@ -1,51 +1,106 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useProfile } from "@/hooks/useProfile";
+import { useCurrentUser } from "@/contexts/AuthProvider";
+
+const REFERRAL_KEY = "hf_referral_id";
 
 /**
  * Componente "invisible" que rastrea referidos de agentes en la URL (?agente=ID)
- * y los persiste en sessionStorage para el proceso de registro.
- * Si el usuario ya está logueado, vincula el referido a su perfil si no lo tiene.
- * 
+ * y los persiste en localStorage para el proceso de registro.
+ *
+ * Post-login: si el usuario ya está autenticado y su perfil no tiene referred_by_id,
+ * vincula el referido desde localStorage. Esto cubre el caso donde AuthCallback
+ * no monta (ej. Supabase ignora redirectTo y manda directo al dashboard).
+ *
  * Regla 2: Arquitectura pro centralizada.
  */
 export const ReferralTracker = () => {
-    const location = useLocation();
-    const { data: profile } = useProfile();
+  const location = useLocation();
+  const { user } = useCurrentUser();
+  const linkingRef = useRef(false);
 
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const refId = params.get("ref") || params.get("agente");
+  // 1. Capturar ?ref= / ?agente= desde la URL y guardar en localStorage
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const refId = params.get("ref") || params.get("agente");
 
-        if (refId) {
-            console.log("💎 ReferralTracker: Capturado ID de referido:", refId);
+    if (refId) {
+      console.log("💎 ReferralTracker: Capturado ID de referido:", refId);
+      localStorage.setItem(REFERRAL_KEY, refId);
+    }
+  }, [location.search]);
 
-            // 1. Guardar en localStorage para futuros registros (sobrevive redirects de OAuth)
-            localStorage.setItem("hf_referral_id", refId);
+  // 2. Post-login: vincular referido si el perfil no lo tiene
+  useEffect(() => {
+    if (!user) return;
 
-            // 2. Si ya está logueado y no tiene referido, vincularlo ahora (evitar auto-referencia)
-            if (profile && !profile.referredById && refId !== profile.userId) {
-                const linkReferral = async () => {
-                    try {
-                        const { data: { user } } = await supabase.auth.getUser();
-                        if (!user) return;
+    const storedRef = localStorage.getItem(REFERRAL_KEY);
+    if (!storedRef) return;
 
-                        const { error } = await (supabase
-                            .from("profiles") as any)
-                            .update({ referred_by_id: refId })
-                            .eq("user_id", user.id);
+    // Evitar auto-referencia
+    if (storedRef === user.id) {
+      console.log("💎 ReferralTracker: Referral ID es el mismo usuario, limpiando.");
+      localStorage.removeItem(REFERRAL_KEY);
+      return;
+    }
 
-                        if (error) throw error;
-                        console.log("💎 ReferralTracker: Perfil vinculado exitosamente.");
-                    } catch (err) {
-                        console.error("💎 ReferralTracker: Error al vincular perfil:", err);
-                    }
-                };
-                linkReferral();
-            }
+    // Evitar ejecuciones concurrentes
+    if (linkingRef.current) return;
+    linkingRef.current = true;
+
+    const linkReferral = async () => {
+      try {
+        // Retry: el trigger handle_new_user_profile puede no haber creado el perfil aún
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          const { data: profile, error: selectErr } = await (supabase
+            .from("profiles") as any)
+            .select("referred_by_id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (selectErr) {
+            console.error("💎 ReferralTracker: Error leyendo perfil:", selectErr);
+            break;
+          }
+
+          if (!profile) {
+            console.log(`💎 ReferralTracker: Perfil aún no existe, reintento ${attempt}/5...`);
+            await new Promise(r => setTimeout(r, 800));
+            continue;
+          }
+
+          // Ya tiene referido → no pisar, limpiar storage
+          if (profile.referred_by_id) {
+            console.log("💎 ReferralTracker: Perfil ya tiene referido, limpiando storage.");
+            localStorage.removeItem(REFERRAL_KEY);
+            break;
+          }
+
+          // Vincular
+          console.log("💎 ReferralTracker: Vinculando referido:", storedRef);
+          const { error: updErr } = await (supabase
+            .from("profiles") as any)
+            .update({ referred_by_id: storedRef })
+            .eq("user_id", user.id);
+
+          if (updErr) {
+            console.error("💎 ReferralTracker: ❌ Error al vincular referido:", updErr);
+          } else {
+            console.log("💎 ReferralTracker: ✅ Referido vinculado exitosamente.");
+            localStorage.removeItem(REFERRAL_KEY);
+          }
+          break;
         }
-    }, [location.search, profile]);
+      } catch (err) {
+        console.error("💎 ReferralTracker: Error inesperado:", err);
+      } finally {
+        linkingRef.current = false;
+      }
+    };
 
-    return null; // El componente no renderiza nada visual
+    linkReferral();
+  }, [user]);
+
+  return null;
 };
