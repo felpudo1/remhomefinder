@@ -185,6 +185,16 @@ export default function PublicPropertyView() {
       setSaving(true);
 
       try {
+        // Forzar refresh del JWT para asegurar que auth.uid() esté sincronizado en la BD.
+        // Esto resuelve el race condition post-Google OAuth donde el token local
+        // puede no haberse propagado correctamente al servidor.
+        try {
+          await supabase.auth.refreshSession();
+        } catch {
+          // Continuar aunque falle el refresh — el token actual podría funcionar
+          console.warn("[PublicPropertyView] refreshSession falló, continuando con token actual");
+        }
+
         // Claim anonymous analytics events
         if (pubId) {
           await claimAnonymousEvents(userId, id, pubId);
@@ -233,17 +243,46 @@ export default function PublicPropertyView() {
         }
 
         // Insert user listing with status 'ingresado'
-        const { error: insertError } = await supabase
-          .from("user_listings")
-          .insert({
-            property_id: propertyId,
-            org_id: orgId,
-            listing_type: "rent",
-            source_publication_id: pubId || null,
-            added_by: userId,
-          });
+        // Reintentos con backoff para absorber race conditions de RLS post-OAuth
+        let lastInsertError: any = null;
+        const MAX_INSERT_ATTEMPTS = 3;
+        for (let attempt = 1; attempt <= MAX_INSERT_ATTEMPTS; attempt++) {
+          const { error: attemptError } = await supabase
+            .from("user_listings")
+            .insert({
+              property_id: propertyId,
+              org_id: orgId,
+              listing_type: "rent",
+              source_publication_id: pubId || null,
+              added_by: userId,
+            });
 
-        if (insertError) throw insertError;
+          if (!attemptError) {
+            lastInsertError = null;
+            break;
+          }
+
+          lastInsertError = attemptError;
+          const isRlsError = /row-level security|policy|permission|denied|violates/i.test(
+            attemptError.message || ""
+          );
+
+          if (isRlsError && attempt < MAX_INSERT_ATTEMPTS) {
+            console.warn(
+              `[PublicPropertyView] Insert intento ${attempt}/${MAX_INSERT_ATTEMPTS} bloqueado por RLS, reintentando en ${attempt * 2}s...`,
+              attemptError.message
+            );
+            await new Promise((r) => setTimeout(r, attempt * 2000));
+            // Refresh JWT antes del siguiente intento
+            try {
+              await supabase.auth.refreshSession();
+            } catch { /* ignorar */ }
+          } else {
+            break;
+          }
+        }
+
+        if (lastInsertError) throw lastInsertError;
 
         // Track listing_saved event
         await trackEvent({
