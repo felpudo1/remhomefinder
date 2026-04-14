@@ -39,6 +39,16 @@ export function PhoneRequirementOverlay() {
     }
   }, [isProfileLoading, user, profile]);
 
+  // Re-evaluar cuando se completa un save QR (para mostrar el modal de teléfono post-save)
+  useEffect(() => {
+    const handleSaveCompleted = () => {
+      // Force re-check: refetch profile to get fresh data
+      refetchProfile();
+    };
+    window.addEventListener("qr_save_completed", handleSaveCompleted);
+    return () => window.removeEventListener("qr_save_completed", handleSaveCompleted);
+  }, [refetchProfile]);
+
   /**
    * Lógica especial solicitada por JP:
    * 1. No dejar escribir el 0 al inicio tras el prefijo.

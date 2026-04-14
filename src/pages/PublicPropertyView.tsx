@@ -60,6 +60,9 @@ const clearPendingSaveState = () => {
   sessionStorage.removeItem(PENDING_SAVE_URL_KEY);
   localStorage.removeItem(PENDING_SAVE_BACKUP_KEY);
   localStorage.removeItem(PENDING_SAVE_URL_FALLBACK_KEY);
+
+  // Notificar a otros componentes (PhoneRequirementOverlay) que el pending save fue limpiado
+  window.dispatchEvent(new CustomEvent("qr_save_completed"));
 };
 
 export default function PublicPropertyView() {
