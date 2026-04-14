@@ -148,48 +148,6 @@ export default function PublicPropertyView() {
     });
   }, [id, pubId, user?.id, trackEvent]);
 
-  // Check for pending save after OAuth redirect
-  useEffect(() => {
-    // Si no hay user, property ID o este prop ya está siendo salvado, abortar este hook.
-    if (!user?.id || !id || saving || saved) return;
-    const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
-    if (!pendingSave) {
-      setRequiresSaveConfirmation(false);
-      setIsPreparingAccount(false);
-      return;
-    }
-
-    try {
-      const { propertyId } = JSON.parse(pendingSave);
-      if (propertyId !== id) {
-        setIsPreparingAccount(false);
-        return;
-      }
-
-      // AUTO-SAVE: Disparar el guardado automáticamente tras OAuth redirect.
-      // Usamos un ref para evitar que se dispare más de una vez.
-      if (!autoSaveTriggeredRef.current) {
-        autoSaveTriggeredRef.current = true;
-        setIsPreparingAccount(true);
-        setRequiresSaveConfirmation(false);
-
-        // Delay de 3s para dar tiempo al trigger de BD (handle_new_user_profile)
-        // a crear la organización + membresía, y al JWT a sincronizarse.
-        const timer = setTimeout(() => {
-          console.log("[PublicPropertyView] Auto-save triggered for user:", user.id);
-          handleSaveProperty(user.id);
-        }, 3000);
-
-        return () => clearTimeout(timer);
-      }
-
-    } catch {
-      sessionStorage.removeItem(PENDING_SAVE_KEY);
-      sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
-      setRequiresSaveConfirmation(false);
-      setIsPreparingAccount(false);
-    }
-  }, [user?.id, id, saving, saved, handleSaveProperty]);
   const handleSaveProperty = useCallback(
     async (userId: string, preloadedOrgId?: string | null) => {
       if (!id || saving || saved) return false;
@@ -331,6 +289,47 @@ export default function PublicPropertyView() {
     [id, pubId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents]
   );
 
+  // Check for pending save after OAuth redirect — AUTO-SAVE
+  useEffect(() => {
+    if (!user?.id || !id || saving || saved) return;
+    const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
+    if (!pendingSave) {
+      setRequiresSaveConfirmation(false);
+      setIsPreparingAccount(false);
+      return;
+    }
+
+    try {
+      const { propertyId } = JSON.parse(pendingSave);
+      if (propertyId !== id) {
+        setIsPreparingAccount(false);
+        return;
+      }
+
+      // AUTO-SAVE: Disparar el guardado automáticamente tras OAuth redirect.
+      // Usamos un ref para evitar que se dispare más de una vez.
+      if (!autoSaveTriggeredRef.current) {
+        autoSaveTriggeredRef.current = true;
+        setIsPreparingAccount(true);
+        setRequiresSaveConfirmation(false);
+
+        // Delay de 3s para dar tiempo al trigger de BD (handle_new_user_profile)
+        // a crear la organización + membresía, y al JWT a sincronizarse.
+        const timer = setTimeout(() => {
+          console.log("[PublicPropertyView] Auto-save triggered for user:", user.id);
+          handleSaveProperty(user.id);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+      }
+
+    } catch {
+      sessionStorage.removeItem(PENDING_SAVE_KEY);
+      sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+      setRequiresSaveConfirmation(false);
+      setIsPreparingAccount(false);
+    }
+  }, [user?.id, id, saving, saved, handleSaveProperty]);
 
 
   const handleSaveClick = async () => {
