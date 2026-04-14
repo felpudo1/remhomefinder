@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { useProfile } from "@/hooks/useProfile";
+
 import { ROUTES } from "@/lib/constants";
 import { getUserOrgIdWithRetry } from "@/lib/organizationMembership";
 
