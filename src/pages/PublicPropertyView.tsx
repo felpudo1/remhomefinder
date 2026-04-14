@@ -62,9 +62,7 @@ export default function PublicPropertyView() {
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
   const isGoogleUser = user?.app_metadata?.provider === "google";
-  const isPhoneReady = !isGoogleUser || Boolean(profile?.phone?.trim());
   const hasPendingSave = typeof window !== "undefined"
     ? Boolean(sessionStorage.getItem(PENDING_SAVE_KEY))
     : false;
