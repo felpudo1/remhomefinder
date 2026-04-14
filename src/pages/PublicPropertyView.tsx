@@ -49,6 +49,7 @@ export default function PublicPropertyView() {
   const [saved, setSaved] = useState(false);
   const [requiresSaveConfirmation, setRequiresSaveConfirmation] = useState(false);
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
