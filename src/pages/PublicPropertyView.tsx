@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapPin, ChevronLeft, ChevronRight, Bookmark, Loader2, Share2 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { useProfile } from "@/hooks/useProfile";
 
 import { ROUTES } from "@/lib/constants";
 import { getUserOrgIdWithRetry } from "@/lib/organizationMembership";
@@ -48,6 +48,7 @@ export default function PublicPropertyView() {
   const [saved, setSaved] = useState(false);
   const [requiresSaveConfirmation, setRequiresSaveConfirmation] = useState(false);
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
@@ -60,29 +61,21 @@ export default function PublicPropertyView() {
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
-  const isGoogleUser = user?.app_metadata?.provider === "google";
-  const isPhoneReady = !isGoogleUser || Boolean(profile?.phone?.trim());
-  const hasPendingSave = typeof window !== "undefined"
-    ? Boolean(sessionStorage.getItem(PENDING_SAVE_KEY))
-    : false;
-  
+
+  // URL completa de esta propiedad para mostrar en el modal de confirmación
+  const propertyUrl = typeof window !== "undefined" ? window.location.href : "";
 
   /**
    * Guarda el referral ID en localStorage para que el modal de registro lo use.
-   * Prioridad: 1) parámetro ?ref= de la URL (viene del QR), 2) consulta a BD.
    */
   const cachePublicationReferrer = useCallback(async () => {
-    // Si ya hay un referral cacheado, no sobreescribir
     if (localStorage.getItem("hf_referral_id")) return;
 
-    // Prioridad 1: usar ?ref= de la URL (viene directo del QR, no necesita BD)
     if (refParam) {
       localStorage.setItem("hf_referral_id", refParam);
       return;
     }
 
-    // Prioridad 2: fallback a consulta BD (si no vino ?ref= en la URL)
     if (!pubId) return;
 
     const { data: publication } = await supabase
@@ -166,33 +159,12 @@ export default function PublicPropertyView() {
           publicationId: pubId,
           userId,
           preloadedOrgId: preloadedOrgId ?? null,
-          isGoogleUser,
-          phoneReady: isPhoneReady,
-          referredById: profile?.referredById ?? null,
         });
 
-        if (isGoogleUser && !isPhoneReady) {
-          console.warn("[PublicPropertyView] Guardado pausado: falta teléfono para usuario Google", {
-            userId,
-            propertyId: id,
-          });
-          setIsPreparingAccount(false);
-          setRequiresSaveConfirmation(true);
-          autoSaveTriggeredRef.current = false;
-          toast({
-            title: "Falta tu celular",
-            description: "Guardalo para terminar de guardar este aviso en tu listado.",
-          });
-          return false;
-        }
-
-        // Forzar refresh del JWT para asegurar que auth.uid() esté sincronizado en la BD.
-        // Esto resuelve el race condition post-Google OAuth donde el token local
-        // puede no haberse propagado correctamente al servidor.
+        // Forzar refresh del JWT
         try {
           await supabase.auth.refreshSession();
         } catch {
-          // Continuar aunque falle el refresh — el token actual podría funcionar
           console.warn("[PublicPropertyView] refreshSession falló, continuando con token actual");
         }
 
@@ -201,21 +173,13 @@ export default function PublicPropertyView() {
           await claimAnonymousEvents(userId, id, pubId);
         }
 
-        // Get user's org — retry a few times for new signups (trigger may still be running)
+        // Get user's org — retry for new signups
         const orgId = preloadedOrgId ?? await getUserOrgIdWithRetry(userId, 7);
 
-        console.log("[PublicPropertyView] Resultado org lookup", {
-          userId,
-          orgId,
-          propertyId: id,
-        });
+        console.log("[PublicPropertyView] Resultado org lookup", { userId, orgId, propertyId: id });
 
         if (!orgId) {
-          console.warn("[PublicPropertyView] No se encontró organización para guardar", {
-            userId,
-            propertyId: id,
-            publicationId: pubId,
-          });
+          console.warn("[PublicPropertyView] No se encontró organización para guardar");
           toast({
             title: "Error",
             description: "No se encontró una organización asociada a tu cuenta. Intentá nuevamente en unos segundos.",
@@ -240,10 +204,7 @@ export default function PublicPropertyView() {
         }
 
         console.log("[PublicPropertyView] Property final para guardar", {
-          propertyId,
-          sourcePublicationId: pubId,
-          orgId,
-          userId,
+          propertyId, sourcePublicationId: pubId, orgId, userId,
         });
 
         // Check if already saved
@@ -255,12 +216,7 @@ export default function PublicPropertyView() {
           .maybeSingle();
 
         if (existing) {
-          console.log("[PublicPropertyView] La propiedad ya existía en user_listings", {
-            propertyId,
-            orgId,
-            userId,
-            listingId: existing.id,
-          });
+          console.log("[PublicPropertyView] La propiedad ya existía en user_listings");
           setSaved(true);
           setIsPreparingAccount(false);
           setRequiresSaveConfirmation(false);
@@ -271,19 +227,11 @@ export default function PublicPropertyView() {
           return true;
         }
 
-        // Insert user listing with status 'ingresado'
-        // Reintentos con backoff para absorber race conditions de RLS post-OAuth
+        // Insert user listing with retries
         let lastInsertError: any = null;
         const MAX_INSERT_ATTEMPTS = 3;
         for (let attempt = 1; attempt <= MAX_INSERT_ATTEMPTS; attempt++) {
-          console.log("[PublicPropertyView] Intentando insert en user_listings", {
-            attempt,
-            maxAttempts: MAX_INSERT_ATTEMPTS,
-            propertyId,
-            orgId,
-            userId,
-            sourcePublicationId: pubId || null,
-          });
+          console.log("[PublicPropertyView] Intentando insert en user_listings", { attempt, propertyId, orgId, userId });
 
           const { error: attemptError } = await supabase
             .from("user_listings")
@@ -296,37 +244,18 @@ export default function PublicPropertyView() {
             });
 
           if (!attemptError) {
-            console.log("[PublicPropertyView] Insert en user_listings OK", {
-              propertyId,
-              orgId,
-              userId,
-            });
+            console.log("[PublicPropertyView] Insert en user_listings OK");
             lastInsertError = null;
             break;
           }
 
           lastInsertError = attemptError;
-          console.error("[PublicPropertyView] Insert en user_listings falló", {
-            attempt,
-            propertyId,
-            orgId,
-            userId,
-            message: attemptError.message,
-          });
-          const isRlsError = /row-level security|policy|permission|denied|violates/i.test(
-            attemptError.message || ""
-          );
+          console.error("[PublicPropertyView] Insert falló", { attempt, message: attemptError.message });
+          const isRlsError = /row-level security|policy|permission|denied|violates/i.test(attemptError.message || "");
 
           if (isRlsError && attempt < MAX_INSERT_ATTEMPTS) {
-            console.warn(
-              `[PublicPropertyView] Insert intento ${attempt}/${MAX_INSERT_ATTEMPTS} bloqueado por RLS, reintentando en ${attempt * 2}s...`,
-              attemptError.message
-            );
             await new Promise((r) => setTimeout(r, attempt * 2000));
-            // Refresh JWT antes del siguiente intento
-            try {
-              await supabase.auth.refreshSession();
-            } catch { /* ignorar */ }
+            try { await supabase.auth.refreshSession(); } catch { /* ignorar */ }
           } else {
             break;
           }
@@ -353,7 +282,6 @@ export default function PublicPropertyView() {
           description: "La encontrarás en tu listado personal.",
         });
 
-        // Redirect to dashboard after short delay
         setTimeout(() => navigate(ROUTES.DASHBOARD), 1500);
         return true;
       } catch (err: any) {
@@ -371,10 +299,10 @@ export default function PublicPropertyView() {
         setSaving(false);
       }
     },
-    [id, pubId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents, isGoogleUser, isPhoneReady, profile?.referredById]
+    [id, pubId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents]
   );
 
-  // Check for pending save after OAuth redirect — AUTO-SAVE
+  // Check for pending save after OAuth redirect — show confirm modal instead of auto-save
   useEffect(() => {
     if (!user?.id || !id || saving || saved) return;
     const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
@@ -391,40 +319,10 @@ export default function PublicPropertyView() {
         return;
       }
 
-      if (isGoogleUser && (isProfileLoading || !isPhoneReady)) {
-        console.log("[PublicPropertyView] Esperando teléfono antes del auto-guardado", {
-          userId: user.id,
-          propertyId: id,
-          phoneReady: isPhoneReady,
-          isProfileLoading,
-          referredById: profile?.referredById ?? null,
-        });
-        setIsPreparingAccount(false);
-        autoSaveTriggeredRef.current = false;
-        return;
-      }
-
-      // AUTO-SAVE: Disparar el guardado automáticamente tras OAuth redirect.
-      // Usamos un ref para evitar que se dispare más de una vez.
+      // Mostrar modal de confirmación con el link antes de guardar
       if (!autoSaveTriggeredRef.current) {
         autoSaveTriggeredRef.current = true;
-        setIsPreparingAccount(true);
-        setRequiresSaveConfirmation(false);
-
-        // Delay de 3s para dar tiempo al trigger de BD (handle_new_user_profile)
-        // a crear la organización + membresía, y al JWT a sincronizarse.
-        const timer = setTimeout(() => {
-          console.log("[PublicPropertyView] Auto-save triggered", {
-            userId: user.id,
-            propertyId: id,
-            publicationId: pubId,
-            phoneReady: isPhoneReady,
-            referredById: profile?.referredById ?? null,
-          });
-          handleSaveProperty(user.id);
-        }, 3000);
-
-        return () => clearTimeout(timer);
+        setShowConfirmModal(true);
       }
 
     } catch {
@@ -433,17 +331,26 @@ export default function PublicPropertyView() {
       setRequiresSaveConfirmation(false);
       setIsPreparingAccount(false);
     }
-  }, [user?.id, id, saving, saved, handleSaveProperty, isGoogleUser, isPhoneReady, isProfileLoading, pubId, profile?.referredById]);
+  }, [user?.id, id, saving, saved]);
 
+  /** Usuario acepta en el modal de confirmación → se procede a guardar */
+  const handleConfirmSave = () => {
+    setShowConfirmModal(false);
+    if (!user?.id) return;
+
+    setIsPreparingAccount(true);
+    setRequiresSaveConfirmation(false);
+
+    // Delay de 3s para dar tiempo al trigger de BD
+    setTimeout(() => {
+      console.log("[PublicPropertyView] Guardado post-confirmación", { userId: user.id, propertyId: id });
+      handleSaveProperty(user.id);
+    }, 3000);
+  };
 
   const handleSaveClick = async () => {
     if (user?.id) {
-      console.log("[PublicPropertyView] Reintento manual de guardado", {
-        userId: user.id,
-        propertyId: id,
-        publicationId: pubId,
-        phoneReady: isPhoneReady,
-      });
+      console.log("[PublicPropertyView] Reintento manual de guardado", { userId: user.id, propertyId: id });
       if (requiresSaveConfirmation) {
         setRequiresSaveConfirmation(false);
       }
@@ -455,7 +362,6 @@ export default function PublicPropertyView() {
         console.error("Error caching publication referrer:", error);
       }
 
-      // Store pending save state
       sessionStorage.setItem(
         PENDING_SAVE_KEY,
         JSON.stringify({ propertyId: id, publicationId: pubId })
@@ -606,16 +512,7 @@ export default function PublicPropertyView() {
             </div>
           )}
 
-          {/* Actions */}
-          {user?.id && hasPendingSave && isGoogleUser && !isProfileLoading && !isPhoneReady && (
-            <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
-              <p className="text-sm font-semibold text-foreground">Paso 1 de 2: guardá tu celular.</p>
-              <p className="text-sm text-muted-foreground">
-                Apenas completes ese dato, volvemos a intentar guardar este aviso automáticamente.
-              </p>
-            </div>
-          )}
-
+          {/* Status messages */}
           {isPreparingAccount && (
             <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -630,7 +527,7 @@ export default function PublicPropertyView() {
 
           {requiresSaveConfirmation && (
             <div className="rounded-xl border border-border bg-muted p-4 space-y-1.5">
-              <p className="text-sm font-semibold text-foreground">Paso 2 de 2: tu cuenta ya fue creada.</p>
+              <p className="text-sm font-semibold text-foreground">Tu cuenta ya fue creada.</p>
               <p className="text-sm text-muted-foreground">
                 Si el guardado automático no salió, tocá <span className="text-foreground font-medium">Guardar en mi listado</span> para reintentarlo.
               </p>
@@ -638,8 +535,8 @@ export default function PublicPropertyView() {
           )}
 
           {saved && (
-            <div className="rounded-xl border border-border bg-green-50 dark:bg-green-950/30 p-4 space-y-3">
-              <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+            <div className="rounded-xl border border-border bg-primary/5 p-4 space-y-3">
+              <p className="text-sm font-semibold text-primary">
                 ✓ Ya tenés esta propiedad guardada en tu listado.
               </p>
               <div className="flex gap-2">
@@ -681,12 +578,60 @@ export default function PublicPropertyView() {
         </div>
       </div>
 
+      {/* Modal de autenticación */}
       <RequireAuthModal
         open={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onAuthenticated={handleAuthenticated}
         returnUrl={window.location.pathname + window.location.search}
       />
+
+      {/* Modal de confirmación antes de guardar */}
+      <Dialog open={showConfirmModal} onOpenChange={() => {}}>
+        <DialogContent
+          className="max-w-md rounded-2xl border-none shadow-2xl [&>button]:hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <div className="p-2 space-y-5">
+            <div className="space-y-2 text-center">
+              <div className="mx-auto w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-3">
+                <Bookmark className="w-7 h-7 text-primary" />
+              </div>
+              <DialogTitle className="text-xl font-bold text-foreground">
+                ¿Guardar esta propiedad?
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Se va a guardar en tu listado personal para que puedas hacer seguimiento.
+              </DialogDescription>
+            </div>
+
+            {/* Link de la propiedad */}
+            <div className="bg-muted rounded-xl p-3 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Link de la propiedad</p>
+              <p className="text-sm text-foreground font-mono break-all select-all">
+                {propertyUrl}
+              </p>
+            </div>
+
+            {property && (
+              <div className="bg-muted rounded-xl p-3">
+                <p className="text-sm font-semibold text-foreground truncate">{property.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {property.neighborhood}{property.city ? `, ${property.city}` : ""}
+                </p>
+              </div>
+            )}
+
+            <Button
+              className="w-full h-12 rounded-xl font-bold text-base"
+              onClick={handleConfirmSave}
+            >
+              Aceptar y guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
