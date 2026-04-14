@@ -26,7 +26,9 @@ export function PhoneRequirementOverlay() {
   // Determinar si debemos mostrar el modal
   useEffect(() => {
     const isGoogleUser = user?.app_metadata?.provider === "google";
-    if (!isProfileLoading && user && profile && !profile.phone && isGoogleUser) {
+    // No mostrar si estamos en el flujo QR (pending_property_save) — se omite teléfono en ese flujo
+    const hasPendingQrSave = Boolean(sessionStorage.getItem("pending_property_save"));
+    if (!isProfileLoading && user && profile && !profile.phone && isGoogleUser && !hasPendingQrSave) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
