@@ -94,6 +94,13 @@ export function PhoneRequirementOverlay() {
     try {
       if (!user) return;
 
+      console.log("[PhoneRequirementOverlay] Guardando teléfono", {
+        userId: user.id,
+        phone: finalPhone,
+        referralId: localStorage.getItem("hf_referral_id"),
+        hasPendingSave: Boolean(sessionStorage.getItem("pending_property_save")),
+      });
+
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ phone: finalPhone })
@@ -103,6 +110,11 @@ export function PhoneRequirementOverlay() {
 
       toast.success("Teléfono guardado");
       await refetchProfile();
+      console.log("[PhoneRequirementOverlay] Teléfono guardado correctamente", {
+        userId: user.id,
+        referralId: localStorage.getItem("hf_referral_id"),
+        hasPendingSave: Boolean(sessionStorage.getItem("pending_property_save")),
+      });
       setIsOpen(false);
     } catch (err: any) {
       console.error("Error saving phone:", err);
