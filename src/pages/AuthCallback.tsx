@@ -43,8 +43,33 @@ const AuthCallback = () => {
         if (session?.user) {
           console.log("💎 AuthCallback: user_id =", session.user.id);
           console.log("💎 AuthCallback: provider =", session.user.app_metadata?.provider);
+
+          // DEBUG: ver qué hay en storage al entrar
+          console.log("💎 AuthCallback: Estado de storage al entrar:", {
+            ss_pending: sessionStorage.getItem(PENDING_SAVE_KEY),
+            ls_backup: localStorage.getItem(PENDING_SAVE_BACKUP_KEY),
+            ss_url: sessionStorage.getItem(PENDING_SAVE_URL_KEY),
+            ls_url_fallback: localStorage.getItem(PENDING_SAVE_URL_FALLBACK_KEY),
+            ss_confirm: sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY),
+          });
+
+          // Restaurar sessionStorage desde localStorage si fue perdido durante OAuth redirect
+          const ssPending = sessionStorage.getItem(PENDING_SAVE_KEY);
+          const lsPending = localStorage.getItem(PENDING_SAVE_BACKUP_KEY);
+          if (!ssPending && lsPending) {
+            console.log("💎 AuthCallback: Restaurando pending_property_save desde localStorage a sessionStorage");
+            sessionStorage.setItem(PENDING_SAVE_KEY, lsPending);
+          }
+
+          const ssUrl = sessionStorage.getItem(PENDING_SAVE_URL_KEY);
+          const lsUrl = localStorage.getItem(PENDING_SAVE_URL_FALLBACK_KEY);
+          if (!ssUrl && lsUrl) {
+            console.log("💎 AuthCallback: Restaurando pending_save_url desde localStorage a sessionStorage");
+            sessionStorage.setItem(PENDING_SAVE_URL_KEY, lsUrl);
+          }
+
           const isGoogleUser = session.user.app_metadata?.provider === "google";
-          const hasPendingSave = !!sessionStorage.getItem(PENDING_SAVE_KEY);
+          const hasPendingSave = !!(sessionStorage.getItem(PENDING_SAVE_KEY) || localStorage.getItem(PENDING_SAVE_BACKUP_KEY));
 
           if (hasPendingSave && isGoogleUser) {
             sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
@@ -86,7 +111,7 @@ const AuthCallback = () => {
           // (cachePublicationReferrer pudo fallar porque el usuario era anónimo y RLS lo bloqueó)
           if (!referralId) {
             try {
-              const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
+              const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY) || localStorage.getItem(PENDING_SAVE_BACKUP_KEY);
               if (pendingSave) {
                 const { publicationId } = JSON.parse(pendingSave);
                 if (publicationId) {

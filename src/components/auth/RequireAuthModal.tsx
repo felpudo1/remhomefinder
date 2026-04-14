@@ -190,8 +190,29 @@ export function RequireAuthModal({
   };
 
   const handleGoogleSignIn = async () => {
-    // Guardar estado pendiente para post-OAuth
+    // DEBUG: verificar qué hay en storage antes del redirect
+    const ssPending = sessionStorage.getItem("pending_property_save");
+    const lsPending = localStorage.getItem("pending_property_save_backup");
+    console.log("[RequireAuthModal] handleGoogleSignIn - Estado de storage:", {
+      ssHasPending: !!ssPending,
+      lsHasPending: !!lsPending,
+      ssPendingData: ssPending,
+      lsPendingData: lsPending,
+      returnUrl,
+    });
+
+    // Guardar estado pendiente para post-OAuth (ambos storages para sobrevivir redirect)
     sessionStorage.setItem("pending_save_url", returnUrl);
+    localStorage.setItem("pending_save_url_fallback", returnUrl);
+
+    // Re-salvar el pending_property_save para asegurar que sobreviva el redirect
+    // (persistPendingSaveState pudo ser llamado antes, pero sessionStorage se pierde)
+    if (ssPending || lsPending) {
+      const payload = ssPending || lsPending;
+      sessionStorage.setItem("pending_property_save", payload);
+      localStorage.setItem("pending_property_save_backup", payload);
+      console.log("[RequireAuthModal] Re-salvando pending_property_save para sobrevivir redirect");
+    }
 
     // Preservar referral ID en la URL de redirect
     const redirectUrl = new URL(`${window.location.origin}/auth/callback`);

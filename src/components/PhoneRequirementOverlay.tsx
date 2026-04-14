@@ -27,7 +27,11 @@ export function PhoneRequirementOverlay() {
   useEffect(() => {
     const isGoogleUser = user?.app_metadata?.provider === "google";
     // No mostrar si estamos en el flujo QR (pending_property_save) — se omite teléfono en ese flujo
-    const hasPendingQrSave = Boolean(sessionStorage.getItem("pending_property_save"));
+    // Check both sessionStorage (primary) and localStorage (backup, survives OAuth redirect)
+    const hasPendingQrSave = Boolean(
+      sessionStorage.getItem("pending_property_save") ||
+      localStorage.getItem("pending_property_save_backup")
+    );
     if (!isProfileLoading && user && profile && !profile.phone && isGoogleUser && !hasPendingQrSave) {
       setIsOpen(true);
     } else {
