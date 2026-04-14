@@ -31,6 +31,36 @@ interface PublicProperty {
 
 const PENDING_SAVE_KEY = "pending_property_save";
 const PENDING_SAVE_CONFIRM_KEY = "pending_property_save_require_accept";
+const PENDING_SAVE_BACKUP_KEY = "pending_property_save_backup";
+const PENDING_SAVE_URL_KEY = "pending_save_url";
+const PENDING_SAVE_URL_FALLBACK_KEY = "pending_save_url_fallback";
+
+const getPendingSavePayload = () => {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(PENDING_SAVE_KEY) || localStorage.getItem(PENDING_SAVE_BACKUP_KEY);
+};
+
+const persistPendingSaveState = (payload: string, returnUrl?: string) => {
+  if (typeof window === "undefined") return;
+
+  sessionStorage.setItem(PENDING_SAVE_KEY, payload);
+  localStorage.setItem(PENDING_SAVE_BACKUP_KEY, payload);
+
+  if (returnUrl) {
+    sessionStorage.setItem(PENDING_SAVE_URL_KEY, returnUrl);
+    localStorage.setItem(PENDING_SAVE_URL_FALLBACK_KEY, returnUrl);
+  }
+};
+
+const clearPendingSaveState = () => {
+  if (typeof window === "undefined") return;
+
+  sessionStorage.removeItem(PENDING_SAVE_KEY);
+  sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+  sessionStorage.removeItem(PENDING_SAVE_URL_KEY);
+  localStorage.removeItem(PENDING_SAVE_BACKUP_KEY);
+  localStorage.removeItem(PENDING_SAVE_URL_FALLBACK_KEY);
+};
 
 export default function PublicPropertyView() {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +79,7 @@ export default function PublicPropertyView() {
   const [requiresSaveConfirmation, setRequiresSaveConfirmation] = useState(false);
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAuthUserId, setPendingAuthUserId] = useState<string | null>(null);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
@@ -218,10 +249,10 @@ export default function PublicPropertyView() {
         if (existing) {
           console.log("[PublicPropertyView] La propiedad ya existía en user_listings");
           setSaved(true);
+          setPendingAuthUserId(null);
           setIsPreparingAccount(false);
           setRequiresSaveConfirmation(false);
-          sessionStorage.removeItem(PENDING_SAVE_KEY);
-          sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+          clearPendingSaveState();
           toast({ title: "Ya tenés esta propiedad guardada", description: "Podés verla en tu listado personal." });
           setSaving(false);
           return true;
@@ -273,10 +304,10 @@ export default function PublicPropertyView() {
         });
 
         setSaved(true);
+        setPendingAuthUserId(null);
         setIsPreparingAccount(false);
         setRequiresSaveConfirmation(false);
-        sessionStorage.removeItem(PENDING_SAVE_KEY);
-        sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+        clearPendingSaveState();
         toast({
           title: "¡Propiedad guardada!",
           description: "La encontrarás en tu listado personal.",
@@ -304,8 +335,21 @@ export default function PublicPropertyView() {
 
   // Check for pending save after OAuth redirect — show confirm modal instead of auto-save
   useEffect(() => {
-    if (!user?.id || !id || saving || saved) return;
-    const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
+    if ((!user?.id && !pendingAuthUserId) || !id || saving || saved) return;
+
+    const pendingSave = getPendingSavePayload();
+    const requiresAccept = sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY) === "1";
+
+    console.log("[PublicPropertyView] Evaluando apertura del modal de confirmación", {
+      currentPropertyId: id,
+      currentUserId: user?.id ?? pendingAuthUserId ?? null,
+      hasPendingSave: Boolean(pendingSave),
+      requiresAccept,
+      showConfirmModal,
+      autoSaveAlreadyTriggered: autoSaveTriggeredRef.current,
+      currentUrl: typeof window !== "undefined" ? window.location.href : null,
+    });
+
     if (!pendingSave) {
       setRequiresSaveConfirmation(false);
       setIsPreparingAccount(false);
@@ -313,38 +357,68 @@ export default function PublicPropertyView() {
     }
 
     try {
-      const { propertyId } = JSON.parse(pendingSave);
+      const { propertyId, publicationId } = JSON.parse(pendingSave);
+
       if (propertyId !== id) {
+        console.log("[PublicPropertyView] El pending save corresponde a otra propiedad", {
+          pendingPropertyId: propertyId,
+          currentPropertyId: id,
+          publicationId,
+        });
         setIsPreparingAccount(false);
         return;
       }
 
       // Mostrar modal de confirmación con el link antes de guardar
-      if (!autoSaveTriggeredRef.current) {
+      if (!showConfirmModal && (!autoSaveTriggeredRef.current || requiresAccept)) {
         autoSaveTriggeredRef.current = true;
+        console.log("[PublicPropertyView] Abriendo modal de confirmación", {
+          propertyId,
+          publicationId,
+          triggeredFrom: requiresAccept ? "confirm-flag" : "pending-save-detected",
+        });
         setShowConfirmModal(true);
       }
 
     } catch {
-      sessionStorage.removeItem(PENDING_SAVE_KEY);
-      sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+      console.error("[PublicPropertyView] No se pudo parsear pending_property_save. Limpiando estado.");
+      clearPendingSaveState();
       setRequiresSaveConfirmation(false);
       setIsPreparingAccount(false);
     }
-  }, [user?.id, id, saving, saved]);
+  }, [user?.id, pendingAuthUserId, id, saving, saved, showConfirmModal]);
 
   /** Usuario acepta en el modal de confirmación → se procede a guardar */
   const handleConfirmSave = () => {
+    const confirmedUserId = user?.id ?? pendingAuthUserId;
+
+    console.log("[PublicPropertyView] Usuario confirmó guardado", {
+      confirmedUserId: confirmedUserId ?? null,
+      propertyId: id,
+      publicationId: pubId,
+      propertyUrl,
+    });
+
     setShowConfirmModal(false);
-    if (!user?.id) return;
+    sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
+
+    if (!confirmedUserId) {
+      autoSaveTriggeredRef.current = false;
+      toast({
+        title: "Falta sesión",
+        description: "Todavía no terminamos de sincronizar tu cuenta. Intentá nuevamente en unos segundos.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsPreparingAccount(true);
     setRequiresSaveConfirmation(false);
 
     // Delay de 3s para dar tiempo al trigger de BD
     setTimeout(() => {
-      console.log("[PublicPropertyView] Guardado post-confirmación", { userId: user.id, propertyId: id });
-      handleSaveProperty(user.id);
+      console.log("[PublicPropertyView] Guardado post-confirmación", { userId: confirmedUserId, propertyId: id });
+      void handleSaveProperty(confirmedUserId);
     }, 3000);
   };
 
@@ -362,18 +436,41 @@ export default function PublicPropertyView() {
         console.error("Error caching publication referrer:", error);
       }
 
-      sessionStorage.setItem(
-        PENDING_SAVE_KEY,
-        JSON.stringify({ propertyId: id, publicationId: pubId })
-      );
+      const pendingPayload = JSON.stringify({ propertyId: id, publicationId: pubId });
+      const returnUrl = window.location.pathname + window.location.search;
+
+      persistPendingSaveState(pendingPayload, returnUrl);
       sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
+
+      console.log("[PublicPropertyView] Guardado pendiente persistido antes de auth", {
+        propertyId: id,
+        publicationId: pubId,
+        returnUrl,
+        referralId: localStorage.getItem("hf_referral_id"),
+      });
+
       setShowAuthModal(true);
     }
   };
 
   const handleAuthenticated = (userId: string) => {
+    if (id) {
+      const pendingPayload = JSON.stringify({ propertyId: id, publicationId: pubId });
+      persistPendingSaveState(pendingPayload, window.location.pathname + window.location.search);
+    }
+
+    console.log("[PublicPropertyView] Auth completado dentro del modal", {
+      userId,
+      propertyId: id,
+      publicationId: pubId,
+    });
+
+    setPendingAuthUserId(userId);
     setShowAuthModal(false);
-    handleSaveProperty(userId);
+    setRequiresSaveConfirmation(false);
+    sessionStorage.setItem(PENDING_SAVE_CONFIRM_KEY, "1");
+    autoSaveTriggeredRef.current = true;
+    setShowConfirmModal(true);
   };
 
   const handleShare = async () => {

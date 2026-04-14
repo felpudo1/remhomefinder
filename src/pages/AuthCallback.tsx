@@ -4,10 +4,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { ROUTES } from "@/lib/constants";
 import { Loader2 } from "lucide-react";
 
 const PENDING_SAVE_KEY = "pending_property_save";
 const PENDING_SAVE_CONFIRM_KEY = "pending_property_save_require_accept";
+const PENDING_SAVE_BACKUP_KEY = "pending_property_save_backup";
+const PENDING_SAVE_URL_KEY = "pending_save_url";
+const PENDING_SAVE_URL_FALLBACK_KEY = "pending_save_url_fallback";
 
 /**
  * Página de callback de OAuth.
@@ -160,16 +164,56 @@ const AuthCallback = () => {
 
           // Check for returnTo param (from QR flow)
           // Fallback: si Supabase/Google droppeó el query param, intentar sessionStorage
-          const returnTo = searchParams.get("returnTo")
-            || sessionStorage.getItem("pending_save_url");
+          const returnToParam = searchParams.get("returnTo");
+          const returnToFromSession = sessionStorage.getItem(PENDING_SAVE_URL_KEY);
+          const returnToFromFallback = localStorage.getItem(PENDING_SAVE_URL_FALLBACK_KEY);
+          const pendingSaveRaw = sessionStorage.getItem(PENDING_SAVE_KEY)
+            || localStorage.getItem(PENDING_SAVE_BACKUP_KEY);
+
+          let derivedReturnTo: string | null = null;
+          if (!returnToParam && !returnToFromSession && !returnToFromFallback && pendingSaveRaw) {
+            try {
+              const { propertyId } = JSON.parse(pendingSaveRaw);
+              if (propertyId) {
+                derivedReturnTo = ROUTES.PUBLIC_PROPERTY(propertyId);
+              }
+            } catch (parseError) {
+              console.error("💎 AuthCallback: No se pudo derivar returnTo desde pending save:", parseError);
+            }
+          }
+
+          const returnTo = returnToParam
+            || returnToFromSession
+            || returnToFromFallback
+            || derivedReturnTo;
+
+          console.log("💎 AuthCallback: resolución de returnTo", {
+            returnToParam,
+            returnToFromSession,
+            returnToFromFallback,
+            derivedReturnTo,
+            resolvedReturnTo: returnTo,
+            pendingSaveRaw,
+          });
+
           const isPublicPropertyRoute =
             returnTo?.startsWith("/p/") || returnTo?.startsWith("/property/");
 
           if (returnTo && isPublicPropertyRoute) {
-            sessionStorage.removeItem("pending_save_url");
+            sessionStorage.removeItem(PENDING_SAVE_URL_KEY);
+            localStorage.removeItem(PENDING_SAVE_URL_FALLBACK_KEY);
+            console.log("💎 AuthCallback: Redirigiendo de nuevo a la propiedad pública:", returnTo);
             navigate(returnTo, { replace: true });
             return;
           }
+
+          if (hasPendingSave) {
+            console.warn("💎 AuthCallback: Hay pending save pero no se resolvió un returnTo público válido.", {
+              returnTo,
+              isPublicPropertyRoute,
+            });
+          }
+
           await redirectByRole(session.user.id);
         } else {
           navigate("/auth", { replace: true });
