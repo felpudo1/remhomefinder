@@ -164,30 +164,13 @@ export default function PublicPropertyView() {
         return;
       }
 
-      // ORQUESTACIÓN INTELIGENTE DE AUTO-GUARDADO (Solución Race Condition / G-OAuth-Phone)
-      // 1. Requerimiento: Evaluar si el user es nuevo por cuenta de Google
-      const isGoogleUser = user?.app_metadata?.provider === "google";
-      
-      // 2. Si el perfil aún está cargando desde Supabase, no podemos saber su estatus aún. Frenamos y avisamos "Preparando..."
-      if (isProfileLoading) {
-        setIsPreparingAccount(true);
-        return;
-      }
-      
-      // 3. Si es user de Google, y su teléfono no existe, el PhoneRequirementOverlay lo está tapando obligatoriamente.
-      // Damos STOP al autoguardar acá, para que los hooks en background o triggers no expiren.
-      // Cuando el usuario mande el tel a través del modal, el 'profile' mutará con el cel guardado y relanzará ¡todo este useEffect!
-      if (isGoogleUser && profile && !profile.phone) {
-        setIsPreparingAccount(true); // Se muestra Preparando (aunque en UI normal el Phone Modal lo tapa por completo)
-        return;
-      }
-
-      // Si pasamos los frenos asíncronos: Despejamos el estatus de Preparación.
+      // FALLBACK MANUAL: Forzar al usuario a usar el botón 'Guardar en mi listado'
+      // Esto absorbe cualquier Race Condition porque le da click a voluntad.
+      setRequiresSaveConfirmation(true);
       setIsPreparingAccount(false);
-      setRequiresSaveConfirmation(false); // Quitamos el ex-molesto banner "Tocá Guardar..."
       
-      // AUTO-GUARDADO PURO (Sin que el usuario haga doble click extra)
-      handleSaveProperty(user.id);
+      // Nota: Nunca borramos el sessionStorage aquí.
+      // Se borra SÓLO adentro de handleSaveProperty() si la BD confirma el éxito.
       
     } catch {
       sessionStorage.removeItem(PENDING_SAVE_KEY);
@@ -195,7 +178,7 @@ export default function PublicPropertyView() {
       setRequiresSaveConfirmation(false);
       setIsPreparingAccount(false);
     }
-  }, [user?.id, id, profile, isProfileLoading, handleSaveProperty, saving, saved]);
+  }, [user?.id, id, saving, saved]);
 
   const handleSaveProperty = useCallback(
     async (userId: string, preloadedOrgId?: string | null) => {
