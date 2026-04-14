@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -381,7 +381,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                                             className="gap-1 rounded-lg px-2 text-xs"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setQrProperty({ id: p.id, propertyId: p.propertyId, title: p.title, publishedBy: p.published_by });
+                                                setQrProperty({ id: p.id, propertyId: p.propertyId, title: p.title, publishedBy: p.agentId });
                                             }}
                                             title="Generar QR"
                                         >

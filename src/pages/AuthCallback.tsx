@@ -52,18 +52,31 @@ const AuthCallback = () => {
           // fallback a localStorage (sobrevive redirects de OAuth)
           const refParam = searchParams.get("ref") || searchParams.get("agente");
           const refStorage = localStorage.getItem("hf_referral_id");
-          let referralId = refParam || refStorage;
-
+          let referralId: string | null = null;
+          
           console.log("💎 AuthCallback: ref en URL params =", refParam);
           console.log("💎 AuthCallback: ref en localStorage =", refStorage);
-          console.log("💎 AuthCallback: referralId final =", referralId);
+
+          // --- CIRUGÍA DE VALIDACIÓN DE REFERIDO PARA OAUTH ---
+          const rawReferral = refParam || refStorage;
+          if (rawReferral) {
+            const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawReferral.trim());
+            if (isValidUUID) {
+              referralId = rawReferral.trim();
+              console.log("💎 AuthCallback: ✅ UUID válido capturado para referenciador =", referralId);
+              
+              // Guardar para consistencia
+              if (!refStorage) {
+                localStorage.setItem("hf_referral_id", referralId);
+              }
+            } else {
+              console.error(`🚨 ABORTO DE REFERIDO: URL o localStorage contiene un UUID inválido. Valor corrupto interceptado: "${rawReferral}"`);
+            }
+          }
+          
           console.log("💎 AuthCallback: user_id =", session.user.id);
           console.log("💎 AuthCallback: provider =", session.user.app_metadata?.provider);
-
-          // Si hay referral en URL pero no en localStorage, guardar para consistencia
-          if (refParam && !refStorage) {
-            localStorage.setItem("hf_referral_id", refParam);
-          }
+          // ----------------------------------------------------
 
           // Si no hay referral cacheado, intentar resolverlo desde la publicación pendiente
           // (cachePublicationReferrer pudo fallar porque el usuario era anónimo y RLS lo bloqueó)

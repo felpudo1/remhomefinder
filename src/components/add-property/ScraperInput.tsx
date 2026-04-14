@@ -3,6 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, Sparkles, Loader2, ImageIcon, X, QrCode } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { QrScannerModal } from "./QrScannerModal";
 import { DuplicateAlertDialog } from "./DuplicateAlertDialog";
 import type {
@@ -93,6 +95,42 @@ export function ScraperInput({
         isFamilyLocked || isInAppLocked || isAgentOwnDupLocked || isUserAgentMarketplaceLocked;
     // urlInApp data used in DuplicateAlertDialog below via props
 
+    const navigate = useNavigate();
+    const { toast } = useToast();
+
+    // --- INTERCEPTOR INTELIGENTE DE QR ---
+    const handleQrIntercept = (scannedUrl: string) => {
+        try {
+            const urlObj = new URL(scannedUrl);
+            const currentOrigin = window.location.origin;
+            
+            // Evaluamos si es una URL generada por nuestra propia App (RemHomeFinder)
+            // Se fija que empiece con /p/ y tenga source=qr
+            if (
+                (urlObj.origin === currentOrigin || urlObj.hostname.includes("remhomefinder")) 
+                && urlObj.pathname.startsWith('/p/') 
+                && urlObj.searchParams.has('source')
+            ) {
+                console.log("💎 QR Interno detectado, cerrando modal y navegando...", scannedUrl);
+                toast({
+                    title: "¡Propiedad de red detectada!",
+                    description: "Abriendo ficha de la propiedad para vista inmediata...",
+                    variant: "default"
+                });
+                setQrOpen(false);
+                if (onCloseParent) onCloseParent(); // Cierra el "AddPropertyModal" si estuviese abierto
+                navigate(urlObj.pathname + urlObj.search); // Nos lleva directito a PublicPropertyView
+                return;
+            }
+        } catch (e) {
+            // URL inparseable o cualquier error sintáctico, seguimos el flujo natural
+        }
+        
+        // Flujo tradicional: es un enlace de rematador o externo
+        setUrl(scannedUrl);
+        setQrOpen(false);
+    };
+
     if (step === "url") {
         return (
             <div className="space-y-5 py-2">
@@ -103,9 +141,14 @@ export function ScraperInput({
                             <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 type="url"
-                                placeholder="http://intocasas.com.uy"
+                                placeholder="http://infocasas.com.uy..."
                                 value={url}
-                                onChange={(e) => setUrl(e.target.value)}
+                                onChange={(e) => {
+                                    setUrl(e.target.value);
+                                    if(e.target.value.includes('/p/') && e.target.value.includes('source=')) {
+                                        handleQrIntercept(e.target.value);
+                                    }
+                                }}
                                 className="pl-9 rounded-xl"
                                 disabled={isUrlActionsLocked || isLoading}
                                 onKeyDown={(e) => !isUrlActionsLocked && !isLoading && e.key === "Enter" && handleScrape()}
@@ -131,7 +174,7 @@ export function ScraperInput({
                 <QrScannerModal
                     open={qrOpen}
                     onClose={() => setQrOpen(false)}
-                    onScan={(scannedUrl) => setUrl(scannedUrl)}
+                    onScan={handleQrIntercept}
                 />
 
                 {/* -- Duplicate Alert Dialog (replaces inline notices) -- */}

@@ -120,9 +120,32 @@ export function RequireAuthModal({
         // Crear cuenta con metadata completa
         // El referral_id se pasa en metadata y el trigger handle_new_user_profile
         // lo lee automáticamente y actualiza profiles.referred_by_id
-        const referralId = localStorage.getItem("hf_referral_id") || null;
         
-        console.log("RequireAuthModal: signUp con referral_id =", referralId);
+        // --- CIRUGÍA DE VALIDACIÓN DE REFERIDO ---
+        const rawReferral = localStorage.getItem("hf_referral_id");
+        let validatedReferralId: string | null = null;
+        
+        if (rawReferral) {
+          // Expresión regular para validar formato UUID v4 de Postgres
+          const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawReferral.trim());
+          
+          if (isValidUUID) {
+            validatedReferralId = rawReferral.trim();
+            console.log("💎 RequireAuthModal: ✅ UUID válido cargado en referral_id =", validatedReferralId);
+          } else {
+            console.error(`🚨 ABORTO DE REFERIDO: Lo que había en localStorage no es un UUID válido. Valor corrupto interceptado: "${rawReferral}"`);
+            toast({
+              title: "Atención",
+              description: "El código de agencia no tiene un formato válido. Se registrará la cuenta sin referenciador.",
+              variant: "destructive"
+            });
+          }
+        } else {
+          console.log("💎 RequireAuthModal: ⚪ Ningún referido encontrado en localStorage.");
+        }
+        
+        console.log("RequireAuthModal: signUp con referral_id final =", validatedReferralId);
+        // -----------------------------------------
         
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -132,7 +155,7 @@ export function RequireAuthModal({
               account_type: "user",
               display_name: familyName.trim(),
               phone: userPhone.trim(),
-              referral_id: referralId || undefined,
+              referral_id: validatedReferralId || undefined,
             },
           },
         });
@@ -141,8 +164,8 @@ export function RequireAuthModal({
           if (data.session) {
             // Verificar que el trigger guardó el referral correctamente
             // Si no lo hizo, hacer update manual como fallback
-            if (referralId) {
-              await ensureReferralLinked(data.user.id, referralId);
+            if (validatedReferralId) {
+              await ensureReferralLinked(data.user.id, validatedReferralId);
             }
             localStorage.removeItem("hf_referral_id");
             onAuthenticated(data.user.id);
