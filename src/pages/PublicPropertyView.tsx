@@ -61,9 +61,6 @@ export default function PublicPropertyView() {
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
-  const hasPendingSave = typeof window !== "undefined"
-    ? Boolean(sessionStorage.getItem(PENDING_SAVE_KEY))
-    : false;
 
   // URL completa de esta propiedad para mostrar en el modal de confirmación
   const propertyUrl = typeof window !== "undefined" ? window.location.href : "";
