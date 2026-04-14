@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
 import { useCurrentUser } from "@/contexts/AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
 import { ROUTES } from "@/lib/constants";
 import { getUserOrgIdWithRetry } from "@/lib/organizationMembership";
 
@@ -56,6 +57,7 @@ export default function PublicPropertyView() {
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
+  const { data: profile, isLoading: isProfileLoading } = useProfile();
 
   /**
    * Guarda el referral ID en localStorage para que el modal de registro lo use.
@@ -146,7 +148,8 @@ export default function PublicPropertyView() {
 
   // Check for pending save after OAuth redirect
   useEffect(() => {
-    if (!user?.id || !id) return;
+    // Si no hay user, property ID o este prop ya está siendo salvado, abortar este hook.
+    if (!user?.id || !id || saving || saved) return;
     const pendingSave = sessionStorage.getItem(PENDING_SAVE_KEY);
     if (!pendingSave) {
       setRequiresSaveConfirmation(false);
@@ -161,16 +164,38 @@ export default function PublicPropertyView() {
         return;
       }
 
-      // Show confirmation banner immediately — orgId will be resolved at save time
-      setRequiresSaveConfirmation(true);
+      // ORQUESTACIÓN INTELIGENTE DE AUTO-GUARDADO (Solución Race Condition / G-OAuth-Phone)
+      // 1. Requerimiento: Evaluar si el user es nuevo por cuenta de Google
+      const isGoogleUser = user?.app_metadata?.provider === "google";
+      
+      // 2. Si el perfil aún está cargando desde Supabase, no podemos saber su estatus aún. Frenamos y avisamos "Preparando..."
+      if (isProfileLoading) {
+        setIsPreparingAccount(true);
+        return;
+      }
+      
+      // 3. Si es user de Google, y su teléfono no existe, el PhoneRequirementOverlay lo está tapando obligatoriamente.
+      // Damos STOP al autoguardar acá, para que los hooks en background o triggers no expiren.
+      // Cuando el usuario mande el tel a través del modal, el 'profile' mutará con el cel guardado y relanzará ¡todo este useEffect!
+      if (isGoogleUser && profile && !profile.phone) {
+        setIsPreparingAccount(true); // Se muestra Preparando (aunque en UI normal el Phone Modal lo tapa por completo)
+        return;
+      }
+
+      // Si pasamos los frenos asíncronos: Despejamos el estatus de Preparación.
       setIsPreparingAccount(false);
+      setRequiresSaveConfirmation(false); // Quitamos el ex-molesto banner "Tocá Guardar..."
+      
+      // AUTO-GUARDADO PURO (Sin que el usuario haga doble click extra)
+      handleSaveProperty(user.id);
+      
     } catch {
       sessionStorage.removeItem(PENDING_SAVE_KEY);
       sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
       setRequiresSaveConfirmation(false);
       setIsPreparingAccount(false);
     }
-  }, [user?.id, id]);
+  }, [user?.id, id, profile, isProfileLoading, handleSaveProperty, saving, saved]);
 
   const handleSaveProperty = useCallback(
     async (userId: string, preloadedOrgId?: string | null) => {
