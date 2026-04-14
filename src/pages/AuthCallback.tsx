@@ -41,30 +41,16 @@ const AuthCallback = () => {
 
       try {
         if (session?.user) {
-          console.log("💎 AuthCallback: user_id =", session.user.id);
-          console.log("💎 AuthCallback: provider =", session.user.app_metadata?.provider);
-
-          // DEBUG: ver qué hay en storage al entrar
-          console.log("💎 AuthCallback: Estado de storage al entrar:", {
-            ss_pending: sessionStorage.getItem(PENDING_SAVE_KEY),
-            ls_backup: localStorage.getItem(PENDING_SAVE_BACKUP_KEY),
-            ss_url: sessionStorage.getItem(PENDING_SAVE_URL_KEY),
-            ls_url_fallback: localStorage.getItem(PENDING_SAVE_URL_FALLBACK_KEY),
-            ss_confirm: sessionStorage.getItem(PENDING_SAVE_CONFIRM_KEY),
-          });
-
           // Restaurar sessionStorage desde localStorage si fue perdido durante OAuth redirect
           const ssPending = sessionStorage.getItem(PENDING_SAVE_KEY);
           const lsPending = localStorage.getItem(PENDING_SAVE_BACKUP_KEY);
           if (!ssPending && lsPending) {
-            console.log("💎 AuthCallback: Restaurando pending_property_save desde localStorage a sessionStorage");
             sessionStorage.setItem(PENDING_SAVE_KEY, lsPending);
           }
 
           const ssUrl = sessionStorage.getItem(PENDING_SAVE_URL_KEY);
           const lsUrl = localStorage.getItem(PENDING_SAVE_URL_FALLBACK_KEY);
           if (!ssUrl && lsUrl) {
-            console.log("💎 AuthCallback: Restaurando pending_save_url desde localStorage a sessionStorage");
             sessionStorage.setItem(PENDING_SAVE_URL_KEY, lsUrl);
           }
 
@@ -212,14 +198,18 @@ const AuthCallback = () => {
             || returnToFromFallback
             || derivedReturnTo;
 
-          console.log("💎 AuthCallback: resolución de returnTo", {
-            returnToParam,
-            returnToFromSession,
-            returnToFromFallback,
-            derivedReturnTo,
-            resolvedReturnTo: returnTo,
-            pendingSaveRaw,
-          });
+          // FAIL-SAFE: si hay pending save pero returnTo es null, derivarlo desde el pending save
+          if (!returnTo && hasPendingSave && pendingSaveRaw) {
+            try {
+              const { propertyId } = JSON.parse(pendingSaveRaw);
+              if (propertyId) {
+                navigate(ROUTES.PUBLIC_PROPERTY(propertyId), { replace: true });
+                return;
+              }
+            } catch (parseError) {
+              console.error("💎 AuthCallback: FAIL-SAFE — error derivando returnTo:", parseError);
+            }
+          }
 
           const isPublicPropertyRoute =
             returnTo?.startsWith("/p/") || returnTo?.startsWith("/property/");

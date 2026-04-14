@@ -131,6 +131,23 @@ const Index = () => {
 
   const { canSaveMore, maxSaves, isPremium, referralBonus } = useSubscription();
 
+  // FAIL-SAFE: si hay un pending save de QR en localStorage, redirigir a la propiedad
+  // Esto ocurre cuando Supabase OAuth redirige directo al dashboard sin pasar por /auth/callback
+  useEffect(() => {
+    const pendingSaveRaw = localStorage.getItem("pending_property_save_backup");
+    if (pendingSaveRaw && authUser) {
+      try {
+        const { propertyId } = JSON.parse(pendingSaveRaw);
+        if (propertyId) {
+          console.log("[Index] FAIL-SAFE: pending save detectado, redirigiendo a propiedad:", propertyId);
+          navigate(ROUTES.PUBLIC_PROPERTY(propertyId), { replace: true });
+        }
+      } catch (e) {
+        console.error("[Index] FAIL-SAFE: error parseando pending save:", e);
+      }
+    }
+  }, [authUser, navigate]);
+
   // Ejecutar tour guiado la primera vez que el usuario entra
   useEffect(() => {
     runDashboardTour();
