@@ -34,8 +34,50 @@ export function PhoneRequirementOverlay() {
   }, [isProfileLoading, user, profile]);
 
   /**
+   * Lógica especial solicitada por JP:
+   * 1. No dejar escribir el 0 al inicio tras el prefijo.
+   * 2. Evitar que el usuario repita "598" tiéandolo adentro de la caja.
+   */
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    let val = e.target.value;
+    
+    // El InputPhone devuelve algo como "+598 xxxxx"
+    // Queremos validar la parte de después del +598
+    const prefix1 = "+598 ";
+    const prefix2 = "+598";
+    
+    let numberPart = val;
+    let actualPrefix = "";
+
+    if (val.startsWith(prefix1)) {
+      numberPart = val.slice(prefix1.length).trim();
+      actualPrefix = prefix1;
+    } else if (val.startsWith(prefix2)) {
+      numberPart = val.slice(prefix2.length).trim();
+      actualPrefix = prefix2;
+    }
+
+    if (actualPrefix) {
+      // Si el usuario intentó escribir "598" manual al inicio de SU CÓDIGO 
+      if (numberPart.startsWith("598") && numberPart.length > 3) {
+        numberPart = numberPart.slice(3).trim();
+      }
+
+      // Si el usuario intenta escribir un 0 al inicio del número móvil, lo removemos
+      if (numberPart.startsWith("0")) {
+        numberPart = numberPart.slice(1).trim();
+      }
+      
+      val = actualPrefix + (numberPart ? " " + numberPart : "");
+    }
+
+    setPhone(val);
+  };
+
+  /**
    * Valida y guarda el teléfono en el perfil.
-   * El componente InputPhone ya incluye el prefijo en el valor de salida.
+   * El componente InputPhone ya incluye el prefijo en el valor de salida (+598)
    */
   const handleSavePhone = async () => {
     if (!phone.trim()) {
@@ -43,8 +85,7 @@ export function PhoneRequirementOverlay() {
       return;
     }
 
-    // El valor que viene de InputPhone ya tiene el prefijo (ej: "598 94123456")
-    // Limpiamos espacios para guardar el formato puro
+    // El valor que viene es "+598 94XXXXXX". A DB se va sin espacios pero conservando el +
     const finalPhone = phone.replace(/\s+/g, "");
 
     setIsSaving(true);
@@ -69,40 +110,6 @@ export function PhoneRequirementOverlay() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  /**
-   * Lógica especial solicitada por JP:
-   * 1. No dejar escribir el 0 al inicio tras el prefijo.
-   * 2. Evitar que el usuario repita "598" tiéandolo adentro de la caja.
-   */
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    let val = e.target.value;
-    
-    // El InputPhone devuelve algo como "598 xxxxx"
-    // Queremos validar la parte de después del 598
-    const prefix = "598 ";
-    if (val.startsWith(prefix)) {
-      let numberPart = val.slice(prefix.length).trim();
-      
-      // Si el usuario intentó escribir "598" manual al inicio de SU CÓDIGO (y no es solo que tecleó un 5 y un 9...),
-      // lo despojamos para evitar 598 59894...
-      if (numberPart.startsWith("598") && numberPart.length > 3) {
-        numberPart = numberPart.slice(3).trim();
-      } else if (numberPart.startsWith("+598")) {
-        numberPart = numberPart.slice(4).trim();
-      }
-
-      // Si el usuario intenta escribir un 0 al inicio del número móvil, lo removemos
-      if (numberPart.startsWith("0")) {
-        numberPart = numberPart.slice(1);
-      }
-      
-      val = prefix + numberPart;
-    }
-
-    setPhone(val);
   };
 
   if (!isOpen) return null;
@@ -141,8 +148,8 @@ export function PhoneRequirementOverlay() {
           <div className="w-full space-y-4">
             <div className="text-left">
               <InputPhone
-                countryCode="598"
-                placeholder="59894123456"
+                countryCode="+598"
+                placeholder="94 123 456"
                 value={phone}
                 onChange={handlePhoneChange}
                 showIcon={true}
