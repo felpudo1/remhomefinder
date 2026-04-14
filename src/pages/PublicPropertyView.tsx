@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { useProfile } from "@/hooks/useProfile";
+
 import { ROUTES } from "@/lib/constants";
 import { getUserOrgIdWithRetry } from "@/lib/organizationMembership";
 
@@ -57,7 +57,7 @@ export default function PublicPropertyView() {
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
   const { user } = useCurrentUser();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  
 
   /**
    * Guarda el referral ID en localStorage para que el modal de registro lo use.
