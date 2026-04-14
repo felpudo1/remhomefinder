@@ -167,24 +167,7 @@ export default function PublicPropertyView() {
           userId,
           preloadedOrgId: preloadedOrgId ?? null,
           isGoogleUser,
-          phoneReady: isPhoneReady,
-          referredById: profile?.referredById ?? null,
         });
-
-        if (isGoogleUser && !isPhoneReady) {
-          console.warn("[PublicPropertyView] Guardado pausado: falta teléfono para usuario Google", {
-            userId,
-            propertyId: id,
-          });
-          setIsPreparingAccount(false);
-          setRequiresSaveConfirmation(true);
-          autoSaveTriggeredRef.current = false;
-          toast({
-            title: "Falta tu celular",
-            description: "Guardalo para terminar de guardar este aviso en tu listado.",
-          });
-          return false;
-        }
 
         // Forzar refresh del JWT para asegurar que auth.uid() esté sincronizado en la BD.
         // Esto resuelve el race condition post-Google OAuth donde el token local
