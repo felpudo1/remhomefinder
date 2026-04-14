@@ -50,6 +50,8 @@ export default function PublicPropertyView() {
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
+  // Track if auto-save was already triggered (prevents double-fire)
+  const autoSaveTriggeredRef = useRef(false);
 
   const source = searchParams.get("source");
   const pubId = searchParams.get("pub_id");
@@ -164,21 +166,30 @@ export default function PublicPropertyView() {
         return;
       }
 
-      // FALLBACK MANUAL: Forzar al usuario a usar el botón 'Guardar en mi listado'
-      // Esto absorbe cualquier Race Condition porque le da click a voluntad.
-      setRequiresSaveConfirmation(true);
-      setIsPreparingAccount(false);
-      
-      // Nota: Nunca borramos el sessionStorage aquí.
-      // Se borra SÓLO adentro de handleSaveProperty() si la BD confirma el éxito.
-      
+      // AUTO-SAVE: Disparar el guardado automáticamente tras OAuth redirect.
+      // Usamos un ref para evitar que se dispare más de una vez.
+      if (!autoSaveTriggeredRef.current) {
+        autoSaveTriggeredRef.current = true;
+        setIsPreparingAccount(true);
+        setRequiresSaveConfirmation(false);
+
+        // Delay de 3s para dar tiempo al trigger de BD (handle_new_user_profile)
+        // a crear la organización + membresía, y al JWT a sincronizarse.
+        const timer = setTimeout(() => {
+          console.log("[PublicPropertyView] Auto-save triggered for user:", user.id);
+          handleSaveProperty(user.id);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+      }
+
     } catch {
       sessionStorage.removeItem(PENDING_SAVE_KEY);
       sessionStorage.removeItem(PENDING_SAVE_CONFIRM_KEY);
       setRequiresSaveConfirmation(false);
       setIsPreparingAccount(false);
     }
-  }, [user?.id, id, saving, saved]);
+  }, [user?.id, id, saving, saved, handleSaveProperty]);
   const handleSaveProperty = useCallback(
     async (userId: string, preloadedOrgId?: string | null) => {
       if (!id || saving || saved) return false;
