@@ -32,8 +32,15 @@ export function PhoneRequirementOverlay() {
       sessionStorage.getItem("pending_property_save") ||
       localStorage.getItem("pending_property_save_backup")
     );
+    // Flag que indica que el QR save acaba de completarse (seteado por Index.tsx)
+    const qrSaveJustCompleted = sessionStorage.getItem("qr_save_just_completed") === "1";
+
     if (!isProfileLoading && user && profile && !profile.phone && isGoogleUser && !hasPendingQrSave) {
       setIsOpen(true);
+      // Limpiar el flag después de abrir
+      if (qrSaveJustCompleted) {
+        sessionStorage.removeItem("qr_save_just_completed");
+      }
     } else {
       setIsOpen(false);
     }
@@ -44,6 +51,9 @@ export function PhoneRequirementOverlay() {
     const handleSaveCompleted = () => {
       // Force re-check: refetch profile to get fresh data
       refetchProfile();
+      // Limpiar el pending save backup por si acaso
+      localStorage.removeItem("pending_property_save_backup");
+      localStorage.removeItem("pending_save_url_fallback");
     };
     window.addEventListener("qr_save_completed", handleSaveCompleted);
     return () => window.removeEventListener("qr_save_completed", handleSaveCompleted);

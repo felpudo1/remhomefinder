@@ -139,7 +139,6 @@ const Index = () => {
       try {
         const { propertyId } = JSON.parse(pendingSaveRaw);
         if (propertyId) {
-          console.log("[Index] FAIL-SAFE: pending save detectado, redirigiendo a propiedad:", propertyId);
           navigate(ROUTES.PUBLIC_PROPERTY(propertyId), { replace: true });
         }
       } catch (e) {
@@ -147,6 +146,16 @@ const Index = () => {
       }
     }
   }, [authUser, navigate]);
+
+  // FAIL-SAFE 2: después de un QR save, forzar que PhoneRequirementOverlay muestre el modal
+  useEffect(() => {
+    const handleSaveCompleted = () => {
+      // Señalar que el QR save se completó y el overlay de teléfono debe mostrarse
+      sessionStorage.setItem("qr_save_just_completed", "1");
+    };
+    window.addEventListener("qr_save_completed", handleSaveCompleted);
+    return () => window.removeEventListener("qr_save_completed", handleSaveCompleted);
+  }, []);
 
   // Ejecutar tour guiado la primera vez que el usuario entra
   useEffect(() => {
