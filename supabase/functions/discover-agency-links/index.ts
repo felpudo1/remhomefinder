@@ -133,12 +133,14 @@ serve(async (req) => {
             .select("key, value")
             .in("key", ["scraper_exclude_urls", "scraper_forbidden_extensions"]);
 
-          const globalExcludePatterns = globalConfig?.find(c => c.key === "scraper_exclude_urls")?.value
-            ? globalConfig.find(c => c.key === "scraper_exclude_urls").value.split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean)
+          const excludeUrlsEntry = globalConfig?.find(c => c.key === "scraper_exclude_urls");
+          const globalExcludePatterns = excludeUrlsEntry?.value
+            ? excludeUrlsEntry.value.split(",").map((p: string) => p.trim().toLowerCase()).filter(Boolean)
             : [];
 
-          const globalForbiddenExt = globalConfig?.find(c => c.key === "scraper_forbidden_extensions")?.value
-            ? globalConfig.find(c => c.key === "scraper_forbidden_extensions").value.split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean)
+          const forbiddenExtEntry = globalConfig?.find(c => c.key === "scraper_forbidden_extensions");
+          const globalForbiddenExt = forbiddenExtEntry?.value
+            ? forbiddenExtEntry.value.split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean)
             : [];
 
           // Combinar extensiones prohibidas (Locales + Globales)
