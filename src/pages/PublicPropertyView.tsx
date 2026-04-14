@@ -1,9 +1,10 @@
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, ChevronLeft, ChevronRight, Bookmark, Loader2, Share2 } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, Bookmark, Loader2, Share2, ExternalLink, CheckCircle2 } from "lucide-react";
 import { currencySymbol } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RequireAuthModal } from "@/components/auth/RequireAuthModal";
