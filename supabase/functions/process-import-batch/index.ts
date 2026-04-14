@@ -477,7 +477,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("Error general process-import-batch:", err);
     return new Response(
-      JSON.stringify({ error: "Error interno del servidor", details: err.message }),
+      JSON.stringify({ error: "Error interno del servidor", details: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
