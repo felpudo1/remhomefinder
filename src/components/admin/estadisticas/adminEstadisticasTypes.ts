@@ -16,7 +16,8 @@ export interface Stats {
   properties: CategoryStats;
   agencies: CategoryStats;
   users: CategoryStats;
-  admins: number;
+  agents: CategoryStats;
+  admins: CategoryStats;
 }
 
 export interface ScrapeUsageRow {

@@ -1,33 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Building2, Users, Bot, BarChart3,
-  Settings, FileText, KeyRound, MapPin, MessageSquare, LayoutDashboard
+  Users, BarChart3, Settings, FileText
 } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
-import { AdminAgencias } from "@/components/admin/AdminAgencias";
-import { AdminUsuarios } from "@/components/admin/AdminUsuarios";
-import { AdminPrompt } from "@/components/admin/AdminPrompt";
+import { AdminConsola } from "@/components/admin/AdminConsola";
+import { AdminConfiguracion } from "@/components/admin/AdminConfiguracion";
+import { AdminSistema } from "@/components/admin/AdminSistema";
 import { AdminEstadisticas } from "@/components/admin/AdminEstadisticas";
-import { AdminSystem } from "@/components/admin/AdminSystem";
 import { AdminPublicaciones } from "@/components/admin/AdminPublicaciones";
-import { AdminGrupos } from "@/components/admin/AdminGrupos";
-import { AdminDatosAdmin } from "@/components/admin/AdminDatosAdmin";
-import { AdminGeografia } from "@/components/admin/AdminGeografia";
-import { AdminStatusFeedbackConfig } from "@/components/admin/status-feedback/AdminStatusFeedbackConfig";
-import { AdminAnnouncements } from "@/components/admin/AdminAnnouncements";
-import { AdminLanding } from "@/components/admin/AdminLanding";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Footer } from "@/components/Footer";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 
-type AdminSection = "agentes" | "usuarios" | "publicaciones" | "grupos" | "prompt" | "estadisticas" | "sistema" | "datos-admin" | "geografia" | "feedback" | "mensajes" | "landing";
+type AdminSection = "consola" | "publicaciones" | "configuracion" | "estadisticas" | "sistema";
 
-const VALID_SECTIONS: AdminSection[] = ["agentes", "usuarios", "publicaciones", "grupos", "prompt", "estadisticas", "sistema", "datos-admin", "geografia", "feedback", "mensajes", "landing"];
+const VALID_SECTIONS: AdminSection[] = ["consola", "publicaciones", "configuracion", "estadisticas", "sistema"];
 
 const MENU_ITEMS: {
   id: AdminSection;
@@ -35,18 +27,11 @@ const MENU_ITEMS: {
   icon: React.ElementType;
   description: string;
 }[] = [
-    { id: "agentes", label: "Datos Users", icon: Building2, description: "Información completa de todos los usuarios y agentes" },
-    { id: "usuarios", label: "Consola", icon: Users, description: "Gestión rápida de roles y estados" },
+    { id: "consola", label: "Consola", icon: Users, description: "Usuarios, Grupos y Equipos de la plataforma" },
     { id: "publicaciones", label: "Publicaciones", icon: FileText, description: "Todas las publicaciones guardadas por usuarios" },
-    { id: "grupos", label: "Grupos / Equipos", icon: Users, description: "Todos los grupos y equipos de la plataforma" },
-    { id: "geografia", label: "Geografía", icon: MapPin, description: "Gestión de Departamentos y Barrios" },
-    { id: "feedback", label: "Feedback Config", icon: Settings, description: "Configuración de campos de feedback por estado" },
-    { id: "prompt", label: "Prompt / IA", icon: Bot, description: "Editor del prompt del scraper" },
+    { id: "configuracion", label: "Configuración App", icon: Settings, description: "Geografía, Feedback y Prompt / IA" },
     { id: "estadisticas", label: "Estadísticas", icon: BarChart3, description: "Métricas de la plataforma" },
-    { id: "mensajes", label: "Mensajes", icon: MessageSquare, description: "Enviar novedades y anuncios a usuarios y agentes" },
-    { id: "sistema", label: "Sistema", icon: Settings, description: "Configuración general de la plataforma" },
-    { id: "datos-admin", label: "Datos Admin", icon: KeyRound, description: "Datos privados del administrador (cuentas, claves, notas)" },
-    { id: "landing", label: "Landing", icon: LayoutDashboard, description: "Gestión de agencias del carrusel de la landing page" },
+    { id: "sistema", label: "Sistema", icon: Settings, description: "Config, Mensajes, Datos Admin y Landing" },
   ];
 
 /**
@@ -63,68 +48,26 @@ const Admin = () => {
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const { isPremium } = useSubscription();
-  const [scrapeCounts, setScrapeCounts] = useState({
-    users: 0,
-    agents: 0,
-    total: 0,
-  });
-
-  const fetchScrapeCounts = async () => {
-    const [{ count: usersCount, error: usersError }, { count: agentsCount, error: agentsError }] = await Promise.all([
-      supabase
-        .from("scrape_usage_log")
-        .select("id", { count: "exact", head: true })
-        .eq("role", "user"),
-      supabase
-        .from("scrape_usage_log")
-        .select("id", { count: "exact", head: true })
-        .eq("role", "agent"),
-    ]);
-
-    if (usersError || agentsError) {
-      console.error("Error cargando contadores de scraping:", usersError || agentsError);
-      return;
-    }
-
-    const users = usersCount || 0;
-    const agents = agentsCount || 0;
-    setScrapeCounts({
-      users,
-      agents,
-      total: users + agents,
-    });
-  };
-
-  useEffect(() => {
-    // Redirect /admin to /admin/agentes
-    if (!section) {
-      navigate(ROUTES.ADMIN_SECTION("agentes"), { replace: true });
-    }
-  }, [section, navigate]);
-
-  useEffect(() => {
-    fetchScrapeCounts();
-  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate(ROUTES.AUTH);
   };
 
+  useEffect(() => {
+    // Redirect /admin to /admin/consola
+    if (!section) {
+      navigate(ROUTES.ADMIN_SECTION("consola"), { replace: true });
+    }
+  }, [section, navigate]);
+
   const renderSection = () => {
     switch (activeSection) {
-      case "agentes": return <AdminAgencias toast={toast} />;
-      case "usuarios": return <AdminUsuarios toast={toast} />;
+      case "consola": return <AdminConsola toast={toast} />;
       case "publicaciones": return <AdminPublicaciones toast={toast} />;
-      case "grupos": return <AdminGrupos toast={toast} />;
-      case "geografia": return <AdminGeografia toast={toast} />;
-      case "feedback": return <AdminStatusFeedbackConfig />;
-      case "mensajes": return <AdminAnnouncements />;
-      case "prompt": return <AdminPrompt toast={toast} />;
+      case "configuracion": return <AdminConfiguracion toast={toast} />;
       case "estadisticas": return <AdminEstadisticas />;
-      case "sistema": return <AdminSystem />;
-      case "datos-admin": return <AdminDatosAdmin />;
-      case "landing": return <AdminLanding />;
+      case "sistema": return <AdminSistema toast={toast} />;
       default: return null;
     }
   };
@@ -142,7 +85,6 @@ const Admin = () => {
         userEmail={profile?.email}
         displayName={profile?.displayName}
         isPremium={isPremium}
-        scrapeCounts={scrapeCounts}
       />
 
       {/* Contenido principal */}

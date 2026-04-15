@@ -1,4 +1,4 @@
-import { Building2, Home, Shield, Users2 } from "lucide-react";
+import { Building2, Home, Shield, Users2, UserCog } from "lucide-react";
 import type { Stats, SummaryCardData } from "./adminEstadisticasTypes";
 
 interface AdminStatsSummaryCardsProps {
@@ -38,17 +38,27 @@ export function AdminStatsSummaryCards({ stats }: AdminStatsSummaryCardsProps) {
       breakdown: stats?.users.breakdown,
     },
     {
+      title: "Agentes",
+      subtitle: "Equipo ventas",
+      totalLabel: "TOTAL",
+      total: stats?.agents.total || 0,
+      icon: UserCog,
+      iconClassName: "bg-sky-50 text-sky-600 dark:bg-sky-900/20",
+      breakdown: stats?.agents.breakdown,
+    },
+    {
       title: "Admin",
       subtitle: "Sistema",
-      totalLabel: "ADMINS",
-      total: stats?.admins || 0,
+      totalLabel: "TOTAL",
+      total: stats?.admins.total || 0,
       icon: Shield,
       iconClassName: "bg-amber-50 text-amber-600 dark:bg-amber-900/20",
+      breakdown: stats?.admins.breakdown,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       {cards.map((card) => {
         const Icon = card.icon;
         return (

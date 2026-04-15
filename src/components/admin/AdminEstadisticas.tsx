@@ -68,6 +68,7 @@ export function AdminEstadisticas() {
             const agStats = { total: 0, active: 0, pending: 0, suspended: 0, rejected: 0 };
             const userStats = { total: 0, active: 0, pending: 0, suspended: 0, rejected: 0 };
             let adminsCount = 0;
+            let sysAdminsCount = 0;
 
             profilesRes.data?.forEach((p) => {
                 const roles = roleMap[p.user_id] || [];
@@ -90,17 +91,34 @@ export function AdminEstadisticas() {
                 }
 
                 if (roles.includes('admin')) adminsCount++;
+                if (roles.includes('sysadmin')) sysAdminsCount++;
             });
 
-            // Count agent_publications
-            const pubTotal = await (supabase.from("agent_publications") as any).select("id", { count: "exact", head: true });
-            const { data: pubData } = await (supabase.from("agent_publications") as any).select("status");
+            // Count agents by agencymember role in user_roles
+            const { data: agentRoleMembers } = await (supabase.from("user_roles") as any).select("user_id").eq("role", "agencymember");
+            const agentStats = { total: 0, active: 0, pending: 0, suspended: 0 };
 
-            const propStats = { active: 0, paused: 0, closed: 0 };
-            pubData?.forEach((p) => {
+            if (agentRoleMembers && agentRoleMembers.length > 0) {
+                agentStats.total = agentRoleMembers.length;
+                const agentUserIds = agentRoleMembers.map((m: any) => m.user_id);
+                const { data: agentProfiles } = await (supabase.from("profiles") as any).select("user_id, status").in("user_id", agentUserIds);
+                agentProfiles?.forEach((p: any) => {
+                    if (p.status === 'active') agentStats.active++;
+                    else if (p.status === 'pending') agentStats.pending++;
+                    else if (p.status === 'suspended') agentStats.suspended++;
+                });
+            }
+
+            // Count agent_publications - get ALL statuses, not just paginated
+            const pubTotal = await (supabase.from("agent_publications") as any).select("id", { count: "exact", head: true });
+            const { data: allPubData } = await (supabase.from("agent_publications") as any).select("status");
+
+            const propStats = { active: 0, paused: 0, closed: 0, other: 0 };
+            allPubData?.forEach((p) => {
                 if (p.status === 'disponible') propStats.active++;
                 else if (p.status === 'pausado') propStats.paused++;
                 else if (['vendido', 'alquilado'].includes(p.status)) propStats.closed++;
+                else propStats.other++;
             });
 
             setStats({
@@ -110,6 +128,7 @@ export function AdminEstadisticas() {
                         { label: "Activas", count: propStats.active, color: "text-emerald-500" },
                         { label: "Pausadas", count: propStats.paused, color: "text-amber-500" },
                         { label: "Cerradas", count: propStats.closed, color: "text-blue-500" },
+                        { label: "Otras", count: propStats.other, color: "text-muted-foreground" },
                     ]
                 },
                 agencies: {
@@ -130,7 +149,21 @@ export function AdminEstadisticas() {
                         { label: "Eliminados", count: userStats.rejected, color: "text-rose-500" },
                     ]
                 },
-                admins: adminsCount,
+                agents: {
+                    total: agentStats.total,
+                    breakdown: [
+                        { label: "Activos", count: agentStats.active, color: "text-emerald-500" },
+                        { label: "Pendientes", count: agentStats.pending, color: "text-amber-500" },
+                        { label: "Suspendidos", count: agentStats.suspended, color: "text-orange-500" },
+                    ]
+                },
+                admins: {
+                    total: adminsCount + sysAdminsCount,
+                    breakdown: [
+                        { label: "Admins", count: adminsCount, color: "text-amber-500" },
+                        { label: "SysAdmins", count: sysAdminsCount, color: "text-red-500" },
+                    ]
+                },
             });
         } catch (e: unknown) {
             console.error("Error en dashboard stats:", e);

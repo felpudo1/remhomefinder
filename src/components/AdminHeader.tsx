@@ -14,11 +14,6 @@ interface AdminHeaderProps {
     userEmail?: string | null;
     displayName?: string | null;
     isPremium?: boolean;
-    scrapeCounts?: {
-        users: number;
-        agents: number;
-        total: number;
-    };
 }
 
 export const AdminHeader = ({
@@ -29,7 +24,6 @@ export const AdminHeader = ({
     userEmail,
     displayName,
     isPremium,
-    scrapeCounts,
 }: AdminHeaderProps) => {
     const { value: appBrandName } = useSystemConfig(APP_BRAND_NAME_KEY, APP_BRAND_NAME_DEFAULT);
     const dbStatus = useAdminDbStatus();
@@ -66,27 +60,6 @@ export const AdminHeader = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        title="Scrapers de users"
-                        className="h-8 min-w-8 rounded-full border border-border bg-muted/40 px-2 text-xs font-semibold text-foreground"
-                    >
-                        U {scrapeCounts?.users ?? 0}
-                    </button>
-                    <button
-                        type="button"
-                        title="Scrapers de agentes"
-                        className="h-8 min-w-8 rounded-full border border-border bg-muted/40 px-2 text-xs font-semibold text-foreground"
-                    >
-                        A {scrapeCounts?.agents ?? 0}
-                    </button>
-                    <button
-                        type="button"
-                        title="Scrapers totales"
-                        className="h-8 min-w-8 rounded-full border border-primary/30 bg-primary/10 px-2 text-xs font-bold text-primary"
-                    >
-                        T {scrapeCounts?.total ?? 0}
-                    </button>
                     <button
                         type="button"
                         title={
