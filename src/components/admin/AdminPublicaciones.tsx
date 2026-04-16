@@ -45,6 +45,14 @@ export function AdminPublicaciones({ toast }: Props) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Importador masivo — selección de agente destino
+  const { openModal: openImporter } = useImportActions();
+  const { data: agents = [] } = useAgents();
+  const [selectedImportAgentId, setSelectedImportAgentId] = useState<string>("");
+
+  const selectedAgent = agents.find(a => a.id === selectedImportAgentId);
+  const canImport = Boolean(selectedAgent?.org_id);
+
   const { addProperty: addPropertyMutation } = usePropertyMutations();
 
   const handleRefresh = async () => {
