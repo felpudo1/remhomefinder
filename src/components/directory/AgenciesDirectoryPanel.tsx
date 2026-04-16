@@ -4,7 +4,6 @@ import { useGeography } from "@/hooks/useGeography";
 import { Heart, Crown, ExternalLink, Search, Loader2, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
