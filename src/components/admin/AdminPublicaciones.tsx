@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Building2, Users, RefreshCw } from "lucide-react";
+import { Building2, Users, RefreshCw, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProperty, MktProperty, MarketplaceStatus } from "@/types/admin-publications";
@@ -18,6 +18,15 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { useImportActions } from "@/store/useImportStore";
+import { useAgents } from "@/hooks/useAgents";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
