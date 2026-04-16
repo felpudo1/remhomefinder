@@ -40,6 +40,9 @@ const MENU_ITEMS: {
  * Utiliza un layout de sidebar + contenido dinámico basado en la sección seleccionada.
  */
 const Admin = () => {
+  // Suscripción Realtime para importación masiva desde admin
+  useImportRealtime();
+
   const { section } = useParams<{ section?: string }>();
   const activeSection: AdminSection = VALID_SECTIONS.includes(section as AdminSection)
     ? (section as AdminSection)
