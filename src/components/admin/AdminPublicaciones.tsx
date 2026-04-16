@@ -5,6 +5,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
+import { AgencyMassImporter } from "@/components/agent/AgencyMassImporter";
+import { ImportProgressIndicator } from "@/components/agent/ImportProgressIndicator";
 import { Building2, Users, RefreshCw, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
