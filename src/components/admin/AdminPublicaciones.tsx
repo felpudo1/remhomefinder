@@ -387,7 +387,7 @@ export function AdminPublicaciones({ toast }: Props) {
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             title="Refrescar datos"
             onClick={handleRefresh}
@@ -396,6 +396,31 @@ export function AdminPublicaciones({ toast }: Props) {
           >
             <RefreshCw className={`w-4 h-4 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
+
+          {/* Importador masivo: selector de agente + botón */}
+          <Select value={selectedImportAgentId} onValueChange={setSelectedImportAgentId}>
+            <SelectTrigger className="w-[180px] h-10 rounded-xl text-xs">
+              <SelectValue placeholder="Agente destino…" />
+            </SelectTrigger>
+            <SelectContent>
+              {agents.map(a => (
+                <SelectItem key={a.id} value={a.id} className="text-xs">
+                  {a.display_name || a.email || "Sin nombre"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-10 rounded-xl"
+            disabled={!canImport}
+            onClick={openImporter}
+            title={canImport ? "Importar avisos masivos" : "Seleccioná un agente primero"}
+          >
+            <Globe className="w-4 h-4" /> Importar desde web
+          </Button>
+
           <Button 
             onClick={() => setIsAddOpen(true)}
             size="sm"
