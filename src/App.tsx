@@ -94,6 +94,7 @@ const App = () => (
                   }
                 />
                 <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/index" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 
                 {/* Rutas Protegidas con Roles Específicos */}
                 <Route path={ROUTES.ADMIN_INFRA} element={<ProtectedRoute allowedRoles={[ROLES.SYSADMIN]}><InfraMonitorPage /></ProtectedRoute>} />
