@@ -457,6 +457,12 @@ export function AdminPublicaciones({ toast }: Props) {
         onClose={() => setIsAddOpen(false)}
         onAdd={handleAddProperty}
     />
+
+    {/* Importador masivo — solo se monta si hay agente seleccionado con org */}
+    {canImport && selectedAgent?.org_id && authUser?.id && (
+      <AgencyMassImporter orgId={selectedAgent.org_id} userId={authUser.id} />
+    )}
+    <ImportProgressIndicator />
     </>
   );
 }
