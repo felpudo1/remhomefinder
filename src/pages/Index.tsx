@@ -10,7 +10,7 @@ import { MarketplaceView } from "@/components/MarketplaceView";
 import { UserHeader } from "@/components/UserHeader";
 import { UserStatusBanner } from "@/components/UserStatusBanner";
 import { Footer } from "@/components/Footer";
-import { Home, Plus, Users, SlidersHorizontal, Store, Gem } from "lucide-react";
+import { Home, Plus, Users, SlidersHorizontal, Store, Gem, Building2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -30,6 +30,7 @@ import { AIProfileModal } from "@/components/AIProfileModal";
 import { IndexModals } from "@/components/IndexModals";
 import { MiListadoTabPanel } from "@/components/MiListadoTabPanel";
 import { GoldOpportunitiesPanel } from "@/components/gold/GoldOpportunitiesPanel";
+import { AgenciesDirectoryPanel } from "@/components/directory/AgenciesDirectoryPanel";
 import { useIndexOnboarding } from "@/hooks/useIndexOnboarding";
 import { useIndexListingController } from "@/hooks/useIndexListingController";
 import { runDashboardTour } from "@/components/tours/UserDashboardTour";
@@ -398,7 +399,7 @@ const Index = () => {
               onValueChange={(v) => setActiveTab(v)}
               id="dashboard-tabs"
             >
-              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-3 gap-1 h-auto min-h-12">
+              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-4 gap-1 h-auto min-h-12">
                 <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <Home className="w-4 h-4 shrink-0" />
                   <span className="truncate">
@@ -410,6 +411,10 @@ const Index = () => {
                   <span className="truncate">
                     HFMarket <span className="opacity-70">({marketplaceProperties.length})</span>
                   </span>
+                </TabsTrigger>
+                <TabsTrigger value="agencias" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Agencias</span>
                 </TabsTrigger>
                 <TabsTrigger value="gold" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
                   <Gem className="w-4 h-4 shrink-0 text-amber-500" />
@@ -457,6 +462,10 @@ const Index = () => {
                   mobileFiltersOpen={activeTab === "marketplace" && isMobileFiltersOpen}
                   onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
                 />
+              </TabsContent>
+
+              <TabsContent value="agencias">
+                <AgenciesDirectoryPanel />
               </TabsContent>
 
               <TabsContent value="gold">

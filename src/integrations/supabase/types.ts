@@ -581,6 +581,41 @@ export type Database = {
           },
         ]
       }
+      external_agencies: {
+        Row: {
+          created_at: string
+          department_id: string | null
+          id: string
+          is_featured: boolean
+          name: string
+          website_url: string
+        }
+        Insert: {
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          is_featured?: boolean
+          name: string
+          website_url?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          is_featured?: boolean
+          name?: string
+          website_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_agencies_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_comments: {
         Row: {
           author: string
@@ -751,6 +786,7 @@ export type Database = {
           plan_type: string
           type: Database["public"]["Enums"]["org_type"]
           updated_at: string
+          website_url: string | null
         }
         Insert: {
           contact_email?: string
@@ -769,6 +805,7 @@ export type Database = {
           plan_type?: string
           type: Database["public"]["Enums"]["org_type"]
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           contact_email?: string
@@ -787,6 +824,7 @@ export type Database = {
           plan_type?: string
           type?: Database["public"]["Enums"]["org_type"]
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -1425,6 +1463,30 @@ export type Database = {
           recorded_at?: string
           rest_requests?: number | null
           storage_requests?: number | null
+        }
+        Relationships: []
+      }
+      user_agency_favorites: {
+        Row: {
+          agency_id: string
+          agency_type: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          agency_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          agency_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
