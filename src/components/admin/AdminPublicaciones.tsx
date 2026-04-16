@@ -5,7 +5,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Building2, Users, RefreshCw } from "lucide-react";
+import { AgencyMassImporter } from "@/components/agent/AgencyMassImporter";
+import { ImportProgressIndicator } from "@/components/agent/ImportProgressIndicator";
+import { Building2, Users, RefreshCw, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProperty, MktProperty, MarketplaceStatus } from "@/types/admin-publications";
@@ -18,6 +20,15 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { useImportActions } from "@/store/useImportStore";
+import { useAgents } from "@/hooks/useAgents";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   toast: (opts: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
@@ -35,6 +46,14 @@ export function AdminPublicaciones({ toast }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Importador masivo — selección de agente destino
+  const { openModal: openImporter } = useImportActions();
+  const { data: agents = [] } = useAgents();
+  const [selectedImportAgentId, setSelectedImportAgentId] = useState<string>("");
+
+  const selectedAgent = agents.find(a => a.id === selectedImportAgentId);
+  const canImport = Boolean(selectedAgent?.org_id);
 
   const { addProperty: addPropertyMutation } = usePropertyMutations();
 
@@ -370,7 +389,7 @@ export function AdminPublicaciones({ toast }: Props) {
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             title="Refrescar datos"
             onClick={handleRefresh}
@@ -379,6 +398,31 @@ export function AdminPublicaciones({ toast }: Props) {
           >
             <RefreshCw className={`w-4 h-4 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
+
+          {/* Importador masivo: selector de agente + botón */}
+          <Select value={selectedImportAgentId} onValueChange={setSelectedImportAgentId}>
+            <SelectTrigger className="w-[180px] h-10 rounded-xl text-xs">
+              <SelectValue placeholder="Agente destino…" />
+            </SelectTrigger>
+            <SelectContent>
+              {agents.map(a => (
+                <SelectItem key={a.id} value={a.id} className="text-xs">
+                  {a.display_name || a.email || "Sin nombre"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-10 rounded-xl"
+            disabled={!canImport}
+            onClick={openImporter}
+            title={canImport ? "Importar avisos masivos" : "Seleccioná un agente primero"}
+          >
+            <Globe className="w-4 h-4" /> Importar desde web
+          </Button>
+
           <Button 
             onClick={() => setIsAddOpen(true)}
             size="sm"
@@ -415,6 +459,12 @@ export function AdminPublicaciones({ toast }: Props) {
         onClose={() => setIsAddOpen(false)}
         onAdd={handleAddProperty}
     />
+
+    {/* Importador masivo — solo se monta si hay agente seleccionado con org */}
+    {canImport && selectedAgent?.org_id && authUser?.id && (
+      <AgencyMassImporter orgId={selectedAgent.org_id} userId={authUser.id} />
+    )}
+    <ImportProgressIndicator />
     </>
   );
 }
