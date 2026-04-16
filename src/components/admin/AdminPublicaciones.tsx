@@ -365,8 +365,9 @@ export function AdminPublicaciones({ toast }: Props) {
   return (
     <>
     <Tabs defaultValue="marketplace" className="w-full">
-      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap lg:flex-nowrap">
-        <TabsList className="bg-muted rounded-xl p-1 h-auto shrink-0 grid grid-cols-2 w-full lg:w-fit">
+      <div className="flex flex-col gap-3 mb-6">
+        {/* Fila 1: Tabs */}
+        <TabsList className="bg-muted rounded-xl p-1 h-auto shrink-0 grid grid-cols-2 w-full">
           <TabsTrigger value="marketplace" className="gap-1.5 rounded-lg data-[state=active]:bg-background flex items-center justify-center px-4">
             <Building2 className="w-4 h-4 shrink-0" />
             <span className="hidden sm:inline">Marketplace</span>
@@ -379,7 +380,8 @@ export function AdminPublicaciones({ toast }: Props) {
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 relative min-w-[200px]">
+        {/* Fila 2: Búsqueda */}
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder="Buscar por Título, Agencia, Agente o URL..."
@@ -389,19 +391,19 @@ export function AdminPublicaciones({ toast }: Props) {
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        {/* Fila 3: Acciones */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             title="Refrescar datos"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="p-2 h-10 w-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50"
+            className="p-2 h-10 w-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border disabled:opacity-50 shrink-0"
           >
             <RefreshCw className={`w-4 h-4 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
 
-          {/* Importador masivo: selector de agente + botón */}
           <Select value={selectedImportAgentId} onValueChange={setSelectedImportAgentId}>
-            <SelectTrigger className="w-[180px] h-10 rounded-xl text-xs">
+            <SelectTrigger className="w-[140px] sm:w-[180px] h-10 rounded-xl text-xs shrink-0">
               <SelectValue placeholder="Agente destino…" />
             </SelectTrigger>
             <SelectContent>
@@ -415,22 +417,22 @@ export function AdminPublicaciones({ toast }: Props) {
           <Button
             size="sm"
             variant="outline"
-            className="gap-1.5 h-10 rounded-xl"
+            className="gap-1.5 h-10 rounded-xl shrink-0"
             disabled={!canImport}
             onClick={openImporter}
             title={canImport ? "Importar avisos masivos" : "Seleccioná un agente primero"}
           >
-            <Globe className="w-4 h-4" /> Importar desde web
+            <Globe className="w-4 h-4" />
+            <span className="hidden sm:inline">Importar desde web</span>
           </Button>
 
           <Button 
             onClick={() => setIsAddOpen(true)}
             size="sm"
-            className="rounded-xl gap-2 font-bold shadow-md shadow-primary/10 h-10 px-4"
+            className="rounded-xl gap-2 font-bold shadow-md shadow-primary/10 h-10 px-4 ml-auto shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden md:inline">Agregar Propiedad</span>
-            <span className="md:hidden">Agregar</span>
+            <span className="hidden sm:inline">Agregar</span>
           </Button>
         </div>
       </div>
