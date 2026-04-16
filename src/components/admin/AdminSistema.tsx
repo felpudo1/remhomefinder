@@ -12,7 +12,7 @@ interface AdminSistemaProps {
   toast: any;
 }
 
-export function AdminSistema({ toast }: AdminSistemaProps) {
+export function AdminSistema({ toast: _toast }: AdminSistemaProps) {
   const [activeTab, setActiveTab] = useState<SistemaTab>("config");
 
   return (

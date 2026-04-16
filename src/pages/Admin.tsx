@@ -42,7 +42,7 @@ const Admin = () => {
   const { section } = useParams<{ section?: string }>();
   const activeSection: AdminSection = VALID_SECTIONS.includes(section as AdminSection)
     ? (section as AdminSection)
-    : "agentes";
+    : "consola";
 
   const navigate = useNavigate();
   const { toast } = useToast();
