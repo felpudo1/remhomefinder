@@ -25,6 +25,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
     dedupe: [
       "react",
@@ -33,5 +35,8 @@ export default defineConfig(({ mode }) => ({
       "@radix-ui/react-tooltip",
       "@radix-ui/react-popover",
     ],
+  },
+  optimizeDeps: {
+    force: true,
   },
 }));
