@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Loader2, Building2 } from "lucide-react";
+import { Trash2, Plus, Loader2, Building2, Edit2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 
@@ -28,6 +28,9 @@ export function AdminDirectorio() {
   const [newUrl, setNewUrl] = useState("");
   const [newDeptId, setNewDeptId] = useState<string>("none");
   const [newFeatured, setNewFeatured] = useState(false);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   const { data: agencies = [], isLoading } = useQuery({
     queryKey: ["admin-external-agencies"],
@@ -62,6 +65,23 @@ export function AdminDirectorio() {
       setNewDeptId("none");
       setNewFeatured(false);
       toast({ title: "Agencia creada" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const updateNameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      if (!name.trim()) throw new Error("El nombre no puede estar vacío");
+      const { error } = await (supabase as any)
+        .from("external_agencies")
+        .update({ name: name.trim() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-external-agencies"] });
+      setEditingId(null);
+      toast({ title: "Nombre actualizado" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -136,7 +156,48 @@ export function AdminDirectorio() {
           {agencies.map((a) => (
             <div key={a.id} className="flex items-center gap-3 border border-border rounded-lg p-3 bg-card">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{a.name}</p>
+                {editingId === a.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={() => updateNameMutation.mutate({ id: a.id, name: editingName })}
+                      disabled={updateNameMutation.isPending}
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground"
+                      onClick={() => setEditingId(null)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <p className="text-sm font-medium truncate">{a.name}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
+                      onClick={() => {
+                        setEditingId(a.id);
+                        setEditingName(a.name);
+                      }}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground truncate">{a.website_url}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -145,7 +206,7 @@ export function AdminDirectorio() {
                   onCheckedChange={(v) => toggleFeatured.mutate({ id: a.id, featured: v })}
                   aria-label="Destacada"
                 />
-                <span className="text-[10px] text-muted-foreground w-16">
+                <span className="text-[10px] text-muted-foreground w-16 text-right">
                   {a.is_featured ? "Destacada" : "Normal"}
                 </span>
                 <Button
@@ -153,7 +214,7 @@ export function AdminDirectorio() {
                   size="icon"
                   onClick={() => deleteMutation.mutate(a.id)}
                   disabled={deleteMutation.isPending}
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -161,7 +222,8 @@ export function AdminDirectorio() {
             </div>
           ))}
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
