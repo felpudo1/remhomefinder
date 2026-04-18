@@ -109,7 +109,7 @@ export function AgenciesDirectoryPanel() {
             <Heart className="w-4 h-4 text-red-500 fill-red-500" />
             Mis Agencias ({favoriteCount}/{maxFavorites})
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {favoriteAgencies.map((a) => (
               <AgencyCard
                 key={`${a.type}:${a.id}`}
@@ -153,7 +153,7 @@ export function AgenciesDirectoryPanel() {
           <p className="text-sm text-muted-foreground">No se encontraron agencias.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((a) => (
             <AgencyCard
               key={`${a.type}:${a.id}`}
