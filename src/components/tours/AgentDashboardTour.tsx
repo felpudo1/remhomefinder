@@ -285,6 +285,10 @@ export function createAgentDashboardTour(): ReturnType<typeof driver> {
     popoverOffset: 10,
     // Botón de Skip personalizado
     onHighlightStarted: (_element: any, step: any) => {
+      // Limpiar SIEMPRE cualquier popover/overlay/estilo custom previo
+      // (resuelve que el botón "Importar desde web" quedara resaltado al avanzar)
+      cleanupCustomPopover();
+
       // Ejecutar onStart del paso si existe
       if (step.onStart) {
         step.onStart();
