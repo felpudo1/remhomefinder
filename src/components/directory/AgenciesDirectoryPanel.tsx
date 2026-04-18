@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2 } from "lucide-react";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,6 +50,31 @@ function AgencyCard({
         <span className="text-xs text-muted-foreground">
           {agency.followerCount} publicaciones activas
         </span>
+      )}
+
+      {agency.address && (
+        <span className="inline-flex items-start gap-1 text-xs text-muted-foreground">
+          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+          <span className="line-clamp-2">{agency.address}</span>
+        </span>
+      )}
+
+      {agency.phone && (
+        <a
+          href={`tel:${agency.phone.replace(/\s/g, "")}`}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          <Phone className="w-3 h-3" /> {agency.phone}
+        </a>
+      )}
+
+      {agency.email && (
+        <a
+          href={`mailto:${agency.email}`}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
+        >
+          <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{agency.email}</span>
+        </a>
       )}
 
       {agency.websiteUrl && (
