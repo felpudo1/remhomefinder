@@ -12,6 +12,9 @@ export interface DirectoryAgency {
   type: "organization" | "external";
   followerCount: number;
   isFavorite: boolean;
+  address?: string;
+  phone?: string;
+  email?: string;
 }
 
 function normalizeDomain(url: string): string {
@@ -45,7 +48,7 @@ export function useAgenciesDirectory() {
           .eq("type", "agency_team"),
         supabase
           .from("external_agencies" as any)
-          .select("id, name, website_url, department_id, is_featured"),
+          .select("id, name, website_url, department_id, is_featured, address, phone, email"),
         supabase
           .from("user_agency_favorites" as any)
           .select("agency_id, agency_type")
@@ -102,6 +105,9 @@ export function useAgenciesDirectory() {
           type: "external",
           followerCount: 0,
           isFavorite: favSet.has(`external:${e.id}`),
+          address: e.address || "",
+          phone: e.phone || "",
+          email: e.email || "",
         });
       }
 
