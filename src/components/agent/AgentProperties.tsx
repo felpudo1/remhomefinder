@@ -280,7 +280,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                         <Home className="w-5 h-5" /> Mis Propiedades ({agencyProperties.length})
