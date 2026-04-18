@@ -31,7 +31,7 @@ function AgencyCard({
         </Badge>
       )}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-sm leading-tight truncate flex-1">{agency.name}</h3>
+        <h3 className="font-semibold text-sm leading-tight flex-1 break-words line-clamp-3">{agency.name}</h3>
         <button
           onClick={onToggleFavorite}
           disabled={isToggling}
