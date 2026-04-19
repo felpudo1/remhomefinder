@@ -46,37 +46,6 @@ function AgencyCard({
         </button>
       </div>
 
-      {agency.followerCount > 0 && (
-        <span className="text-xs text-muted-foreground">
-          {agency.followerCount} publicaciones activas
-        </span>
-      )}
-
-      {agency.address && (
-        <span className="inline-flex items-start gap-1 text-xs text-muted-foreground">
-          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
-          <span className="line-clamp-2">{agency.address}</span>
-        </span>
-      )}
-
-      {agency.phone && (
-        <a
-          href={`tel:${agency.phone.replace(/\s/g, "")}`}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-        >
-          <Phone className="w-3 h-3" /> {agency.phone}
-        </a>
-      )}
-
-      {agency.email && (
-        <a
-          href={`mailto:${agency.email}`}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
-        >
-          <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{agency.email}</span>
-        </a>
-      )}
-
       {agency.websiteUrl && (
         <a
           href={agency.websiteUrl.startsWith("http") ? agency.websiteUrl : `https://${agency.websiteUrl}`}
