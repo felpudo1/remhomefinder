@@ -399,26 +399,26 @@ const Index = () => {
               onValueChange={(v) => setActiveTab(v)}
               id="dashboard-tabs"
             >
-              <TabsList className="mb-6 bg-muted rounded-xl p-1.5 w-full grid grid-cols-4 gap-1 h-auto min-h-12">
-                <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+              <TabsList className="mb-6 bg-muted rounded-xl p-1 sm:p-1.5 w-full grid grid-cols-4 gap-0.5 sm:gap-1 h-auto min-h-12">
+                <TabsTrigger value="mi-listado" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-[11px] sm:text-sm px-1 sm:px-2">
                   <Home className="w-4 h-4 shrink-0" />
-                  <span className="truncate">
-                    Mi Listado <span className="opacity-70">({properties.length})</span>
+                  <span className="whitespace-nowrap">
+                    Mi Listado<span className="opacity-70 hidden sm:inline"> ({properties.length})</span>
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="marketplace" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                <TabsTrigger value="marketplace" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-[11px] sm:text-sm px-1 sm:px-2">
                   <Store className="w-4 h-4 shrink-0" />
-                  <span className="truncate">
-                    HFMarket <span className="opacity-70">({marketplaceProperties.length})</span>
+                  <span className="whitespace-nowrap">
+                    HFMarket<span className="opacity-70 hidden sm:inline"> ({marketplaceProperties.length})</span>
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="agencias" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                <TabsTrigger value="agencias" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-[11px] sm:text-sm px-1 sm:px-2">
                   <Building2 className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Agencias</span>
+                  <span className="whitespace-nowrap">Agencias</span>
                 </TabsTrigger>
-                <TabsTrigger value="gold" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-xs sm:text-sm px-2">
+                <TabsTrigger value="gold" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-[11px] sm:text-sm px-1 sm:px-2">
                   <Gem className="w-4 h-4 shrink-0 text-amber-500" />
-                  <span className="truncate font-semibold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">GOLD</span>
+                  <span className="whitespace-nowrap font-semibold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">GOLD</span>
                 </TabsTrigger>
               </TabsList>
 
