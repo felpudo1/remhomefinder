@@ -127,6 +127,17 @@ function parseMarkdownToAgencies(markdown: string): ParsedAgency[] {
   });
 }
 
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Respuesta no-JSON (ej. HTML "Bad Gateway", "Internal Server Error")
+    const snippet = text.slice(0, 200).replace(/\s+/g, " ").trim();
+    throw new Error(`Respuesta no-JSON [${res.status}]: ${snippet || "(vacía)"}`);
+  }
+}
+
 async function firecrawlScrape(url: string, apiKey: string): Promise<string> {
   const res = await fetch(`${FIRECRAWL_V2}/scrape`, {
     method: "POST",
@@ -140,10 +151,12 @@ async function firecrawlScrape(url: string, apiKey: string): Promise<string> {
       onlyMainContent: true,
     }),
   });
-  const data = await res.json();
   if (!res.ok) {
-    throw new Error(`Firecrawl scrape failed [${res.status}]: ${JSON.stringify(data)}`);
+    const text = await res.text();
+    const snippet = text.slice(0, 300).replace(/\s+/g, " ").trim();
+    throw new Error(`Firecrawl scrape falló [${res.status}]: ${snippet}`);
   }
+  const data = await safeJson(res);
   // v2 puede devolver markdown en data.markdown o data.data.markdown
   return data?.data?.markdown ?? data?.markdown ?? "";
 }
@@ -161,10 +174,12 @@ async function firecrawlCrawl(url: string, apiKey: string, maxPages: number): Pr
       scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
     }),
   });
-  const startData = await startRes.json();
   if (!startRes.ok) {
-    throw new Error(`Firecrawl crawl start failed [${startRes.status}]: ${JSON.stringify(startData)}`);
+    const text = await startRes.text();
+    const snippet = text.slice(0, 300).replace(/\s+/g, " ").trim();
+    throw new Error(`Firecrawl crawl start falló [${startRes.status}]: ${snippet}`);
   }
+  const startData = await safeJson(startRes);
   const jobId = startData?.id ?? startData?.data?.id;
   if (!jobId) throw new Error("Firecrawl crawl: no job id");
 
@@ -176,8 +191,12 @@ async function firecrawlCrawl(url: string, apiKey: string, maxPages: number): Pr
     const statusRes = await fetch(`${FIRECRAWL_V2}/crawl/${jobId}`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
-    const statusData = await statusRes.json();
-    if (!statusRes.ok) throw new Error(`Crawl status error: ${JSON.stringify(statusData)}`);
+    if (!statusRes.ok) {
+      const text = await statusRes.text();
+      const snippet = text.slice(0, 300).replace(/\s+/g, " ").trim();
+      throw new Error(`Crawl status error [${statusRes.status}]: ${snippet}`);
+    }
+    const statusData = await safeJson(statusRes);
     const status = statusData?.status ?? statusData?.data?.status;
     if (status === "completed") {
       const items = statusData?.data ?? statusData?.data?.data ?? [];
