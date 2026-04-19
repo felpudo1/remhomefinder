@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2 } from "lucide-react";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,7 +46,23 @@ function AgencyCard({
         </button>
       </div>
 
-      {agency.websiteUrl && (
+      {isFeatured && agency.address && (
+        <span className="inline-flex items-start gap-1 text-xs text-muted-foreground">
+          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+          <span className="line-clamp-2">{agency.address}</span>
+        </span>
+      )}
+
+      {isFeatured && agency.phone && (
+        <a
+          href={`tel:${agency.phone.replace(/\s/g, "")}`}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          <Phone className="w-3 h-3" /> {agency.phone}
+        </a>
+      )}
+
+      {agency.websiteUrl ? (
         <a
           href={agency.websiteUrl.startsWith("http") ? agency.websiteUrl : `https://${agency.websiteUrl}`}
           target="_blank"
@@ -55,6 +71,15 @@ function AgencyCard({
         >
           <ExternalLink className="w-3 h-3" /> Visitar Web
         </a>
+      ) : (
+        !isFeatured && agency.phone && (
+          <a
+            href={`tel:${agency.phone.replace(/\s/g, "")}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary mt-auto"
+          >
+            <Phone className="w-3 h-3" /> {agency.phone}
+          </a>
+        )
       )}
     </div>
   );
