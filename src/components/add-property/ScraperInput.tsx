@@ -35,13 +35,13 @@ export interface ScraperInputProps {
     setUrlInFamily?: (v: { addedByName: string; addedAt: string; status: string; userListingId: string } | null) => void;
     urlInApp?: { firstAddedAt: string; usersCount: number; users?: import('@/types/duplicate-cases').UserWithListing[] } | null;
     setUrlInApp?: (v: { firstAddedAt: string; usersCount: number; users?: import('@/types/duplicate-cases').UserWithListing[] } | null) => void;
-    /** Si true, muestra texto espec�fico para agentes en el bloque urlInApp */
+    /** Si true, muestra texto específico para agentes en el bloque urlInApp */
     isAgent?: boolean;
-    /** Agente: la URL ya est� publicada por esta agencia (no duplicar agent_publications) */
+    /** Agente: la URL ya está publicada por esta agencia (no duplicar agent_publications) */
     agentOwnDuplicate?: { publishedByName: string; createdAt: string; id?: string } | null;
     setAgentOwnDuplicate?: (v: { publishedByName: string; createdAt: string; id?: string } | null) => void;
     onOpenExistingAgentPublication?: (agentPublicationId: string) => void;
-    /** Usuario: URL ya en marketplace (caso 2 � contactar agencia por WhatsApp) */
+    /** Usuario: URL ya en marketplace (caso 2 — contactar agencia por WhatsApp) */
     userAgentMarketplace?: AgentMarketplaceListingForUser | null;
     setUserAgentMarketplace?: (v: AgentMarketplaceListingForUser | null) => void;
     onOpenExisting?: (userListingId: string) => void;
@@ -135,7 +135,7 @@ export function ScraperInput({
         return (
             <div className="space-y-5 py-2">
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">Peg� la URL del aviso</Label>
+                    <Label className="text-sm font-medium">Pegá la URL del aviso</Label>
                     <div className="relative flex gap-2">
                         <div className="relative flex-1">
                             <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -161,13 +161,13 @@ export function ScraperInput({
                             className="rounded-xl shrink-0"
                             onClick={() => setQrOpen(true)}
                             disabled={isUrlActionsLocked || isLoading}
-                            title="Escanear c�digo QR"
+                            title="Escanear código QR"
                         >
                             <QrCode className="w-4 h-4" />
                         </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        Peg� cualquier URL de un aviso inmobiliario y nuestra IA extraer� todos los detalles autom�ticamente.
+                        Pegá cualquier URL de un aviso inmobiliario y nuestra IA extraerá todos los detalles automáticamente.
                     </p>
                 </div>
 
@@ -181,7 +181,7 @@ export function ScraperInput({
                 {/* Orden de prioridad: C2a > C3 > C1 > C2b > C4 */}
                 
                 {userAgentMarketplace && urlInFamily && (
-                  /* C2a: Ya est� en marketplace Y en el listado del usuario */
+                  /* C2a: Ya está en marketplace Y en el listado del usuario */
                   <DuplicateAlertDialog
                     case="C2a"
                     agencyName={userAgentMarketplace.agencyName}
@@ -225,7 +225,7 @@ export function ScraperInput({
                   />
                 )}
                 {userAgentMarketplace && !urlInFamily && (
-                  /* C2b: Ya est� en marketplace pero NO en el listado del usuario */
+                  /* C2b: Ya está en marketplace pero NO en el listado del usuario */
                   <DuplicateAlertDialog
                     case="C2b"
                     agencyName={userAgentMarketplace.agencyName}
@@ -257,12 +257,12 @@ export function ScraperInput({
                     {isLoading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Extrayendo datos...</>
                     ) : (
-                        <><Sparkles className="w-4 h-4" />Extraer datos de la publicaci�n</>
+                        <><Sparkles className="w-4 h-4" />Extraer datos de la publicación</>
                     )}
                 </Button>
 
                 <p className="text-[11px] text-muted-foreground text-center leading-snug">
-                    Si el link es de redes sociales o no se puede leer autom�tico, en el siguiente paso podr�s pegar capturas de pantalla y la IA completar� lo que pueda.
+                    Si el link es de redes sociales o no se puede leer automático, en el siguiente paso podrás pegar capturas de pantalla y la IA completará lo que pueda.
                 </p>
             </div>
         );
@@ -272,9 +272,9 @@ export function ScraperInput({
         return (
             <div className="space-y-5 py-2">
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">Sub� una captura de pantalla del aviso</Label>
+                    <Label className="text-sm font-medium">Subí una captura de pantalla del aviso</Label>
                     <p className="text-xs text-muted-foreground">
-                        Seleccion� una captura de Instagram, Facebook Marketplace u otra red social. La IA extraer� los datos que pueda detectar.
+                        Seleccioná una captura de Instagram, Facebook Marketplace u otra red social. La IA extraerá los datos que pueda detectar.
                     </p>
                 </div>
 
@@ -308,7 +308,7 @@ export function ScraperInput({
                         className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
                     >
                         <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Toc� para seleccionar la captura</span>
+                        <span className="text-sm text-muted-foreground">Tocá para seleccionar la captura</span>
                     </button>
                 )}
 
