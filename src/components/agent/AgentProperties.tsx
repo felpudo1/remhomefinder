@@ -62,7 +62,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         }
     }, [isPremium, agency.created_by]);
 
-    // Nuevo: Fetch para perfiles de bÃºsqueda de usuarios (Matchmaking)
+    // Nuevo: Fetch para perfiles de búsqueda de usuarios (Matchmaking)
     const { data: searchProfiles = [], isFetched: searchProfilesFetched } = useQuery<SearchProfileWithLead[]>({
         queryKey: ["all-user-search-profiles"],
         queryFn: async () => {
@@ -114,7 +114,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("agent_publications")
-                // Proyectar columnas especÃ­ficas â€” excluye raw_ai_data y status_history (~50 KB/fila)
+                // Proyectar columnas específicas — excluye raw_ai_data y status_history (~50 KB/fila)
                 .select(`
                     id, property_id, org_id, published_by, status, listing_type, description, created_at, updated_at,
                     properties (
@@ -179,7 +179,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                     const userDorms = Number(s.min_bedrooms || 1);
                     const roomsOk = propRooms >= userDorms;
 
-                    // GeografÃ­a
+                    // Geografía
                     let geoOk = true;
                     const pCityId = p.city_id;
                     const pNeighId = p.neighborhood_id;
@@ -271,7 +271,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
         const { error } = await (supabase.from("agent_publications") as any).update({ status: newStatus as AgentPubStatus }).eq("id", id);
         if (error) { toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" }); }
         else {
-            toast({ title: "Estado actualizado", description: `La propiedad ahora estÃ¡ ${PROPERTY_STATUS_LABELS[newStatus] || newStatus}` });
+            toast({ title: "Estado actualizado", description: `La propiedad ahora está ${PROPERTY_STATUS_LABELS[newStatus] || newStatus}` });
             queryClient.invalidateQueries({ queryKey: ["agency-marketplace-properties"] });
         }
     };
@@ -309,7 +309,7 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : agencyProperties.length === 0 ? (
                 <div className="border border-border rounded-2xl bg-card p-8 text-center bg-card/50">
-                    <p className="text-muted-foreground text-sm">TodavÃ­a no publicaste ninguna propiedad. Â¡EmpezÃ¡ ahora!</p>
+                    <p className="text-muted-foreground text-sm">Todavía no publicaste ninguna propiedad. ¡Empezá ahora!</p>
                 </div>
             ) : (
                 <div id="agent-properties-section" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -437,8 +437,8 @@ export const AgentProperties = ({ agency, profileStatus }: AgentPropertiesProps)
                         setIsDetailOpen(true);
                     } else {
                         toast({
-                            title: "No encontramos la publicaciÃ³n",
-                            description: "RefrescÃ¡ el listado e intentÃ¡ de nuevo.",
+                            title: "No encontramos la publicación",
+                            description: "Refrescá el listado e intentá de nuevo.",
                             variant: "destructive",
                         });
                     }
