@@ -28,29 +28,34 @@ export function AdminSystem() {
       </div>
 
       <Tabs defaultValue="config" className="w-full">
-        <TabsList className="bg-slate-900 border-2 border-slate-700 mb-6 p-1 h-12">
-          <TabsTrigger 
-            value="config" 
-            className="gap-2 px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all"
-          >
-            <Settings2 className="w-4 h-4" />
-            Configuración General
-          </TabsTrigger>
-          <TabsTrigger 
-            value="data" 
-            className="gap-2 px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all"
-          >
-            <Database className="w-4 h-4" />
-            Datos BD (Manual)
-          </TabsTrigger>
-          <TabsTrigger 
-            value="docs" 
-            className="gap-2 px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all"
-          >
-            <FileCode className="w-4 h-4" />
-            Documentación BD
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 mb-6 overflow-x-auto">
+          <TabsList className="bg-slate-900 border-2 border-slate-700 p-1 h-12 inline-flex w-max min-w-full mx-4 sm:mx-0">
+            <TabsTrigger
+              value="config"
+              className="gap-2 px-3 sm:px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Settings2 className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden">General</span>
+              <span className="hidden sm:inline">Configuración General</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="data"
+              className="gap-2 px-3 sm:px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all text-xs sm:text-sm whitespace-nowrap"
+            >
+              <Database className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden">Datos BD</span>
+              <span className="hidden sm:inline">Datos BD (Manual)</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="docs"
+              className="gap-2 px-3 sm:px-6 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-300 font-bold transition-all text-xs sm:text-sm whitespace-nowrap"
+            >
+              <FileCode className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden">Docs</span>
+              <span className="hidden sm:inline">Documentación BD</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="config" className="space-y-8 animate-in slide-in-from-left-2 duration-300">
           {/* Alertas del sistema (fallback de API keys, etc.) */}
