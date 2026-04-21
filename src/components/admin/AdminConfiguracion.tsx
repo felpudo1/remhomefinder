@@ -6,6 +6,9 @@ import { AdminStatusFeedbackConfig } from "./status-feedback/AdminStatusFeedback
 import { AdminPrompt } from "./AdminPrompt";
 import { AdminDirectorio } from "./AdminDirectorio";
 
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
 type ConfigTab = "geografia" | "feedback" | "prompt" | "directorio";
 
 interface AdminConfiguracionProps {
@@ -14,6 +17,17 @@ interface AdminConfiguracionProps {
 
 export function AdminConfiguracion({ toast }: AdminConfiguracionProps) {
   const [activeTab, setActiveTab] = useState<ConfigTab>("geografia");
+
+  const { data: externalAgencies = [] } = useQuery({
+    queryKey: ["admin-external-agencies"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("external_agencies")
+        .select("id");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -33,7 +47,7 @@ export function AdminConfiguracion({ toast }: AdminConfiguracionProps) {
           </TabsTrigger>
           <TabsTrigger value="directorio" className="flex items-center gap-1.5">
             <Building2 className="w-4 h-4" />
-            Directorio
+            Directorio ({externalAgencies.length})
           </TabsTrigger>
         </TabsList>
 

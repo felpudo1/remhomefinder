@@ -31,6 +31,7 @@ import { IndexModals } from "@/components/IndexModals";
 import { MiListadoTabPanel } from "@/components/MiListadoTabPanel";
 import { GoldOpportunitiesPanel } from "@/components/gold/GoldOpportunitiesPanel";
 import { AgenciesDirectoryPanel } from "@/components/directory/AgenciesDirectoryPanel";
+import { useAgenciesDirectory } from "@/hooks/useAgenciesDirectory";
 import { useIndexOnboarding } from "@/hooks/useIndexOnboarding";
 import { useIndexListingController } from "@/hooks/useIndexListingController";
 import { runDashboardTour } from "@/components/tours/UserDashboardTour";
@@ -60,6 +61,7 @@ const Index = () => {
   const location = useLocation();
   const { properties, loading, addProperty, updateStatus, addComment, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProperties();
   const { data: marketplaceProperties = [] } = useMarketplaceProperties();
+  const { agencies: directoryAgencies } = useAgenciesDirectory();
 
   // Leer email del AuthProvider centralizado (0 auth requests HTTP)
   const { user: authUser } = useCurrentUser();
@@ -414,7 +416,7 @@ const Index = () => {
                 </TabsTrigger>
                 <TabsTrigger value="agencias" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-[11px] sm:text-sm px-1 sm:px-2">
                   <Building2 className="w-4 h-4 shrink-0" />
-                  <span className="whitespace-nowrap">Agencias</span>
+                  <span className="whitespace-nowrap">Agencias ({directoryAgencies.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="gold" className="gap-1 rounded-lg data-[state=active]:bg-background transition-all text-[11px] sm:text-sm px-1 sm:px-2">
                   <Gem className="w-4 h-4 shrink-0 text-amber-500" />
