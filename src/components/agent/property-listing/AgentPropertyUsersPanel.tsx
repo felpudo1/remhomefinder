@@ -1,13 +1,17 @@
-import { BarChart3, CalendarPlus, Check, Clock3, Phone, Star, User, Users, X } from "lucide-react";
+import { BarChart3, CalendarPlus, Check, Clock3, Phone, Sparkles, Star, User, Users, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStatusFeedbackConfig } from "@/hooks/useStatusFeedbackConfig";
+import { generateSentimentInsight } from "@/lib/sentimentInsight";
 import type {
   PropertyInsight,
   StatusFilter,
   UserInsight,
 } from "./agentPropertyListingTypes";
+
+// Flag para reactivar fácilmente la visualización de ratings (estrellas) en cada tarjeta de estado
+const SHOW_RAW_RATINGS = false;
 
 const ALL_STAGES = [
   "contactado",
