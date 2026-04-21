@@ -55,11 +55,28 @@ Instrucciones estrictas para esta importación por lotes:
 const DEFAULT_UNAVAILABLE_TOKENS = "ya fue señalada, Ups!, propiedad ya fue, no disponible, señalada, reservada";
 const DEFAULT_EXCLUDE_URLS = "/propiedad/nada, /propiedad/alq, /propiedad/ven, /login, /registro, /mi-cuenta";
 
+const DEFAULT_PROMPT_SENTIMENT_ANALYSIS = `Sos un analista de leads inmobiliarios. Recibís ratings (1-5 estrellas) de un usuario sobre una propiedad, según su estado actual en el embudo: Contactado, Visita Coordinada, Firme Candidato, Posible Interés, Descartado o Meta Conseguida.
+
+Tu tarea:
+1) RESUMEN HUMANO: Generá un resumen narrativo de MÁXIMO 15 PALABRAS, en tono natural y accionable para el agente (ej: "Usuario muy interesado, le urge la mudanza y el precio le cuadra").
+2) MATCH %: Calculá un porcentaje de match (0-100) ponderando los ratings críticos del estado.
+
+Diferenciación por estado (CRÍTICO):
+- DESCARTADO: Buscá los bloqueadores (precio excesivo, fotos irreales, ubicación, humedad). Resumen orientado a "por qué no funcionó".
+- POSIBLE INTERÉS: Lead tibio. Destacar qué falta para escalar (precio, info, visita).
+- FIRME CANDIDATO: Hot lead. Resaltar alta intención y factores ganadores.
+- CONTACTADO: Resaltar urgencia y adecuación inicial (capacidad, timing).
+- VISITA COORDINADA: Resaltar nivel de compromiso y expectativa.
+- META CONSEGUIDA: Resaltar el factor decisivo del cierre.
+
+Devolvé SIEMPRE JSON válido: { "summary": "...", "match_percent": 0-100 }`;
+
 const SETTINGS_KEYS = {
   user: "scraper_prompt_user",
   agent: "scraper_prompt_agent",
   image: "image_extract_prompt_user",
   import: "scraper_prompt_import",
+  sentiment: "agent_sentiment_prompt",
   tokens: "scraper_unavailable_tokens",
   excludeUrls: "scraper_exclude_urls",
   forbiddenExtensions: "scraper_forbidden_extensions",
@@ -74,12 +91,13 @@ export function AdminPrompt({ toast }: Props) {
   const [promptAgent, setPromptAgent] = useState(DEFAULT_PROMPT_AGENT);
   const [promptImage, setPromptImage] = useState(DEFAULT_PROMPT_IMAGE);
   const [promptImport, setPromptImport] = useState(DEFAULT_PROMPT_IMPORT);
+  const [promptSentiment, setPromptSentiment] = useState(DEFAULT_PROMPT_SENTIMENT_ANALYSIS);
   const [forbiddenExtensions, setForbiddenExtensions] = useState(".pdf, .jpg, .png, .jpeg, .docx, .xml");
   const [tokens, setTokens] = useState(DEFAULT_UNAVAILABLE_TOKENS);
   const [excludeUrls, setExcludeUrls] = useState(DEFAULT_EXCLUDE_URLS);
   
   const [savedStatus, setSavedStatus] = useState<Record<string, boolean>>({
-    user: true, agent: true, image: true, import: true, tokens: true, excludeUrls: true, forbiddenExtensions: true
+    user: true, agent: true, image: true, import: true, sentiment: true, tokens: true, excludeUrls: true, forbiddenExtensions: true
   });
   const [loading, setLoading] = useState(true);
 
@@ -99,6 +117,7 @@ export function AdminPrompt({ toast }: Props) {
             if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
             if (row.key === SETTINGS_KEYS.image) setPromptImage(row.value);
             if (row.key === SETTINGS_KEYS.import) setPromptImport(row.value);
+            if (row.key === SETTINGS_KEYS.sentiment) setPromptSentiment(row.value);
             if (row.key === SETTINGS_KEYS.tokens) setTokens(row.value);
             if (row.key === SETTINGS_KEYS.excludeUrls) setExcludeUrls(row.value);
             if (row.key === SETTINGS_KEYS.forbiddenExtensions) setForbiddenExtensions(row.value);
@@ -120,6 +139,7 @@ export function AdminPrompt({ toast }: Props) {
       type === "agent" ? promptAgent : 
       type === "image" ? promptImage : 
       type === "import" ? promptImport :
+      type === "sentiment" ? promptSentiment :
       type === "tokens" ? tokens :
       type === "excludeUrls" ? excludeUrls :
       forbiddenExtensions;
@@ -141,6 +161,7 @@ export function AdminPrompt({ toast }: Props) {
     if (type === "agent") setPromptAgent(DEFAULT_PROMPT_AGENT);
     if (type === "image") setPromptImage(DEFAULT_PROMPT_IMAGE);
     if (type === "import") setPromptImport(DEFAULT_PROMPT_IMPORT);
+    if (type === "sentiment") setPromptSentiment(DEFAULT_PROMPT_SENTIMENT_ANALYSIS);
     if (type === "tokens") setTokens(DEFAULT_UNAVAILABLE_TOKENS);
     if (type === "excludeUrls") setExcludeUrls(DEFAULT_EXCLUDE_URLS);
     if (type === "forbiddenExtensions") setForbiddenExtensions(".pdf, .jpg, .png, .jpeg, .docx, .xml");
@@ -227,6 +248,15 @@ export function AdminPrompt({ toast }: Props) {
               onReset={() => handleReset("import")}
               saved={savedStatus.import}
               description="Extractor especializado para barrido de agencias"
+            />
+            <PromptCard 
+              title="Resumen de Sentimiento (Agente)" 
+              value={promptSentiment} 
+              onValueChange={(v) => { setPromptSentiment(v); setSavedStatus(prev => ({ ...prev, sentiment: false })); }}
+              onSave={() => handleSave("sentiment")}
+              onReset={() => handleReset("sentiment")}
+              saved={savedStatus.sentiment}
+              description="Analiza ratings y genera insight + match % por estado"
             />
 
             <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4">
