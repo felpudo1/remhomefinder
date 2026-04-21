@@ -144,6 +144,32 @@ export function AdminDirectorio() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      if (!editAgency) throw new Error("Sin agencia seleccionada");
+      if (!editName.trim()) throw new Error("El nombre es requerido");
+      const { error } = await (supabase as any)
+        .from("external_agencies")
+        .update({
+          name: editName.trim(),
+          website_url: editUrl.trim(),
+          address: editAddress.trim(),
+          phone: editPhone.trim(),
+          email: editEmail.trim(),
+          department_id: editDeptId === "none" ? null : editDeptId,
+          is_featured: editFeatured,
+        })
+        .eq("id", editAgency.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-external-agencies"] });
+      setEditAgency(null);
+      toast({ title: "Agencia actualizada" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleAnalyze = async () => {
     if (!importUrl.trim()) {
       toast({ title: "Ingresá una URL", variant: "destructive" });
