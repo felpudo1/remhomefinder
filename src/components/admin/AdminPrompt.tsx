@@ -139,6 +139,7 @@ export function AdminPrompt({ toast }: Props) {
       type === "agent" ? promptAgent : 
       type === "image" ? promptImage : 
       type === "import" ? promptImport :
+      type === "sentiment" ? promptSentiment :
       type === "tokens" ? tokens :
       type === "excludeUrls" ? excludeUrls :
       forbiddenExtensions;
