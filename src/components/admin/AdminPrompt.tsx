@@ -55,11 +55,28 @@ Instrucciones estrictas para esta importación por lotes:
 const DEFAULT_UNAVAILABLE_TOKENS = "ya fue señalada, Ups!, propiedad ya fue, no disponible, señalada, reservada";
 const DEFAULT_EXCLUDE_URLS = "/propiedad/nada, /propiedad/alq, /propiedad/ven, /login, /registro, /mi-cuenta";
 
+const DEFAULT_PROMPT_SENTIMENT_ANALYSIS = `Sos un analista de leads inmobiliarios. Recibís ratings (1-5 estrellas) de un usuario sobre una propiedad, según su estado actual en el embudo: Contactado, Visita Coordinada, Firme Candidato, Posible Interés, Descartado o Meta Conseguida.
+
+Tu tarea:
+1) RESUMEN HUMANO: Generá un resumen narrativo de MÁXIMO 15 PALABRAS, en tono natural y accionable para el agente (ej: "Usuario muy interesado, le urge la mudanza y el precio le cuadra").
+2) MATCH %: Calculá un porcentaje de match (0-100) ponderando los ratings críticos del estado.
+
+Diferenciación por estado (CRÍTICO):
+- DESCARTADO: Buscá los bloqueadores (precio excesivo, fotos irreales, ubicación, humedad). Resumen orientado a "por qué no funcionó".
+- POSIBLE INTERÉS: Lead tibio. Destacar qué falta para escalar (precio, info, visita).
+- FIRME CANDIDATO: Hot lead. Resaltar alta intención y factores ganadores.
+- CONTACTADO: Resaltar urgencia y adecuación inicial (capacidad, timing).
+- VISITA COORDINADA: Resaltar nivel de compromiso y expectativa.
+- META CONSEGUIDA: Resaltar el factor decisivo del cierre.
+
+Devolvé SIEMPRE JSON válido: { "summary": "...", "match_percent": 0-100 }`;
+
 const SETTINGS_KEYS = {
   user: "scraper_prompt_user",
   agent: "scraper_prompt_agent",
   image: "image_extract_prompt_user",
   import: "scraper_prompt_import",
+  sentiment: "agent_sentiment_prompt",
   tokens: "scraper_unavailable_tokens",
   excludeUrls: "scraper_exclude_urls",
   forbiddenExtensions: "scraper_forbidden_extensions",
