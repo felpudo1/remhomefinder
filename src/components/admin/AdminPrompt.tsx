@@ -249,6 +249,15 @@ export function AdminPrompt({ toast }: Props) {
               saved={savedStatus.import}
               description="Extractor especializado para barrido de agencias"
             />
+            <PromptCard 
+              title="Resumen de Sentimiento (Agente)" 
+              value={promptSentiment} 
+              onValueChange={(v) => { setPromptSentiment(v); setSavedStatus(prev => ({ ...prev, sentiment: false })); }}
+              onSave={() => handleSave("sentiment")}
+              onReset={() => handleReset("sentiment")}
+              saved={savedStatus.sentiment}
+              description="Analiza ratings y genera insight + match % por estado"
+            />
 
             <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2 text-primary">
