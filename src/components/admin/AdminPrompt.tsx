@@ -91,12 +91,13 @@ export function AdminPrompt({ toast }: Props) {
   const [promptAgent, setPromptAgent] = useState(DEFAULT_PROMPT_AGENT);
   const [promptImage, setPromptImage] = useState(DEFAULT_PROMPT_IMAGE);
   const [promptImport, setPromptImport] = useState(DEFAULT_PROMPT_IMPORT);
+  const [promptSentiment, setPromptSentiment] = useState(DEFAULT_PROMPT_SENTIMENT_ANALYSIS);
   const [forbiddenExtensions, setForbiddenExtensions] = useState(".pdf, .jpg, .png, .jpeg, .docx, .xml");
   const [tokens, setTokens] = useState(DEFAULT_UNAVAILABLE_TOKENS);
   const [excludeUrls, setExcludeUrls] = useState(DEFAULT_EXCLUDE_URLS);
   
   const [savedStatus, setSavedStatus] = useState<Record<string, boolean>>({
-    user: true, agent: true, image: true, import: true, tokens: true, excludeUrls: true, forbiddenExtensions: true
+    user: true, agent: true, image: true, import: true, sentiment: true, tokens: true, excludeUrls: true, forbiddenExtensions: true
   });
   const [loading, setLoading] = useState(true);
 
