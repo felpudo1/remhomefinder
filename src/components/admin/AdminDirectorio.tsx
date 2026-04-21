@@ -59,6 +59,27 @@ export function AdminDirectorio() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Edición
+  const [editAgency, setEditAgency] = useState<ExternalAgency | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editDeptId, setEditDeptId] = useState<string>("none");
+  const [editFeatured, setEditFeatured] = useState(false);
+
+  const openEdit = (a: ExternalAgency) => {
+    setEditAgency(a);
+    setEditName(a.name || "");
+    setEditUrl(a.website_url || "");
+    setEditAddress(a.address || "");
+    setEditPhone(a.phone || "");
+    setEditEmail(a.email || "");
+    setEditDeptId(a.department_id || "none");
+    setEditFeatured(!!a.is_featured);
+  };
+
   const { data: agencies = [], isLoading } = useQuery({
     queryKey: ["admin-external-agencies"],
     queryFn: async () => {
