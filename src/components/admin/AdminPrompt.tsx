@@ -161,6 +161,7 @@ export function AdminPrompt({ toast }: Props) {
     if (type === "agent") setPromptAgent(DEFAULT_PROMPT_AGENT);
     if (type === "image") setPromptImage(DEFAULT_PROMPT_IMAGE);
     if (type === "import") setPromptImport(DEFAULT_PROMPT_IMPORT);
+    if (type === "sentiment") setPromptSentiment(DEFAULT_PROMPT_SENTIMENT_ANALYSIS);
     if (type === "tokens") setTokens(DEFAULT_UNAVAILABLE_TOKENS);
     if (type === "excludeUrls") setExcludeUrls(DEFAULT_EXCLUDE_URLS);
     if (type === "forbiddenExtensions") setForbiddenExtensions(".pdf, .jpg, .png, .jpeg, .docx, .xml");
