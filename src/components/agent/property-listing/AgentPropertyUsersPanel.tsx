@@ -139,6 +139,9 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
   const quickReasonLabel = metadata?.quick_reason_label as string | undefined;
   if (ratingRows.length === 0 && booleanRows.length === 0 && textRows.length === 0 && !quickReasonLabel) return null;
 
+  // Generar insight IA (heurística local — el prompt global queda definido en Admin para futura integración)
+  const insight = generateSentimentInsight(status, metadata);
+
   return (
     <div className="min-w-[240px] shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 shadow-sm lg:min-w-[280px]">
       <div className="flex items-center justify-between border-b border-border/50 pb-2">
@@ -146,8 +149,34 @@ function StatusRatingCard({ status, user }: { status: string; user: UserInsight 
           {status.replace(/_/g, " ")}
         </Badge>
       </div>
-      
-      {(ratingRows.length > 0 || booleanRows.length > 0) && (
+
+      {/* ✨ IA Insight — sección principal */}
+      {insight && (
+        <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-primary">IA Insight</p>
+            </div>
+            <Badge
+              variant="outline"
+              className={`px-1.5 py-0 text-[10px] font-bold ${
+                insight.matchPercent >= 75
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600"
+                  : insight.matchPercent >= 45
+                  ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-600"
+                  : "border-red-500/50 bg-red-500/10 text-red-600"
+              }`}
+            >
+              {insight.matchPercent}% Match
+            </Badge>
+          </div>
+          <p className="text-xs leading-snug text-foreground">{insight.summary}</p>
+        </div>
+      )}
+
+      {/* Ratings crudos — ocultos por defecto vía SHOW_RAW_RATINGS, reactivables fácilmente */}
+      {SHOW_RAW_RATINGS && (ratingRows.length > 0 || booleanRows.length > 0) && (
         <div className="space-y-2">
           {ratingRows.map((row) => (
             <RatingRow key={row.label} label={row.label} value={row.value} />
