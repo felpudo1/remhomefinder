@@ -420,6 +420,15 @@ export function AdminDirectorio() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => openEdit(a)}
+                  className="text-primary hover:text-primary"
+                  aria-label="Editar"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => deleteMutation.mutate(a.id)}
                   disabled={deleteMutation.isPending}
                   className="text-destructive hover:text-destructive"
