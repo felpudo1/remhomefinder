@@ -7,9 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Loader2, Building2, Globe, Sparkles } from "lucide-react";
+import { Trash2, Plus, Loader2, Building2, Globe, Sparkles, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface ExternalAgency {
   id: string;
@@ -51,6 +58,27 @@ export function AdminDirectorio() {
   const [parsed, setParsed] = useState<ParsedAgency[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Edición
+  const [editAgency, setEditAgency] = useState<ExternalAgency | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editDeptId, setEditDeptId] = useState<string>("none");
+  const [editFeatured, setEditFeatured] = useState(false);
+
+  const openEdit = (a: ExternalAgency) => {
+    setEditAgency(a);
+    setEditName(a.name || "");
+    setEditUrl(a.website_url || "");
+    setEditAddress(a.address || "");
+    setEditPhone(a.phone || "");
+    setEditEmail(a.email || "");
+    setEditDeptId(a.department_id || "none");
+    setEditFeatured(!!a.is_featured);
+  };
 
   const { data: agencies = [], isLoading } = useQuery({
     queryKey: ["admin-external-agencies"],
@@ -113,6 +141,32 @@ export function AdminDirectorio() {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-external-agencies"] }),
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      if (!editAgency) throw new Error("Sin agencia seleccionada");
+      if (!editName.trim()) throw new Error("El nombre es requerido");
+      const { error } = await (supabase as any)
+        .from("external_agencies")
+        .update({
+          name: editName.trim(),
+          website_url: editUrl.trim(),
+          address: editAddress.trim(),
+          phone: editPhone.trim(),
+          email: editEmail.trim(),
+          department_id: editDeptId === "none" ? null : editDeptId,
+          is_featured: editFeatured,
+        })
+        .eq("id", editAgency.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-external-agencies"] });
+      setEditAgency(null);
+      toast({ title: "Agencia actualizada" });
+    },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -366,6 +420,15 @@ export function AdminDirectorio() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => openEdit(a)}
+                  className="text-primary hover:text-primary"
+                  aria-label="Editar"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => deleteMutation.mutate(a.id)}
                   disabled={deleteMutation.isPending}
                   className="text-destructive hover:text-destructive"
@@ -377,6 +440,83 @@ export function AdminDirectorio() {
           ))}
         </div>
       )}
+
+      {/* Dialog de edición */}
+      <Dialog open={!!editAgency} onOpenChange={(open) => !open && setEditAgency(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar agencia</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Nombre *</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Sitio web</Label>
+              <Input
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Dirección</Label>
+              <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Teléfono</Label>
+                <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Email</Label>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Departamento</Label>
+              <Select value={editDeptId} onValueChange={setEditDeptId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin departamento</SelectItem>
+                  {(departments || []).map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Switch
+                checked={editFeatured}
+                onCheckedChange={setEditFeatured}
+                id="edit-featured"
+              />
+              <Label htmlFor="edit-featured" className="text-sm cursor-pointer">
+                Agencia destacada
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAgency(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => editMutation.mutate()}
+              disabled={editMutation.isPending || !editName.trim()}
+            >
+              {editMutation.isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
