@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.scrape-property]
 verify_jwt = false
+
+[functions.scrape-agency-directory]
+verify_jwt = false

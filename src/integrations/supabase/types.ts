@@ -583,27 +583,39 @@ export type Database = {
       }
       external_agencies: {
         Row: {
+          address: string
           created_at: string
           department_id: string | null
+          email: string
           id: string
+          imported_from: string | null
           is_featured: boolean
           name: string
+          phone: string
           website_url: string
         }
         Insert: {
+          address?: string
           created_at?: string
           department_id?: string | null
+          email?: string
           id?: string
+          imported_from?: string | null
           is_featured?: boolean
           name: string
+          phone?: string
           website_url?: string
         }
         Update: {
+          address?: string
           created_at?: string
           department_id?: string | null
+          email?: string
           id?: string
+          imported_from?: string | null
           is_featured?: boolean
           name?: string
+          phone?: string
           website_url?: string
         }
         Relationships: [

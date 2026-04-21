@@ -1,80 +1,79 @@
 
-Objetivo: hacer robusto el guardado de `referred_by_id` para Google OAuth aunque Supabase no vuelva por `/auth/callback`.
 
-Diagnóstico confirmado:
-- La ruta `/auth/callback` existe y el componente `AuthCallback.tsx` tiene la lógica de referral.
-- Pero hoy esa lógica depende de que Google/Supabase respeten `redirectTo`.
-- En tu caso real, el usuario termina en `/dashboard`, por lo que `AuthCallback` no monta y nunca corre el update.
-- La evidencia de base acompaña esto: el usuario nuevo `efde88ee-762d-4e33-8b8c-0f991c2d7f78` quedó con `referred_by_id = NULL`.
-- Además, `Landing.tsx` redirige automáticamente a `/dashboard` si ya hay sesión, lo que refuerza que el flujo puede “saltearse” la callback visual.
+## Objetivo
+Permitirte pegar la URL de un índice (ej. `ciu.org.uy/nuestros-socios`), que el sistema scrapee automáticamente todas las inmobiliarias listadas (nombre, dirección, departamento, teléfono, web, email) y las precargue en una tabla revisable antes de insertar en `external_agencies`.
 
-Plan de implementación propuesto:
+## Hallazgo clave
+La página de CIU ya devuelve las 430 agencias en el HTML completo (no necesita seguir paginación). Confirmado al hacer fetch: vienen todas, con el formato estándar `### NOMBRE / dirección, depto / tel / web / email`. El "100 por página" es filtro visual JS.
 
-1. Desacoplar el referral de `/auth/callback`
-- Mantener `AuthCallback.tsx` como camino ideal cuando sí monta.
-- Pero mover la lógica crítica de “si hay sesión + existe `hf_referral_id` + el perfil actual no tiene `referred_by_id`, entonces vincular referido” a un punto global.
-- El lugar más estable es `ReferralTracker.tsx`, porque ya está montado globalmente dentro de `App.tsx`.
+Para sitios futuros que sí tengan paginación real o subíndices, el plan contempla un modo "crawl" opcional.
 
-2. Reforzar `ReferralTracker` como finalizador post-login
-- Extender `ReferralTracker` para que haga dos cosas:
-  - seguir capturando `?ref=` / `?agente=` desde URL y guardarlo en `localStorage`
-  - cuando detecte usuario autenticado y perfil sin referido, usar `hf_referral_id` de `localStorage` para hacer el `update` a `profiles.referred_by_id`
-- Evitar auto-referencia comparando `refId !== profile.userId`
-- Limpiar `hf_referral_id` solo cuando el update haya sido exitoso
+## Diseño UX (en `AdminDirectorio.tsx`, pestaña Directorio)
 
-3. Añadir tolerancia a race condition del perfil
-- Como el trigger `handle_new_user_profile()` puede crear el perfil unos instantes después del login OAuth, replicar un pequeño retry en `ReferralTracker`
-- Flujo:
-  - leer `profile`
-  - si todavía no existe, reintentar unas pocas veces
-  - si existe y `referred_by_id` es null, actualizar
-- Esto elimina la dependencia temporal de que el callback corra “en el momento exacto”
+Agregar un bloque nuevo arriba del listado: **"Importar desde índice web"**
 
-4. Mantener `AuthCallback` como soporte, no como único mecanismo
-- No sacar la lógica actual de `AuthCallback.tsx`
-- Solo dejar de depender exclusivamente de ella
-- Así, si el proveedor sí vuelve a `/auth/callback`, funcionará igual; y si no, el referral se resolverá después al entrar a landing/dashboard
-
-5. Verificación puntual del flujo QR
-- Revisar que no se limpie `hf_referral_id` antes de tiempo
-- Validar que el flujo quede así:
-  1. QR con `?ref=...`
-  2. `ReferralTracker` guarda `hf_referral_id`
-  3. Google OAuth
-  4. si vuelve por `/auth/callback`, se procesa ahí
-  5. si vuelve por `/` o `/dashboard`, `ReferralTracker` global procesa el referido al detectar sesión
-- Esto cubre ambos escenarios sin depender de configuración externa
-
-Detalles técnicos:
 ```text
-Estado actual:
-QR -> localStorage(hf_referral_id) -> Google OAuth -> /dashboard
-                                              X
-                                   AuthCallback no monta
-
-Estado propuesto:
-QR -> localStorage(hf_referral_id) -> Google OAuth -> /dashboard
-                                                     |
-                                                     v
-                              ReferralTracker global detecta sesión
-                              + profile sin referred_by_id
-                              + update profiles.referred_by_id
+┌─────────────────────────────────────────────────┐
+│ Importar agencias desde índice web              │
+│ ┌─────────────────────────────────┐ ┌────────┐ │
+│ │ https://ciu.org.uy/nuestros-... │ │Analizar│ │
+│ └─────────────────────────────────┘ └────────┘ │
+│ ☐ Recorrer subpáginas (crawl)  Máx páginas:[5]│
+└─────────────────────────────────────────────────┘
+        ↓ (tras analizar)
+┌─────────────────────────────────────────────────┐
+│ 430 agencias detectadas                         │
+│ [Seleccionar todas] [Filtrar duplicadas]        │
+│ ☑ A Y C NEGOCIOS  Canelones  web ✓ tel ✓       │
+│ ☑ A. MEIKLE       Canelones  web ✓ tel ✓       │
+│ ☐ ABACOS (ya existe)  ←gris                    │
+│ ...                                             │
+│ [Importar 387 seleccionadas]                    │
+└─────────────────────────────────────────────────┘
 ```
 
-Archivos a tocar:
-- `src/components/ReferralTracker.tsx`
-- probablemente ajuste menor en `src/pages/AuthCallback.tsx` para evitar duplicación/conflictos de limpieza
-- no haría cambios en `Landing.tsx`, `AuthProvider.tsx` ni `GoogleSignInButton.tsx` salvo que al implementar aparezca un conflicto concreto
+## Arquitectura técnica
 
-Qué NO cambiaría:
-- No cambiaría la configuración de redirects del proyecto desde código
-- No movería todo a metadata de usuario ahora, porque ya existe `profiles.referred_by_id` y el objetivo es arreglar solo este bug
-- No tocaría el flujo de guardado manual del aviso salvo que al implementar veamos una interferencia real
+**1. Edge Function nueva: `scrape-agency-directory`**
+- Input: `{ url, crawl?: boolean, maxPages?: number }`
+- Auth: solo admins (validar `has_role` con JWT)
+- Estrategia:
+  - **Modo simple (default)**: Firecrawl `/scrape` con format `markdown` → parsea con regex el bloque `### NOMBRE\n\ndirección, depto\n\ntel web email`
+  - **Modo crawl (opcional)**: Firecrawl `/crawl` con `limit=maxPages`, recorre links que matcheen el dominio
+- Detecta departamento por la última palabra antes del salto (lista cerrada de los 19 deptos UY)
+- Devuelve array `[{name, address, department_name, phone, website_url, email, _matched_department_id}]`
+- Usa la Firecrawl key ya configurada (`FIRECRAWL_API_KEY`)
 
-Riesgo y mitigación:
-- Riesgo: doble update del referido si corre en callback y luego en tracker
-- Mitigación: antes de actualizar, verificar `!profile.referredById`; después limpiar `hf_referral_id`
+**2. Ampliar tabla `external_agencies`** (migración)
+Agregar columnas opcionales para enriquecer el directorio:
+- `address text default ''`
+- `phone text default ''`
+- `email text default ''`
+- `imported_from text` (URL origen, para auditoría)
 
-Resultado esperado:
-- Aunque Supabase ignore `redirectTo` y mande al usuario a `/dashboard`, el referido igual queda asociado al perfil
-- El sistema deja de depender de una sola ruta frágil y pasa a funcionar con un mecanismo global post-login
+**3. UI en `AdminDirectorio.tsx`**
+- Nuevo state: `importUrl`, `crawlMode`, `parsedAgencies`, `selectedIds`
+- Llama edge function → muestra tabla preview con checkboxes
+- Marca duplicados comparando `name` normalizado contra agencias ya cargadas
+- Botón "Importar seleccionadas" → bulk insert en `external_agencies` con `onConflict: name`
+
+## Flujo concreto con CIU
+1. Pegás `https://ciu.org.uy/nuestros-socios/` → Analizar
+2. Edge function scrapea (1 sola request, ~3s) → devuelve 430 entradas parseadas
+3. Ves tabla con todas, podés deseleccionar las que no quieras
+4. Importar → quedan en `external_agencies`, visibles automáticamente en el directorio público
+
+## Para casos futuros con paginación real
+El modo crawl maneja sitios tipo `?page=1`, `?page=2`. Para índices con subpáginas (cada agencia en su propia URL), se puede iterar links del índice y scrapear cada uno — ya soportado por Firecrawl crawl.
+
+## Archivos a tocar
+- `supabase/functions/scrape-agency-directory/index.ts` — nueva edge function
+- `supabase/config.toml` — registrar la function
+- Migración SQL — agregar columnas a `external_agencies`
+- `src/components/admin/AdminDirectorio.tsx` — UI de import + preview
+- `src/components/directory/AgenciesDirectoryPanel.tsx` — mostrar address/phone/email si vienen cargados
+
+## Costos / límites
+- Firecrawl: 1 scrape simple = 1 crédito. CIU completo = 1 crédito.
+- Modo crawl: 1 crédito por página visitada (configurable, default 5 máx).
+

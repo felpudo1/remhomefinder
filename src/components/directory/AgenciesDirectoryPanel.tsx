@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2 } from "lucide-react";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,7 +31,7 @@ function AgencyCard({
         </Badge>
       )}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-sm leading-tight truncate flex-1">{agency.name}</h3>
+        <h3 className="font-semibold text-sm leading-tight flex-1 break-words line-clamp-3">{agency.name}</h3>
         <button
           onClick={onToggleFavorite}
           disabled={isToggling}
@@ -46,13 +46,23 @@ function AgencyCard({
         </button>
       </div>
 
-      {agency.followerCount > 0 && (
-        <span className="text-xs text-muted-foreground">
-          {agency.followerCount} publicaciones activas
+      {isFeatured && agency.address && (
+        <span className="inline-flex items-start gap-1 text-xs text-muted-foreground">
+          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+          <span className="line-clamp-2">{agency.address}</span>
         </span>
       )}
 
-      {agency.websiteUrl && (
+      {isFeatured && agency.phone && (
+        <a
+          href={`tel:${agency.phone.replace(/\s/g, "")}`}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          <Phone className="w-3 h-3" /> {agency.phone}
+        </a>
+      )}
+
+      {agency.websiteUrl ? (
         <a
           href={agency.websiteUrl.startsWith("http") ? agency.websiteUrl : `https://${agency.websiteUrl}`}
           target="_blank"
@@ -61,6 +71,15 @@ function AgencyCard({
         >
           <ExternalLink className="w-3 h-3" /> Visitar Web
         </a>
+      ) : (
+        !isFeatured && agency.phone && (
+          <a
+            href={`tel:${agency.phone.replace(/\s/g, "")}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary mt-auto"
+          >
+            <Phone className="w-3 h-3" /> {agency.phone}
+          </a>
+        )
       )}
     </div>
   );
@@ -109,7 +128,7 @@ export function AgenciesDirectoryPanel() {
             <Heart className="w-4 h-4 text-red-500 fill-red-500" />
             Mis Agencias ({favoriteCount}/{maxFavorites})
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {favoriteAgencies.map((a) => (
               <AgencyCard
                 key={`${a.type}:${a.id}`}
@@ -153,7 +172,7 @@ export function AgenciesDirectoryPanel() {
           <p className="text-sm text-muted-foreground">No se encontraron agencias.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((a) => (
             <AgencyCard
               key={`${a.type}:${a.id}`}
