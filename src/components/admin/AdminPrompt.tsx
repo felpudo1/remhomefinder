@@ -117,6 +117,7 @@ export function AdminPrompt({ toast }: Props) {
             if (row.key === SETTINGS_KEYS.agent) setPromptAgent(row.value);
             if (row.key === SETTINGS_KEYS.image) setPromptImage(row.value);
             if (row.key === SETTINGS_KEYS.import) setPromptImport(row.value);
+            if (row.key === SETTINGS_KEYS.sentiment) setPromptSentiment(row.value);
             if (row.key === SETTINGS_KEYS.tokens) setTokens(row.value);
             if (row.key === SETTINGS_KEYS.excludeUrls) setExcludeUrls(row.value);
             if (row.key === SETTINGS_KEYS.forbiddenExtensions) setForbiddenExtensions(row.value);
