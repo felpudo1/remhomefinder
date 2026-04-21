@@ -440,6 +440,83 @@ export function AdminDirectorio() {
           ))}
         </div>
       )}
+
+      {/* Dialog de edición */}
+      <Dialog open={!!editAgency} onOpenChange={(open) => !open && setEditAgency(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar agencia</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Nombre *</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Sitio web</Label>
+              <Input
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Dirección</Label>
+              <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Teléfono</Label>
+                <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Email</Label>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Departamento</Label>
+              <Select value={editDeptId} onValueChange={setEditDeptId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin departamento</SelectItem>
+                  {(departments || []).map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Switch
+                checked={editFeatured}
+                onCheckedChange={setEditFeatured}
+                id="edit-featured"
+              />
+              <Label htmlFor="edit-featured" className="text-sm cursor-pointer">
+                Agencia destacada
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAgency(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => editMutation.mutate()}
+              disabled={editMutation.isPending || !editName.trim()}
+            >
+              {editMutation.isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
