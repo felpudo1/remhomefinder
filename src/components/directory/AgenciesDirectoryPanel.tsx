@@ -1,28 +1,37 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone } from "lucide-react";
+import { useCurrentUser } from "@/contexts/AuthProvider";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
 
 function AgencyCard({
   agency,
   onToggleFavorite,
   isToggling,
+  lastVisitTs,
+  onVisit,
 }: {
   agency: DirectoryAgency;
   onToggleFavorite: () => void;
   isToggling: boolean;
+  lastVisitTs: number | null;
+  onVisit: () => void;
 }) {
   const isFeatured = agency.isFeatured;
+  const wasVisited = lastVisitTs !== null;
   return (
     <div
       className={`relative rounded-xl border p-4 flex flex-col gap-2 transition-all ${
         isFeatured
           ? "border-amber-400/60 bg-gradient-to-br from-amber-50/40 to-amber-100/20 dark:from-amber-950/20 dark:to-amber-900/10 shadow-md"
-          : "border-border bg-card"
+          : wasVisited
+            ? "border-border bg-muted/40"
+            : "border-border bg-card"
       }`}
     >
       {isFeatured && (
@@ -31,7 +40,9 @@ function AgencyCard({
         </Badge>
       )}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-sm leading-tight flex-1 break-words line-clamp-3">{agency.name}</h3>
+        <h3 className={`font-semibold text-sm leading-tight flex-1 break-words line-clamp-3 ${wasVisited && !isFeatured ? "text-muted-foreground" : ""}`}>
+          {agency.name}
+        </h3>
         <button
           onClick={onToggleFavorite}
           disabled={isToggling}
@@ -56,6 +67,7 @@ function AgencyCard({
       {isFeatured && agency.phone && (
         <a
           href={`tel:${agency.phone.replace(/\s/g, "")}`}
+          onClick={onVisit}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
         >
           <Phone className="w-3 h-3" /> {agency.phone}
@@ -67,6 +79,7 @@ function AgencyCard({
           href={agency.websiteUrl.startsWith("http") ? agency.websiteUrl : `https://${agency.websiteUrl}`}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onVisit}
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
         >
           <ExternalLink className="w-3 h-3" /> Visitar Web
@@ -75,11 +88,21 @@ function AgencyCard({
         !isFeatured && agency.phone && (
           <a
             href={`tel:${agency.phone.replace(/\s/g, "")}`}
+            onClick={onVisit}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary mt-auto"
           >
             <Phone className="w-3 h-3" /> {agency.phone}
           </a>
         )
+      )}
+
+      {wasVisited && (
+        <span
+          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground border-t border-border/60 pt-1.5 mt-1"
+          title={`Última visita: ${new Date(lastVisitTs!).toLocaleString()}`}
+        >
+          <Eye className="w-3 h-3" /> Visto {formatVisitTimestamp(lastVisitTs!)}
+        </span>
       )}
     </div>
   );
@@ -89,9 +112,13 @@ export function AgenciesDirectoryPanel() {
   const { agencies, favoriteAgencies, isLoading, toggleFavorite, maxFavorites, favoriteCount } = useAgenciesDirectory();
   const { departments } = useGeography();
   const { toast } = useToast();
+  const { user } = useCurrentUser();
+  const userId = user?.id ?? null;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
+  // Estado local para forzar re-render cuando se marca una visita.
+  const [visits, setVisits] = useState<Record<string, number>>(() => getAllVisits(userId));
 
   const handleToggle = (agency: DirectoryAgency) => {
     toggleFavorite.mutate(
@@ -103,6 +130,14 @@ export function AgenciesDirectoryPanel() {
       }
     );
   };
+
+  const handleVisit = useCallback(
+    (agency: DirectoryAgency) => {
+      const ts = markVisited(userId, agency.type, agency.id);
+      setVisits((prev) => ({ ...prev, [`${agency.type}:${agency.id}`]: ts }));
+    },
+    [userId]
+  );
 
   // Filter
   const filtered = agencies.filter((a) => {
@@ -118,6 +153,8 @@ export function AgenciesDirectoryPanel() {
       </div>
     );
   }
+
+  const getVisitTs = (a: DirectoryAgency): number | null => visits[`${a.type}:${a.id}`] ?? null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -135,6 +172,8 @@ export function AgenciesDirectoryPanel() {
                 agency={a}
                 onToggleFavorite={() => handleToggle(a)}
                 isToggling={toggleFavorite.isPending}
+                lastVisitTs={getVisitTs(a)}
+                onVisit={() => handleVisit(a)}
               />
             ))}
           </div>
@@ -179,6 +218,8 @@ export function AgenciesDirectoryPanel() {
               agency={a}
               onToggleFavorite={() => handleToggle(a)}
               isToggling={toggleFavorite.isPending}
+              lastVisitTs={getVisitTs(a)}
+              onVisit={() => handleVisit(a)}
             />
           ))}
         </div>
