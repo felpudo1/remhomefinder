@@ -9,6 +9,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
 
+/**
+ * Normaliza una URL de agencia para asegurar que sea navegable:
+ * - Recorta espacios y caracteres invisibles
+ * - Agrega https:// si falta protocolo
+ * - Devuelve null si la URL es inválida (evita about:blank#blocked en móviles)
+ */
+function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let url = String(raw).trim().replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+  if (!url) return null;
+  // Si ya viene con protocolo válido, normalizar a minúsculas el esquema
+  const protoMatch = url.match(/^([a-zA-Z]+):\/\//);
+  if (protoMatch) {
+    const proto = protoMatch[1].toLowerCase();
+    if (proto !== "http" && proto !== "https") return null;
+    url = `${proto}://${url.slice(protoMatch[0].length)}`;
+  } else {
+    // Sin protocolo: anteponer https://
+    url = `https://${url}`;
+  }
+  try {
+    const u = new URL(url);
+    if (!u.hostname || !u.hostname.includes(".")) return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 function AgencyCard({
   agency,
   onToggleFavorite,
