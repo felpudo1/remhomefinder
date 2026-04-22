@@ -103,27 +103,34 @@ function AgencyCard({
         </a>
       )}
 
-      {agency.websiteUrl ? (
-        <a
-          href={agency.websiteUrl.startsWith("http") ? agency.websiteUrl : `https://${agency.websiteUrl}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onVisit}
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
-        >
-          <ExternalLink className="w-3 h-3" /> Visitar Web
-        </a>
-      ) : (
-        !isFeatured && agency.phone && (
-          <a
-            href={`tel:${agency.phone.replace(/\s/g, "")}`}
-            onClick={onVisit}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary mt-auto"
-          >
-            <Phone className="w-3 h-3" /> {agency.phone}
-          </a>
-        )
-      )}
+      {(() => {
+        const safeUrl = normalizeWebsiteUrl(agency.websiteUrl);
+        if (safeUrl) {
+          return (
+            <a
+              href={safeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onVisit}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
+            >
+              <ExternalLink className="w-3 h-3" /> Visitar Web
+            </a>
+          );
+        }
+        if (!isFeatured && agency.phone) {
+          return (
+            <a
+              href={`tel:${agency.phone.replace(/\s/g, "")}`}
+              onClick={onVisit}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary mt-auto"
+            >
+              <Phone className="w-3 h-3" /> {agency.phone}
+            </a>
+          );
+        }
+        return null;
+      })()}
 
       {wasVisited && (
         <span
