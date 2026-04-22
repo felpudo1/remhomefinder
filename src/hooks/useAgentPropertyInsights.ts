@@ -4,6 +4,11 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useMemo } from "react";
 import { parseCoordinatedVisitDateFromMetadata } from "@/lib/date-utils";
+import {
+  computeCredibilityScore,
+  type CredibilityScore,
+  type UserPropertyInteraction,
+} from "@/lib/credibilityScore";
 
 /** Rating keys extracted from event_metadata per status */
 export interface ContactadoRatings {
@@ -59,7 +64,45 @@ export interface AgentUserInsight {
   personalRating?: number;
   familyRating?: number;
   matchScore?: number;
+  /** Desglose del matchScore para mostrar en popover explicativo */
+  matchScoreBreakdown?: MatchScoreBreakdown;
   orgId: string;
+  /** Coeficiente de credibilidad calculado cross-property */
+  credibilityScore?: CredibilityScore;
+}
+
+/**
+ * Desglose de cada componente del Match Score.
+ * Compara características de la propiedad vs perfil de búsqueda del usuario.
+ */
+export interface MatchScoreBreakdown {
+  // --- Operación (alquiler / compra) ---
+  operationScore: number;           // Puntos obtenidos
+  operationMax: number;             // Máximo posible
+  operationMatch: boolean;          // ¿Coincide?
+  propertyOperationLabel: string;   // Ej: "Alquiler"
+  userOperationLabel: string;       // Ej: "Busca alquiler"
+
+  // --- Presupuesto ---
+  budgetScore: number;
+  budgetMax: number;
+  budgetMatch: 'full' | 'partial' | 'none' | 'unknown';
+  propertyPriceLabel: string;       // Ej: "USD 1.200"
+  userBudgetLabel: string;          // Ej: "USD 800 – 1.500"
+
+  // --- Barrio ---
+  neighborhoodScore: number;
+  neighborhoodMax: number;
+  neighborhoodMatch: boolean;
+  propertyNeighborhoodLabel: string;
+  userNeighborhoodsLabel: string;   // Ej: "Pocitos, Punta Carretas"
+
+  // --- Ambientes ---
+  roomsScore: number;
+  roomsMax: number;
+  roomsMatch: boolean;
+  propertyRoomsLabel: string;       // Ej: "3 amb."
+  userRoomsLabel: string;           // Ej: "Mín. 2 amb."
 }
 
 export interface AgentPropertyInsight {
@@ -416,6 +459,33 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
 
     const matchWeights = matchWeightsConfig || { operation_weight: 30, budget_weight: 40, neighborhood_weight: 20, rooms_weight: 10 };
 
+    // ── CREDIBILIDAD: Construir mapa cross-property por usuario ──────────────
+    // Para cada usuario, recolectar sus interacciones en TODAS las propiedades.
+    // Esto permite detectar inconsistencias en campos estables (urgencia, agenda, etc.)
+    const userInteractionsMap = new Map<string, UserPropertyInteraction[]>();
+
+    allInsights.forEach((pub) => {
+      pub.users.forEach((user) => {
+        const interaction: UserPropertyInteraction = {
+          ratingsByStatus: user.ratingsByStatus,
+          currentStatus: user.currentStatus,
+          hasPhone: !!user.phone,
+          hasSearchProfile: !!searchProfileMap[user.userId],
+        };
+        if (!userInteractionsMap.has(user.userId)) {
+          userInteractionsMap.set(user.userId, []);
+        }
+        userInteractionsMap.get(user.userId)!.push(interaction);
+      });
+    });
+
+    // Pre-computar el score de credibilidad por usuario (una sola vez, eficiente)
+    const userCredibilityMap = new Map<string, CredibilityScore | null>();
+    userInteractionsMap.forEach((interactions, userId) => {
+      userCredibilityMap.set(userId, computeCredibilityScore(interactions));
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     return allInsights.map((pub) => ({
       ...pub,
       users: pub.users.map((user) => {
@@ -423,48 +493,90 @@ export function useAgentPropertyInsights(agencyOrgId: string | undefined) {
         const famRev = familyReviewAcc[`${pub.propertyId}_${user.orgId}`];
         const familyRating = famRev && famRev.count > 0 ? famRev.sum / famRev.count : undefined;
 
+
+        // Adjuntar el score de credibilidad pre-calculado
+        const credibilityScore = userCredibilityMap.get(user.userId) ?? undefined;
+
+
+
+        // ── MATCH SCORE + BREAKDOWN ───────────────────────────────────────────
+        // Compara características de la propiedad vs perfil de búsqueda del usuario.
         let matchScore: number | undefined = undefined;
+        let matchScoreBreakdown: MatchScoreBreakdown | undefined = undefined;
         const userSearch = searchProfileMap[user.userId];
+
         if (userSearch) {
-          matchScore = 0;
           const { operation_weight = 30, budget_weight = 40, neighborhood_weight = 20, rooms_weight = 10 } = matchWeights;
+
+          // 1. Operación
           const op = String(userSearch.operation || "").trim().toLowerCase();
           const wantRent = op === "rent" || op === "alquilar";
-          const wantBuy = op === "buy" || op === "comprar";
-          const wantBoth = op === "all" || op === "ambas" || !op;
+          const wantBuy  = op === "buy"  || op === "comprar";
+          const wantBoth = op === "all"  || op === "ambas" || !op;
           const isRent = pub._listingType === "rent";
           const isSale = pub._listingType === "sale";
-          if (wantBoth || (wantRent && isRent) || (wantBuy && isSale)) matchScore += operation_weight;
+          const operationMatch = wantBoth || (wantRent && isRent) || (wantBuy && isSale);
+          const operationScore = operationMatch ? operation_weight : 0;
 
+          // 2. Presupuesto
           const min_b = userSearch.min_budget || 0;
           const max_b = userSearch.max_budget || 999999999;
           const pubPrice = Number(pub._price || 0);
           const userCurrency = userSearch.currency === "$" ? "UYU" : "USD";
-          const pubCurrency = pub._currency || "USD";
+          const pubCurrency  = pub._currency || "USD";
+
+          let budgetMatch: MatchScoreBreakdown['budgetMatch'] = 'unknown';
+          let budgetScore = 0;
           if (pubPrice > 0 && userCurrency === pubCurrency) {
-            if (pubPrice >= min_b && pubPrice <= max_b) matchScore += budget_weight;
-            else if (pubPrice >= min_b * 0.85 && pubPrice <= max_b * 1.15) matchScore += budget_weight * 0.5;
+            if      (pubPrice >= min_b && pubPrice <= max_b)                         { budgetMatch = 'full';    budgetScore = budget_weight; }
+            else if (pubPrice >= min_b * 0.85 && pubPrice <= max_b * 1.15)           { budgetMatch = 'partial'; budgetScore = budget_weight * 0.5; }
+            else                                                                      { budgetMatch = 'none';    budgetScore = 0; }
           }
 
+          // 3. Barrio
           let selectedIdList: string[] = [];
           if (Array.isArray(userSearch.neighborhood_ids)) selectedIdList = userSearch.neighborhood_ids;
           else if (typeof userSearch.neighborhood_ids === "string") selectedIdList = [userSearch.neighborhood_ids];
           const pubNeighborhood = pub.neighborhood;
-          let hasMatch = selectedIdList.length === 0;
-          if (!hasMatch) {
-            const selectedNames = selectedIdList.map((id: string) => neighborhoodMap[id] || "");
-            hasMatch = selectedNames.includes(pubNeighborhood);
-          }
-          if (hasMatch) matchScore += neighborhood_weight;
+          const userNeighborhoodNames = selectedIdList.map((id: string) => neighborhoodMap[id] || "").filter(Boolean);
+          let neighborhoodMatch = selectedIdList.length === 0; // sin preferencia = match automático
+          if (!neighborhoodMatch) neighborhoodMatch = userNeighborhoodNames.includes(pubNeighborhood);
+          const neighborhoodScore = neighborhoodMatch ? neighborhood_weight : 0;
 
+          // 4. Ambientes
           const minRooms = userSearch.min_bedrooms || 0;
           const pubRooms = pub._rooms || 0;
-          if (minRooms === 0 || pubRooms >= minRooms) matchScore += rooms_weight;
+          const roomsMatch = minRooms === 0 || pubRooms >= minRooms;
+          const roomsScore = roomsMatch ? rooms_weight : 0;
 
-          matchScore = Math.floor(Math.min(100, Math.max(0, matchScore)));
+          matchScore = Math.floor(Math.min(100, Math.max(0, operationScore + budgetScore + neighborhoodScore + roomsScore)));
+
+          // Labels legibles para mostrar en el popover
+          matchScoreBreakdown = {
+            operationScore, operationMax: operation_weight, operationMatch,
+            propertyOperationLabel: isRent ? "Alquiler" : isSale ? "Compra/Venta" : "Sin dato",
+            userOperationLabel: wantBoth ? "Indiferente (alquiler o compra)" : wantRent ? "Alquiler" : "Compra",
+
+            budgetScore, budgetMax: budget_weight, budgetMatch,
+            propertyPriceLabel: pubPrice > 0 ? `${pubCurrency} ${pubPrice.toLocaleString("es-UY")}` : "Sin precio",
+            userBudgetLabel: (min_b > 0 || max_b < 999999999)
+              ? `${userCurrency} ${min_b.toLocaleString("es-UY")} – ${max_b < 999999999 ? max_b.toLocaleString("es-UY") : "sin máx"}`
+              : "Sin rango definido",
+
+            neighborhoodScore, neighborhoodMax: neighborhood_weight, neighborhoodMatch,
+            propertyNeighborhoodLabel: pubNeighborhood || "Sin barrio",
+            userNeighborhoodsLabel: userNeighborhoodNames.length > 0
+              ? userNeighborhoodNames.slice(0, 3).join(", ") + (userNeighborhoodNames.length > 3 ? ` +${userNeighborhoodNames.length - 3}` : "")
+              : "Sin preferencia de barrio",
+
+            roomsScore, roomsMax: rooms_weight, roomsMatch,
+            propertyRoomsLabel: pubRooms > 0 ? `${pubRooms} amb.` : "Sin dato",
+            userRoomsLabel: minRooms > 0 ? `Mín. ${minRooms} amb.` : "Sin preferencia",
+          };
         }
+        // ─────────────────────────────────────────────────────────────────────
 
-        return { ...user, personalRating, familyRating, matchScore };
+        return { ...user, personalRating, familyRating, matchScore, matchScoreBreakdown, credibilityScore };
       }),
     }));
   }, [allInsights, reviews, searchProfiles, matchWeightsConfig, neighborhoods]);
