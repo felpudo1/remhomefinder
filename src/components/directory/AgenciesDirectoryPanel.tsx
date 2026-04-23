@@ -38,6 +38,15 @@ function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
   }
 }
 
+function openWebsiteWithFallback(url: string, onVisit: () => void) {
+  onVisit();
+
+  const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+  if (openedWindow) return;
+
+  window.location.assign(url);
+}
+
 function AgencyCard({
   agency,
   onToggleFavorite,
@@ -107,15 +116,13 @@ function AgencyCard({
         const safeUrl = normalizeWebsiteUrl(agency.websiteUrl);
         if (safeUrl) {
           return (
-            <a
-              href={safeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onVisit}
+            <button
+              type="button"
+              onClick={() => openWebsiteWithFallback(safeUrl, onVisit)}
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
             >
               <ExternalLink className="w-3 h-3" /> Visitar Web
-            </a>
+            </button>
           );
         }
         if (!isFeatured && agency.phone) {
