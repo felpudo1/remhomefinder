@@ -2,14 +2,14 @@ import { useState, useCallback } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, SlidersHorizontal } from "lucide-react";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
 
@@ -243,14 +243,23 @@ export function AgenciesDirectoryPanel() {
         </div>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="icon" className="relative shrink-0" title="Filtros">
-              <SlidersHorizontal className="w-4 h-4" />
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl text-sm font-semibold transition-all",
+                "border shadow-sm bg-card border-border text-foreground hover:bg-muted",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              )}
+            >
+              <SlidersHorizontal className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span>Filtros</span>
               {activeFiltersCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="min-w-[1.25rem] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
-            </Button>
+              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 opacity-80" />
+            </button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-64 space-y-4">
             <div className="space-y-1.5">
