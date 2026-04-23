@@ -38,6 +38,8 @@ function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
   }
 }
 
+// Abre el sitio externo en la misma pestaña (más estable en Chrome móvil
+// que window.open con target=_blank, que suele resultar en about:blank#blocked).
 function openWebsite(url: string, onVisit: () => void) {
   onVisit();
   window.location.assign(url);
