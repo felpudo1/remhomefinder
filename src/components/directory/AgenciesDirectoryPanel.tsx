@@ -14,23 +14,35 @@ import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVis
 /**
  * Normaliza una URL de agencia para asegurar que sea navegable:
  * - Recorta espacios y caracteres invisibles
+ * - Recupera URLs mal guardadas con sintaxis tipo markdown (`url](url)` o `[texto](url)`)
  * - Agrega https:// si falta protocolo
- * - Devuelve null si la URL es inválida (evita about:blank#blocked en móviles)
+ * - Devuelve null si la URL es inválida
  */
 function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  let url = String(raw).trim().replace(/[\s\u200B-\u200D\uFEFF]/g, "");
-  if (!url) return null;
-  // Si ya viene con protocolo válido, normalizar a minúsculas el esquema
+
+  const cleanedRaw = String(raw).trim().replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+  if (!cleanedRaw) return null;
+
+  const httpMatches = cleanedRaw.match(/https?:\/\/[^\s)\]]+/gi);
+  let url = httpMatches?.[0] ?? cleanedRaw;
+
+  if (!httpMatches?.length && cleanedRaw.includes("](")) {
+    const [, markdownTarget = ""] = cleanedRaw.split("](");
+    if (markdownTarget) url = markdownTarget;
+  }
+
+  url = url.replace(/[)\]]+$/g, "");
+
   const protoMatch = url.match(/^([a-zA-Z]+):\/\//);
   if (protoMatch) {
     const proto = protoMatch[1].toLowerCase();
     if (proto !== "http" && proto !== "https") return null;
     url = `${proto}://${url.slice(protoMatch[0].length)}`;
   } else {
-    // Sin protocolo: anteponer https://
     url = `https://${url}`;
   }
+
   try {
     const u = new URL(url);
     if (!u.hostname || !u.hostname.includes(".")) return null;
