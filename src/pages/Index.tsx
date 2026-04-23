@@ -467,7 +467,10 @@ const Index = () => {
               </TabsContent>
 
               <TabsContent value="agencias">
-                <AgenciesDirectoryPanel />
+                <AgenciesDirectoryPanel
+                  mobileFiltersOpen={activeTab === "agencias" && isMobileFiltersOpen}
+                  onMobileFiltersClose={() => setIsMobileFiltersOpen(false)}
+                />
               </TabsContent>
 
               <TabsContent value="gold">
