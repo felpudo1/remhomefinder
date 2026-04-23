@@ -316,6 +316,17 @@ export function AgenciesDirectoryPanel({
                 Mostrar sólo agencias con web
               </Label>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="hide-visited"
+                checked={hideVisited}
+                onCheckedChange={(v) => setHideVisited(v === true)}
+              />
+              <Label htmlFor="hide-visited" className="text-sm cursor-pointer">
+                Ocultar agencias ya visitadas
+              </Label>
+            </div>
           </div>
         </>
       )}
