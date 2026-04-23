@@ -136,9 +136,11 @@ function AgencyCard({
             <button
               type="button"
               onClick={() => openWebsite(safeUrl, onVisit)}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
+              className={`inline-flex items-center gap-1 text-xs hover:underline mt-auto ${
+                wasVisited ? "text-muted-foreground" : "text-primary"
+              }`}
             >
-              <ExternalLink className="w-3 h-3" /> Visitar Web
+              <ExternalLink className="w-3 h-3" /> {wasVisited ? "Visitar Web (visto)" : "Visitar Web"}
             </button>
           );
         }
