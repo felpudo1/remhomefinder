@@ -229,7 +229,7 @@ export function AgenciesDirectoryPanel({
   const getVisitTs = (a: DirectoryAgency): number | null => visits[`${a.type}:${a.id}`] ?? null;
 
   const activeFiltersCount =
-    (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0);
+    (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0) + (hideVisited ? 1 : 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
