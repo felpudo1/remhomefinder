@@ -236,7 +236,7 @@ export function AgenciesDirectoryPanel({
         </section>
       )}
 
-      {/* Filtros */}
+      {/* Buscador (los filtros avanzados se abren desde el botón flotante "Filtros" del Index) */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -247,27 +247,31 @@ export function AgenciesDirectoryPanel({
             className="pl-9"
           />
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl text-sm font-semibold transition-all",
-                "border shadow-sm bg-card border-border text-foreground hover:bg-muted",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              )}
-            >
-              <SlidersHorizontal className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span>Filtros</span>
-              {activeFiltersCount > 0 && (
-                <span className="min-w-[1.25rem] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">
-                  {activeFiltersCount}
-                </span>
-              )}
-              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 opacity-80" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-64 space-y-4">
+      </div>
+
+      {/* Drawer de filtros (controlado por el botón flotante global del Index) */}
+      {mobileFiltersOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={onMobileFiltersClose} />
+          <div className="fixed inset-y-0 left-0 w-72 z-50 overflow-y-auto bg-background p-5 shadow-2xl animate-slide-in-from-left space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Filtros de agencias</h3>
+              <button
+                type="button"
+                onClick={onMobileFiltersClose}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                aria-label="Cerrar filtros"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="text-[11px]">
+                {activeFiltersCount} filtro{activeFiltersCount === 1 ? "" : "s"} activo{activeFiltersCount === 1 ? "" : "s"}
+              </Badge>
+            )}
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Departamento</Label>
               <Select value={selectedDept} onValueChange={setSelectedDept}>
@@ -282,6 +286,7 @@ export function AgenciesDirectoryPanel({
                 </SelectContent>
               </Select>
             </div>
+
             <div className="flex items-center gap-2">
               <Checkbox
                 id="only-with-web"
@@ -292,9 +297,9 @@ export function AgenciesDirectoryPanel({
                 Mostrar sólo agencias con web
               </Label>
             </div>
-          </PopoverContent>
-        </Popover>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Listado General */}
       {filtered.length === 0 ? (
