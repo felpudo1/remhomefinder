@@ -52,11 +52,16 @@ function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
   }
 }
 
-// Abre el sitio externo en la misma pestaña (más estable en Chrome móvil
-// que window.open con target=_blank, que suele resultar en about:blank#blocked).
+// Abre el sitio externo en una pestaña/ventana nueva del navegador del usuario.
+// Usamos window.open con noopener para que el navegador delegue al handler por
+// defecto del sistema y el usuario conserve sus filtros al volver al listado.
+// Si el navegador bloquea el popup, hacemos fallback a navegación directa.
 function openWebsite(url: string, onVisit: () => void) {
   onVisit();
-  window.location.assign(url);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if (!win) {
+    window.location.assign(url);
+  }
 }
 
 function AgencyCard({
