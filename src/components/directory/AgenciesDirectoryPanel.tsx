@@ -151,7 +151,15 @@ function AgencyCard({
   );
 }
 
-export function AgenciesDirectoryPanel() {
+interface AgenciesDirectoryPanelProps {
+  mobileFiltersOpen?: boolean;
+  onMobileFiltersClose?: () => void;
+}
+
+export function AgenciesDirectoryPanel({
+  mobileFiltersOpen = false,
+  onMobileFiltersClose,
+}: AgenciesDirectoryPanelProps = {}) {
   const { agencies, favoriteAgencies, isLoading, toggleFavorite, maxFavorites, favoriteCount } = useAgenciesDirectory();
   const { departments } = useGeography();
   const { toast } = useToast();
