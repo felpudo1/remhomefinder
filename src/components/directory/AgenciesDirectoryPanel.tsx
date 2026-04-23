@@ -214,6 +214,7 @@ export function AgenciesDirectoryPanel({
     if (searchQuery && !a.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (selectedDept !== "all" && a.departmentId !== selectedDept) return false;
     if (onlyWithWebsite && !normalizeWebsiteUrl(a.websiteUrl)) return false;
+    if (hideVisited && visits[`${a.type}:${a.id}`]) return false;
     return true;
   });
 
