@@ -2,14 +2,12 @@ import { useState, useCallback } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
 
