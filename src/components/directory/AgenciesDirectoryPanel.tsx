@@ -38,6 +38,11 @@ function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
   }
 }
 
+function openWebsite(url: string, onVisit: () => void) {
+  onVisit();
+  window.location.assign(url);
+}
+
 function AgencyCard({
   agency,
   onToggleFavorite,
@@ -107,15 +112,13 @@ function AgencyCard({
         const safeUrl = normalizeWebsiteUrl(agency.websiteUrl);
         if (safeUrl) {
           return (
-            <a
-              href={safeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onVisit}
+            <button
+              type="button"
+              onClick={() => openWebsite(safeUrl, onVisit)}
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
             >
               <ExternalLink className="w-3 h-3" /> Visitar Web
-            </a>
+            </button>
           );
         }
         if (!isFeatured && agency.phone) {
