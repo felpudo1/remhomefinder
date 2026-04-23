@@ -136,9 +136,11 @@ function AgencyCard({
             <button
               type="button"
               onClick={() => openWebsite(safeUrl, onVisit)}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
+              className={`inline-flex items-center gap-1 text-xs hover:underline mt-auto ${
+                wasVisited ? "text-muted-foreground" : "text-primary"
+              }`}
             >
-              <ExternalLink className="w-3 h-3" /> Visitar Web
+              <ExternalLink className="w-3 h-3" /> {wasVisited ? "Visitar Web (visto)" : "Visitar Web"}
             </button>
           );
         }
@@ -186,6 +188,7 @@ export function AgenciesDirectoryPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [onlyWithWebsite, setOnlyWithWebsite] = useState<boolean>(true);
+  const [hideVisited, setHideVisited] = useState<boolean>(false);
   // Estado local para forzar re-render cuando se marca una visita.
   const [visits, setVisits] = useState<Record<string, number>>(() => getAllVisits(userId));
 
@@ -213,6 +216,7 @@ export function AgenciesDirectoryPanel({
     if (searchQuery && !a.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (selectedDept !== "all" && a.departmentId !== selectedDept) return false;
     if (onlyWithWebsite && !normalizeWebsiteUrl(a.websiteUrl)) return false;
+    if (hideVisited && visits[`${a.type}:${a.id}`]) return false;
     return true;
   });
 
@@ -227,7 +231,7 @@ export function AgenciesDirectoryPanel({
   const getVisitTs = (a: DirectoryAgency): number | null => visits[`${a.type}:${a.id}`] ?? null;
 
   const activeFiltersCount =
-    (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0);
+    (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0) + (hideVisited ? 1 : 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -312,6 +316,17 @@ export function AgenciesDirectoryPanel({
               />
               <Label htmlFor="only-with-web" className="text-sm cursor-pointer">
                 Mostrar sólo agencias con web
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="hide-visited"
+                checked={hideVisited}
+                onCheckedChange={(v) => setHideVisited(v === true)}
+              />
+              <Label htmlFor="hide-visited" className="text-sm cursor-pointer">
+                Ocultar agencias ya visitadas
               </Label>
             </div>
           </div>
