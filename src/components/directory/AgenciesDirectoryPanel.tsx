@@ -186,6 +186,7 @@ export function AgenciesDirectoryPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [onlyWithWebsite, setOnlyWithWebsite] = useState<boolean>(true);
+  const [hideVisited, setHideVisited] = useState<boolean>(false);
   // Estado local para forzar re-render cuando se marca una visita.
   const [visits, setVisits] = useState<Record<string, number>>(() => getAllVisits(userId));
 
