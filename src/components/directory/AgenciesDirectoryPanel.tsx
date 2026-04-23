@@ -2,10 +2,14 @@ import { useState, useCallback } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
 import { useCurrentUser } from "@/contexts/AuthProvider";
-import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye } from "lucide-react";
+import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
 
@@ -158,6 +162,7 @@ export function AgenciesDirectoryPanel() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
+  const [onlyWithWebsite, setOnlyWithWebsite] = useState<boolean>(true);
   // Estado local para forzar re-render cuando se marca una visita.
   const [visits, setVisits] = useState<Record<string, number>>(() => getAllVisits(userId));
 
@@ -184,6 +189,7 @@ export function AgenciesDirectoryPanel() {
   const filtered = agencies.filter((a) => {
     if (searchQuery && !a.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (selectedDept !== "all" && a.departmentId !== selectedDept) return false;
+    if (onlyWithWebsite && !normalizeWebsiteUrl(a.websiteUrl)) return false;
     return true;
   });
 
@@ -196,6 +202,9 @@ export function AgenciesDirectoryPanel() {
   }
 
   const getVisitTs = (a: DirectoryAgency): number | null => visits[`${a.type}:${a.id}`] ?? null;
+
+  const activeFiltersCount =
+    (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -222,7 +231,7 @@ export function AgenciesDirectoryPanel() {
       )}
 
       {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -232,17 +241,44 @@ export function AgenciesDirectoryPanel() {
             className="pl-9"
           />
         </div>
-        <Select value={selectedDept} onValueChange={setSelectedDept}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Departamento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {(departments || []).map((d: any) => (
-              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="icon" className="relative shrink-0" title="Filtros">
+              <SlidersHorizontal className="w-4 h-4" />
+              {activeFiltersCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Departamento</Label>
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {(departments || []).map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="only-with-web"
+                checked={onlyWithWebsite}
+                onCheckedChange={(v) => setOnlyWithWebsite(v === true)}
+              />
+              <Label htmlFor="only-with-web" className="text-sm cursor-pointer">
+                Mostrar sólo agencias con web
+              </Label>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Listado General */}
