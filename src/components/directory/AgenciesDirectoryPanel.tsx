@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
+import { useOrgAgencyVisits } from "@/hooks/useOrgAgencyVisits";
 
 /**
  * Normaliza una URL de agencia para asegurar que sea navegable:
