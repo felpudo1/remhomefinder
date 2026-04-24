@@ -64,21 +64,34 @@ function openWebsite(url: string, onVisit: () => void) {
   }
 }
 
+function formatVisitTimestamp(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}/${mm} ${hh}:${mi}`;
+  } catch {
+    return "";
+  }
+}
+
 function AgencyCard({
   agency,
   onToggleFavorite,
   isToggling,
-  lastVisitTs,
+  visit,
   onVisit,
 }: {
   agency: DirectoryAgency;
   onToggleFavorite: () => void;
   isToggling: boolean;
-  lastVisitTs: number | null;
+  visit: { visited_at: string; visited_by_name?: string | null } | null;
   onVisit: () => void;
 }) {
   const isFeatured = agency.isFeatured;
-  const wasVisited = lastVisitTs !== null;
+  const wasVisited = visit !== null;
   return (
     <div
       className={`relative rounded-xl border p-4 flex flex-col gap-2 transition-all ${
