@@ -19,7 +19,7 @@ export function AdminConfiguracion({ toast }: AdminConfiguracionProps) {
   const [activeTab, setActiveTab] = useState<ConfigTab>("geografia");
 
   const { data: externalAgencies = [] } = useQuery({
-    queryKey: ["admin-external-agencies"],
+    queryKey: ["admin-external-agencies-count"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("external_agencies")
