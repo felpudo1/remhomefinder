@@ -196,7 +196,7 @@ export function AgenciesDirectoryPanel({
   const { agencies, favoriteAgencies, isLoading, toggleFavorite, maxFavorites, favoriteCount } = useAgenciesDirectory();
   const { departments } = useGeography();
   const { toast } = useToast();
-  const { visits, getVisit, markVisited: markOrgVisited, hasOrg } = useOrgAgencyVisits();
+  const { visits, markVisited: markOrgVisited, hasOrg } = useOrgAgencyVisits();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
