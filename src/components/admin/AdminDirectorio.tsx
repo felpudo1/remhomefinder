@@ -399,16 +399,16 @@ export function AdminDirectorio() {
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{agencies.length} agencias en directorio</p>
           {agencies.map((a) => (
-            <div key={a.id} className="flex items-center gap-3 border border-border rounded-lg p-3 bg-card">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{a.name}</p>
+            <div key={a.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border border-border rounded-lg p-3 bg-card">
+              <div className="flex-1 min-w-0 w-full">
+                <p className="text-sm font-medium break-words">{a.name}</p>
                 <div className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
                   {a.address && <span className="truncate">📍 {a.address}</span>}
                   {a.phone && <span>📞 {a.phone}</span>}
                   {a.website_url && <span className="truncate">🌐 {a.website_url}</span>}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                 <Switch
                   checked={a.is_featured}
                   onCheckedChange={(v) => toggleFeatured.mutate({ id: a.id, featured: v })}
