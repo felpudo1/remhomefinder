@@ -240,7 +240,7 @@ export function AgenciesDirectoryPanel({
     );
   }
 
-  const getVisitTs = (a: DirectoryAgency): number | null => visits[`${a.type}:${a.id}`] ?? null;
+  const getVisitFor = (a: DirectoryAgency) => visits[`${a.type}:${a.id}`] ?? null;
 
   const activeFiltersCount =
     (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0) + (hideVisited ? 1 : 0);
