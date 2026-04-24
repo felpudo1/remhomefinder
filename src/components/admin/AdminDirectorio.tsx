@@ -41,6 +41,26 @@ interface ParsedAgency {
   email: string;
 }
 
+function getAgencyDisplayName(agency: Pick<ExternalAgency, "name" | "website_url" | "email">) {
+  const name = agency.name?.trim();
+  if (name) return { label: name, isFallback: false };
+
+  const websiteUrl = agency.website_url?.trim();
+  if (websiteUrl) {
+    try {
+      const hostname = new URL(websiteUrl).hostname.replace(/^www\./, "");
+      if (hostname) return { label: hostname, isFallback: true };
+    } catch {
+      return { label: websiteUrl, isFallback: true };
+    }
+  }
+
+  const email = agency.email?.trim();
+  if (email) return { label: email, isFallback: true };
+
+  return { label: "Sin nombre cargado", isFallback: true };
+}
+
 export function AdminDirectorio() {
   const queryClient = useQueryClient();
   const { departments } = useGeography();
@@ -398,10 +418,16 @@ export function AdminDirectorio() {
       ) : (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{agencies.length} agencias en directorio</p>
-          {agencies.map((a) => (
+          {agencies.map((a) => {
+            const displayName = getAgencyDisplayName(a);
+
+            return (
             <div key={a.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border border-border rounded-lg p-3 bg-card">
               <div className="flex-1 min-w-0 w-full">
-                <p className="text-sm font-medium break-words">{a.name}</p>
+                <p className="text-sm font-medium break-words text-foreground">{displayName.label}</p>
+                {displayName.isFallback && (
+                  <p className="text-[11px] text-muted-foreground">Nombre no cargado en el registro</p>
+                )}
                 <div className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
                   {a.address && <span className="truncate">📍 {a.address}</span>}
                   {a.phone && <span>📞 {a.phone}</span>}
@@ -437,7 +463,7 @@ export function AdminDirectorio() {
                 </Button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
