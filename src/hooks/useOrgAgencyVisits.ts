@@ -67,7 +67,7 @@ export function useOrgAgencyVisits() {
       if (error) throw error;
 
       // Enriquecer con nombre del miembro (lookup liviano)
-      const userIds = Array.from(new Set((data || []).map((r: any) => r.visited_by as string)));
+      const userIds: string[] = Array.from(new Set((data || []).map((r: any) => String(r.visited_by))));
       let names: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
