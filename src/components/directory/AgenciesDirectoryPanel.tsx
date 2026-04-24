@@ -171,12 +171,13 @@ function AgencyCard({
         return null;
       })()}
 
-      {wasVisited && (
+      {wasVisited && visit && (
         <span
           className="inline-flex items-center gap-1 text-[10px] text-muted-foreground border-t border-border/60 pt-1.5 mt-1"
-          title={`Última visita: ${new Date(lastVisitTs!).toLocaleString()}`}
+          title={`Última visita: ${new Date(visit.visited_at).toLocaleString()}${visit.visited_by_name ? ` por ${visit.visited_by_name}` : ""}`}
         >
-          <Eye className="w-3 h-3" /> Visto {formatVisitTimestamp(lastVisitTs!)}
+          <Eye className="w-3 h-3" /> Visto {formatVisitTimestamp(visit.visited_at)}
+          {visit.visited_by_name ? ` · ${visit.visited_by_name}` : ""}
         </span>
       )}
     </div>
