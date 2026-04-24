@@ -109,7 +109,14 @@ export function AdminDirectorio() {
         .order("is_featured", { ascending: false })
         .order("name");
       if (error) throw error;
-      return data as ExternalAgency[];
+      const rows = (data || []) as ExternalAgency[];
+      const incomplete = rows.filter((r) => !r || !r.name || !r.name.trim());
+      if (incomplete.length > 0) {
+        throw new Error(
+          `Datos incompletos: ${incomplete.length} agencia(s) sin campo "name". Revisá la consulta o la base.`,
+        );
+      }
+      return rows;
     },
   });
 
