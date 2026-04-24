@@ -435,11 +435,6 @@ export function AdminDirectorio() {
                 {displayName.isFallback && (
                   <p className="text-[11px] text-muted-foreground">Nombre no cargado en el registro</p>
                 )}
-                <div className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                  {a.address && <span className="truncate">📍 {a.address}</span>}
-                  {a.phone && <span>📞 {a.phone}</span>}
-                  {a.website_url && <span className="truncate">🌐 {a.website_url}</span>}
-                </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                 <Switch
