@@ -261,7 +261,7 @@ export function AgenciesDirectoryPanel({
                 agency={a}
                 onToggleFavorite={() => handleToggle(a)}
                 isToggling={toggleFavorite.isPending}
-                lastVisitTs={getVisitTs(a)}
+                visit={getVisitFor(a)}
                 onVisit={() => handleVisit(a)}
               />
             ))}
@@ -359,7 +359,7 @@ export function AgenciesDirectoryPanel({
               agency={a}
               onToggleFavorite={() => handleToggle(a)}
               isToggling={toggleFavorite.isPending}
-              lastVisitTs={getVisitTs(a)}
+              visit={getVisitFor(a)}
               onVisit={() => handleVisit(a)}
             />
           ))}
