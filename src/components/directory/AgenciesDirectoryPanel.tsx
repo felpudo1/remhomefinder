@@ -196,15 +196,12 @@ export function AgenciesDirectoryPanel({
   const { agencies, favoriteAgencies, isLoading, toggleFavorite, maxFavorites, favoriteCount } = useAgenciesDirectory();
   const { departments } = useGeography();
   const { toast } = useToast();
-  const { user } = useCurrentUser();
-  const userId = user?.id ?? null;
+  const { visits, getVisit, markVisited: markOrgVisited, hasOrg } = useOrgAgencyVisits();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [onlyWithWebsite, setOnlyWithWebsite] = useState<boolean>(true);
   const [hideVisited, setHideVisited] = useState<boolean>(false);
-  // Estado local para forzar re-render cuando se marca una visita.
-  const [visits, setVisits] = useState<Record<string, number>>(() => getAllVisits(userId));
 
   const handleToggle = (agency: DirectoryAgency) => {
     toggleFavorite.mutate(
@@ -219,10 +216,11 @@ export function AgenciesDirectoryPanel({
 
   const handleVisit = useCallback(
     (agency: DirectoryAgency) => {
-      const ts = markVisited(userId, agency.type, agency.id);
-      setVisits((prev) => ({ ...prev, [`${agency.type}:${agency.id}`]: ts }));
+      if (hasOrg) {
+        markOrgVisited(agency.type, agency.id);
+      }
     },
-    [userId]
+    [hasOrg, markOrgVisited]
   );
 
   // Filter
