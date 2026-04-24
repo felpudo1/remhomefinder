@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
-import { useCurrentUser } from "@/contexts/AuthProvider";
+
 import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
