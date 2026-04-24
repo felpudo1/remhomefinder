@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useAgenciesDirectory, DirectoryAgency } from "@/hooks/useAgenciesDirectory";
 import { useGeography } from "@/hooks/useGeography";
-import { useCurrentUser } from "@/contexts/AuthProvider";
+
 import { Heart, Crown, ExternalLink, Search, Loader2, Building2, MapPin, Phone, Eye, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getAllVisits, markVisited, formatVisitTimestamp } from "@/lib/agencyVisits";
+import { useOrgAgencyVisits } from "@/hooks/useOrgAgencyVisits";
 
 /**
  * Normaliza una URL de agencia para asegurar que sea navegable:
@@ -64,21 +64,34 @@ function openWebsite(url: string, onVisit: () => void) {
   }
 }
 
+function formatVisitTimestamp(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}/${mm} ${hh}:${mi}`;
+  } catch {
+    return "";
+  }
+}
+
 function AgencyCard({
   agency,
   onToggleFavorite,
   isToggling,
-  lastVisitTs,
+  visit,
   onVisit,
 }: {
   agency: DirectoryAgency;
   onToggleFavorite: () => void;
   isToggling: boolean;
-  lastVisitTs: number | null;
+  visit: { visited_at: string; visited_by_name?: string | null } | null;
   onVisit: () => void;
 }) {
   const isFeatured = agency.isFeatured;
-  const wasVisited = lastVisitTs !== null;
+  const wasVisited = visit !== null;
   return (
     <div
       className={`relative rounded-xl border p-4 flex flex-col gap-2 transition-all ${
@@ -158,12 +171,13 @@ function AgencyCard({
         return null;
       })()}
 
-      {wasVisited && (
+      {wasVisited && visit && (
         <span
           className="inline-flex items-center gap-1 text-[10px] text-muted-foreground border-t border-border/60 pt-1.5 mt-1"
-          title={`Última visita: ${new Date(lastVisitTs!).toLocaleString()}`}
+          title={`Última visita: ${new Date(visit.visited_at).toLocaleString()}${visit.visited_by_name ? ` por ${visit.visited_by_name}` : ""}`}
         >
-          <Eye className="w-3 h-3" /> Visto {formatVisitTimestamp(lastVisitTs!)}
+          <Eye className="w-3 h-3" /> Visto {formatVisitTimestamp(visit.visited_at)}
+          {visit.visited_by_name ? ` · ${visit.visited_by_name}` : ""}
         </span>
       )}
     </div>
@@ -182,15 +196,12 @@ export function AgenciesDirectoryPanel({
   const { agencies, favoriteAgencies, isLoading, toggleFavorite, maxFavorites, favoriteCount } = useAgenciesDirectory();
   const { departments } = useGeography();
   const { toast } = useToast();
-  const { user } = useCurrentUser();
-  const userId = user?.id ?? null;
+  const { visits, markVisited: markOrgVisited, hasOrg } = useOrgAgencyVisits();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [onlyWithWebsite, setOnlyWithWebsite] = useState<boolean>(true);
   const [hideVisited, setHideVisited] = useState<boolean>(false);
-  // Estado local para forzar re-render cuando se marca una visita.
-  const [visits, setVisits] = useState<Record<string, number>>(() => getAllVisits(userId));
 
   const handleToggle = (agency: DirectoryAgency) => {
     toggleFavorite.mutate(
@@ -205,10 +216,11 @@ export function AgenciesDirectoryPanel({
 
   const handleVisit = useCallback(
     (agency: DirectoryAgency) => {
-      const ts = markVisited(userId, agency.type, agency.id);
-      setVisits((prev) => ({ ...prev, [`${agency.type}:${agency.id}`]: ts }));
+      if (hasOrg) {
+        markOrgVisited(agency.type, agency.id);
+      }
     },
-    [userId]
+    [hasOrg, markOrgVisited]
   );
 
   // Filter
@@ -228,7 +240,7 @@ export function AgenciesDirectoryPanel({
     );
   }
 
-  const getVisitTs = (a: DirectoryAgency): number | null => visits[`${a.type}:${a.id}`] ?? null;
+  const getVisitFor = (a: DirectoryAgency) => visits[`${a.type}:${a.id}`] ?? null;
 
   const activeFiltersCount =
     (selectedDept !== "all" ? 1 : 0) + (onlyWithWebsite ? 1 : 0) + (hideVisited ? 1 : 0);
@@ -249,7 +261,7 @@ export function AgenciesDirectoryPanel({
                 agency={a}
                 onToggleFavorite={() => handleToggle(a)}
                 isToggling={toggleFavorite.isPending}
-                lastVisitTs={getVisitTs(a)}
+                visit={getVisitFor(a)}
                 onVisit={() => handleVisit(a)}
               />
             ))}
@@ -347,7 +359,7 @@ export function AgenciesDirectoryPanel({
               agency={a}
               onToggleFavorite={() => handleToggle(a)}
               isToggling={toggleFavorite.isPending}
-              lastVisitTs={getVisitTs(a)}
+              visit={getVisitFor(a)}
               onVisit={() => handleVisit(a)}
             />
           ))}
