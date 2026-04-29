@@ -306,18 +306,6 @@ export function PropertyCard({
               </div>
             )}
 
-            <div className="flex justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 gap-1.5 hover:bg-muted text-[10px] font-normal -mt-2"
-                onClick={(e) => { e.stopPropagation(); window.open(property.url, "_blank"); }}
-                title="Ver publicación original"
-              >
-                <span className="text-muted-foreground uppercase tracking-wider">link de la publicación</span>
-                <ExternalLink className="h-3 w-3" />
-              </Button>
-            </div>
 
             {isEliminated && (
                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-2.5 space-y-1 mt-2">
