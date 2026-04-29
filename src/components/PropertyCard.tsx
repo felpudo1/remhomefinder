@@ -223,6 +223,89 @@ export function PropertyCard({
         }
         extraBodyContent={
           <>
+            {/* Contacto inline minimalista (debajo del título) */}
+            {(property.sourceMarketplaceId
+              ? (property.marketplaceAgentName || marketplaceAgentWhatsappUrl)
+              : (property.contactName || property.contactPhone)) && (
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground -mt-1">
+                {property.sourceMarketplaceId ? (
+                  <>
+                    {property.marketplaceAgentName && (
+                      <span className="inline-flex items-center gap-1 text-primary font-medium min-w-0">
+                        <User className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{property.marketplaceAgentName}</span>
+                      </span>
+                    )}
+                    {property.marketplaceAgentPhone && (
+                      <>
+                        <span className="text-muted-foreground/60">·</span>
+                        <span>{property.marketplaceAgentPhone}</span>
+                      </>
+                    )}
+                    {marketplaceAgentWhatsappUrl && (
+                      <>
+                        <span className="text-muted-foreground/60">·</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(marketplaceAgentWhatsappUrl, "_blank", "noopener,noreferrer");
+                          }}
+                          className="inline-flex items-center gap-1 font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          WhatsApp
+                        </button>
+                      </>
+                    )}
+                    {property.marketplaceStatus && (
+                      <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${
+                        property.marketplaceStatus === "disponible" ? "bg-emerald-100 text-emerald-700" :
+                        property.marketplaceStatus === "pausado" ? "bg-amber-100 text-amber-700" :
+                        property.marketplaceStatus === "reservado" ? "bg-blue-100 text-blue-700" :
+                        property.marketplaceStatus === "vendido" ? "bg-slate-200 text-slate-700" :
+                        property.marketplaceStatus === "alquilado" ? "bg-purple-100 text-purple-700" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {PROPERTY_STATUS_LABELS[property.marketplaceStatus] || property.marketplaceStatus}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {property.contactName && (
+                      <span className="inline-flex items-center gap-1 text-primary font-medium min-w-0">
+                        <User className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{property.contactName}</span>
+                      </span>
+                    )}
+                    {property.contactPhone && (
+                      <>
+                        <span className="text-muted-foreground/60">·</span>
+                        <span>{property.contactPhone}</span>
+                        <span className="text-muted-foreground/60">·</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(
+                              buildWhatsAppUrl(property.contactPhone!, `Hola, vi tu publicación "${property.title}" y me interesa.`),
+                              "_blank",
+                              "noopener,noreferrer"
+                            );
+                          }}
+                          className="inline-flex items-center gap-1 font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          WhatsApp
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end">
               <Button
                 variant="ghost"
