@@ -22,6 +22,8 @@ interface PropertyCardBaseProps {
     refText?: string;
     subImageContent?: React.ReactNode;
     extraBodyContent?: React.ReactNode;
+    /** Contenido a la derecha de la fila de stats (m²/ambientes), en la misma línea */
+    statsRightContent?: React.ReactNode;
     actions?: React.ReactNode;
     bottomContent?: React.ReactNode;
     className?: string;
@@ -59,6 +61,7 @@ export function PropertyCardBase({
     refText,
     subImageContent,
     extraBodyContent,
+    statsRightContent,
     actions,
     bottomContent,
     className = "",
