@@ -221,6 +221,18 @@ export function PropertyCard({
             </div>
           ) : undefined
         }
+        statsRightContent={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1.5 gap-1 hover:bg-muted text-[10px] font-normal"
+            onClick={(e) => { e.stopPropagation(); window.open(property.url, "_blank"); }}
+            title="Ver publicación original"
+          >
+            <span className="text-muted-foreground uppercase tracking-wider">link</span>
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+        }
         extraBodyContent={
           <>
             {/* Contacto inline minimalista (debajo del título) */}
