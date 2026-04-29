@@ -215,18 +215,12 @@ export function PropertyCardBase({
 
             {/* Cuerpo: crece para igualar altura en grillas; precio queda abajo */}
             <div className="p-4 flex flex-col flex-1 min-h-0 text-left">
-                <div className="flex flex-col gap-3 shrink-0">
-                    {/* Barrio + Ciudad | Ref */}
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-0.5 text-muted-foreground min-w-0">
-                            <div className="flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 shrink-0" />
-                                <span className="text-xs font-medium truncate">{neighborhood || "Sin barrio"}</span>
-                            </div>
-                            {city && (
-                                <span className="text-xs font-medium truncate pl-5">{city}</span>
-                            )}
-                        </div>
+                <div className="flex flex-col gap-2 shrink-0">
+                    {/* Título arriba | Ref/Status a la derecha */}
+                    <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-foreground leading-snug line-clamp-2 text-sm min-h-[2.75rem] flex-1">
+                            {title}
+                        </h3>
                         <div className="flex items-center gap-2 shrink-0">
                             {refText !== undefined && (
                                 <div className="flex items-center gap-1">
@@ -242,10 +236,13 @@ export function PropertyCardBase({
                         </div>
                     </div>
 
-                    {/* Título: altura fija para 2 líneas (text-sm + leading-snug) */}
-                    <h3 className="font-semibold text-foreground leading-snug line-clamp-2 text-sm min-h-[2.75rem]">
-                        {title}
-                    </h3>
+                    {/* Ubicación: barrio + ciudad en una sola línea, debajo del título */}
+                    <div className="flex items-center gap-1 text-muted-foreground min-w-0">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-xs font-medium truncate">
+                            {[neighborhood || "Sin barrio", city].filter(Boolean).join(", ")}
+                        </span>
+                    </div>
 
                     {/* Stats (m2, Ambientes) */}
                     <div className="flex items-center gap-3 text-muted-foreground text-xs">
