@@ -22,6 +22,8 @@ interface PropertyCardBaseProps {
     refText?: string;
     subImageContent?: React.ReactNode;
     extraBodyContent?: React.ReactNode;
+    /** Contenido a la derecha de la fila de stats (m²/ambientes), en la misma línea */
+    statsRightContent?: React.ReactNode;
     actions?: React.ReactNode;
     bottomContent?: React.ReactNode;
     className?: string;
@@ -59,6 +61,7 @@ export function PropertyCardBase({
     refText,
     subImageContent,
     extraBodyContent,
+    statsRightContent,
     actions,
     bottomContent,
     className = "",
@@ -244,16 +247,23 @@ export function PropertyCardBase({
                         </span>
                     </div>
 
-                    {/* Stats (m2, Ambientes) */}
-                    <div className="flex items-center gap-3 text-muted-foreground text-xs">
-                        <span className="flex items-center gap-1">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                            {sqMeters} m²
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <BedDouble className="w-3.5 h-3.5" />
-                            {rooms} {rooms === 1 ? "ambiente" : "ambientes"}
-                        </span>
+                    {/* Stats (m2, Ambientes) + acción a la derecha en la misma línea */}
+                    <div className="flex items-center justify-between gap-2 text-muted-foreground text-xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <span className="flex items-center gap-1">
+                                <Maximize2 className="w-3.5 h-3.5" />
+                                {sqMeters} m²
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <BedDouble className="w-3.5 h-3.5" />
+                                {rooms} {rooms === 1 ? "ambiente" : "ambientes"}
+                            </span>
+                        </div>
+                        {statsRightContent && (
+                            <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                {statsRightContent}
+                            </div>
+                        )}
                     </div>
 
                     {/* Contenido extra (motivos de descarte, descripción, etc) */}
