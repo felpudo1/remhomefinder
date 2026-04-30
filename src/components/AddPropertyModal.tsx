@@ -198,12 +198,15 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
       // Detectar si el scrape devolvió datos "vacíos" (ej. MercadoLibre bloqueado):
       // sin título, sin precio y sin ubicación → tratar como fallo y mostrar fallback de capturas
       const d = result.data;
-      const hasUsefulData =
-        String(d.title || "").trim().length > 0 ||
-        String(d.priceRent || "").trim().length > 0 ||
-        String(d.department || "").trim().length > 0 ||
-        String(d.neighborhood || "").trim().length > 0 ||
-        String(d.city || "").trim().length > 0;
+      // Criterio estricto: el scrape sólo se considera "útil" si trajo
+      // ubicación resuelta (id real en BD) Y al menos un precio numérico válido.
+      // Un título genérico solo (típico de MercadoLibre/FB bloqueados) NO alcanza.
+      const priceNum = Number(String(d.priceRent || "").replace(/[^\d.]/g, ""));
+      const hasResolvedLocation = Boolean(
+        d.department_id || d.city_id || d.neighborhood_id
+      );
+      const hasValidPrice = Number.isFinite(priceNum) && priceNum > 0;
+      const hasUsefulData = hasResolvedLocation && hasValidPrice;
 
       if (!hasUsefulData) {
         setForm(EMPTY_FORM);
