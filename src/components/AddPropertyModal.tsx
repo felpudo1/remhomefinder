@@ -195,6 +195,28 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
 
     // Si hay datos de la propiedad, continuar con el formulario
     if ("data" in result) {
+      // Detectar si el scrape devolvió datos "vacíos" (ej. MercadoLibre bloqueado):
+      // sin título, sin precio y sin ubicación → tratar como fallo y mostrar fallback de capturas
+      const d = result.data;
+      const hasUsefulData =
+        String(d.title || "").trim().length > 0 ||
+        String(d.priceRent || "").trim().length > 0 ||
+        String(d.department || "").trim().length > 0 ||
+        String(d.neighborhood || "").trim().length > 0 ||
+        String(d.city || "").trim().length > 0;
+
+      if (!hasUsefulData) {
+        setForm(EMPTY_FORM);
+        setScrapedImages([]);
+        setCameFromImage(false);
+        setListingType("rent");
+        setManualLinkRequiredError(false);
+        setShowImageFallback(true);
+        setPendingScreenFiles([]);
+        setStep("manual");
+        return;
+      }
+
       setShowImageFallback(false);
       updateForm(result.data);
       if (result.data.listingType) setListingType(result.data.listingType);
