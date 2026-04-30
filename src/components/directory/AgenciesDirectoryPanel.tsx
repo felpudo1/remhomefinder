@@ -52,14 +52,22 @@ function normalizeWebsiteUrl(raw: string | null | undefined): string | null {
   }
 }
 
-// Abre el sitio externo en una pestaña/ventana nueva del navegador del usuario.
-// Usamos window.open con noopener para que el navegador delegue al handler por
-// defecto del sistema y el usuario conserve sus filtros al volver al listado.
-// Si el navegador bloquea el popup, hacemos fallback a navegación directa.
+// Abre el sitio externo en el navegador por defecto del sistema del usuario.
+// Creamos un <a target="_blank"> y disparamos un click nativo: a diferencia de
+// window.open(), este enfoque es respetado por webviews/iframes (móvil, PWA,
+// preview de Lovable) y delega al handler de URLs del sistema operativo.
 function openWebsite(url: string, onVisit: () => void) {
   onVisit();
-  const win = window.open(url, "_blank", "noopener,noreferrer");
-  if (!win) {
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    // Algunos webviews requieren que el elemento esté en el DOM
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch {
     window.location.assign(url);
   }
 }
