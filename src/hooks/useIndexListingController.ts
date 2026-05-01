@@ -20,7 +20,7 @@ export function useIndexListingController({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [hideDiscarded, setHideDiscarded] = useState(true);
-  const [expandPhotos, setExpandPhotos] = useState(true);
+  const [expandPhotos, setExpandPhotos] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
