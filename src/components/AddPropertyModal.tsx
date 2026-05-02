@@ -396,7 +396,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                     <Label className="text-base font-semibold leading-tight">Sacá un screenshot del aviso</Label>
                   </div>
                   <p className="text-sm text-foreground/80 leading-snug">
-                    No pudimos leer el aviso automáticamente. Sacá una <strong>captura de pantalla</strong> del aviso (Instagram, Facebook, MercadoLibre, etc.) y pegala acá con <strong>Ctrl+V</strong>, o tocá el botón para elegir fotos (hasta 3). Después tocá <strong>Analizar imágenes</strong>.
+                    No pudimos leer el aviso automáticamente. Sacá <strong>3 capturas de pantalla</strong> del aviso (Facebook, Instagram, Mercado Libre) donde muestren los datos de la publicación. Luego hacé click en <strong>"Tocá para elegir imágenes"</strong> y seleccioná las imágenes del aviso. Nuestra IA extraerá los datos. Dale click en el botón <strong>"Analizar imágenes"</strong>. Luego verificá que esté todo ok antes de guardar.
                   </p>
                   <input
                     ref={pendingScreensInputRef}
