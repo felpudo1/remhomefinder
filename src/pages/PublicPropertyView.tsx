@@ -83,6 +83,8 @@ export default function PublicPropertyView() {
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAuthUserId, setPendingAuthUserId] = useState<string | null>(null);
+  const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(null);
+  const [resolvedPublicationId, setResolvedPublicationId] = useState<string | null>(null);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
@@ -91,6 +93,8 @@ export default function PublicPropertyView() {
 
   const source = searchParams.get("source");
   const pubId = searchParams.get("pub_id");
+  const effectivePropertyId = resolvedPropertyId || id;
+  const effectivePublicationId = pubId || resolvedPublicationId;
   const refParam = searchParams.get("ref");
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
@@ -113,30 +117,55 @@ export default function PublicPropertyView() {
     if (!pubId) return;
 
     const { data: publication } = await supabase
-      .from("agent_publications")
+        .from("agent_publications")
       .select("published_by")
-      .eq("id", pubId)
+        .eq("id", effectivePublicationId)
       .maybeSingle();
 
     if (publication?.published_by) {
       localStorage.setItem("hf_referral_id", publication.published_by);
     }
-  }, [pubId, refParam]);
+  }, [effectivePublicationId, refParam]);
 
   // Fetch property data
   useEffect(() => {
     if (!id) return;
     const fetchProperty = async () => {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
+      let lookupPropertyId = id;
+      let lookupPublicationId: string | null = null;
+
+      let { data, error: fetchError } = await supabase
         .from("properties")
         .select("id, title, neighborhood, city, rooms, m2_total, price_amount, price_expenses, total_cost, currency, images, details, ref")
         .eq("id", id)
-        .single();
+        .maybeSingle();
+
+      if (!data || fetchError) {
+        const { data: listing } = await supabase
+          .from("user_listings")
+          .select("property_id, source_publication_id")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (listing?.property_id) {
+          lookupPropertyId = listing.property_id;
+          lookupPublicationId = listing.source_publication_id || null;
+          const fallback = await supabase
+            .from("properties")
+            .select("id, title, neighborhood, city, rooms, m2_total, price_amount, price_expenses, total_cost, currency, images, details, ref")
+            .eq("id", lookupPropertyId)
+            .maybeSingle();
+          data = fallback.data;
+          fetchError = fallback.error;
+        }
+      }
 
       if (fetchError || !data) {
         setError("No se encontró la propiedad.");
       } else {
+        setResolvedPropertyId(lookupPropertyId);
+        setResolvedPublicationId(lookupPublicationId);
         setProperty({
           id: data.id,
           title: data.title,
