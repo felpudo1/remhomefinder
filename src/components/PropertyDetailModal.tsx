@@ -239,7 +239,7 @@ export function PropertyDetailModal({
             className="h-11 rounded-xl gap-2 font-medium border-border hover:bg-muted w-full"
             onClick={(e) => {
               e.stopPropagation();
-              const publicUrl = `${window.location.origin}/p/${property.id}`;
+              const publicUrl = `${window.location.origin}/p/${property.propertyId || property.id}`;
               navigator.clipboard.writeText(publicUrl);
               toast({ title: "¡Copiado!", description: "Link listo para compartir." });
             }}
