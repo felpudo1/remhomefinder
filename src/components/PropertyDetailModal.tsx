@@ -237,9 +237,18 @@ export function PropertyDetailModal({
           <Button
             variant="outline"
             className="h-11 rounded-xl gap-2 font-medium border-border hover:bg-muted w-full"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              const publicUrl = `${window.location.origin}/p/${property.propertyId || property.id}`;
+              let publicPropertyId = property.propertyId || property.id;
+              if (!property.propertyId || property.propertyId === property.id) {
+                const { data: listing } = await supabase
+                  .from("user_listings")
+                  .select("property_id")
+                  .eq("id", property.id)
+                  .maybeSingle();
+                publicPropertyId = listing?.property_id || publicPropertyId;
+              }
+              const publicUrl = `${window.location.origin}/p/${publicPropertyId}`;
               navigator.clipboard.writeText(publicUrl);
               toast({ title: "¡Copiado!", description: "Link listo para compartir." });
             }}
