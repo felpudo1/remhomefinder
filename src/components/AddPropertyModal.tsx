@@ -531,6 +531,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               isFormValid={isFormValid && !isSubmitting}
               manualSubmitBlockers={manualSubmitBlockers}
             />
+            )}
           </>
         )}
       </DialogContent>
