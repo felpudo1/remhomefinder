@@ -474,7 +474,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-muted-foreground">Link de la publicación</Label>
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40 text-sm truncate">
-                    <Link className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">🔗</span>
                     <span className="truncate">{url || "—"}</span>
                   </div>
                 </div>
