@@ -114,12 +114,12 @@ export default function PublicPropertyView() {
       return;
     }
 
-    if (!pubId) return;
+    if (!effectivePublicationId) return;
 
     const { data: publication } = await supabase
-        .from("agent_publications")
+      .from("agent_publications")
       .select("published_by")
-        .eq("id", effectivePublicationId)
+      .eq("id", effectivePublicationId)
       .maybeSingle();
 
     if (publication?.published_by) {
