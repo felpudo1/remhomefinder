@@ -385,89 +385,111 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             <DuplicateAlert urlInFamily={urlInFamily} urlInApp={urlInApp} onOpenExisting={onOpenExisting} formatDaysAgo={formatDaysAgo} />
 
             {showImageFallback && (
-              <div
-                className="space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                tabIndex={0}
-                onPaste={handlePasteScreens}
-              >
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-primary shrink-0" />
-                  <Label className="text-sm font-medium leading-tight">Capturas del aviso (hasta 3)</Label>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  Sacá screenshot del aviso (Instagram, Facebook, etc.) y pegalo acá con <strong>Ctrl+V</strong>, o tocá el botón para elegir fotos. Después tocá <strong>Analizar imágenes</strong> y revisá los datos abajo.
-                </p>
-                <input
-                  ref={pendingScreensInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    const list = e.target.files;
-                    if (!list?.length) return;
-                    addPendingImageFiles(Array.from(list));
-                    e.target.value = "";
-                  }}
-                />
-                {screenPreviewUrls.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    {screenPreviewUrls.map((src, i) => (
-                      <div key={src} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
-                        <img src={src} alt="" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          className="absolute top-1 right-1 rounded-full bg-destructive text-destructive-foreground p-1"
-                          onClick={() => setPendingScreenFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                          aria-label="Quitar captura"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+              <div className="space-y-3">
+                <div
+                  className="space-y-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  tabIndex={0}
+                  onPaste={handlePasteScreens}
+                >
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-primary shrink-0" />
+                    <Label className="text-base font-semibold leading-tight">Sacá un screenshot del aviso</Label>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => pendingScreensInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-border rounded-xl py-6 text-sm text-muted-foreground hover:border-primary/40 transition-colors"
-                  >
-                    Tocá para elegir imágenes (o pegá con Ctrl+V en esta caja)
-                  </button>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl flex-1"
-                    disabled={pendingScreenFiles.length >= 3}
-                    onClick={() => pendingScreensInputRef.current?.click()}
-                  >
-                    Elegir del dispositivo
-                  </Button>
-                  <Button
-                    type="button"
-                    className="rounded-xl flex-1 gap-2"
-                    disabled={pendingScreenFiles.length === 0 || isAnalyzingUnified}
-                    onClick={onAnalyzePendingScreens}
-                  >
-                    {isAnalyzingUnified ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Analizando…
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        Analizar imágenes
-                      </>
-                    )}
-                  </Button>
+                  <p className="text-sm text-foreground/80 leading-snug">
+                    No pudimos leer el aviso automáticamente. Sacá una <strong>captura de pantalla</strong> del aviso (Instagram, Facebook, MercadoLibre, etc.) y pegala acá con <strong>Ctrl+V</strong>, o tocá el botón para elegir fotos (hasta 3). Después tocá <strong>Analizar imágenes</strong>.
+                  </p>
+                  <input
+                    ref={pendingScreensInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = e.target.files;
+                      if (!list?.length) return;
+                      addPendingImageFiles(Array.from(list));
+                      e.target.value = "";
+                    }}
+                  />
+                  {screenPreviewUrls.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {screenPreviewUrls.map((src, i) => (
+                        <div key={src} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                          <img src={src} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            className="absolute top-1 right-1 rounded-full bg-destructive text-destructive-foreground p-1"
+                            onClick={() => setPendingScreenFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                            aria-label="Quitar captura"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => pendingScreensInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-primary/40 rounded-xl py-16 text-sm text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors flex flex-col items-center justify-center gap-2"
+                    >
+                      <ImageIcon className="w-8 h-8 text-primary/50" />
+                      <span>Tocá para elegir imágenes</span>
+                      <span className="text-[11px]">(o pegá con Ctrl+V en esta caja)</span>
+                    </button>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl flex-1"
+                      disabled={pendingScreenFiles.length >= 3}
+                      onClick={() => pendingScreensInputRef.current?.click()}
+                    >
+                      Elegir del dispositivo
+                    </Button>
+                    <Button
+                      type="button"
+                      className="rounded-xl flex-1 gap-2"
+                      disabled={pendingScreenFiles.length === 0 || isAnalyzingUnified}
+                      onClick={onAnalyzePendingScreens}
+                    >
+                      {isAnalyzingUnified ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Analizando…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Analizar imágenes
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Solo el link visible debajo del bloque grande */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">Link de la publicación</Label>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40 text-sm truncate">
+                    <span className="text-muted-foreground shrink-0">🔗</span>
+                    <span className="truncate">{url || "—"}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowImageFallback(false)}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 py-1"
+                >
+                  O completá los datos manualmente
+                </button>
               </div>
             )}
 
+            {!showImageFallback && (
             <PropertyFormManual
               form={form}
               setForm={setForm}
@@ -509,6 +531,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
               isFormValid={isFormValid && !isSubmitting}
               manualSubmitBlockers={manualSubmitBlockers}
             />
+            )}
           </>
         )}
       </DialogContent>
