@@ -83,6 +83,8 @@ export default function PublicPropertyView() {
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAuthUserId, setPendingAuthUserId] = useState<string | null>(null);
+  const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(null);
+  const [resolvedPublicationId, setResolvedPublicationId] = useState<string | null>(null);
 
   // Track if QR scan event was already fired
   const qrTrackedRef = useRef(false);
@@ -91,6 +93,8 @@ export default function PublicPropertyView() {
 
   const source = searchParams.get("source");
   const pubId = searchParams.get("pub_id");
+  const effectivePropertyId = resolvedPropertyId || id;
+  const effectivePublicationId = pubId || resolvedPublicationId;
   const refParam = searchParams.get("ref");
 
   // Auth state — user may be null on public view (not behind ProtectedRoute)
@@ -110,33 +114,58 @@ export default function PublicPropertyView() {
       return;
     }
 
-    if (!pubId) return;
+    if (!effectivePublicationId) return;
 
     const { data: publication } = await supabase
       .from("agent_publications")
       .select("published_by")
-      .eq("id", pubId)
+      .eq("id", effectivePublicationId)
       .maybeSingle();
 
     if (publication?.published_by) {
       localStorage.setItem("hf_referral_id", publication.published_by);
     }
-  }, [pubId, refParam]);
+  }, [effectivePublicationId, refParam]);
 
   // Fetch property data
   useEffect(() => {
     if (!id) return;
     const fetchProperty = async () => {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
+      let lookupPropertyId = id;
+      let lookupPublicationId: string | null = null;
+
+      let { data, error: fetchError } = await supabase
         .from("properties")
         .select("id, title, neighborhood, city, rooms, m2_total, price_amount, price_expenses, total_cost, currency, images, details, ref")
         .eq("id", id)
-        .single();
+        .maybeSingle();
+
+      if (!data || fetchError) {
+        const { data: listing } = await supabase
+          .from("user_listings")
+          .select("property_id, source_publication_id")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (listing?.property_id) {
+          lookupPropertyId = listing.property_id;
+          lookupPublicationId = listing.source_publication_id || null;
+          const fallback = await supabase
+            .from("properties")
+            .select("id, title, neighborhood, city, rooms, m2_total, price_amount, price_expenses, total_cost, currency, images, details, ref")
+            .eq("id", lookupPropertyId)
+            .maybeSingle();
+          data = fallback.data;
+          fetchError = fallback.error;
+        }
+      }
 
       if (fetchError || !data) {
         setError("No se encontró la propiedad.");
       } else {
+        setResolvedPropertyId(lookupPropertyId);
+        setResolvedPublicationId(lookupPublicationId);
         setProperty({
           id: data.id,
           title: data.title,
@@ -160,37 +189,37 @@ export default function PublicPropertyView() {
 
   // Track QR scan event (once)
   useEffect(() => {
-    if (!id || !source || source !== "qr" || qrTrackedRef.current) return;
+    if (!effectivePropertyId || !source || source !== "qr" || qrTrackedRef.current) return;
     qrTrackedRef.current = true;
     trackEvent({
       eventType: "qr_scan",
-      propertyId: id,
-      sourcePublicationId: pubId,
+      propertyId: effectivePropertyId,
+      sourcePublicationId: effectivePublicationId,
       userId: user?.id || null,
       metadata: { qr_source: "qr", user_agent: navigator.userAgent },
     });
-  }, [id, source, pubId, user?.id, trackEvent]);
+  }, [effectivePropertyId, source, effectivePublicationId, user?.id, trackEvent]);
 
   // Track property view event
   useEffect(() => {
-    if (!id) return;
+    if (!effectivePropertyId) return;
     trackEvent({
       eventType: "property_view",
-      propertyId: id,
-      sourcePublicationId: pubId,
+      propertyId: effectivePropertyId,
+      sourcePublicationId: effectivePublicationId,
       userId: user?.id || null,
     });
-  }, [id, pubId, user?.id, trackEvent]);
+  }, [effectivePropertyId, effectivePublicationId, user?.id, trackEvent]);
 
   const handleSaveProperty = useCallback(
     async (userId: string, preloadedOrgId?: string | null) => {
-      if (!id || saving || saved) return false;
+      if (!effectivePropertyId || saving || saved) return false;
       setSaving(true);
 
       try {
         console.log("[PublicPropertyView] Iniciando guardado QR", {
-          propertyId: id,
-          publicationId: pubId,
+          propertyId: effectivePropertyId,
+          publicationId: effectivePublicationId,
           userId,
           preloadedOrgId: preloadedOrgId ?? null,
         });
@@ -203,14 +232,14 @@ export default function PublicPropertyView() {
         }
 
         // Claim anonymous analytics events
-        if (pubId) {
-          await claimAnonymousEvents(userId, id, pubId);
+        if (effectivePublicationId) {
+          await claimAnonymousEvents(userId, effectivePropertyId, effectivePublicationId);
         }
 
         // Get user's org — retry for new signups
         const orgId = preloadedOrgId ?? await getUserOrgIdWithRetry(userId, 7);
 
-        console.log("[PublicPropertyView] Resultado org lookup", { userId, orgId, propertyId: id });
+        console.log("[PublicPropertyView] Resultado org lookup", { userId, orgId, propertyId: effectivePropertyId });
 
         if (!orgId) {
           console.warn("[PublicPropertyView] No se encontró organización para guardar");
@@ -227,18 +256,18 @@ export default function PublicPropertyView() {
         }
 
         // Get property_id from publication if available
-        let propertyId = id;
-        if (pubId) {
+        let propertyId = effectivePropertyId;
+        if (effectivePublicationId) {
           const { data: pub } = await supabase
             .from("agent_publications")
             .select("property_id")
-            .eq("id", pubId)
+            .eq("id", effectivePublicationId)
             .single();
           if (pub) propertyId = pub.property_id;
         }
 
         console.log("[PublicPropertyView] Property final para guardar", {
-          propertyId, sourcePublicationId: pubId, orgId, userId,
+          propertyId, sourcePublicationId: effectivePublicationId, orgId, userId,
         });
 
         // Check if already saved
@@ -273,7 +302,7 @@ export default function PublicPropertyView() {
               property_id: propertyId,
               org_id: orgId,
               listing_type: "rent",
-              source_publication_id: pubId || null,
+              source_publication_id: effectivePublicationId || null,
               added_by: userId,
             });
 
@@ -301,7 +330,7 @@ export default function PublicPropertyView() {
         await trackEvent({
           eventType: "listing_saved",
           propertyId: propertyId,
-          sourcePublicationId: pubId,
+          sourcePublicationId: effectivePublicationId,
           userId,
           orgId: orgId,
         });
@@ -333,7 +362,7 @@ export default function PublicPropertyView() {
         setSaving(false);
       }
     },
-    [id, pubId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents]
+    [effectivePropertyId, effectivePublicationId, saving, saved, toast, navigate, trackEvent, claimAnonymousEvents]
   );
 
   // Check for pending save after OAuth redirect — show confirm modal instead of auto-save
