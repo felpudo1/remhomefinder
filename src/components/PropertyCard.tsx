@@ -2,7 +2,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
-import { ExternalLink, Building2, MessageCircle, User, CalendarIcon } from "lucide-react";
+import { ExternalLink, Building2, MessageCircle, User, CalendarIcon, PhoneCall } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
