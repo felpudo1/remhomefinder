@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, Sparkles, PhoneCall } from "lucide-react";
+import { User, Phone, Sparkles } from "lucide-react";
 
 interface MatchLeadsListProps {
   matches: {
