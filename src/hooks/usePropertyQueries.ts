@@ -142,6 +142,9 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
       contactName: listing.contact_name || undefined,
       contactPhone: listing.contact_phone || undefined,
       contactSource: listing.contact_source || undefined,
+      quickNote,
+      quickNoteByName,
+      quickNoteAt,
     };
   }
 
@@ -191,6 +194,9 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
     contactName: listing.contact_name || undefined,
     contactPhone: listing.contact_phone || undefined,
     contactSource: listing.contact_source || undefined,
+    quickNote,
+    quickNoteByName,
+    quickNoteAt,
   };
 }
 
