@@ -324,6 +324,15 @@ export function PropertyCard({
                           <MessageCircle className="w-3 h-3" />
                           WhatsApp
                         </button>
+                        <span className="text-muted-foreground/60">·</span>
+                        <a
+                          href={`tel:${property.contactPhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                        >
+                          <PhoneCall className="w-3 h-3" />
+                          Llamar
+                        </a>
                       </>
                     )}
                   </>
