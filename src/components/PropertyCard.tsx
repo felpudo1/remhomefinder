@@ -317,7 +317,7 @@ export function PropertyCard({
                               "noopener,noreferrer"
                             );
                           }}
-                          className="inline-flex items-center justify-center min-w-14 px-4 py-0 rounded-md bg-accent/15 hover:bg-accent/25 text-accent-foreground shrink-0 ml-2"
+                          className="inline-flex items-center justify-center min-w-16 px-4 h-7 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 shadow-sm shrink-0 ml-2"
                           title="WhatsApp"
                           aria-label="WhatsApp"
                         >
