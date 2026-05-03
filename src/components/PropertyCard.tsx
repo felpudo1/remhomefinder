@@ -239,7 +239,7 @@ export function PropertyCard({
             {(property.sourceMarketplaceId
               ? (property.marketplaceAgentName || marketplaceAgentWhatsappUrl)
               : (property.contactName || property.contactPhone)) && (
-              <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground -mt-1">
+              <div className="flex items-center flex-nowrap gap-x-1.5 text-[11px] text-muted-foreground -mt-1 overflow-hidden">
                 {property.sourceMarketplaceId ? (
                   <>
                     {property.marketplaceAgentName && (
@@ -250,41 +250,37 @@ export function PropertyCard({
                     )}
                     {property.marketplaceAgentPhone && (
                       <>
-                        <span className="text-muted-foreground/60">·</span>
-                        <span>{property.marketplaceAgentPhone}</span>
+                        <span className="text-muted-foreground/60 shrink-0">·</span>
+                        <span className="shrink-0 whitespace-nowrap">{property.marketplaceAgentPhone}</span>
                       </>
                     )}
                     {marketplaceAgentWhatsappUrl && (
-                      <>
-                        <span className="text-muted-foreground/60">·</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(marketplaceAgentWhatsappUrl, "_blank", "noopener,noreferrer");
-                          }}
-                          className="inline-flex items-center gap-1 font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
-                        >
-                          <MessageCircle className="w-3 h-3" />
-                          WhatsApp
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(marketplaceAgentWhatsappUrl, "_blank", "noopener,noreferrer");
+                        }}
+                        className="inline-flex items-center font-medium text-emerald-700 hover:text-emerald-800 shrink-0 ml-1"
+                        title="WhatsApp"
+                        aria-label="WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
                     )}
                     {property.marketplaceAgentPhone && (
-                      <>
-                        <span className="text-muted-foreground/60">·</span>
-                        <a
-                          href={`tel:${property.marketplaceAgentPhone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 font-medium text-blue-700 hover:text-blue-800 hover:underline"
-                        >
-                          <PhoneCall className="w-3 h-3" />
-                          Llamar
-                        </a>
-                      </>
+                      <a
+                        href={`tel:${property.marketplaceAgentPhone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center font-medium text-blue-700 hover:text-blue-800 shrink-0"
+                        title="Llamar"
+                        aria-label="Llamar"
+                      >
+                        <PhoneCall className="w-4 h-4" />
+                      </a>
                     )}
                     {property.marketplaceStatus && (
-                      <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${
+                      <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide shrink-0 ${
                         property.marketplaceStatus === "disponible" ? "bg-emerald-100 text-emerald-700" :
                         property.marketplaceStatus === "pausado" ? "bg-amber-100 text-amber-700" :
                         property.marketplaceStatus === "reservado" ? "bg-blue-100 text-blue-700" :
@@ -306,9 +302,8 @@ export function PropertyCard({
                     )}
                     {property.contactPhone && (
                       <>
-                        <span className="text-muted-foreground/60">·</span>
-                        <span>{property.contactPhone}</span>
-                        <span className="text-muted-foreground/60">·</span>
+                        <span className="text-muted-foreground/60 shrink-0">·</span>
+                        <span className="shrink-0 whitespace-nowrap">{property.contactPhone}</span>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -319,19 +314,20 @@ export function PropertyCard({
                               "noopener,noreferrer"
                             );
                           }}
-                          className="inline-flex items-center gap-1 font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+                          className="inline-flex items-center font-medium text-emerald-700 hover:text-emerald-800 shrink-0 ml-1"
+                          title="WhatsApp"
+                          aria-label="WhatsApp"
                         >
-                          <MessageCircle className="w-3 h-3" />
-                          WhatsApp
+                          <MessageCircle className="w-4 h-4" />
                         </button>
-                        <span className="text-muted-foreground/60">·</span>
                         <a
                           href={`tel:${property.contactPhone}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                          className="inline-flex items-center font-medium text-blue-700 hover:text-blue-800 shrink-0"
+                          title="Llamar"
+                          aria-label="Llamar"
                         >
-                          <PhoneCall className="w-3 h-3" />
-                          Llamar
+                          <PhoneCall className="w-4 h-4" />
                         </a>
                       </>
                     )}
