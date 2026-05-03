@@ -21,6 +21,7 @@ import { PropertyCardHeader } from "./property-card/PropertyCardHeader";
 // Diálogos modulares
 import { GenericStatusFeedbackDialog } from "./property-card/dialogs/GenericStatusFeedbackDialog";
 import { StatusCalendarOfferDialog } from "./property-card/dialogs/StatusCalendarOfferDialog";
+import { QuickNoteField } from "./property-card/QuickNoteField";
 
 export interface ProsAndConsAttributeIds {
   positiveIds: string[];
