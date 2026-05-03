@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Phone, Sparkles, Lock, Building2, MapPin, DollarSign, PhoneCall } from "lucide-react";
+import { User, Phone, Sparkles, Lock, Building2, MapPin, DollarSign } from "lucide-react";
 import { StatProperty } from "@/types/admin-publications";
 
 interface MatchesDialogProps {
