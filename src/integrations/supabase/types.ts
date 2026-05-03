@@ -1620,6 +1620,9 @@ export type Database = {
           listing_type: Database["public"]["Enums"]["listing_type"]
           org_id: string
           property_id: string
+          quick_note: string
+          quick_note_at: string | null
+          quick_note_by: string | null
           source_publication_id: string | null
           updated_at: string
         }
@@ -1635,6 +1638,9 @@ export type Database = {
           listing_type?: Database["public"]["Enums"]["listing_type"]
           org_id: string
           property_id: string
+          quick_note?: string
+          quick_note_at?: string | null
+          quick_note_by?: string | null
           source_publication_id?: string | null
           updated_at?: string
         }
@@ -1650,6 +1656,9 @@ export type Database = {
           listing_type?: Database["public"]["Enums"]["listing_type"]
           org_id?: string
           property_id?: string
+          quick_note?: string
+          quick_note_at?: string | null
+          quick_note_by?: string | null
           source_publication_id?: string | null
           updated_at?: string
         }
