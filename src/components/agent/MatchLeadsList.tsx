@@ -59,20 +59,34 @@ export const MatchLeadsList = ({ matches }: MatchLeadsListProps) => {
               </div>
 
               {canOpenWhatsapp ? (
-                <a 
-                  href={`https://wa.me/${normalizedPhone}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="ml-2"
-                >
-                  <Badge 
-                    variant="outline" 
-                    className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px] font-bold cursor-pointer"
+                <div className="flex items-center gap-1 ml-2">
+                  <a 
+                    href={`https://wa.me/${normalizedPhone}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    WhatsApp
-                  </Badge>
-                </a>
+                    <Badge 
+                      variant="outline" 
+                      className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px] font-bold cursor-pointer"
+                    >
+                      WhatsApp
+                    </Badge>
+                  </a>
+                  <a
+                    href={`tel:${phone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Llamar"
+                  >
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold cursor-pointer flex items-center gap-1"
+                    >
+                      <PhoneCall className="w-2.5 h-2.5" />
+                      Llamar
+                    </Badge>
+                  </a>
+                </div>
               ) : (
                 <Badge variant="outline" className="ml-2 text-[10px] font-bold">
                   Sin WhatsApp
