@@ -89,6 +89,13 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
     ? JSON.parse(listing._attachments || '[]')
     : (listing._attachments || []);
 
+  // Quick note (nota rápida de gestión)
+  const quickNote: string = listing.quick_note || "";
+  const quickNoteByName: string | undefined = listing.quick_note_by
+    ? (addedByProfiles[listing.quick_note_by] || undefined)
+    : undefined;
+  const quickNoteAt: Date | null = listing.quick_note_at ? new Date(listing.quick_note_at) : null;
+
   if (!p) {
     return {
       id: listing.id,
@@ -135,6 +142,9 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
       contactName: listing.contact_name || undefined,
       contactPhone: listing.contact_phone || undefined,
       contactSource: listing.contact_source || undefined,
+      quickNote,
+      quickNoteByName,
+      quickNoteAt,
     };
   }
 
@@ -184,6 +194,9 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
     contactName: listing.contact_name || undefined,
     contactPhone: listing.contact_phone || undefined,
     contactSource: listing.contact_source || undefined,
+    quickNote,
+    quickNoteByName,
+    quickNoteAt,
   };
 }
 
