@@ -74,6 +74,12 @@ export interface Property {
   hasUnreadComments?: boolean;
   /** Cantidad de comentarios no leídos de otros miembros para este usuario */
   unreadCommentsCount?: number;
+  /** Nota rápida de gestión (ej: "llamé y no respondió"). Máx 30 caracteres. */
+  quickNote?: string;
+  /** Nombre del miembro que editó la nota rápida por última vez */
+  quickNoteByName?: string;
+  /** Fecha/hora de la última edición de la nota rápida */
+  quickNoteAt?: Date | null;
 }
 
 /** Estado de la publicación de agente (agent_pub_status en BD) — valores en español */
