@@ -2,7 +2,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
-import { ExternalLink, Building2, MessageCircle, User, CalendarIcon } from "lucide-react";
+import { ExternalLink, Building2, MessageCircle, User, CalendarIcon, PhoneCall } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
@@ -270,6 +270,19 @@ export function PropertyCard({
                         </button>
                       </>
                     )}
+                    {property.marketplaceAgentPhone && (
+                      <>
+                        <span className="text-muted-foreground/60">·</span>
+                        <a
+                          href={`tel:${property.marketplaceAgentPhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                        >
+                          <PhoneCall className="w-3 h-3" />
+                          Llamar
+                        </a>
+                      </>
+                    )}
                     {property.marketplaceStatus && (
                       <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${
                         property.marketplaceStatus === "disponible" ? "bg-emerald-100 text-emerald-700" :
@@ -311,6 +324,15 @@ export function PropertyCard({
                           <MessageCircle className="w-3 h-3" />
                           WhatsApp
                         </button>
+                        <span className="text-muted-foreground/60">·</span>
+                        <a
+                          href={`tel:${property.contactPhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                        >
+                          <PhoneCall className="w-3 h-3" />
+                          Llamar
+                        </a>
                       </>
                     )}
                   </>

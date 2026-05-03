@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, Sparkles, PhoneCall } from "lucide-react";
+import { User, Phone, Sparkles } from "lucide-react";
 
 interface MatchLeadsListProps {
   matches: {
@@ -59,34 +59,20 @@ export const MatchLeadsList = ({ matches }: MatchLeadsListProps) => {
               </div>
 
               {canOpenWhatsapp ? (
-                <div className="flex items-center gap-1 ml-2">
-                  <a 
-                    href={`https://wa.me/${normalizedPhone}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                <a 
+                  href={`https://wa.me/${normalizedPhone}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="ml-2"
+                >
+                  <Badge 
+                    variant="outline" 
+                    className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px] font-bold cursor-pointer"
                   >
-                    <Badge 
-                      variant="outline" 
-                      className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20 text-[10px] font-bold cursor-pointer"
-                    >
-                      WhatsApp
-                    </Badge>
-                  </a>
-                  <a
-                    href={`tel:${phone}`}
-                    onClick={(e) => e.stopPropagation()}
-                    title="Llamar"
-                  >
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold cursor-pointer flex items-center gap-1"
-                    >
-                      <PhoneCall className="w-2.5 h-2.5" />
-                      Llamar
-                    </Badge>
-                  </a>
-                </div>
+                    WhatsApp
+                  </Badge>
+                </a>
               ) : (
                 <Badge variant="outline" className="ml-2 text-[10px] font-bold">
                   Sin WhatsApp
