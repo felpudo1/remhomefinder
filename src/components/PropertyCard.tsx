@@ -98,6 +98,9 @@ export function PropertyCard({
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
   const marketplaceAgentPhoneDigits = (property.marketplaceAgentPhone || "").replace(/\D/g, "");
   const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
+  const marketplaceAgentTelHref = marketplaceAgentPhoneDigits ? `tel:+${marketplaceAgentPhoneDigits}` : null;
+  const contactPhoneDigits = (property.contactPhone || "").replace(/\D/g, "");
+  const contactTelHref = contactPhoneDigits ? `tel:+${contactPhoneDigits}` : null;
 
   /**
    * Manejador de cambio de estado: detecta qué acción requiere un diálogo de confirmación adicional.
@@ -261,18 +264,18 @@ export function PropertyCard({
                           e.stopPropagation();
                           window.open(marketplaceAgentWhatsappUrl, "_blank", "noopener,noreferrer");
                         }}
-                        className="inline-flex items-center justify-center px-3 py-0 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shrink-0 ml-2"
+                        className="inline-flex items-center justify-center min-w-14 px-4 py-0 rounded-md bg-accent/15 hover:bg-accent/25 text-accent-foreground shrink-0 ml-2"
                         title="WhatsApp"
                         aria-label="WhatsApp"
                       >
                         <MessageCircle className="w-4 h-4" />
                       </button>
                     )}
-                    {property.marketplaceAgentPhone && (
+                    {marketplaceAgentTelHref && (
                       <a
-                        href={`tel:${property.marketplaceAgentPhone}`}
+                        href={marketplaceAgentTelHref}
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center justify-center px-3 py-0 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 shrink-0 ml-2"
+                        className="inline-flex items-center justify-center min-w-14 px-4 py-0 rounded-md bg-primary/10 hover:bg-primary/20 text-primary shrink-0 ml-2"
                         title="Llamar"
                         aria-label="Llamar"
                       >
@@ -314,21 +317,23 @@ export function PropertyCard({
                               "noopener,noreferrer"
                             );
                           }}
-                          className="inline-flex items-center justify-center px-3 py-0 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shrink-0 ml-2"
+                          className="inline-flex items-center justify-center min-w-14 px-4 py-0 rounded-md bg-accent/15 hover:bg-accent/25 text-accent-foreground shrink-0 ml-2"
                           title="WhatsApp"
                           aria-label="WhatsApp"
                         >
                           <MessageCircle className="w-4 h-4" />
                         </button>
+                        {contactTelHref && (
                         <a
-                          href={`tel:${property.contactPhone}`}
+                          href={contactTelHref}
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center justify-center px-3 py-0 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 shrink-0 ml-2"
+                          className="inline-flex items-center justify-center min-w-14 px-4 py-0 rounded-md bg-primary/10 hover:bg-primary/20 text-primary shrink-0 ml-2"
                           title="Llamar"
                           aria-label="Llamar"
                         >
                           <PhoneCall className="w-4 h-4" />
                         </a>
+                        )}
                       </>
                     )}
                   </>
