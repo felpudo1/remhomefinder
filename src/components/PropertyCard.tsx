@@ -327,7 +327,7 @@ export function PropertyCard({
                         <a
                           href={contactTelHref}
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center justify-center min-w-14 px-4 py-0 rounded-md bg-primary/10 hover:bg-primary/20 text-primary shrink-0 ml-2"
+                          className="inline-flex items-center justify-center min-w-16 px-4 h-7 rounded-md bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-700 shadow-sm shrink-0 ml-2"
                           title="Llamar"
                           aria-label="Llamar"
                         >
