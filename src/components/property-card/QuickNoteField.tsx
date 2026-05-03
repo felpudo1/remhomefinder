@@ -65,7 +65,7 @@ export function QuickNoteField({ listingId, initialNote = "", editedByName, edit
                     value={value}
                     onChange={(e) => setValue(e.target.value.slice(0, QUICK_NOTE_MAX_LENGTH))}
                     maxLength={QUICK_NOTE_MAX_LENGTH}
-                    placeholder="Ej: llamé y no respondió"
+                    placeholder="Agregar nota"
                     className="h-7 text-xs px-2"
                     onKeyDown={(e) => {
                         if (e.key === "Enter") handleSave(e);
