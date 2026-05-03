@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/contexts/AuthProvider";
 
-export const QUICK_NOTE_MAX_LENGTH = 30;
+export const QUICK_NOTE_MAX_LENGTH = 40;
 
 export function useQuickNote(listingId: string) {
     const { toast } = useToast();
