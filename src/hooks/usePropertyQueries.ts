@@ -89,6 +89,13 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
     ? JSON.parse(listing._attachments || '[]')
     : (listing._attachments || []);
 
+  // Quick note (nota rápida de gestión)
+  const quickNote: string = listing.quick_note || "";
+  const quickNoteByName: string | undefined = listing.quick_note_by
+    ? (addedByProfiles[listing.quick_note_by] || undefined)
+    : undefined;
+  const quickNoteAt: Date | null = listing.quick_note_at ? new Date(listing.quick_note_at) : null;
+
   if (!p) {
     return {
       id: listing.id,
