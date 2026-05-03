@@ -342,6 +342,15 @@ export function PropertyCard({
               </div>
             )}
 
+            {/* Nota rápida de gestión (solo para listado personal/familiar, no marketplace) */}
+            {!property.sourceMarketplaceId && (
+              <QuickNoteField
+                listingId={property.id}
+                initialNote={property.quickNote || ""}
+                editedByName={property.quickNoteByName}
+                editedAt={property.quickNoteAt || null}
+              />
+            )}
 
             {isEliminated && (
                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-2.5 space-y-1 mt-2">
