@@ -314,7 +314,7 @@ export function PropertyCard({
                               "noopener,noreferrer"
                             );
                           }}
-                          className="inline-flex items-center font-medium text-emerald-700 hover:text-emerald-800 shrink-0 ml-1"
+                          className="inline-flex items-center justify-center px-3 py-0 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shrink-0 ml-2"
                           title="WhatsApp"
                           aria-label="WhatsApp"
                         >
@@ -323,7 +323,7 @@ export function PropertyCard({
                         <a
                           href={`tel:${property.contactPhone}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center font-medium text-blue-700 hover:text-blue-800 shrink-0"
+                          className="inline-flex items-center justify-center px-3 py-0 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 shrink-0 ml-2"
                           title="Llamar"
                           aria-label="Llamar"
                         >
