@@ -1,6 +1,6 @@
 import { Property, STATUS_CONFIG } from "@/types/property";
 import { formatDateTime } from "@/lib/date-utils";
-import { Users, CalendarIcon } from "lucide-react";
+import { Users } from "lucide-react";
 
 
 
