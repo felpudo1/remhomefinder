@@ -4,7 +4,7 @@ import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { ExternalLink, Building2, MessageCircle, User, CalendarIcon, PhoneCall } from "lucide-react";
 import { formatDateTime } from "@/lib/date-utils";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { buildWhatsAppUrl, isMobilePhone } from "@/lib/whatsapp";
 import { PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
