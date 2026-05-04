@@ -58,12 +58,6 @@ export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderP
                   Coordinado por {property.coordinatedBy}
                 </span>
               )}
-              {property.coordinatedDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
-                  <CalendarIcon className="w-3 h-3" />
-                  Visita: {formatDateTime(property.coordinatedDate)}
-                </span>
-              )}
             </>
           )}
           {property.status === "contactado" && (
