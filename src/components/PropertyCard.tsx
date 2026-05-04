@@ -23,6 +23,7 @@ import { PropertyCardHeader } from "./property-card/PropertyCardHeader";
 import { GenericStatusFeedbackDialog } from "./property-card/dialogs/GenericStatusFeedbackDialog";
 import { StatusCalendarOfferDialog } from "./property-card/dialogs/StatusCalendarOfferDialog";
 import { QuickNoteField } from "./property-card/QuickNoteField";
+import { AddContactPhoneButton } from "./property-card/AddContactPhoneButton";
 
 export interface ProsAndConsAttributeIds {
   positiveIds: string[];
@@ -344,6 +345,16 @@ export function PropertyCard({
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Captura de celular para listings sin teléfono (no-marketplace) */}
+            {!property.sourceMarketplaceId && !property.contactPhone && (
+              <div className="-mt-1">
+                <AddContactPhoneButton
+                  listingId={property.id}
+                  hasContactName={!!property.contactName}
+                />
               </div>
             )}
 
