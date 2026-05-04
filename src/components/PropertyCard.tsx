@@ -384,6 +384,13 @@ export function PropertyCard({
               marketplaceStatus={property.marketplaceStatus}
             />
 
+            {property.status === "visita_coordinada" && property.coordinatedDate && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/60 text-white backdrop-blur-md w-fit">
+                <CalendarIcon className="w-3 h-3" />
+                Visita: {formatDateTime(property.coordinatedDate)}
+              </span>
+            )}
+
             <StatusChangeConfirmDialog
               open={dialogs.showDeleteConfirm}
               onOpenChange={(open) => {
