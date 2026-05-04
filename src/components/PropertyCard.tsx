@@ -348,6 +348,16 @@ export function PropertyCard({
               </div>
             )}
 
+            {/* Captura de celular para listings sin teléfono (no-marketplace) */}
+            {!property.sourceMarketplaceId && !property.contactPhone && (
+              <div className="-mt-1">
+                <AddContactPhoneButton
+                  listingId={property.id}
+                  hasContactName={!!property.contactName}
+                />
+              </div>
+            )}
+
             {/* Nota rápida de gestión (solo para listado personal/familiar, no marketplace) */}
             {!property.sourceMarketplaceId && (
               <QuickNoteField
