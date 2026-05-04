@@ -23,6 +23,7 @@ import { PropertyCardHeader } from "./property-card/PropertyCardHeader";
 import { GenericStatusFeedbackDialog } from "./property-card/dialogs/GenericStatusFeedbackDialog";
 import { StatusCalendarOfferDialog } from "./property-card/dialogs/StatusCalendarOfferDialog";
 import { QuickNoteField } from "./property-card/QuickNoteField";
+import { AddContactPhoneButton } from "./property-card/AddContactPhoneButton";
 
 export interface ProsAndConsAttributeIds {
   positiveIds: string[];
