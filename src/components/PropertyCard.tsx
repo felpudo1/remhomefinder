@@ -311,6 +311,7 @@ export function PropertyCard({
                       <>
                         <span className="text-muted-foreground/60 shrink-0">·</span>
                         <span className="shrink-0 whitespace-nowrap">{property.contactPhone}</span>
+                        {contactIsMobile && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -327,6 +328,7 @@ export function PropertyCard({
                         >
                           <MessageCircle className="w-4 h-4" />
                         </button>
+                        )}
                         {contactTelHref && (
                         <a
                           href={contactTelHref}
