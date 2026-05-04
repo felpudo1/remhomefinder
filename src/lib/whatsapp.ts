@@ -46,6 +46,26 @@ export function extractPhoneDigits(raw: string): string {
 }
 
 /**
+ * Detecta si un teléfono es un celular (con WhatsApp probable) o un fijo.
+ * Heurística enfocada en Uruguay (+598):
+ *  - Celulares UY: 9XXXXXXX (8 dígitos, empieza con 9)
+ *  - Fijos UY: 2XXXXXXX (Montevideo) o 4XXXXXXX (interior)
+ * Para números de otros países asumimos celular (no bloqueamos WhatsApp).
+ */
+export function isMobilePhone(raw: string): boolean {
+  const digits = normalizeWhatsAppPhone(raw);
+  if (!digits) return false;
+  // Quitar prefijo país 598 si está presente
+  const local = digits.startsWith("598") ? digits.slice(3) : digits;
+  // Si parece UY (8 dígitos locales), distinguir por primer dígito
+  if (local.length === 8) {
+    return local.startsWith("9");
+  }
+  // Otros largos: asumimos celular para no romper números internacionales
+  return true;
+}
+
+/**
  * Valida si un teléfono tiene formato internacional válido.
  * Requiere mínimo 8 dígitos y solo caracteres numéricos.
  */
