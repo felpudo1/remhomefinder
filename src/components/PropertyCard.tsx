@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { ExternalLink, Building2, MessageCircle, User, CalendarIcon, PhoneCall } from "lucide-react";
+import { formatDateTime } from "@/lib/date-utils";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
@@ -382,6 +383,13 @@ export function PropertyCard({
               disabled={isAgentDeleted}
               marketplaceStatus={property.marketplaceStatus}
             />
+
+            {property.status === "visita_coordinada" && property.coordinatedDate && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/60 text-white backdrop-blur-md w-fit">
+                <CalendarIcon className="w-3 h-3" />
+                Visita: {formatDateTime(property.coordinatedDate)}
+              </span>
+            )}
 
             <StatusChangeConfirmDialog
               open={dialogs.showDeleteConfirm}

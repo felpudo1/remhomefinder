@@ -1,6 +1,6 @@
 import { Property, STATUS_CONFIG } from "@/types/property";
 import { formatDateTime } from "@/lib/date-utils";
-import { Users, CalendarIcon } from "lucide-react";
+import { Users } from "lucide-react";
 
 
 
@@ -56,12 +56,6 @@ export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderP
               {property.coordinatedBy && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
                   Coordinado por {property.coordinatedBy}
-                </span>
-              )}
-              {property.coordinatedDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-black/50 text-white backdrop-blur-md">
-                  <CalendarIcon className="w-3 h-3" />
-                  Visita: {formatDateTime(property.coordinatedDate)}
                 </span>
               )}
             </>
