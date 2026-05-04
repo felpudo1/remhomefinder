@@ -99,9 +99,11 @@ export function PropertyCard({
 
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
   const marketplaceAgentPhoneDigits = (property.marketplaceAgentPhone || "").replace(/\D/g, "");
-  const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
+  const marketplaceAgentIsMobile = property.marketplaceAgentPhone ? isMobilePhone(property.marketplaceAgentPhone) : false;
+  const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits && marketplaceAgentIsMobile ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
   const marketplaceAgentTelHref = marketplaceAgentPhoneDigits ? `tel:+${marketplaceAgentPhoneDigits}` : null;
   const contactPhoneDigits = (property.contactPhone || "").replace(/\D/g, "");
+  const contactIsMobile = property.contactPhone ? isMobilePhone(property.contactPhone) : false;
   const contactTelHref = contactPhoneDigits ? `tel:+${contactPhoneDigits}` : null;
 
   /**
