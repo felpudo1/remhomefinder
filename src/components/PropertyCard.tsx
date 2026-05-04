@@ -4,7 +4,7 @@ import { Property, PropertyStatus } from "@/types/property";
 import { PROPERTY_STATUS_LABELS } from "@/lib/constants";
 import { ExternalLink, Building2, MessageCircle, User, CalendarIcon, PhoneCall } from "lucide-react";
 import { formatDateTime } from "@/lib/date-utils";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { buildWhatsAppUrl, isMobilePhone } from "@/lib/whatsapp";
 import { PropertyRatingBadge } from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -99,9 +99,11 @@ export function PropertyCard({
 
   const mktOverlay = property.marketplaceStatus ? MARKETPLACE_STATUS_OVERLAY[property.marketplaceStatus] : null;
   const marketplaceAgentPhoneDigits = (property.marketplaceAgentPhone || "").replace(/\D/g, "");
-  const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
+  const marketplaceAgentIsMobile = property.marketplaceAgentPhone ? isMobilePhone(property.marketplaceAgentPhone) : false;
+  const marketplaceAgentWhatsappUrl = marketplaceAgentPhoneDigits && marketplaceAgentIsMobile ? `https://wa.me/${marketplaceAgentPhoneDigits}` : null;
   const marketplaceAgentTelHref = marketplaceAgentPhoneDigits ? `tel:+${marketplaceAgentPhoneDigits}` : null;
   const contactPhoneDigits = (property.contactPhone || "").replace(/\D/g, "");
+  const contactIsMobile = property.contactPhone ? isMobilePhone(property.contactPhone) : false;
   const contactTelHref = contactPhoneDigits ? `tel:+${contactPhoneDigits}` : null;
 
   /**
@@ -309,6 +311,7 @@ export function PropertyCard({
                       <>
                         <span className="text-muted-foreground/60 shrink-0">·</span>
                         <span className="shrink-0 whitespace-nowrap">{property.contactPhone}</span>
+                        {contactIsMobile && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -325,6 +328,7 @@ export function PropertyCard({
                         >
                           <MessageCircle className="w-4 h-4" />
                         </button>
+                        )}
                         {contactTelHref && (
                         <a
                           href={contactTelHref}
