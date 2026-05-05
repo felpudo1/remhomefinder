@@ -183,7 +183,7 @@ export function PropertyCard({
         }
         subImageContent={
           <div className="px-4 pt-2 pb-1 flex items-center justify-between gap-2">
-            <span className="text-[11px] text-muted-foreground truncate">
+            <span className="text-[11px] text-muted-foreground truncate inline-flex items-center gap-1.5">
               {property.sourceMarketplaceId ? (
                 <span className="inline-flex items-center gap-1 text-primary font-medium">
                   <Building2 className="w-3 h-3" />
@@ -192,6 +192,11 @@ export function PropertyCard({
               ) : ownerEmail ? (
                 <>Ingresado por <span className="text-foreground/80">{ownerEmail}</span></>
               ) : ""}
+              {typeof property.displayRef === "number" && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-muted text-foreground/80 shrink-0">
+                  #{property.displayRef}
+                </span>
+              )}
             </span>
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide shrink-0 ${property.listingType === "sale"
               ? "bg-accent/15 text-accent-foreground"
