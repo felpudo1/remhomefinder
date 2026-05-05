@@ -334,7 +334,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   return (
     <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md w-[calc(100vw-1rem)] sm:w-full rounded-2xl overflow-y-auto overflow-x-hidden max-h-[90vh]">
+      <DialogContent className="!w-[calc(100vw-1rem)] !max-w-md sm:!w-full !left-1/2 !-translate-x-1/2 !translate-y-[-50%] rounded-2xl overflow-y-auto overflow-x-hidden max-h-[90vh] mx-auto">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
             {step === "url" ? "Agregar Propiedad" : "Detalles de la Propiedad"}
