@@ -198,6 +198,7 @@ function mapRpcListingToProperty(listing: any, userId: string | null): Property 
     quickNote,
     quickNoteByName,
     quickNoteAt,
+    displayRef: listing.display_ref ?? null,
   };
 }
 
