@@ -74,6 +74,8 @@ export interface Property {
   hasUnreadComments?: boolean;
   /** Cantidad de comentarios no leídos de otros miembros para este usuario */
   unreadCommentsCount?: number;
+  /** Número de referencia corto del aviso dentro del grupo (ej: 14 → "#14"). */
+  displayRef?: number | null;
   /** Nota rápida de gestión (ej: "llamé y no respondió"). Máx 30 caracteres. */
   quickNote?: string;
   /** Nombre del miembro que editó la nota rápida por última vez */

@@ -1616,6 +1616,7 @@ export type Database = {
           contact_source: string | null
           created_at: string
           current_status: Database["public"]["Enums"]["user_listing_status"]
+          display_ref: number | null
           id: string
           listing_type: Database["public"]["Enums"]["listing_type"]
           org_id: string
@@ -1634,6 +1635,7 @@ export type Database = {
           contact_source?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
+          display_ref?: number | null
           id?: string
           listing_type?: Database["public"]["Enums"]["listing_type"]
           org_id: string
@@ -1652,6 +1654,7 @@ export type Database = {
           contact_source?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["user_listing_status"]
+          display_ref?: number | null
           id?: string
           listing_type?: Database["public"]["Enums"]["listing_type"]
           org_id?: string
