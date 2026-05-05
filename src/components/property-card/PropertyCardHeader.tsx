@@ -18,12 +18,6 @@ export function PropertyCardHeader({ property, ownerEmail }: PropertyCardHeaderP
 
   return (
     <>
-      {typeof property.displayRef === "number" && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-white/90 text-gray-900 backdrop-blur-md shadow-sm">
-          #{property.displayRef}
-        </span>
-      )}
-
       {property.isSharedListing && (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-md">
           <Users className="w-3 h-3" />
