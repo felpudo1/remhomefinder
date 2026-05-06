@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useOrgAgencyVisits } from "@/hooks/useOrgAgencyVisits";
+import { useOrgAgencyNotes, useOrgAgencyNoteSaver, type OrgAgencyNote } from "@/hooks/useOrgAgencyNotes";
+import { QuickNoteField } from "@/components/property-card/QuickNoteField";
 
 /**
  * Normaliza una URL de agencia para asegurar que sea navegable:
