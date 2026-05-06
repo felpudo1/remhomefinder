@@ -345,7 +345,7 @@ export function PropertyDetailModal({
                     variant="outline"
                     size="sm"
                     className="rounded-xl gap-1.5 text-xs"
-                    onClick={() => window.open(buildWhatsAppUrl(property.contactPhone!, `Hola, vi tu publicación "${property.title}" y me interesa.`), "_blank")}
+                    onClick={() => window.open(buildWhatsAppUrl(property.contactPhone!, `Organizo mis busquedas con HOMEFINDER.UY y vi tu publicación "${property.title}". Y me interesa!!`), "_blank")}
                   >
                     <Phone className="w-3 h-3" />
                     WhatsApp
