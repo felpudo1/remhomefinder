@@ -93,12 +93,16 @@ function AgencyCard({
   isToggling,
   visit,
   onVisit,
+  orgId,
+  note,
 }: {
   agency: DirectoryAgency;
   onToggleFavorite: () => void;
   isToggling: boolean;
   visit: { visited_at: string; visited_by_name?: string | null } | null;
   onVisit: () => void;
+  orgId: string | null;
+  note: OrgAgencyNote | null;
 }) {
   const isFeatured = agency.isFeatured;
   const wasVisited = visit !== null;
