@@ -1,11 +1,32 @@
 /**
- * QuickNoteField
- * Cuadro de "nota rápida" de gestión que aparece debajo del bloque de contacto
- * en cada PropertyCard del listado personal/familiar.
+ * QuickNoteField — Componente presentacional genérico de "nota rápida".
  *
- * - Texto corto de hasta 30 caracteres (ej: "Llamé y no respondió").
- * - Cualquier miembro de la familia puede editarla.
- * - Muestra quién la modificó por última vez y cuándo.
+ * ────────────────────────────────────────────────────────────────────────────
+ * 📚 DOCUMENTACIÓN PARA EL FUTURO (REGLA 2 — generalización):
+ *
+ * Este componente NO conoce ni la tabla ni la lógica de persistencia: solo
+ * pinta el cuadrito de nota colaborativa (40 chars) y delega el guardado al
+ * `onSave` que recibe por props. Esto permite reusarlo para:
+ *   - Notas sobre avisos del listado familiar (PropertyCard)
+ *   - Notas sobre agencias compartidas por la familia (AgenciesDirectoryPanel)
+ *   - Cualquier futuro caso (zonas, contactos, búsquedas guardadas, etc.)
+ *
+ * Cómo conectarlo:
+ *   const { saveQuickNote, isSaving } = useQuickNoteUpdate({...})
+ *      // o useQuickNoteUpsert({...})
+ *   <QuickNoteField
+ *      initialNote={...}
+ *      onSave={saveQuickNote}
+ *      isSaving={isSaving}
+ *      editedByName={...}
+ *      editedAt={...}
+ *      placeholder="Agregar nota..."
+ *   />
+ *
+ * Compatibilidad: si se le pasa solo `listingId` (modo legacy), el componente
+ * usa internamente el hook `useQuickNote(listingId)` para no romper los
+ * call-sites históricos en `PropertyCard`.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 import { useEffect, useState } from "react";
 import { Pencil, Check, X, StickyNote } from "lucide-react";
@@ -13,10 +34,18 @@ import { Input } from "@/components/ui/input";
 import { useQuickNote, QUICK_NOTE_MAX_LENGTH } from "@/hooks/useQuickNote";
 
 interface QuickNoteFieldProps {
-    listingId: string;
+    /** Modo legacy: guarda en user_listings via useQuickNote */
+    listingId?: string;
+    /** Modo genérico: callback de guardado (return true si OK) */
+    onSave?: (note: string) => Promise<boolean>;
+    /** Modo genérico: flag de loading */
+    isSaving?: boolean;
+
     initialNote?: string;
     editedByName?: string;
     editedAt?: Date | null;
+    placeholder?: string;
+    emptyLabel?: string;
 }
 
 function formatEditedAt(date: Date): string {
@@ -29,8 +58,21 @@ function formatEditedAt(date: Date): string {
         ` ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-export function QuickNoteField({ listingId, initialNote = "", editedByName, editedAt }: QuickNoteFieldProps) {
-    const { saveQuickNote, isSaving } = useQuickNote(listingId);
+export function QuickNoteField({
+    listingId,
+    onSave,
+    isSaving: isSavingProp,
+    initialNote = "",
+    editedByName,
+    editedAt,
+    placeholder = "Agregar nota",
+    emptyLabel = "Agregar nota de gestión…",
+}: QuickNoteFieldProps) {
+    // Fallback legacy si no se pasó onSave: usar el hook tradicional sobre user_listings.
+    const legacy = useQuickNote(listingId || "");
+    const saveFn = onSave ?? legacy.saveQuickNote;
+    const isSaving = isSavingProp ?? legacy.isSaving;
+
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(initialNote);
 
@@ -43,7 +85,7 @@ export function QuickNoteField({ listingId, initialNote = "", editedByName, edit
     const handleSave = async (e: React.MouseEvent | React.FormEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        const ok = await saveQuickNote(value);
+        const ok = await saveFn(value);
         if (ok) setIsEditing(false);
     };
 
@@ -65,7 +107,7 @@ export function QuickNoteField({ listingId, initialNote = "", editedByName, edit
                     value={value}
                     onChange={(e) => setValue(e.target.value.slice(0, QUICK_NOTE_MAX_LENGTH))}
                     maxLength={QUICK_NOTE_MAX_LENGTH}
-                    placeholder="Agregar nota"
+                    placeholder={placeholder}
                     className="h-7 text-xs px-2"
                     onKeyDown={(e) => {
                         if (e.key === "Enter") handleSave(e);
@@ -119,9 +161,7 @@ export function QuickNoteField({ listingId, initialNote = "", editedByName, edit
                         )}
                     </>
                 ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                        Agregar nota de gestión…
-                    </p>
+                    <p className="text-xs text-muted-foreground italic">{emptyLabel}</p>
                 )}
             </div>
             <button

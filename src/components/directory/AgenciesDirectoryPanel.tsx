@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useOrgAgencyVisits } from "@/hooks/useOrgAgencyVisits";
+import { useOrgAgencyNotes, useOrgAgencyNoteSaver, type OrgAgencyNote } from "@/hooks/useOrgAgencyNotes";
+import { QuickNoteField } from "@/components/property-card/QuickNoteField";
 
 /**
  * Normaliza una URL de agencia para asegurar que sea navegable:
@@ -91,12 +93,16 @@ function AgencyCard({
   isToggling,
   visit,
   onVisit,
+  orgId,
+  note,
 }: {
   agency: DirectoryAgency;
   onToggleFavorite: () => void;
   isToggling: boolean;
   visit: { visited_at: string; visited_by_name?: string | null } | null;
   onVisit: () => void;
+  orgId?: string | null;
+  note?: OrgAgencyNote | null;
 }) {
   const isFeatured = agency.isFeatured;
   const wasVisited = visit !== null;
@@ -188,7 +194,45 @@ function AgencyCard({
           {visit.visited_by_name ? ` · ${visit.visited_by_name}` : ""}
         </span>
       )}
+
+      {orgId && (
+        <AgencyQuickNote
+          orgId={orgId}
+          agencyType={agency.type}
+          agencyId={agency.id}
+          note={note}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Subcomponente que conecta el QuickNoteField genérico con el saver de
+ * org_agency_notes. Vive aquí para mantener la card desacoplada del hook.
+ */
+function AgencyQuickNote({
+  orgId,
+  agencyType,
+  agencyId,
+  note,
+}: {
+  orgId: string;
+  agencyType: string;
+  agencyId: string;
+  note: OrgAgencyNote | null;
+}) {
+  const { saveQuickNote, isSaving } = useOrgAgencyNoteSaver({ orgId, agencyType, agencyId });
+  return (
+    <QuickNoteField
+      initialNote={note?.note || ""}
+      onSave={saveQuickNote}
+      isSaving={isSaving}
+      editedByName={note?.edited_by_name || undefined}
+      editedAt={note?.edited_at ? new Date(note.edited_at) : null}
+      placeholder="Nota de la familia"
+      emptyLabel="Nota familiar sobre la agencia…"
+    />
   );
 }
 
@@ -205,6 +249,7 @@ export function AgenciesDirectoryPanel({
   const { departments } = useGeography();
   const { toast } = useToast();
   const { visits, markVisited: markOrgVisited, hasOrg } = useOrgAgencyVisits();
+  const { orgId, getNote } = useOrgAgencyNotes();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
@@ -271,6 +316,8 @@ export function AgenciesDirectoryPanel({
                 isToggling={toggleFavorite.isPending}
                 visit={getVisitFor(a)}
                 onVisit={() => handleVisit(a)}
+                orgId={orgId}
+                note={getNote(a.type, a.id)}
               />
             ))}
           </div>
@@ -369,6 +416,8 @@ export function AgenciesDirectoryPanel({
               isToggling={toggleFavorite.isPending}
               visit={getVisitFor(a)}
               onVisit={() => handleVisit(a)}
+              orgId={orgId}
+              note={getNote(a.type, a.id)}
             />
           ))}
         </div>
