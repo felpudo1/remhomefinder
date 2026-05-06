@@ -194,7 +194,45 @@ function AgencyCard({
           {visit.visited_by_name ? ` · ${visit.visited_by_name}` : ""}
         </span>
       )}
+
+      {orgId && (
+        <AgencyQuickNote
+          orgId={orgId}
+          agencyType={agency.type}
+          agencyId={agency.id}
+          note={note}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Subcomponente que conecta el QuickNoteField genérico con el saver de
+ * org_agency_notes. Vive aquí para mantener la card desacoplada del hook.
+ */
+function AgencyQuickNote({
+  orgId,
+  agencyType,
+  agencyId,
+  note,
+}: {
+  orgId: string;
+  agencyType: string;
+  agencyId: string;
+  note: OrgAgencyNote | null;
+}) {
+  const { saveQuickNote, isSaving } = useOrgAgencyNoteSaver({ orgId, agencyType, agencyId });
+  return (
+    <QuickNoteField
+      initialNote={note?.note || ""}
+      onSave={saveQuickNote}
+      isSaving={isSaving}
+      editedByName={note?.edited_by_name || undefined}
+      editedAt={note?.edited_at ? new Date(note.edited_at) : null}
+      placeholder="Nota de la familia"
+      emptyLabel="Nota familiar sobre la agencia…"
+    />
   );
 }
 
