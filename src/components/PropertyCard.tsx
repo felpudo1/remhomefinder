@@ -325,7 +325,7 @@ export function PropertyCard({
                           onClick={(e) => {
                             e.stopPropagation();
                             window.open(
-                              buildWhatsAppUrl(property.contactPhone!, `Hola, vi tu publicación "${property.title}" y me interesa.`),
+                              buildWhatsAppUrl(property.contactPhone!, `Organizo mis busquedas con HOMEFINDER.UY y vi tu publicación "${property.title}". Y me interesa!!`),
                               "_blank",
                               "noopener,noreferrer"
                             );
