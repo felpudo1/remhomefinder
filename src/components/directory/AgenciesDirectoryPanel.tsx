@@ -316,6 +316,8 @@ export function AgenciesDirectoryPanel({
                 isToggling={toggleFavorite.isPending}
                 visit={getVisitFor(a)}
                 onVisit={() => handleVisit(a)}
+                orgId={orgId}
+                note={getNote(a.type, a.id)}
               />
             ))}
           </div>
