@@ -249,7 +249,7 @@ export function AgenciesDirectoryPanel({
   const { departments } = useGeography();
   const { toast } = useToast();
   const { visits, markVisited: markOrgVisited, hasOrg } = useOrgAgencyVisits();
-  const { notes, orgId, getNote } = useOrgAgencyNotes();
+  const { orgId, getNote } = useOrgAgencyNotes();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
