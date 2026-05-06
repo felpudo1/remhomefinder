@@ -735,6 +735,39 @@ export type Database = {
           },
         ]
       }
+      org_agency_notes: {
+        Row: {
+          agency_id: string
+          agency_type: string
+          created_at: string
+          edited_at: string
+          edited_by: string
+          id: string
+          note: string
+          org_id: string
+        }
+        Insert: {
+          agency_id: string
+          agency_type: string
+          created_at?: string
+          edited_at?: string
+          edited_by: string
+          id?: string
+          note?: string
+          org_id: string
+        }
+        Update: {
+          agency_id?: string
+          agency_type?: string
+          created_at?: string
+          edited_at?: string
+          edited_by?: string
+          id?: string
+          note?: string
+          org_id?: string
+        }
+        Relationships: []
+      }
       org_agency_visits: {
         Row: {
           agency_id: string
