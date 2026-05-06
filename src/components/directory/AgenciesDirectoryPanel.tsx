@@ -101,8 +101,8 @@ function AgencyCard({
   isToggling: boolean;
   visit: { visited_at: string; visited_by_name?: string | null } | null;
   onVisit: () => void;
-  orgId: string | null;
-  note: OrgAgencyNote | null;
+  orgId?: string | null;
+  note?: OrgAgencyNote | null;
 }) {
   const isFeatured = agency.isFeatured;
   const wasVisited = visit !== null;
