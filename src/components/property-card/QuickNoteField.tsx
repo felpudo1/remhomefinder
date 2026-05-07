@@ -152,11 +152,11 @@ export function QuickNoteField({
             className="mt-2 flex items-center gap-1.5 bg-amber-50/60 border border-amber-200 rounded-md px-2 py-1.5"
             onClick={(e) => e.stopPropagation()}
         >
-            <StickyNote className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            {!hasNote && <StickyNote className="w-3.5 h-3.5 text-amber-700 shrink-0" />}
             <div className="flex-1 min-w-0">
                 {hasNote ? (
                     <>
-                        <p className="text-xs text-foreground truncate" title={initialNote}>
+                        <p className="text-xs text-foreground break-words" title={initialNote}>
                             {initialNote}
                         </p>
                         {(editedByName || editedAt) && (
