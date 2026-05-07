@@ -230,8 +230,8 @@ function AgencyQuickNote({
       isSaving={isSaving}
       editedByName={note?.edited_by_name || undefined}
       editedAt={note?.edited_at ? new Date(note.edited_at) : null}
-      placeholder="Nota de la familia"
-      emptyLabel="Nota familiar sobre la agencia…"
+      placeholder="Nota"
+      emptyLabel="Nota"
     />
   );
 }
