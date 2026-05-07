@@ -98,45 +98,51 @@ export function QuickNoteField({
     if (isEditing) {
         return (
             <div
-                className="mt-2 flex items-center gap-1.5 bg-muted/50 border border-border rounded-md px-2 py-1.5"
+                className="mt-2 flex flex-col gap-1.5 bg-muted/50 border border-border rounded-md px-2 py-1.5"
                 onClick={(e) => e.stopPropagation()}
             >
-                <StickyNote className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <Input
-                    autoFocus
-                    value={value}
-                    onChange={(e) => setValue(e.target.value.slice(0, QUICK_NOTE_MAX_LENGTH))}
-                    maxLength={QUICK_NOTE_MAX_LENGTH}
-                    placeholder={placeholder}
-                    className="h-7 text-xs px-2"
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSave(e);
-                        if (e.key === "Escape") handleCancel(e as any);
-                    }}
-                />
-                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-                    {value.length}/{QUICK_NOTE_MAX_LENGTH}
-                </span>
-                <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 shrink-0"
-                    title="Guardar"
-                    aria-label="Guardar"
-                >
-                    <Check className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    type="button"
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted hover:bg-muted/70 border border-border text-muted-foreground shrink-0"
-                    title="Cancelar"
-                    aria-label="Cancelar"
-                >
-                    <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1.5 w-full">
+                    <StickyNote className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <Input
+                        autoFocus
+                        value={value}
+                        onChange={(e) => setValue(e.target.value.slice(0, QUICK_NOTE_MAX_LENGTH))}
+                        maxLength={QUICK_NOTE_MAX_LENGTH}
+                        placeholder={placeholder}
+                        className="h-7 text-xs px-2 flex-1 min-w-0"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSave(e);
+                            if (e.key === "Escape") handleCancel(e as any);
+                        }}
+                    />
+                </div>
+                <div className="flex items-center justify-between gap-1.5 w-full">
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {value.length}/{QUICK_NOTE_MAX_LENGTH}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 shrink-0"
+                            title="Guardar"
+                            aria-label="Guardar"
+                        >
+                            <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={isSaving}
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted hover:bg-muted/70 border border-border text-muted-foreground shrink-0"
+                            title="Cancelar"
+                            aria-label="Cancelar"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
