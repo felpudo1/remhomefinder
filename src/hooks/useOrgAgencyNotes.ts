@@ -119,6 +119,7 @@ export function useOrgAgencyNoteSaver(params: {
     return useQuickNoteUpsert({
         table: "org_agency_notes",
         conflictTarget: "org_id,agency_type,agency_id",
+        columns: { note: "note", by: "edited_by", at: "edited_at" },
         payload: {
             org_id: params.orgId,
             agency_type: params.agencyType,
