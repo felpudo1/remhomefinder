@@ -334,7 +334,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
   return (
     <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="!w-[calc(100vw-1rem)] !max-w-md sm:!w-full !left-1/2 !-translate-x-1/2 !translate-y-[-50%] rounded-2xl overflow-y-auto overflow-x-hidden max-h-[90vh] mx-auto">
+      <DialogContent className="box-border min-w-0 !w-[calc(100vw-1rem)] !max-w-[calc(100vw-1rem)] sm:!max-w-md sm:!w-full !left-1/2 !-translate-x-1/2 !translate-y-[-50%] !scale-100 rounded-2xl overflow-y-auto overflow-x-hidden max-h-[90vh] mx-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
             {step === "url" ? "Agregar Propiedad" : "Detalles de la Propiedad"}
@@ -385,17 +385,17 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
             <DuplicateAlert urlInFamily={urlInFamily} urlInApp={urlInApp} onOpenExisting={onOpenExisting} formatDaysAgo={formatDaysAgo} />
 
             {showImageFallback && (
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0 max-w-full overflow-hidden">
                 <div
-                  className="space-y-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="space-y-3 min-w-0 max-w-full overflow-hidden rounded-xl border-2 border-primary/40 bg-primary/5 p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   tabIndex={0}
                   onPaste={handlePasteScreens}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <ImageIcon className="w-5 h-5 text-primary shrink-0" />
-                    <Label className="text-base font-semibold leading-tight">Sacá un screenshot del aviso</Label>
+                    <Label className="min-w-0 text-base font-semibold leading-tight">Sacá un screenshot del aviso</Label>
                   </div>
-                  <p className="text-sm text-foreground/80 leading-snug">
+                  <p className="text-sm text-foreground/80 leading-snug break-words">
                     No pudimos leer el aviso automáticamente. Sacá <strong>3 capturas de pantalla</strong> del aviso (Facebook, Instagram, Mercado Libre) donde muestren los datos de la publicación. Luego hacé click en <strong>"Tocá para elegir imágenes"</strong> y seleccioná las imágenes del aviso. Nuestra IA extraerá los datos. Dale click en el botón <strong>"Analizar imágenes"</strong>. Luego verificá que esté todo ok antes de guardar.
                   </p>
                   <input
