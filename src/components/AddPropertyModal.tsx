@@ -441,17 +441,7 @@ export function AddPropertyModal({ open, onClose, onAdd, activeGroupId, scraper 
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-xl flex-1"
-                      disabled={pendingScreenFiles.length >= 3}
-                      onClick={() => pendingScreensInputRef.current?.click()}
-                    >
-                      Elegir del dispositivo
-                    </Button>
-                    <Button
-                      type="button"
-                      className="rounded-xl flex-1 gap-2"
+                      className="rounded-xl w-full gap-2"
                       disabled={pendingScreenFiles.length === 0 || isAnalyzingUnified}
                       onClick={onAnalyzePendingScreens}
                     >
